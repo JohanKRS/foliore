@@ -24,6 +24,7 @@
     <string name="filter_needs_review">Revisar</string>
     <string name="filter_prepared">Preparados</string>
     <string name="filter_synced">Sincronizados</string>
+    <string name="filter_conflicts">Conflitos</string>
     <string name="filter_error">Com erro</string>
 
     <string name="status_imported">Importado</string>
@@ -35,6 +36,9 @@
     <string name="status_synced">Sincronizado</string>
     <string name="status_local_only">Local</string>
     <string name="status_pending_upload">Sync pendente</string>
+    <string name="status_pending_download">Receber</string>
+    <string name="status_conflict">Conflito</string>
+    <string name="status_sync_error">Erro de sync</string>
 
     <string name="book_unknown_author">Autor desconhecido</string>
     <string name="book_no_description">Nenhuma descrição foi encontrada neste EPUB.</string>
@@ -108,8 +112,10 @@
     <string name="settings_sync_now">Sincronizar agora</string>
     <string name="settings_sync_running">Sincronizando...</string>
     <string name="settings_sync_disconnect">Desconectar pasta</string>
+    <string name="settings_sync_last_result">Último resultado: %1$d enviados, %2$d recebidos, %3$d conflitos.</string>
     <string name="sync_notice_folder_configured">Pasta de sincronização configurada.</string>
     <string name="sync_notice_complete">Sincronização concluída.</string>
+    <string name="sync_notice_complete_with_conflicts">Sincronização concluída com conflitos.</string>
     <string name="sync_notice_not_configured">Escolha uma pasta antes de sincronizar.</string>
     <string name="sync_notice_folder_unavailable">A pasta escolhida não está disponível.</string>
     <string name="sync_notice_failed">Não foi possível sincronizar.</string>

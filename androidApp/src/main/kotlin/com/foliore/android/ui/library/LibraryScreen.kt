@@ -324,11 +324,15 @@ fun StatusPill(
     modifier: Modifier = Modifier,
 ) {
     val label = when {
+        syncStatus == SyncStatus.CONFLICT -> stringResource(R.string.status_conflict)
+        syncStatus == SyncStatus.SYNC_ERROR -> stringResource(R.string.status_sync_error)
         syncStatus == SyncStatus.SYNCED -> stringResource(R.string.status_synced)
         syncStatus == SyncStatus.PENDING_UPLOAD -> stringResource(R.string.status_pending_upload)
+        syncStatus == SyncStatus.PENDING_DOWNLOAD -> stringResource(R.string.status_pending_download)
         else -> stringResource(status.labelRes())
     }
     val tint = when {
+        syncStatus == SyncStatus.CONFLICT || syncStatus == SyncStatus.SYNC_ERROR -> MaterialTheme.colorScheme.error
         status == BookStatus.ERROR -> MaterialTheme.colorScheme.error
         syncStatus == SyncStatus.SYNCED -> MaterialTheme.colorScheme.secondary
         status == BookStatus.NEEDS_REVIEW -> MaterialTheme.colorScheme.error
@@ -450,6 +454,7 @@ private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
             BookFilter.NEEDS_REVIEW -> item.book.status == BookStatus.NEEDS_REVIEW
             BookFilter.PREPARED -> item.book.status == BookStatus.PREPARED
             BookFilter.SYNCED -> item.book.syncStatus == SyncStatus.SYNCED
+            BookFilter.CONFLICT -> item.book.syncStatus == SyncStatus.CONFLICT
             BookFilter.ERROR -> item.book.status == BookStatus.ERROR
         }
     }
@@ -468,6 +473,7 @@ private fun BookFilter.labelRes(): Int {
         BookFilter.NEEDS_REVIEW -> R.string.filter_needs_review
         BookFilter.PREPARED -> R.string.filter_prepared
         BookFilter.SYNCED -> R.string.filter_synced
+        BookFilter.CONFLICT -> R.string.filter_conflicts
         BookFilter.ERROR -> R.string.filter_error
     }
 }

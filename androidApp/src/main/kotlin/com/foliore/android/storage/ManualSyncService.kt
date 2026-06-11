@@ -4,11 +4,21 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.foliore.shared.data.MetadataSnapshot
+import com.foliore.shared.data.TechnicalSnapshot
+import com.foliore.shared.domain.Book
+import com.foliore.shared.domain.BookMetadata
+import com.foliore.shared.domain.BookStatus
+import com.foliore.shared.domain.EpubTechnicalInfo
+import com.foliore.shared.domain.ImportedBookRecord
 import com.foliore.shared.domain.LibraryBook
+import com.foliore.shared.domain.MetadataSource
+import com.foliore.shared.domain.SyncStatus
 import com.foliore.shared.library.LibraryRepository
 import java.io.File
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -19,7 +29,10 @@ class ManualSyncService(
 ) {
     private val appContext = context.applicationContext
     private val preferences = appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
-    private val json = Json { prettyPrint = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        prettyPrint = true
+    }
 
     fun configureFolder(uri: Uri): ManualSyncResult {
         return runCatching {
@@ -61,12 +74,38 @@ class ManualSyncService(
             val booksRoot = libraryRoot.ensureDirectory("books")
             val devicesRoot = libraryRoot.ensureDirectory("devices")
             val snapshotsRoot = libraryRoot.ensureDirectory("snapshots")
-            val books = libraryRepository.getBooks()
             val syncedAt = Clock.System.now().toString()
             val deviceId = deviceIdProvider.getDeviceId()
+            val remoteManifest = libraryRoot.readManifest()
+            val remoteBooks = remoteManifest?.books
+                ?.filterNot { it.deleted }
+                ?.associateBy { it.bookId }
+                .orEmpty()
+            val counters = SyncCounters()
 
-            books.forEach { book ->
-                uploadBook(booksRoot, book)
+            remoteBooks.values.forEach { remoteBook ->
+                applyRemoteBook(
+                    libraryRoot = libraryRoot,
+                    remoteBook = remoteBook,
+                    syncedAt = syncedAt,
+                    currentDeviceId = deviceId,
+                    counters = counters,
+                )
+            }
+
+            libraryRepository.getBooks().forEach { book ->
+                if (book.book.syncStatus == SyncStatus.CONFLICT) return@forEach
+
+                val remoteBook = remoteBooks[book.book.id]
+                val shouldUpload = remoteBook == null ||
+                    book.book.revision > remoteBook.revision ||
+                    book.book.syncStatus == SyncStatus.LOCAL_ONLY ||
+                    book.book.syncStatus == SyncStatus.PENDING_UPLOAD
+
+                if (shouldUpload) {
+                    uploadBook(booksRoot, book)
+                    counters.uploadedBooks += 1
+                }
                 libraryRepository.markSynced(book.book.id, syncedAt)
             }
 
@@ -86,10 +125,13 @@ class ManualSyncService(
                 text = json.encodeToString(
                     LibraryManifestSnapshot(
                         schemaVersion = 1,
-                        libraryId = libraryId(),
+                        libraryId = libraryId(remoteManifest),
                         updatedAt = syncedAt,
                         updatedByDeviceId = deviceId,
-                        books = books.map { it.toManifestBook() },
+                        books = mergedManifestBooks(
+                            remoteBooks = remoteBooks,
+                            localBooks = libraryRepository.getBooks(),
+                        ),
                     ),
                 ),
             )
@@ -100,10 +142,145 @@ class ManualSyncService(
             )
 
             ManualSyncResult.Synced(
-                uploadedBooks = books.size,
+                uploadedBooks = counters.uploadedBooks,
+                downloadedBooks = counters.downloadedBooks,
+                conflictedBooks = counters.conflictedBooks,
                 folderLabel = folderLabel(treeUri) ?: DEFAULT_FOLDER_LABEL,
             )
         }.getOrDefault(ManualSyncResult.Failed)
+    }
+
+    private fun applyRemoteBook(
+        libraryRoot: DocumentFile,
+        remoteBook: ManifestBookSnapshot,
+        syncedAt: String,
+        currentDeviceId: String,
+        counters: SyncCounters,
+    ) {
+        val local = libraryRepository.getBook(remoteBook.bookId)
+
+        if (local == null) {
+            val duplicateBookId = libraryRepository.findBookIdByHash(remoteBook.originalHashSha256)
+            if (duplicateBookId != null) {
+                libraryRepository.markSynced(duplicateBookId, syncedAt)
+                return
+            }
+
+            downloadRemoteBook(
+                libraryRoot = libraryRoot,
+                remoteBook = remoteBook,
+                syncedAt = syncedAt,
+                currentBook = null,
+            )
+            counters.downloadedBooks += 1
+            return
+        }
+
+        when {
+            local.book.syncStatus == SyncStatus.CONFLICT -> {
+                counters.conflictedBooks += 1
+            }
+            remoteBook.revision > local.book.revision -> {
+                if (local.book.syncStatus == SyncStatus.PENDING_UPLOAD &&
+                    remoteBook.updatedByDeviceId != currentDeviceId
+                ) {
+                    libraryRepository.markSyncConflict(local.book.id)
+                    counters.conflictedBooks += 1
+                } else {
+                    downloadRemoteBook(
+                        libraryRoot = libraryRoot,
+                        remoteBook = remoteBook,
+                        syncedAt = syncedAt,
+                        currentBook = local,
+                    )
+                    counters.downloadedBooks += 1
+                }
+            }
+            remoteBook.revision == local.book.revision -> {
+                if (remoteBook.updatedAt != local.book.updatedAt &&
+                    remoteBook.updatedByDeviceId != local.book.updatedByDeviceId
+                ) {
+                    libraryRepository.markSyncConflict(local.book.id)
+                    counters.conflictedBooks += 1
+                } else {
+                    libraryRepository.markSynced(local.book.id, syncedAt)
+                }
+            }
+        }
+    }
+
+    private fun downloadRemoteBook(
+        libraryRoot: DocumentFile,
+        remoteBook: ManifestBookSnapshot,
+        syncedAt: String,
+        currentBook: LibraryBook?,
+    ) {
+        val remoteMetadataFile = libraryRoot.findRelativeFile(remoteBook.metadataFile)
+            ?: error("Missing remote metadata for ${remoteBook.bookId}")
+        val remoteOriginalFile = libraryRoot.findRelativeFile(remoteBook.originalFile)
+            ?: error("Missing remote original EPUB for ${remoteBook.bookId}")
+        val remoteTechnicalFile = libraryRoot.findRelativeFile(remoteBook.bookFileName("technical.json"))
+            ?: error("Missing remote technical snapshot for ${remoteBook.bookId}")
+        val metadataSnapshot = json.decodeFromString<MetadataSnapshot>(remoteMetadataFile.readText())
+        val technicalSnapshot = json.decodeFromString<TechnicalSnapshot>(remoteTechnicalFile.readText())
+        val bookDir = File(appContext.filesDir, "books/${remoteBook.bookId}")
+
+        if (bookDir.exists()) {
+            bookDir.deleteRecursively()
+        }
+        bookDir.mkdirs()
+
+        val localOriginalFile = File(bookDir, "original.epub")
+        remoteOriginalFile.copyToLocal(localOriginalFile)
+        val localPreparedFile = remoteBook.preparedFile?.let { path ->
+            libraryRoot.copyRelativeFileIfExists(path, File(bookDir, "prepared.epub"))
+        }
+        val localCoverFile = remoteBook.coverFile?.let { path ->
+            libraryRoot.copyRelativeFileIfExists(path, File(bookDir, "cover_original.jpg"))
+        }
+        val localCoverThumbFile = libraryRoot.copyRelativeFileIfExists(
+            remoteBook.bookFileName("cover_thumb.jpg"),
+            File(bookDir, "cover_thumb.jpg"),
+        )
+
+        remoteMetadataFile.copyToLocal(File(bookDir, "metadata.json"))
+        remoteTechnicalFile.copyToLocal(File(bookDir, "technical.json"))
+        libraryRoot.copyRelativeFileIfExists(
+            remoteBook.bookFileName("changes.jsonl"),
+            File(bookDir, "changes.jsonl"),
+        )
+
+        val bookStatus = metadataSnapshot.status.toBookStatus()
+        val technicalInfo = technicalSnapshot.toDomain()
+        val book = Book(
+            id = remoteBook.bookId,
+            originalFilePath = localOriginalFile.absolutePath,
+            preparedFilePath = localPreparedFile?.absolutePath,
+            coverImagePath = localCoverFile?.absolutePath,
+            coverThumbPath = localCoverThumbFile?.absolutePath,
+            originalHashSha256 = metadataSnapshot.originalHashSha256,
+            fileSizeBytes = localOriginalFile.length(),
+            importedAt = currentBook?.book?.importedAt ?: syncedAt,
+            updatedAt = metadataSnapshot.updatedAt,
+            lastPreparedAt = currentBook?.book?.lastPreparedAt
+                ?: localPreparedFile?.let { metadataSnapshot.updatedAt },
+            lastExportedAt = currentBook?.book?.lastExportedAt,
+            lastSyncedAt = syncedAt,
+            status = bookStatus,
+            syncStatus = SyncStatus.SYNCED,
+            revision = metadataSnapshot.revision,
+            updatedByDeviceId = metadataSnapshot.updatedByDeviceId,
+            technicalStatus = technicalInfo.errors.takeIf { it.isNotEmpty() }?.joinToString("; "),
+        )
+        val metadata = metadataSnapshot.toDomain()
+
+        libraryRepository.insertImportedBook(
+            ImportedBookRecord(
+                book = book,
+                metadata = metadata,
+                technicalInfo = technicalInfo,
+            ),
+        )
     }
 
     private fun uploadBook(booksRoot: DocumentFile, libraryBook: LibraryBook) {
@@ -161,6 +338,44 @@ class ManualSyncService(
         return createFile(mimeType, name) ?: error("Cannot create $name")
     }
 
+    private fun DocumentFile.readManifest(): LibraryManifestSnapshot? {
+        return findFile("library.manifest.json")?.let { manifestFile ->
+            json.decodeFromString<LibraryManifestSnapshot>(manifestFile.readText())
+        }
+    }
+
+    private fun DocumentFile.findRelativeFile(path: String): DocumentFile? {
+        return path.split('/')
+            .filter { it.isNotBlank() }
+            .fold(this as DocumentFile?) { current, segment -> current?.findFile(segment) }
+    }
+
+    private fun DocumentFile.copyRelativeFileIfExists(
+        path: String,
+        destination: File,
+    ): File? {
+        val source = findRelativeFile(path) ?: return null
+        source.copyToLocal(destination)
+        return destination.takeIf { it.exists() }
+    }
+
+    private fun DocumentFile.copyToLocal(destination: File) {
+        destination.parentFile?.mkdirs()
+        val inputStream = appContext.contentResolver.openInputStream(uri)
+            ?: error("Cannot open ${name ?: uri} for reading")
+        inputStream.use { input ->
+            destination.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+
+    private fun DocumentFile.readText(): String {
+        val inputStream = appContext.contentResolver.openInputStream(uri)
+            ?: error("Cannot open ${name ?: uri} for reading")
+        return inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+    }
+
     private fun syncUri(): Uri? {
         return preferences.getString(KEY_SYNC_TREE_URI, null)?.let(Uri::parse)
     }
@@ -169,12 +384,84 @@ class ManualSyncService(
         return DocumentFile.fromTreeUri(appContext, uri)?.name
     }
 
-    private fun libraryId(): String {
+    private fun libraryId(remoteManifest: LibraryManifestSnapshot?): String {
+        if (remoteManifest != null) {
+            preferences.edit().putString(KEY_LIBRARY_ID, remoteManifest.libraryId).apply()
+            return remoteManifest.libraryId
+        }
         val existing = preferences.getString(KEY_LIBRARY_ID, null)
         if (existing != null) return existing
         val created = java.util.UUID.randomUUID().toString()
         preferences.edit().putString(KEY_LIBRARY_ID, created).apply()
         return created
+    }
+
+    private fun mergedManifestBooks(
+        remoteBooks: Map<String, ManifestBookSnapshot>,
+        localBooks: List<LibraryBook>,
+    ): List<ManifestBookSnapshot> {
+        val merged = linkedMapOf<String, ManifestBookSnapshot>()
+        localBooks
+            .filter { it.book.syncStatus == SyncStatus.CONFLICT }
+            .mapNotNull { remoteBooks[it.book.id] }
+            .forEach { remoteBook -> merged[remoteBook.bookId] = remoteBook }
+
+        localBooks
+            .filterNot { it.book.syncStatus == SyncStatus.CONFLICT }
+            .map { it.toManifestBook() }
+            .forEach { localBook -> merged[localBook.bookId] = localBook }
+
+        return merged.values.toList()
+    }
+
+    private fun ManifestBookSnapshot.bookFileName(fileName: String): String {
+        return "books/$bookId/$fileName"
+    }
+
+    private fun MetadataSnapshot.toDomain(): BookMetadata {
+        return BookMetadata(
+            bookId = bookId,
+            title = title,
+            subtitle = subtitle,
+            authors = authors,
+            sortAuthor = sortAuthor,
+            language = language,
+            publisher = publisher,
+            publishedDate = publishedDate,
+            description = description,
+            tags = tags,
+            isbn = isbn,
+            identifiers = identifiers,
+            seriesName = seriesName,
+            seriesIndex = seriesIndex,
+            source = if (status.toBookStatus() == BookStatus.IMPORTED) {
+                MetadataSource.EPUB
+            } else {
+                MetadataSource.MANUAL
+            },
+        )
+    }
+
+    private fun TechnicalSnapshot.toDomain(): EpubTechnicalInfo {
+        return EpubTechnicalInfo(
+            bookId = bookId,
+            epubVersion = epubVersion,
+            opfPath = opfPath,
+            navPath = navPath,
+            ncxPath = ncxPath,
+            coverHref = coverHref,
+            packageIdentifier = packageIdentifier,
+            hasNav = hasNav,
+            hasNcx = hasNcx,
+            manifestItemCount = manifestItemCount,
+            spineItemCount = spineItemCount,
+            warnings = warnings,
+            errors = errors,
+        )
+    }
+
+    private fun String.toBookStatus(): BookStatus {
+        return runCatching { BookStatus.valueOf(this) }.getOrDefault(BookStatus.IMPORTED)
     }
 
     private fun LibraryBook.toManifestBook(): ManifestBookSnapshot {
@@ -223,6 +510,12 @@ class ManualSyncService(
         val deviceName: String,
         val platform: String,
         val updatedAt: String,
+    )
+
+    private data class SyncCounters(
+        var uploadedBooks: Int = 0,
+        var downloadedBooks: Int = 0,
+        var conflictedBooks: Int = 0,
     )
 
     private companion object {

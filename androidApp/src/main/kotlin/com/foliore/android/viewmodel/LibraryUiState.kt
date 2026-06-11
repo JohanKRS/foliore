@@ -7,6 +7,7 @@ data class LibraryUiState(
     val isImporting: Boolean = false,
     val isSyncing: Boolean = false,
     val syncFolderLabel: String? = null,
+    val lastSyncSummary: SyncSummary? = null,
     val isSearchOpen: Boolean = false,
     val query: String = "",
     val activeFilter: BookFilter = BookFilter.ALL,
@@ -17,8 +18,15 @@ enum class BookFilter {
     NEEDS_REVIEW,
     PREPARED,
     SYNCED,
+    CONFLICT,
     ERROR,
 }
+
+data class SyncSummary(
+    val uploadedBooks: Int,
+    val downloadedBooks: Int,
+    val conflictedBooks: Int,
+)
 
 data class LibraryNotice(
     val type: LibraryNoticeType,
@@ -38,6 +46,7 @@ enum class LibraryNoticeType {
     EXPORT_FAILED,
     SYNC_FOLDER_CONFIGURED,
     SYNC_COMPLETE,
+    SYNC_COMPLETE_WITH_CONFLICTS,
     SYNC_NOT_CONFIGURED,
     SYNC_FOLDER_UNAVAILABLE,
     SYNC_FAILED,

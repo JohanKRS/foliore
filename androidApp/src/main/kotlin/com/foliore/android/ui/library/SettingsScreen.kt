@@ -33,12 +33,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.ui.theme.ThemeMode
+import com.foliore.android.viewmodel.SyncSummary
 
 @Composable
 fun SettingsScreen(
     themeMode: ThemeMode,
     syncFolderLabel: String?,
     isSyncing: Boolean,
+    lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
     onChooseSyncFolder: () -> Unit,
     onSyncNow: () -> Unit,
@@ -143,6 +145,19 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (lastSyncSummary != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.settings_sync_last_result,
+                            lastSyncSummary.uploadedBooks,
+                            lastSyncSummary.downloadedBooks,
+                            lastSyncSummary.conflictedBooks,
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedButton(
                     onClick = onChooseSyncFolder,

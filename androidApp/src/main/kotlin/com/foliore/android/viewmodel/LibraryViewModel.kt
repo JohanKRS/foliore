@@ -215,6 +215,13 @@ class LibraryViewModel(
                     books = books,
                     isSyncing = false,
                     syncFolderLabel = folderLabel,
+                    lastSyncSummary = (result as? ManualSyncResult.Synced)?.let { synced ->
+                        SyncSummary(
+                            uploadedBooks = synced.uploadedBooks,
+                            downloadedBooks = synced.downloadedBooks,
+                            conflictedBooks = synced.conflictedBooks,
+                        )
+                    },
                 )
             }
             _notice.value = LibraryNotice(result.toNoticeType())
@@ -253,11 +260,17 @@ class LibraryViewModel(
 
     private fun ManualSyncResult.toNoticeType(): LibraryNoticeType {
         return when (this) {
-            is ManualSyncResult.Synced -> LibraryNoticeType.SYNC_COMPLETE
             ManualSyncResult.NotConfigured -> LibraryNoticeType.SYNC_NOT_CONFIGURED
             ManualSyncResult.FolderUnavailable -> LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE
             ManualSyncResult.Failed -> LibraryNoticeType.SYNC_FAILED
             is ManualSyncResult.Configured -> LibraryNoticeType.SYNC_FOLDER_CONFIGURED
+            is ManualSyncResult.Synced -> {
+                if (conflictedBooks > 0) {
+                    LibraryNoticeType.SYNC_COMPLETE_WITH_CONFLICTS
+                } else {
+                    LibraryNoticeType.SYNC_COMPLETE
+                }
+            }
         }
     }
 }

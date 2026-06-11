@@ -279,6 +279,17 @@ class LibraryRepository(
         return LibraryBook(nextBook, current.metadata)
     }
 
+    fun markSyncConflict(bookId: String): LibraryBook? {
+        val current = getBook(bookId) ?: return null
+        val nextBook = current.book.copy(syncStatus = SyncStatus.CONFLICT)
+
+        database.transaction {
+            upsertBook(nextBook)
+        }
+
+        return LibraryBook(nextBook, current.metadata)
+    }
+
     private fun upsertBook(book: Book) {
         database.libraryQueries.insertBook(
             id = book.id,

@@ -49,6 +49,7 @@ fun SettingsRoute(
             themeMode = themeMode,
             syncFolderLabel = state.syncFolderLabel,
             isSyncing = state.isSyncing,
+            lastSyncSummary = state.lastSyncSummary,
             onThemeModeChange = onThemeModeChange,
             onChooseSyncFolder = { folderLauncher.launch(null) },
             onSyncNow = viewModel::syncNow,
