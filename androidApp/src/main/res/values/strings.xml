@@ -100,6 +100,20 @@
     <string name="settings_library">Biblioteca</string>
     <string name="settings_preserve_original">Preservar original</string>
     <string name="settings_preserve_original_description">Sempre ativo: EPUBs importados nunca são alterados diretamente.</string>
+    <string name="settings_sync">Sincronização</string>
+    <string name="settings_sync_folder">Pasta de sincronização</string>
+    <string name="settings_sync_configured">Pasta atual: %1$s</string>
+    <string name="settings_sync_not_configured">Nenhuma pasta escolhida.</string>
+    <string name="settings_sync_choose_folder">Escolher pasta</string>
+    <string name="settings_sync_now">Sincronizar agora</string>
+    <string name="settings_sync_running">Sincronizando...</string>
+    <string name="settings_sync_disconnect">Desconectar pasta</string>
+    <string name="sync_notice_folder_configured">Pasta de sincronização configurada.</string>
+    <string name="sync_notice_complete">Sincronização concluída.</string>
+    <string name="sync_notice_not_configured">Escolha uma pasta antes de sincronizar.</string>
+    <string name="sync_notice_folder_unavailable">A pasta escolhida não está disponível.</string>
+    <string name="sync_notice_failed">Não foi possível sincronizar.</string>
+    <string name="sync_notice_disconnected">Pasta de sincronização desconectada.</string>
 
     <string name="share_label_use_as_cover">Usar como capa</string>
     <string name="share_cover_title">Usar imagem como capa</string>

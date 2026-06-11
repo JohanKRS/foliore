@@ -125,6 +125,7 @@ private fun NavContent(
         }
         composable(Routes.SETTINGS) {
             SettingsRoute(
+                viewModel = libraryViewModel,
                 themeMode = themeMode,
                 onThemeModeChange = onThemeModeChange,
             )

@@ -19,5 +19,11 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.EPUB_PREPARED -> stringResource(R.string.prepare_notice_done)
         LibraryNoticeType.PREPARE_FAILED -> stringResource(R.string.prepare_notice_failed)
         LibraryNoticeType.EXPORT_FAILED -> stringResource(R.string.export_notice_failed)
+        LibraryNoticeType.SYNC_FOLDER_CONFIGURED -> stringResource(R.string.sync_notice_folder_configured)
+        LibraryNoticeType.SYNC_COMPLETE -> stringResource(R.string.sync_notice_complete)
+        LibraryNoticeType.SYNC_NOT_CONFIGURED -> stringResource(R.string.sync_notice_not_configured)
+        LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE -> stringResource(R.string.sync_notice_folder_unavailable)
+        LibraryNoticeType.SYNC_FAILED -> stringResource(R.string.sync_notice_failed)
+        LibraryNoticeType.SYNC_DISCONNECTED -> stringResource(R.string.sync_notice_disconnected)
     }
 }

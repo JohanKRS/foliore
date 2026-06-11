@@ -9,6 +9,8 @@ import com.foliore.android.storage.BookEditResult
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.EpubImportResult
+import com.foliore.android.storage.ManualSyncResult
+import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.library.LibraryRepository
@@ -25,6 +27,7 @@ class LibraryViewModel(
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
     private val preparedEpubService: AndroidPreparedEpubService,
+    private val manualSyncService: ManualSyncService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LibraryUiState())
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
@@ -34,6 +37,7 @@ class LibraryViewModel(
 
     init {
         refresh()
+        refreshSyncFolder()
     }
 
     fun refresh() {
@@ -173,6 +177,60 @@ class LibraryViewModel(
         }
     }
 
+    fun configureSyncFolder(uri: Uri) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                manualSyncService.configureFolder(uri)
+            }
+            val folderLabel = when (result) {
+                is ManualSyncResult.Configured -> result.folderLabel
+                else -> withContext(Dispatchers.IO) { manualSyncService.folderLabel() }
+            }
+            _state.update {
+                it.copy(syncFolderLabel = folderLabel)
+            }
+            _notice.value = LibraryNotice(
+                when (result) {
+                    is ManualSyncResult.Configured -> LibraryNoticeType.SYNC_FOLDER_CONFIGURED
+                    else -> LibraryNoticeType.SYNC_FAILED
+                },
+            )
+        }
+    }
+
+    fun syncNow() {
+        viewModelScope.launch {
+            _state.update { it.copy(isSyncing = true) }
+            val result = withContext(Dispatchers.IO) {
+                manualSyncService.syncNow()
+            }
+            val books = withContext(Dispatchers.IO) {
+                libraryRepository.getBooks()
+            }
+            val folderLabel = withContext(Dispatchers.IO) {
+                manualSyncService.folderLabel()
+            }
+            _state.update {
+                it.copy(
+                    books = books,
+                    isSyncing = false,
+                    syncFolderLabel = folderLabel,
+                )
+            }
+            _notice.value = LibraryNotice(result.toNoticeType())
+        }
+    }
+
+    fun disconnectSync() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                manualSyncService.disconnect()
+            }
+            _state.update { it.copy(syncFolderLabel = null, isSyncing = false) }
+            _notice.value = LibraryNotice(LibraryNoticeType.SYNC_DISCONNECTED)
+        }
+    }
+
     fun consumeNotice() {
         _notice.value = null
     }
@@ -182,5 +240,24 @@ class LibraryViewModel(
             libraryRepository.getBooks()
         }
         _state.update { it.copy(books = books, isImporting = false) }
+    }
+
+    private fun refreshSyncFolder() {
+        viewModelScope.launch {
+            val folderLabel = withContext(Dispatchers.IO) {
+                manualSyncService.folderLabel()
+            }
+            _state.update { it.copy(syncFolderLabel = folderLabel) }
+        }
+    }
+
+    private fun ManualSyncResult.toNoticeType(): LibraryNoticeType {
+        return when (this) {
+            is ManualSyncResult.Synced -> LibraryNoticeType.SYNC_COMPLETE
+            ManualSyncResult.NotConfigured -> LibraryNoticeType.SYNC_NOT_CONFIGURED
+            ManualSyncResult.FolderUnavailable -> LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE
+            ManualSyncResult.Failed -> LibraryNoticeType.SYNC_FAILED
+            is ManualSyncResult.Configured -> LibraryNoticeType.SYNC_FOLDER_CONFIGURED
+        }
     }
 }

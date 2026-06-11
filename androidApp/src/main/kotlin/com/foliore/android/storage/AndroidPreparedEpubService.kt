@@ -1,6 +1,7 @@
 package com.foliore.android.storage
 
 import android.content.Context
+import android.content.ClipData
 import android.content.Intent
 import androidx.core.content.FileProvider
 import com.foliore.shared.data.PortableSnapshots
@@ -94,9 +95,13 @@ class AndroidPreparedEpubService(
                 exportFile,
             )
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = EPUB_MIME_TYPE
+                type = COMPATIBLE_SHARE_MIME_TYPE
+                data = uri
+                clipData = ClipData.newUri(appContext.contentResolver, exportFile.name, uri)
                 putExtra(Intent.EXTRA_STREAM, uri)
                 putExtra(Intent.EXTRA_TITLE, exportFile.name)
+                putExtra(Intent.EXTRA_SUBJECT, exportFile.name)
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(EPUB_MIME_TYPE, COMPATIBLE_SHARE_MIME_TYPE))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
@@ -339,6 +344,7 @@ class AndroidPreparedEpubService(
 
     private companion object {
         const val EPUB_MIME_TYPE = "application/epub+zip"
+        const val COMPATIBLE_SHARE_MIME_TYPE = "application/octet-stream"
         const val COVER_ITEM_ID = "foliore-cover-image"
     }
 }

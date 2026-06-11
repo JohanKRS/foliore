@@ -262,6 +262,23 @@ class LibraryRepository(
         return LibraryBook(nextBook, current.metadata)
     }
 
+    fun markSynced(
+        bookId: String,
+        syncedAt: String,
+    ): LibraryBook? {
+        val current = getBook(bookId) ?: return null
+        val nextBook = current.book.copy(
+            lastSyncedAt = syncedAt,
+            syncStatus = SyncStatus.SYNCED,
+        )
+
+        database.transaction {
+            upsertBook(nextBook)
+        }
+
+        return LibraryBook(nextBook, current.metadata)
+    }
+
     private fun upsertBook(book: Book) {
         database.libraryQueries.insertBook(
             id = book.id,

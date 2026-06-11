@@ -81,6 +81,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
                         epubImporter = appContainer.epubImporter,
                         bookEditor = appContainer.bookEditor,
                         preparedEpubService = appContainer.preparedEpubService,
+                        manualSyncService = appContainer.manualSyncService,
                     )
                 }
                 val viewModel: LibraryViewModel = viewModel(factory = factory)
@@ -313,4 +314,3 @@ private fun ShareBookChoice(
         )
     }
 }
-
