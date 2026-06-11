@@ -121,6 +121,7 @@ private fun NavContent(
             LibraryRoute(
                 viewModel = libraryViewModel,
                 onBookClick = onBookClick,
+                onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
             )
         }
         composable(Routes.SETTINGS) {

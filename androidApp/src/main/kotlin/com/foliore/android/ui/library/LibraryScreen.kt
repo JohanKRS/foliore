@@ -3,7 +3,6 @@ package com.foliore.android.ui.library
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,8 +29,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -77,6 +77,8 @@ fun LibraryScreen(
     onQueryChange: (String) -> Unit,
     onFilterChange: (BookFilter) -> Unit,
     onBookClick: (String) -> Unit,
+    onSyncClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     val visibleBooks = remember(state.books, state.activeFilter, state.query) {
         state.visibleBooks()
@@ -98,10 +100,14 @@ fun LibraryScreen(
                 onSearchClick = onSearchClick,
                 onCloseSearch = onCloseSearch,
                 onImportClick = onImportClick,
+                isSyncConfigured = state.syncFolderLabel != null,
+                isSyncing = state.isSyncing,
+                onSyncClick = onSyncClick,
+                onSettingsClick = onSettingsClick,
             )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
 
-            if (state.isImporting) {
+            if (state.isImporting || state.isSyncing) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,
@@ -121,6 +127,7 @@ fun LibraryScreen(
                             .fillMaxSize()
                             .padding(horizontal = 28.dp),
                         onImportClick = onImportClick,
+                        onSettingsClick = onSettingsClick,
                     )
                 }
                 visibleBooks.isEmpty() -> {
@@ -154,6 +161,10 @@ private fun LibraryHeader(
     onSearchClick: () -> Unit,
     onCloseSearch: () -> Unit,
     onImportClick: () -> Unit,
+    isSyncConfigured: Boolean,
+    isSyncing: Boolean,
+    onSyncClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -182,10 +193,21 @@ private fun LibraryHeader(
                     contentDescription = stringResource(R.string.action_import_epubs),
                 )
             }
-            IconButton(onClick = {}) {
+            if (isSyncConfigured) {
+                IconButton(
+                    onClick = onSyncClick,
+                    enabled = !isSyncing,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Sync,
+                        contentDescription = stringResource(R.string.action_sync_now),
+                    )
+                }
+            }
+            IconButton(onClick = onSettingsClick) {
                 Icon(
-                    imageVector = Icons.Outlined.MoreVert,
-                    contentDescription = stringResource(R.string.action_more),
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = stringResource(R.string.nav_settings),
                 )
             }
         }
@@ -388,6 +410,7 @@ private fun CoverPlaceholder(modifier: Modifier = Modifier) {
 private fun EmptyLibrary(
     modifier: Modifier = Modifier,
     onImportClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()),
@@ -412,6 +435,17 @@ private fun EmptyLibrary(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Add,
+                    contentDescription = null,
+                )
+            },
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        AssistChip(
+            onClick = onSettingsClick,
+            label = { Text(text = stringResource(R.string.empty_library_sync_setup)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Sync,
                     contentDescription = null,
                 )
             },

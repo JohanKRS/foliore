@@ -14,6 +14,7 @@ import com.foliore.android.viewmodel.LibraryViewModel
 fun LibraryRoute(
     viewModel: LibraryViewModel,
     onBookClick: (String) -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -43,5 +44,7 @@ fun LibraryRoute(
         onQueryChange = viewModel::setQuery,
         onFilterChange = viewModel::setFilter,
         onBookClick = onBookClick,
+        onSyncClick = viewModel::syncNow,
+        onSettingsClick = onSettingsClick,
     )
 }

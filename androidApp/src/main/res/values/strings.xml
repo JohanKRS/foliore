@@ -9,6 +9,7 @@
     <string name="nav_settings">Configurações</string>
 
     <string name="action_import_epubs">Importar EPUBs</string>
+    <string name="action_sync_now">Sincronizar agora</string>
     <string name="action_search">Buscar</string>
     <string name="action_more">Mais opções</string>
     <string name="action_back">Voltar</string>
@@ -16,6 +17,7 @@
 
     <string name="empty_library_title">Sua biblioteca EPUB está vazia.</string>
     <string name="empty_library_body">Importe arquivos EPUB para organizar capas, metadados e preparar cópias limpas para seus leitores.</string>
+    <string name="empty_library_sync_setup">Configurar sincronização</string>
     <string name="search_placeholder">Buscar título ou autor</string>
     <string name="search_no_results">Nenhum livro encontrado.</string>
     <string name="importing_epubs">Importando EPUBs...</string>
