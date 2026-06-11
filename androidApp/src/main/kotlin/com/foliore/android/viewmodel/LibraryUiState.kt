@@ -31,4 +31,7 @@ enum class LibraryNoticeType {
     COVER_UPDATED,
     UPDATE_FAILED,
     INVALID_TITLE,
+    EPUB_PREPARED,
+    PREPARE_FAILED,
+    EXPORT_FAILED,
 }

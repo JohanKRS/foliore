@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
                             libraryRepository = appContainer.libraryRepository,
                             epubImporter = appContainer.epubImporter,
                             bookEditor = appContainer.bookEditor,
+                            preparedEpubService = appContainer.preparedEpubService,
                         )
                     }
                     val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

@@ -3,6 +3,7 @@ package com.foliore.android.di
 import android.content.Context
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidEpubImporter
+import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.DeviceIdProvider
 import com.foliore.android.storage.ThemePreferenceRepository
 import com.foliore.shared.db.DatabaseDriverFactory
@@ -22,6 +23,11 @@ class AppContainer(context: Context) {
         deviceIdProvider = deviceIdProvider,
     )
     val bookEditor = AndroidBookEditor(
+        context = appContext,
+        libraryRepository = libraryRepository,
+        deviceIdProvider = deviceIdProvider,
+    )
+    val preparedEpubService = AndroidPreparedEpubService(
         context = appContext,
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,

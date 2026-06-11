@@ -49,6 +49,10 @@
     <string name="edit_notice_cover_updated">Capa atualizada.</string>
     <string name="edit_notice_update_failed">Não foi possível salvar a alteração.</string>
     <string name="edit_notice_invalid_title">Informe um título para salvar.</string>
+    <string name="prepare_notice_done">EPUB preparado.</string>
+    <string name="prepare_notice_failed">Não foi possível preparar o EPUB.</string>
+    <string name="export_notice_failed">Não foi possível exportar o EPUB.</string>
+    <string name="export_share_chooser">Compartilhar EPUB</string>
 
     <string name="details_series">Série</string>
     <string name="details_language">Idioma</string>
@@ -98,4 +102,10 @@
     <string name="settings_preserve_original_description">Sempre ativo: EPUBs importados nunca são alterados diretamente.</string>
 
     <string name="share_label_use_as_cover">Usar como capa</string>
+    <string name="share_cover_title">Usar imagem como capa</string>
+    <string name="share_cover_subtitle">Escolha o livro que receberá esta capa.</string>
+    <string name="share_cover_preview_description">Imagem recebida para capa</string>
+    <string name="share_cover_invalid_image">Não foi possível abrir a imagem compartilhada.</string>
+    <string name="share_cover_empty_library">Importe um EPUB antes de aplicar uma capa compartilhada.</string>
+    <string name="share_cover_search">Buscar livro</string>
 </resources>

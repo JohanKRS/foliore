@@ -1,0 +1,345 @@
+package com.foliore.android.storage
+
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
+import com.foliore.shared.data.PortableSnapshots
+import com.foliore.shared.domain.BookMetadata
+import com.foliore.shared.domain.BookStatus
+import com.foliore.shared.domain.LibraryBook
+import com.foliore.shared.epub.EpubParser
+import com.foliore.shared.library.LibraryRepository
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Locale
+import java.util.zip.CRC32
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
+import kotlinx.datetime.Clock
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+class AndroidPreparedEpubService(
+    context: Context,
+    private val libraryRepository: LibraryRepository,
+    private val deviceIdProvider: DeviceIdProvider,
+    private val parser: EpubParser = EpubParser(),
+) {
+    private val appContext = context.applicationContext
+    private val json = Json { prettyPrint = true }
+
+    fun prepare(bookId: String): PreparedEpubResult {
+        return runCatching {
+            val current = libraryRepository.getBook(bookId) ?: return PreparedEpubResult.NotFound
+            val original = File(current.book.originalFilePath)
+            if (!original.exists()) return PreparedEpubResult.Failed
+
+            val bookDir = original.parentFile ?: return PreparedEpubResult.Failed
+            val prepared = File(bookDir, "prepared.epub")
+            val temp = File(bookDir, "prepared.tmp.epub")
+
+            writePreparedEpub(
+                source = original,
+                destination = temp,
+                metadata = current.metadata,
+                coverFile = current.book.coverImagePath?.let(::File)?.takeIf { it.exists() },
+            )
+            if (prepared.exists()) prepared.delete()
+            temp.renameTo(prepared)
+
+            val updated = libraryRepository.markPrepared(
+                bookId = bookId,
+                preparedFilePath = prepared.absolutePath,
+                updatedAt = Clock.System.now().toString(),
+                updatedByDeviceId = deviceIdProvider.getDeviceId(),
+            ) ?: return PreparedEpubResult.NotFound
+
+            writePortableMetadata(updated, changeType = "prepared_epub")
+            PreparedEpubResult.Prepared(bookId)
+        }.getOrDefault(PreparedEpubResult.Failed)
+    }
+
+    fun share(bookId: String): PreparedEpubResult {
+        return runCatching {
+            var current = libraryRepository.getBook(bookId) ?: return PreparedEpubResult.NotFound
+            val preparedPath = current.book.preparedFilePath
+            val needsPrepare = preparedPath == null ||
+                current.book.status == BookStatus.OUTDATED_PREPARED ||
+                !File(preparedPath).exists()
+
+            if (needsPrepare) {
+                when (prepare(bookId)) {
+                    is PreparedEpubResult.Prepared -> Unit
+                    PreparedEpubResult.NotFound -> return PreparedEpubResult.NotFound
+                    else -> return PreparedEpubResult.Failed
+                }
+                current = libraryRepository.getBook(bookId) ?: return PreparedEpubResult.NotFound
+            }
+
+            val prepared = current.book.preparedFilePath?.let(::File)?.takeIf { it.exists() }
+                ?: return PreparedEpubResult.Failed
+            val exportDir = File(appContext.filesDir, "exports").apply { mkdirs() }
+            val exportFile = File(exportDir, current.metadata.exportFileName())
+            prepared.copyTo(exportFile, overwrite = true)
+
+            libraryRepository.markExported(
+                bookId = bookId,
+                exportedAt = Clock.System.now().toString(),
+            )
+
+            val uri = FileProvider.getUriForFile(
+                appContext,
+                "${appContext.packageName}.fileprovider",
+                exportFile,
+            )
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = EPUB_MIME_TYPE
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_TITLE, exportFile.name)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            PreparedEpubResult.ShareIntentReady(shareIntent)
+        }.getOrDefault(PreparedEpubResult.Failed)
+    }
+
+    private fun writePreparedEpub(
+        source: File,
+        destination: File,
+        metadata: BookMetadata,
+        coverFile: File?,
+    ) {
+        if (destination.exists()) destination.delete()
+
+        ZipFile(source).use { zip ->
+            AndroidZipEpubArchive(source).use { archive ->
+                val parsed = parser.parse(archive)
+                if (!parsed.isReadable) error("Unreadable EPUB")
+
+                val opfEntryName = parsed.technicalInfo.opfPath
+                val opfXml = archive.readText(opfEntryName) ?: error("Missing OPF")
+                val coverEntryName = parsed.coverPath ?: defaultCoverPath(opfEntryName)
+                val coverHref = relativeHref(opfEntryName, coverEntryName)
+                val updatedOpf = updateOpf(
+                    opfXml = opfXml,
+                    metadata = metadata,
+                    coverItemId = COVER_ITEM_ID,
+                    coverHref = coverHref,
+                    needsCoverItem = parsed.coverPath == null && coverFile != null,
+                )
+                val coverBytes = coverFile?.readBytes()
+                var wroteCover = false
+
+                ZipOutputStream(FileOutputStream(destination)).use { output ->
+                    writeMimetypeFirst(zip, output)
+
+                    zip.entries().asSequence().forEach { entry ->
+                        if (entry.name == "mimetype" || entry.isDirectory) return@forEach
+
+                        val data = when (entry.name) {
+                            opfEntryName -> updatedOpf.toByteArray(Charsets.UTF_8)
+                            coverEntryName -> {
+                                wroteCover = coverBytes != null
+                                coverBytes ?: zip.getInputStream(entry).use { it.readBytes() }
+                            }
+                            else -> zip.getInputStream(entry).use { it.readBytes() }
+                        }
+                        output.writeDeflated(entry.name, data)
+                    }
+
+                    if (coverBytes != null && !wroteCover) {
+                        output.writeDeflated(coverEntryName, coverBytes)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun writeMimetypeFirst(zip: ZipFile, output: ZipOutputStream) {
+        val mimetypeBytes = zip.getEntry("mimetype")?.let { entry ->
+            zip.getInputStream(entry).use { it.readBytes() }
+        } ?: EPUB_MIME_TYPE.toByteArray(Charsets.UTF_8)
+
+        val crc = CRC32().apply { update(mimetypeBytes) }
+        val entry = ZipEntry("mimetype").apply {
+            method = ZipEntry.STORED
+            size = mimetypeBytes.size.toLong()
+            compressedSize = mimetypeBytes.size.toLong()
+            this.crc = crc.value
+        }
+        output.putNextEntry(entry)
+        output.write(mimetypeBytes)
+        output.closeEntry()
+    }
+
+    private fun ZipOutputStream.writeDeflated(name: String, data: ByteArray) {
+        putNextEntry(ZipEntry(name).apply { method = ZipEntry.DEFLATED })
+        write(data)
+        closeEntry()
+    }
+
+    private fun updateOpf(
+        opfXml: String,
+        metadata: BookMetadata,
+        coverItemId: String,
+        coverHref: String,
+        needsCoverItem: Boolean,
+    ): String {
+        var updated = opfXml.ensureDcNamespace()
+        updated = updated.upsertSingleDcTag("title", metadata.title)
+        updated = updated.replaceRepeatedDcTag("creator", metadata.authors.ifEmpty { listOf(metadata.title) })
+        updated = updated.upsertSingleDcTag("language", metadata.language ?: "und")
+        updated = updated.upsertOptionalDcTag("publisher", metadata.publisher)
+        updated = updated.upsertOptionalDcTag("date", metadata.publishedDate)
+        updated = updated.upsertOptionalDcTag("description", metadata.description)
+        updated = updated.upsertModifiedMeta()
+
+        if (needsCoverItem) {
+            updated = updated.addCoverManifestItem(coverItemId, coverHref)
+            updated = updated.addLegacyCoverMeta(coverItemId)
+        }
+
+        return updated
+    }
+
+    private fun String.ensureDcNamespace(): String {
+        if (contains("xmlns:dc=")) return this
+        return replaceFirst(
+            Regex("<package\\b", RegexOption.IGNORE_CASE),
+            "<package xmlns:dc=\"http://purl.org/dc/elements/1.1/\"",
+        )
+    }
+
+    private fun String.upsertSingleDcTag(localName: String, value: String): String {
+        val escaped = value.escapeXml()
+        val regex = Regex(
+            "<(?:dc:)?$localName\\b[^>]*>.*?</(?:dc:)?$localName>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        )
+        val replacement = "<dc:$localName>$escaped</dc:$localName>"
+        return if (regex.containsMatchIn(this)) {
+            replaceFirst(regex, replacement)
+        } else {
+            insertIntoMetadata(replacement)
+        }
+    }
+
+    private fun String.upsertOptionalDcTag(localName: String, value: String?): String {
+        val regex = Regex(
+            "<(?:dc:)?$localName\\b[^>]*>.*?</(?:dc:)?$localName>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        )
+        val clean = value?.trim()
+        if (clean.isNullOrEmpty()) return replace(regex, "")
+        return upsertSingleDcTag(localName, clean)
+    }
+
+    private fun String.replaceRepeatedDcTag(localName: String, values: List<String>): String {
+        val regex = Regex(
+            "<(?:dc:)?$localName\\b[^>]*>.*?</(?:dc:)?$localName>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        )
+        val replacements = values
+            .map { "<dc:$localName>${it.escapeXml()}</dc:$localName>" }
+            .joinToString("\n")
+        val withoutExisting = replace(regex, "")
+        return withoutExisting.insertIntoMetadata(replacements)
+    }
+
+    private fun String.upsertModifiedMeta(): String {
+        val now = Clock.System.now().toString()
+        val regex = Regex(
+            "<meta\\s+property=[\"']dcterms:modified[\"'][^>]*>.*?</meta>",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+        )
+        val replacement = "<meta property=\"dcterms:modified\">$now</meta>"
+        return if (regex.containsMatchIn(this)) {
+            replaceFirst(regex, replacement)
+        } else {
+            insertIntoMetadata(replacement)
+        }
+    }
+
+    private fun String.addCoverManifestItem(itemId: String, href: String): String {
+        if (contains("id=\"$itemId\"") || contains("id='$itemId'")) return this
+        val item = "<item id=\"$itemId\" href=\"${href.escapeXml()}\" media-type=\"image/jpeg\" properties=\"cover-image\"/>"
+        return replaceFirst(
+            Regex("</manifest>", RegexOption.IGNORE_CASE),
+            "$item\n</manifest>",
+        )
+    }
+
+    private fun String.addLegacyCoverMeta(itemId: String): String {
+        if (contains("name=\"cover\"", ignoreCase = true) || contains("name='cover'", ignoreCase = true)) {
+            return this
+        }
+        return insertIntoMetadata("<meta name=\"cover\" content=\"$itemId\"/>")
+    }
+
+    private fun String.insertIntoMetadata(fragment: String): String {
+        return replaceFirst(
+            Regex("</metadata>", RegexOption.IGNORE_CASE),
+            "$fragment\n</metadata>",
+        )
+    }
+
+    private fun String.escapeXml(): String {
+        return replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
+    }
+
+    private fun defaultCoverPath(opfPath: String): String {
+        val base = opfPath.substringBeforeLast('/', missingDelimiterValue = "")
+        return if (base.isBlank()) "foliore-cover.jpg" else "$base/foliore-cover.jpg"
+    }
+
+    private fun relativeHref(opfPath: String, entryPath: String): String {
+        val base = opfPath.substringBeforeLast('/', missingDelimiterValue = "")
+        return if (base.isBlank()) entryPath else entryPath.removePrefix("$base/")
+    }
+
+    private fun BookMetadata.exportFileName(): String {
+        val author = authors.firstOrNull()?.sanitizeFilePart()
+        val title = title.sanitizeFilePart().ifBlank { "Foliore EPUB" }
+        val stem = if (author.isNullOrBlank()) title else "$author - $title"
+        return "$stem.epub"
+    }
+
+    private fun String.sanitizeFilePart(): String {
+        return trim()
+            .replace(Regex("[\\\\/:*?\"<>|]"), " ")
+            .replace(Regex("\\s+"), " ")
+            .take(96)
+            .trim()
+    }
+
+    private fun writePortableMetadata(
+        libraryBook: LibraryBook,
+        changeType: String,
+    ) {
+        val bookDir = File(libraryBook.book.originalFilePath).parentFile ?: return
+        File(bookDir, "metadata.json").writeText(
+            json.encodeToString(
+                PortableSnapshots.metadata(
+                    book = libraryBook.book,
+                    metadata = libraryBook.metadata,
+                ),
+            ),
+            Charsets.UTF_8,
+        )
+        File(bookDir, "changes.jsonl").appendText(
+            """{"type":"$changeType","at":"${libraryBook.book.updatedAt}","bookId":"${libraryBook.book.id}","revision":${libraryBook.book.revision}}""" + "\n",
+            Charsets.UTF_8,
+        )
+    }
+
+    private companion object {
+        const val EPUB_MIME_TYPE = "application/epub+zip"
+        const val COVER_ITEM_ID = "foliore-cover-image"
+    }
+}
+

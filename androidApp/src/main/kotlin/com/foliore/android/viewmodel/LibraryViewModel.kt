@@ -1,12 +1,15 @@
 package com.foliore.android.viewmodel
 
 import android.net.Uri
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.BookEditResult
 import com.foliore.android.storage.AndroidEpubImporter
+import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.EpubImportResult
+import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.library.LibraryRepository
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +24,7 @@ class LibraryViewModel(
     private val libraryRepository: LibraryRepository,
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
+    private val preparedEpubService: AndroidPreparedEpubService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(LibraryUiState())
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
@@ -114,7 +118,11 @@ class LibraryViewModel(
         }
     }
 
-    fun replaceCover(bookId: String, imageUri: Uri) {
+    fun replaceCover(
+        bookId: String,
+        imageUri: Uri,
+        onUpdated: () -> Unit = {},
+    ) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
                 bookEditor.replaceCover(bookId, imageUri)
@@ -128,6 +136,40 @@ class LibraryViewModel(
                     BookEditResult.NotFound -> LibraryNoticeType.UPDATE_FAILED
                 },
             )
+            if (result is BookEditResult.Success) {
+                onUpdated()
+            }
+        }
+    }
+
+    fun prepareEpub(bookId: String) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                preparedEpubService.prepare(bookId)
+            }
+            refreshBooks()
+            _notice.value = LibraryNotice(
+                when (result) {
+                    is PreparedEpubResult.Prepared -> LibraryNoticeType.EPUB_PREPARED
+                    else -> LibraryNoticeType.PREPARE_FAILED
+                },
+            )
+        }
+    }
+
+    fun sharePreparedEpub(
+        bookId: String,
+        onShareIntentReady: (Intent) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                preparedEpubService.share(bookId)
+            }
+            refreshBooks()
+            when (result) {
+                is PreparedEpubResult.ShareIntentReady -> onShareIntentReady(result.intent)
+                else -> _notice.value = LibraryNotice(LibraryNoticeType.EXPORT_FAILED)
+            }
         }
     }
 

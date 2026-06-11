@@ -223,6 +223,45 @@ class LibraryRepository(
         return LibraryBook(nextBook, current.metadata)
     }
 
+    fun markPrepared(
+        bookId: String,
+        preparedFilePath: String,
+        updatedAt: String,
+        updatedByDeviceId: String,
+    ): LibraryBook? {
+        val current = getBook(bookId) ?: return null
+        val nextBook = current.book.copy(
+            preparedFilePath = preparedFilePath,
+            status = BookStatus.PREPARED,
+            syncStatus = SyncStatus.PENDING_UPLOAD,
+            revision = current.book.revision + 1,
+            updatedAt = updatedAt,
+            lastPreparedAt = updatedAt,
+            updatedByDeviceId = updatedByDeviceId,
+            technicalStatus = null,
+        )
+
+        database.transaction {
+            upsertBook(nextBook)
+        }
+
+        return LibraryBook(nextBook, current.metadata)
+    }
+
+    fun markExported(
+        bookId: String,
+        exportedAt: String,
+    ): LibraryBook? {
+        val current = getBook(bookId) ?: return null
+        val nextBook = current.book.copy(lastExportedAt = exportedAt)
+
+        database.transaction {
+            upsertBook(nextBook)
+        }
+
+        return LibraryBook(nextBook, current.metadata)
+    }
+
     private fun upsertBook(book: Book) {
         database.libraryQueries.insertBook(
             id = book.id,

@@ -51,6 +51,8 @@ fun BookDetailsScreen(
     book: LibraryBook?,
     onEditMetadata: () -> Unit,
     onReplaceCover: () -> Unit,
+    onPrepareEpub: () -> Unit,
+    onShareExport: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -95,6 +97,8 @@ fun BookDetailsScreen(
                         scrollable = true,
                         onEditMetadata = onEditMetadata,
                         onReplaceCover = onReplaceCover,
+                        onPrepareEpub = onPrepareEpub,
+                        onShareExport = onShareExport,
                     )
                 }
             } else {
@@ -111,6 +115,8 @@ fun BookDetailsScreen(
                         scrollable = false,
                         onEditMetadata = onEditMetadata,
                         onReplaceCover = onReplaceCover,
+                        onPrepareEpub = onPrepareEpub,
+                        onShareExport = onShareExport,
                     )
                 }
             }
@@ -218,6 +224,8 @@ private fun BookMetadataPanel(
     scrollable: Boolean,
     onEditMetadata: () -> Unit,
     onReplaceCover: () -> Unit,
+    onPrepareEpub: () -> Unit,
+    onShareExport: () -> Unit,
 ) {
     val panelModifier = if (scrollable) {
         modifier.verticalScroll(rememberScrollState())
@@ -265,12 +273,12 @@ private fun BookMetadataPanel(
         DetailsActionRow(
             icon = Icons.Outlined.Description,
             label = stringResource(R.string.details_action_prepare_epub),
-            onClick = {},
+            onClick = onPrepareEpub,
         )
         DetailsActionRow(
             icon = Icons.Outlined.Share,
             label = stringResource(R.string.details_action_share_export),
-            onClick = {},
+            onClick = onShareExport,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
