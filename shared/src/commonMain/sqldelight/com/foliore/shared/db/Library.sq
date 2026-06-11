@@ -1,0 +1,194 @@
+CREATE TABLE book (
+  id TEXT NOT NULL PRIMARY KEY,
+  original_file_path TEXT NOT NULL,
+  prepared_file_path TEXT,
+  cover_image_path TEXT,
+  cover_thumb_path TEXT,
+  original_hash_sha256 TEXT NOT NULL UNIQUE,
+  file_size_bytes INTEGER NOT NULL,
+  imported_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  last_prepared_at TEXT,
+  last_exported_at TEXT,
+  last_synced_at TEXT,
+  status TEXT NOT NULL,
+  sync_status TEXT NOT NULL,
+  revision INTEGER NOT NULL,
+  updated_by_device_id TEXT NOT NULL,
+  technical_status TEXT
+);
+
+CREATE TABLE book_metadata (
+  book_id TEXT NOT NULL PRIMARY KEY REFERENCES book(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  subtitle TEXT,
+  authors_json TEXT NOT NULL,
+  sort_author TEXT,
+  language TEXT,
+  publisher TEXT,
+  published_date TEXT,
+  description TEXT,
+  tags_json TEXT NOT NULL,
+  isbn TEXT,
+  identifiers_json TEXT NOT NULL,
+  series_name TEXT,
+  series_index REAL,
+  source TEXT NOT NULL
+);
+
+CREATE TABLE epub_technical_info (
+  book_id TEXT NOT NULL PRIMARY KEY REFERENCES book(id) ON DELETE CASCADE,
+  epub_version TEXT,
+  opf_path TEXT NOT NULL,
+  nav_path TEXT,
+  ncx_path TEXT,
+  cover_href TEXT,
+  package_identifier TEXT,
+  has_nav INTEGER NOT NULL,
+  has_ncx INTEGER NOT NULL,
+  manifest_item_count INTEGER NOT NULL,
+  spine_item_count INTEGER NOT NULL,
+  warnings_json TEXT NOT NULL,
+  errors_json TEXT NOT NULL
+);
+
+selectAll:
+SELECT
+  book.id,
+  book.original_file_path,
+  book.prepared_file_path,
+  book.cover_image_path,
+  book.cover_thumb_path,
+  book.original_hash_sha256,
+  book.file_size_bytes,
+  book.imported_at,
+  book.updated_at,
+  book.last_prepared_at,
+  book.last_exported_at,
+  book.last_synced_at,
+  book.status,
+  book.sync_status,
+  book.revision,
+  book.updated_by_device_id,
+  book.technical_status,
+  book_metadata.title,
+  book_metadata.subtitle,
+  book_metadata.authors_json,
+  book_metadata.sort_author,
+  book_metadata.language,
+  book_metadata.publisher,
+  book_metadata.published_date,
+  book_metadata.description,
+  book_metadata.tags_json,
+  book_metadata.isbn,
+  book_metadata.identifiers_json,
+  book_metadata.series_name,
+  book_metadata.series_index,
+  book_metadata.source
+FROM book
+JOIN book_metadata ON book.id = book_metadata.book_id
+ORDER BY book.imported_at DESC;
+
+selectById:
+SELECT
+  book.id,
+  book.original_file_path,
+  book.prepared_file_path,
+  book.cover_image_path,
+  book.cover_thumb_path,
+  book.original_hash_sha256,
+  book.file_size_bytes,
+  book.imported_at,
+  book.updated_at,
+  book.last_prepared_at,
+  book.last_exported_at,
+  book.last_synced_at,
+  book.status,
+  book.sync_status,
+  book.revision,
+  book.updated_by_device_id,
+  book.technical_status,
+  book_metadata.title,
+  book_metadata.subtitle,
+  book_metadata.authors_json,
+  book_metadata.sort_author,
+  book_metadata.language,
+  book_metadata.publisher,
+  book_metadata.published_date,
+  book_metadata.description,
+  book_metadata.tags_json,
+  book_metadata.isbn,
+  book_metadata.identifiers_json,
+  book_metadata.series_name,
+  book_metadata.series_index,
+  book_metadata.source
+FROM book
+JOIN book_metadata ON book.id = book_metadata.book_id
+WHERE book.id = ?;
+
+findBookIdByHash:
+SELECT id
+FROM book
+WHERE original_hash_sha256 = ?
+LIMIT 1;
+
+insertBook:
+INSERT OR REPLACE INTO book (
+  id,
+  original_file_path,
+  prepared_file_path,
+  cover_image_path,
+  cover_thumb_path,
+  original_hash_sha256,
+  file_size_bytes,
+  imported_at,
+  updated_at,
+  last_prepared_at,
+  last_exported_at,
+  last_synced_at,
+  status,
+  sync_status,
+  revision,
+  updated_by_device_id,
+  technical_status
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+insertMetadata:
+INSERT OR REPLACE INTO book_metadata (
+  book_id,
+  title,
+  subtitle,
+  authors_json,
+  sort_author,
+  language,
+  publisher,
+  published_date,
+  description,
+  tags_json,
+  isbn,
+  identifiers_json,
+  series_name,
+  series_index,
+  source
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+insertTechnical:
+INSERT OR REPLACE INTO epub_technical_info (
+  book_id,
+  epub_version,
+  opf_path,
+  nav_path,
+  ncx_path,
+  cover_href,
+  package_identifier,
+  has_nav,
+  has_ncx,
+  manifest_item_count,
+  spine_item_count,
+  warnings_json,
+  errors_json
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteBook:
+DELETE FROM book
+WHERE id = ?;

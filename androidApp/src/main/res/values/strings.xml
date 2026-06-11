@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Foliore</string>
+    <string name="library_title">Foliore</string>
+    <string name="settings_title">Configurações</string>
+    <string name="details_title">Detalhes</string>
+
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_settings">Configurações</string>
+
+    <string name="action_import_epubs">Importar EPUBs</string>
+    <string name="action_search">Buscar</string>
+    <string name="action_more">Mais opções</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_clear_search">Limpar busca</string>
+
+    <string name="empty_library_title">Sua biblioteca EPUB está vazia.</string>
+    <string name="empty_library_body">Importe arquivos EPUB para organizar capas, metadados e preparar cópias limpas para seus leitores.</string>
+    <string name="search_placeholder">Buscar título ou autor</string>
+    <string name="search_no_results">Nenhum livro encontrado.</string>
+    <string name="importing_epubs">Importando EPUBs...</string>
+
+    <string name="filter_all">Todos</string>
+    <string name="filter_needs_review">Revisar</string>
+    <string name="filter_prepared">Preparados</string>
+    <string name="filter_synced">Sincronizados</string>
+    <string name="filter_error">Com erro</string>
+
+    <string name="status_imported">Importado</string>
+    <string name="status_needs_review">Revisar</string>
+    <string name="status_edited">Editado</string>
+    <string name="status_prepared">Preparado</string>
+    <string name="status_outdated_prepared">Preparar de novo</string>
+    <string name="status_error">Erro</string>
+    <string name="status_synced">Sincronizado</string>
+    <string name="status_local_only">Local</string>
+    <string name="status_pending_upload">Sync pendente</string>
+
+    <string name="book_unknown_author">Autor desconhecido</string>
+    <string name="book_no_description">Nenhuma descrição foi encontrada neste EPUB.</string>
+    <string name="cover_placeholder">EPUB</string>
+    <string name="cover_content_description">Capa de %1$s</string>
+
+    <string name="import_notice_imported">EPUB importado.</string>
+    <string name="import_notice_duplicates">Este EPUB já está na biblioteca.</string>
+    <string name="import_notice_failed">Não foi possível importar o EPUB.</string>
+    <string name="import_notice_mixed">Importação concluída com avisos.</string>
+    <string name="edit_notice_metadata_saved">Metadados salvos.</string>
+    <string name="edit_notice_cover_updated">Capa atualizada.</string>
+    <string name="edit_notice_update_failed">Não foi possível salvar a alteração.</string>
+    <string name="edit_notice_invalid_title">Informe um título para salvar.</string>
+
+    <string name="details_series">Série</string>
+    <string name="details_language">Idioma</string>
+    <string name="details_publisher">Editora</string>
+    <string name="details_file_format">Formato</string>
+    <string name="details_file_format_epub">EPUB</string>
+    <string name="details_imported_at">Importado em</string>
+    <string name="details_status">Status</string>
+    <string name="details_not_available">-</string>
+    <string name="details_book_not_found">Livro não encontrado.</string>
+    <string name="details_about_book">Sobre este livro</string>
+    <string name="details_action_edit_metadata">Editar metadados</string>
+    <string name="details_action_replace_cover">Trocar capa</string>
+    <string name="details_action_prepare_epub">Preparar EPUB</string>
+    <string name="details_action_share_export">Compartilhar / exportar</string>
+
+    <string name="edit_metadata_title">Editar livro</string>
+    <string name="edit_metadata_section">Metadados</string>
+    <string name="edit_metadata_save">Salvar</string>
+    <string name="edit_metadata_cancel">Cancelar</string>
+    <string name="edit_metadata_field_title">Título</string>
+    <string name="edit_metadata_field_subtitle">Subtítulo</string>
+    <string name="edit_metadata_field_authors">Autores</string>
+    <string name="edit_metadata_field_authors_helper">Separe múltiplos autores por vírgula.</string>
+    <string name="edit_metadata_field_sort_author">Autor para ordenação</string>
+    <string name="edit_metadata_field_series">Série</string>
+    <string name="edit_metadata_field_series_index">Número da série</string>
+    <string name="edit_metadata_field_language">Idioma</string>
+    <string name="edit_metadata_field_publisher">Editora</string>
+    <string name="edit_metadata_field_published_date">Data de publicação</string>
+    <string name="edit_metadata_field_description">Descrição</string>
+    <string name="edit_metadata_field_tags">Tags</string>
+    <string name="edit_metadata_field_tags_helper">Separe tags por vírgula.</string>
+    <string name="edit_metadata_field_isbn">ISBN</string>
+    <string name="edit_metadata_required">Obrigatório</string>
+
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Seguir sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Escuro</string>
+    <string name="settings_theme_system_description">Usa a preferência de tema do Android.</string>
+    <string name="settings_theme_light_description">Usa a interface clara do Foliore.</string>
+    <string name="settings_theme_dark_description">Usa a interface escura do Foliore.</string>
+    <string name="settings_library">Biblioteca</string>
+    <string name="settings_preserve_original">Preservar original</string>
+    <string name="settings_preserve_original_description">Sempre ativo: EPUBs importados nunca são alterados diretamente.</string>
+
+    <string name="share_label_use_as_cover">Usar como capa</string>
+</resources>
