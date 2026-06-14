@@ -1,6 +1,7 @@
 package com.foliore.android.di
 
 import android.content.Context
+import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
@@ -19,6 +20,7 @@ class AppContainer(context: Context) {
 
     val libraryRepository = LibraryRepository(driver)
     val themePreferenceRepository = ThemePreferenceRepository(appContext)
+    val aiPreferenceRepository = AiPreferenceRepository(appContext)
     val epubImporter = AndroidEpubImporter(
         context = appContext,
         libraryRepository = libraryRepository,

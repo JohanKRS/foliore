@@ -73,6 +73,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
 import coil.compose.AsyncImage
 import com.foliore.android.R
+import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.ai.isEnabled
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressDivider
@@ -85,9 +87,11 @@ import java.io.File
 @Composable
 fun EditMetadataScreen(
     book: LibraryBook?,
+    aiProviderMode: AiProviderMode,
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
     onShareExport: () -> Unit,
+    onAutofillClick: () -> Unit,
     onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
     isLoading: Boolean,
@@ -192,6 +196,8 @@ fun EditMetadataScreen(
                 progress = progress,
                 onLibraryClick = onLibraryClick,
                 onSettingsClick = onSettingsClick,
+                aiProviderMode = aiProviderMode,
+                onAutofillClick = onAutofillClick,
             )
         } else {
             PhoneEditMetadataContent(
@@ -262,6 +268,8 @@ private fun TabletEditBookScreen(
     progress: SyncProgress?,
     onLibraryClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    aiProviderMode: AiProviderMode,
+    onAutofillClick: () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -355,7 +363,10 @@ private fun TabletEditBookScreen(
                 .weight(0.54f)
                 .fillMaxHeight(),
         ) {
-            TabletRightHeader()
+            TabletRightHeader(
+                aiProviderMode = aiProviderMode,
+                onAutofillClick = onAutofillClick,
+            )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
 
             Column(
@@ -700,7 +711,16 @@ private fun TabletLeftTopBar(onBack: () -> Unit) {
 }
 
 @Composable
-private fun TabletRightHeader() {
+private fun TabletRightHeader(
+    aiProviderMode: AiProviderMode,
+    onAutofillClick: () -> Unit,
+) {
+    val actionColor = if (aiProviderMode.isEnabled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -715,6 +735,9 @@ private fun TabletRightHeader() {
         )
         Spacer(modifier = Modifier.weight(1f))
         Row(
+            modifier = Modifier
+                .clickable(onClick = onAutofillClick)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -722,12 +745,12 @@ private fun TabletRightHeader() {
                 imageVector = Icons.Outlined.AutoAwesome,
                 contentDescription = null,
                 modifier = Modifier.size(17.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = actionColor,
             )
             Text(
                 text = stringResource(R.string.edit_metadata_autofill),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = actionColor,
             )
         }
     }

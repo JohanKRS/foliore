@@ -4,6 +4,9 @@ import android.net.Uri
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.ai.isEnabled
+import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.BatchBookEditResult
@@ -36,8 +39,11 @@ class LibraryViewModel(
     private val bookDeleter: AndroidBookDeleter,
     private val preparedEpubService: AndroidPreparedEpubService,
     private val manualSyncService: ManualSyncService,
+    private val aiPreferenceRepository: AiPreferenceRepository,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(LibraryUiState())
+    private val _state = MutableStateFlow(
+        LibraryUiState(aiProviderMode = aiPreferenceRepository.providerMode.value),
+    )
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
 
     private val _notice = MutableStateFlow<LibraryNotice?>(null)
@@ -132,6 +138,22 @@ class LibraryViewModel(
 
     fun setGridColumns(gridColumns: BookGridColumns) {
         _state.update { it.copy(gridColumns = gridColumns) }
+    }
+
+    fun setAiProviderMode(providerMode: AiProviderMode) {
+        aiPreferenceRepository.setProviderMode(providerMode)
+        _state.update { it.copy(aiProviderMode = providerMode) }
+        _notice.value = LibraryNotice(LibraryNoticeType.AI_SETTINGS_UPDATED)
+    }
+
+    fun requestMetadataAutofill() {
+        _notice.value = LibraryNotice(
+            if (_state.value.aiProviderMode.isEnabled) {
+                LibraryNoticeType.AI_PROVIDER_NOT_READY
+            } else {
+                LibraryNoticeType.AI_PROVIDER_REQUIRED
+            },
+        )
     }
 
     fun setBatchMode(isEnabled: Boolean) {

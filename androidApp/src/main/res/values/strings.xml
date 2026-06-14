@@ -166,6 +166,13 @@
     <string name="settings_library">Biblioteca</string>
     <string name="settings_preserve_original">Preservar original</string>
     <string name="settings_preserve_original_description">Sempre ativo: EPUBs importados nunca são alterados diretamente.</string>
+    <string name="settings_ai">IA</string>
+    <string name="settings_ai_disabled">Desativada</string>
+    <string name="settings_ai_disabled_description">Auto-fill e capas geradas ficam desligados.</string>
+    <string name="settings_ai_openai_api">OpenAI API / backend</string>
+    <string name="settings_ai_openai_api_description">Caminho oficial para gerar metadados e capas.</string>
+    <string name="settings_ai_codex_oauth">Codex OAuth experimental</string>
+    <string name="settings_ai_codex_oauth_description">Modo de teste pessoal via fluxo oficial do Codex.</string>
     <string name="settings_sync">Sincronização</string>
     <string name="settings_sync_folder">Pasta de sincronização</string>
     <string name="settings_sync_configured">Pasta atual: %1$s</string>
@@ -187,6 +194,9 @@
     <string name="sync_notice_folder_unavailable">A pasta escolhida não está disponível.</string>
     <string name="sync_notice_failed">Não foi possível sincronizar.</string>
     <string name="sync_notice_disconnected">Pasta de sincronização desconectada.</string>
+    <string name="ai_notice_settings_updated">Preferência de IA atualizada.</string>
+    <string name="ai_notice_provider_required">Ative uma opção de IA nas configurações.</string>
+    <string name="ai_notice_provider_not_ready">Conector de IA preparado para a próxima entrega.</string>
 
     <string name="share_label_use_as_cover">Usar como capa</string>
     <string name="share_label_import_epub">Importar EPUB</string>

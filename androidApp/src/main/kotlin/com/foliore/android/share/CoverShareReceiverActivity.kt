@@ -107,6 +107,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
                         bookDeleter = appContainer.bookDeleter,
                         preparedEpubService = appContainer.preparedEpubService,
                         manualSyncService = appContainer.manualSyncService,
+                        aiPreferenceRepository = appContainer.aiPreferenceRepository,
                     )
                 }
                 val viewModel: LibraryViewModel = viewModel(factory = factory)

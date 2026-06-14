@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
                             bookDeleter = appContainer.bookDeleter,
                             preparedEpubService = appContainer.preparedEpubService,
                             manualSyncService = appContainer.manualSyncService,
+                            aiPreferenceRepository = appContainer.aiPreferenceRepository,
                         )
                     }
                     val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

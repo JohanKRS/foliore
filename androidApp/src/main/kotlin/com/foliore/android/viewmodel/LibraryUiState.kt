@@ -1,5 +1,6 @@
 package com.foliore.android.viewmodel
 
+import com.foliore.android.ai.AiProviderMode
 import com.foliore.shared.domain.LibraryBook
 
 data class LibraryUiState(
@@ -18,6 +19,7 @@ data class LibraryUiState(
     val gridColumns: BookGridColumns = BookGridColumns.AUTO,
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
+    val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
 ) {
     val activeProgress: SyncProgress?
         get() = syncProgress ?: importProgress
@@ -116,4 +118,7 @@ enum class LibraryNoticeType {
     SYNC_FOLDER_UNAVAILABLE,
     SYNC_FAILED,
     SYNC_DISCONNECTED,
+    AI_SETTINGS_UPDATED,
+    AI_PROVIDER_REQUIRED,
+    AI_PROVIDER_NOT_READY,
 }

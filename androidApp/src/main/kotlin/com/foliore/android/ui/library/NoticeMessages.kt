@@ -32,5 +32,8 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE -> stringResource(R.string.sync_notice_folder_unavailable)
         LibraryNoticeType.SYNC_FAILED -> stringResource(R.string.sync_notice_failed)
         LibraryNoticeType.SYNC_DISCONNECTED -> stringResource(R.string.sync_notice_disconnected)
+        LibraryNoticeType.AI_SETTINGS_UPDATED -> stringResource(R.string.ai_notice_settings_updated)
+        LibraryNoticeType.AI_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_provider_required)
+        LibraryNoticeType.AI_PROVIDER_NOT_READY -> stringResource(R.string.ai_notice_provider_not_ready)
     }
 }

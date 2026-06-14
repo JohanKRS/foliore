@@ -47,10 +47,12 @@ fun SettingsRoute(
     ) { paddingValues ->
         SettingsScreen(
             themeMode = themeMode,
+            aiProviderMode = state.aiProviderMode,
             syncFolderLabel = state.syncFolderLabel,
             isSyncing = state.isSyncing,
             lastSyncSummary = state.lastSyncSummary,
             onThemeModeChange = onThemeModeChange,
+            onAiProviderModeChange = viewModel::setAiProviderMode,
             onChooseSyncFolder = { folderLauncher.launch(null) },
             onSyncNow = viewModel::syncNow,
             onDisconnectSync = viewModel::disconnectSync,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.LightMode
@@ -32,16 +33,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
+import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 
 @Composable
 fun SettingsScreen(
     themeMode: ThemeMode,
+    aiProviderMode: AiProviderMode,
     syncFolderLabel: String?,
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onAiProviderModeChange: (AiProviderMode) -> Unit,
     onChooseSyncFolder: () -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
@@ -64,21 +68,21 @@ fun SettingsScreen(
 
         SectionTitle(text = stringResource(R.string.settings_appearance))
         Spacer(modifier = Modifier.height(8.dp))
-        ThemeOptionRow(
+        SelectableOptionRow(
             selected = themeMode == ThemeMode.SYSTEM,
             icon = Icons.Outlined.Palette,
             title = stringResource(R.string.settings_theme_system),
             description = stringResource(R.string.settings_theme_system_description),
             onClick = { onThemeModeChange(ThemeMode.SYSTEM) },
         )
-        ThemeOptionRow(
+        SelectableOptionRow(
             selected = themeMode == ThemeMode.LIGHT,
             icon = Icons.Outlined.LightMode,
             title = stringResource(R.string.settings_theme_light),
             description = stringResource(R.string.settings_theme_light_description),
             onClick = { onThemeModeChange(ThemeMode.LIGHT) },
         )
-        ThemeOptionRow(
+        SelectableOptionRow(
             selected = themeMode == ThemeMode.DARK,
             icon = Icons.Outlined.DarkMode,
             title = stringResource(R.string.settings_theme_dark),
@@ -115,6 +119,34 @@ fun SettingsScreen(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(28.dp))
+        EditorialDivider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(28.dp))
+
+        SectionTitle(text = stringResource(R.string.settings_ai))
+        Spacer(modifier = Modifier.height(8.dp))
+        SelectableOptionRow(
+            selected = aiProviderMode == AiProviderMode.DISABLED,
+            icon = Icons.Outlined.LinkOff,
+            title = stringResource(R.string.settings_ai_disabled),
+            description = stringResource(R.string.settings_ai_disabled_description),
+            onClick = { onAiProviderModeChange(AiProviderMode.DISABLED) },
+        )
+        SelectableOptionRow(
+            selected = aiProviderMode == AiProviderMode.OPENAI_API,
+            icon = Icons.Outlined.AutoAwesome,
+            title = stringResource(R.string.settings_ai_openai_api),
+            description = stringResource(R.string.settings_ai_openai_api_description),
+            onClick = { onAiProviderModeChange(AiProviderMode.OPENAI_API) },
+        )
+        SelectableOptionRow(
+            selected = aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL,
+            icon = Icons.Outlined.TaskAlt,
+            title = stringResource(R.string.settings_ai_codex_oauth),
+            description = stringResource(R.string.settings_ai_codex_oauth_description),
+            onClick = { onAiProviderModeChange(AiProviderMode.CODEX_OAUTH_EXPERIMENTAL) },
+        )
 
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
@@ -220,7 +252,7 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun ThemeOptionRow(
+private fun SelectableOptionRow(
     selected: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,

@@ -2,6 +2,7 @@ package com.foliore.android.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
@@ -16,6 +17,7 @@ class LibraryViewModelFactory(
     private val bookDeleter: AndroidBookDeleter,
     private val preparedEpubService: AndroidPreparedEpubService,
     private val manualSyncService: ManualSyncService,
+    private val aiPreferenceRepository: AiPreferenceRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -27,6 +29,7 @@ class LibraryViewModelFactory(
                 bookDeleter = bookDeleter,
                 preparedEpubService = preparedEpubService,
                 manualSyncService = manualSyncService,
+                aiPreferenceRepository = aiPreferenceRepository,
             ) as T
         }
         error("Unknown ViewModel class: ${modelClass.name}")

@@ -55,6 +55,7 @@ fun EditMetadataRoute(
     ) { paddingValues ->
         EditMetadataScreen(
             book = book,
+            aiProviderMode = state.aiProviderMode,
             onBack = onBack,
             onSave = { draft ->
                 viewModel.saveMetadataAndPrepare(
@@ -68,6 +69,7 @@ fun EditMetadataRoute(
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                 }
             },
+            onAutofillClick = viewModel::requestMetadataAutofill,
             onReplaceCover = { coverPicker.launch("image/*") },
             onSyncNow = viewModel::syncNow,
             isLoading = state.hasActiveProgress,
