@@ -75,8 +75,10 @@ import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
+import com.foliore.android.ui.library.SyncProgressStrip
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
+import com.foliore.android.viewmodel.SyncProgress
 import java.io.File
 
 @Composable
@@ -88,6 +90,7 @@ fun EditMetadataScreen(
     onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
+    syncProgress: SyncProgress?,
     onLibraryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -185,6 +188,7 @@ fun EditMetadataScreen(
                 onReplaceCover = onReplaceCover,
                 onSyncNow = onSyncNow,
                 isSyncing = isSyncing,
+                syncProgress = syncProgress,
                 onLibraryClick = onLibraryClick,
                 onSettingsClick = onSettingsClick,
             )
@@ -254,6 +258,7 @@ private fun TabletEditBookScreen(
     onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
+    syncProgress: SyncProgress?,
     onLibraryClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -329,6 +334,7 @@ private fun TabletEditBookScreen(
                 }
             }
             TabletEmbeddedBottomNav(
+                syncProgress = syncProgress,
                 isSyncing = isSyncing,
                 onLibraryClick = onLibraryClick,
                 onSyncClick = onSyncNow,
@@ -979,27 +985,35 @@ private fun TabletEditActions(
 
 @Composable
 private fun TabletEmbeddedBottomNav(
+    syncProgress: SyncProgress?,
     isSyncing: Boolean,
     onLibraryClick: () -> Unit,
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(94.dp)
             .background(MaterialTheme.colorScheme.background),
     ) {
+        if (isSyncing && syncProgress != null) {
+            SyncProgressStrip(
+                progress = syncProgress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 36.dp, vertical = 9.dp),
+            )
+        }
         Box(
             modifier = Modifier
-                .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .height(1.dp)
                 .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
         )
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .height(94.dp)
                 .padding(horizontal = 42.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,

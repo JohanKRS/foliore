@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.ui.theme.ThemeMode
-import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncSummary
 
 @Composable
@@ -41,7 +40,6 @@ fun SettingsScreen(
     themeMode: ThemeMode,
     syncFolderLabel: String?,
     isSyncing: Boolean,
-    syncProgress: SyncProgress?,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
     onChooseSyncFolder: () -> Unit,
@@ -158,13 +156,6 @@ fun SettingsScreen(
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (isSyncing && syncProgress != null) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    SyncProgressStrip(
-                        progress = syncProgress,
-                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))

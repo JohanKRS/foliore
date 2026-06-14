@@ -49,7 +49,6 @@ fun SettingsRoute(
             themeMode = themeMode,
             syncFolderLabel = state.syncFolderLabel,
             isSyncing = state.isSyncing,
-            syncProgress = state.syncProgress,
             lastSyncSummary = state.lastSyncSummary,
             onThemeModeChange = onThemeModeChange,
             onChooseSyncFolder = { folderLauncher.launch(null) },

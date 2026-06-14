@@ -71,6 +71,7 @@ fun EditMetadataRoute(
             onReplaceCover = { coverPicker.launch("image/*") },
             onSyncNow = viewModel::syncNow,
             isSyncing = state.isSyncing,
+            syncProgress = state.syncProgress,
             onLibraryClick = onLibraryClick,
             onSettingsClick = onSettingsClick,
             modifier = Modifier.padding(paddingValues),

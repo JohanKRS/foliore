@@ -43,8 +43,10 @@ import com.foliore.android.ui.details.BookDetailsRoute
 import com.foliore.android.ui.details.EditMetadataRoute
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.SettingsRoute
+import com.foliore.android.ui.library.SyncProgressStrip
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
+import com.foliore.android.viewmodel.SyncProgress
 
 @Composable
 fun FolioreNavHost(
@@ -66,6 +68,7 @@ fun FolioreNavHost(
                 FolioreNavigationBar(
                     selectedRoute = currentRoute,
                     isSyncing = libraryState.isSyncing,
+                    syncProgress = libraryState.syncProgress,
                     onSyncClick = libraryViewModel::syncNow,
                     onDestinationClick = { route ->
                         navController.navigateTopLevel(route)
@@ -160,59 +163,72 @@ private fun NavContent(
 private fun FolioreNavigationBar(
     selectedRoute: String?,
     isSyncing: Boolean,
+    syncProgress: SyncProgress?,
     onSyncClick: () -> Unit,
     onDestinationClick: (String) -> Unit,
 ) {
     val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(82.dp)
             .background(MaterialTheme.colorScheme.background),
     ) {
+        if (isSyncing && syncProgress != null) {
+            SyncProgressStrip(
+                progress = syncProgress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp, vertical = 9.dp),
+            )
+        }
         Box(
             modifier = Modifier
-                .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .height(1.dp)
                 .background(dividerColor),
         )
-        Row(
+        Box(
             modifier = Modifier
-                .align(Alignment.Center)
-                .widthIn(max = 560.dp)
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp),
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .height(82.dp),
         ) {
-            val libraryDestination = TopLevelDestination.items.first()
-            val settingsDestination = TopLevelDestination.items.last()
-            FolioreBottomNavigationItem(
-                icon = libraryDestination.icon,
-                label = stringResource(libraryDestination.labelRes),
-                contentDescription = stringResource(libraryDestination.labelRes),
-                selected = selectedRoute == libraryDestination.route,
-                onClick = { onDestinationClick(libraryDestination.route) },
-                modifier = Modifier.weight(1f),
-            )
-            FolioreBottomNavigationItem(
-                icon = Icons.Outlined.Sync,
-                label = stringResource(R.string.nav_sync),
-                contentDescription = stringResource(R.string.action_sync_now),
-                selected = false,
-                enabled = !isSyncing,
-                onClick = onSyncClick,
-                modifier = Modifier.weight(1f),
-            )
-            FolioreBottomNavigationItem(
-                icon = settingsDestination.icon,
-                label = stringResource(settingsDestination.labelRes),
-                contentDescription = stringResource(settingsDestination.labelRes),
-                selected = selectedRoute == settingsDestination.route,
-                onClick = { onDestinationClick(settingsDestination.route) },
-                modifier = Modifier.weight(1f),
-            )
+            Row(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 28.dp),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val libraryDestination = TopLevelDestination.items.first()
+                val settingsDestination = TopLevelDestination.items.last()
+                FolioreBottomNavigationItem(
+                    icon = libraryDestination.icon,
+                    label = stringResource(libraryDestination.labelRes),
+                    contentDescription = stringResource(libraryDestination.labelRes),
+                    selected = selectedRoute == libraryDestination.route,
+                    onClick = { onDestinationClick(libraryDestination.route) },
+                    modifier = Modifier.weight(1f),
+                )
+                FolioreBottomNavigationItem(
+                    icon = Icons.Outlined.Sync,
+                    label = stringResource(R.string.nav_sync),
+                    contentDescription = stringResource(R.string.action_sync_now),
+                    selected = false,
+                    enabled = !isSyncing,
+                    onClick = onSyncClick,
+                    modifier = Modifier.weight(1f),
+                )
+                FolioreBottomNavigationItem(
+                    icon = settingsDestination.icon,
+                    label = stringResource(settingsDestination.labelRes),
+                    contentDescription = stringResource(settingsDestination.labelRes),
+                    selected = selectedRoute == settingsDestination.route,
+                    onClick = { onDestinationClick(settingsDestination.route) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
