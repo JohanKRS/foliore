@@ -24,8 +24,7 @@ fun EditMetadataRoute(
     viewModel: LibraryViewModel,
     bookId: String,
     onBack: () -> Unit,
-    onLibraryClick: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -99,11 +98,9 @@ fun EditMetadataRoute(
                 )
             },
             onReplaceCover = { coverPicker.launch("image/*") },
-            onSyncNow = viewModel::syncNow,
             isLoading = state.hasActiveProgress,
             progress = state.activeProgress,
-            onLibraryClick = onLibraryClick,
-            onSettingsClick = onSettingsClick,
+            onBottomBarActionsChange = onBottomBarActionsChange,
             modifier = Modifier.padding(paddingValues),
         )
     }

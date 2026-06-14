@@ -1,8 +1,6 @@
 package com.foliore.android.ui.details
 
 import android.graphics.BitmapFactory
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,9 +40,6 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.PersonOutline
-import androidx.compose.material.icons.outlined.Save
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,9 +53,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -87,7 +84,6 @@ import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.ai.isEnabled
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
-import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncProgressPhase
@@ -115,11 +111,9 @@ fun EditMetadataScreen(
     ) -> Unit,
     onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
-    onSyncNow: () -> Unit,
     isLoading: Boolean,
     progress: SyncProgress?,
-    onLibraryClick: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (book == null) {
@@ -192,6 +186,8 @@ fun EditMetadataScreen(
             onSave(currentDraft())
         }
     }
+    val latestSaveDraft by rememberUpdatedState(saveDraft)
+    val latestShareExport by rememberUpdatedState(onShareExport)
     val applyMetadataPreview: (MetadataAutofillPreview) -> Unit = { preview ->
         title = preview.title
         subtitle = preview.subtitle.orEmpty()
@@ -230,11 +226,31 @@ fun EditMetadataScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         val tabletWorkspace = maxWidth >= 840.dp
+        val compactActions = maxWidth < maxHeight
+        val saveEnabled = title.isNotBlank()
+
+        DisposableEffect(tabletWorkspace, compactActions, saveEnabled) {
+            if (tabletWorkspace) {
+                onBottomBarActionsChange(
+                    EditBottomBarActions(
+                        onSave = { latestSaveDraft() },
+                        onShareExport = { latestShareExport() },
+                        saveEnabled = saveEnabled,
+                        compact = compactActions,
+                    ),
+                )
+            } else {
+                onBottomBarActionsChange(null)
+            }
+
+            onDispose {
+                onBottomBarActionsChange(null)
+            }
+        }
 
         if (tabletWorkspace) {
             TabletEditBookScreen(
                 book = book,
-                compactActions = maxWidth < maxHeight,
                 title = title,
                 onTitleChange = {
                     title = it
@@ -257,15 +273,8 @@ fun EditMetadataScreen(
                 onIsbnChange = { isbn = it },
                 description = description,
                 onBack = onBack,
-                onSave = saveDraft,
-                onShareExport = onShareExport,
                 onReplaceCover = onReplaceCover,
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
-                onSyncNow = onSyncNow,
-                isLoading = isLoading,
-                progress = progress,
-                onLibraryClick = onLibraryClick,
-                onSettingsClick = onSettingsClick,
                 aiProviderMode = aiProviderMode,
                 onAutofillClick = { showMetadataAutofillDialog = true },
             )
@@ -409,7 +418,6 @@ fun EditMetadataScreen(
 @Composable
 private fun TabletEditBookScreen(
     book: LibraryBook,
-    compactActions: Boolean,
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
@@ -429,15 +437,8 @@ private fun TabletEditBookScreen(
     onIsbnChange: (String) -> Unit,
     description: String,
     onBack: () -> Unit,
-    onSave: () -> Unit,
-    onShareExport: () -> Unit,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
-    onSyncNow: () -> Unit,
-    isLoading: Boolean,
-    progress: SyncProgress?,
-    onLibraryClick: () -> Unit,
-    onSettingsClick: () -> Unit,
     aiProviderMode: AiProviderMode,
     onAutofillClick: () -> Unit,
 ) {
@@ -536,13 +537,6 @@ private fun TabletEditBookScreen(
                     )
                 }
             }
-            TabletEmbeddedBottomNav(
-                progress = progress,
-                isLoading = isLoading,
-                onLibraryClick = onLibraryClick,
-                onSyncClick = onSyncNow,
-                onSettingsClick = onSettingsClick,
-            )
         }
 
         Box(
@@ -691,18 +685,6 @@ private fun TabletEditBookScreen(
                 )
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
-            )
-            TabletEditActions(
-                onSave = onSave,
-                onShareExport = onShareExport,
-                saveEnabled = title.isNotBlank(),
-                compact = compactActions,
-            )
         }
     }
 }
@@ -1160,189 +1142,6 @@ private fun TabletInfoRow(
             color = valueColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun TabletEditActions(
-    onSave: () -> Unit,
-    onShareExport: () -> Unit,
-    saveEnabled: Boolean,
-    compact: Boolean,
-) {
-    val exportLabel = if (compact) {
-        stringResource(R.string.edit_metadata_export_short)
-    } else {
-        stringResource(R.string.details_action_share_export)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(94.dp)
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(
-            onClick = onSave,
-            enabled = saveEnabled,
-            modifier = Modifier
-                .weight(1f)
-                .height(56.dp),
-            shape = RoundedCornerShape(5.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Save,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(modifier = Modifier.width(9.dp))
-            Text(
-                text = stringResource(R.string.edit_metadata_save),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Button(
-            onClick = onShareExport,
-            modifier = Modifier
-                .weight(1f)
-                .height(56.dp),
-            shape = RoundedCornerShape(5.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Share,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(modifier = Modifier.width(9.dp))
-            Text(
-                text = exportLabel,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
-private fun TabletEmbeddedBottomNav(
-    progress: SyncProgress?,
-    isLoading: Boolean,
-    onLibraryClick: () -> Unit,
-    onSyncClick: () -> Unit,
-    onSettingsClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(animationSpec = tween(durationMillis = 180))
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        if (isLoading) {
-            SyncProgressStatusLine(
-                progress = progress,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 42.dp, top = 8.dp, end = 42.dp, bottom = 6.dp),
-            )
-        }
-        SyncProgressDivider(
-            isActive = isLoading,
-            progress = progress,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(94.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth()
-                    .height(94.dp)
-                    .padding(horizontal = 42.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TabletNavItem(
-                    icon = Icons.AutoMirrored.Outlined.MenuBook,
-                    label = stringResource(R.string.nav_library),
-                    selected = true,
-                    onClick = onLibraryClick,
-                )
-                TabletNavItem(
-                    icon = Icons.Outlined.Sync,
-                    label = stringResource(R.string.nav_sync),
-                    selected = false,
-                    enabled = !isLoading,
-                    onClick = onSyncClick,
-                )
-                TabletNavItem(
-                    icon = Icons.Outlined.Settings,
-                    label = stringResource(R.string.nav_settings),
-                    selected = false,
-                    onClick = onSettingsClick,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TabletNavItem(
-    icon: ImageVector,
-    label: String,
-    selected: Boolean,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    val color = if (selected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }.copy(alpha = if (enabled) 1f else 0.4f)
-
-    Column(
-        modifier = Modifier
-            .width(72.dp)
-            .height(62.dp)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(top = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            modifier = Modifier.size(22.dp),
-            tint = color,
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(5.dp))
-        Box(
-            modifier = Modifier
-                .width(28.dp)
-                .height(1.dp)
-                .background(if (selected) color else Color.Transparent),
         )
     }
 }

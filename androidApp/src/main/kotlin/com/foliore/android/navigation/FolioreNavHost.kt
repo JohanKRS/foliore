@@ -3,7 +3,9 @@ package com.foliore.android.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,20 +23,30 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -44,6 +57,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.foliore.android.R
 import com.foliore.android.ui.details.BookDetailsRoute
+import com.foliore.android.ui.details.EditBottomBarActions
 import com.foliore.android.ui.details.EditMetadataRoute
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.SettingsRoute
@@ -52,6 +66,8 @@ import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
+
+private val BottomBarHeight = 94.dp
 
 @Composable
 fun FolioreNavHost(
@@ -64,38 +80,63 @@ fun FolioreNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentRoute = currentDestination?.route
-    val showTopLevelNavigation = currentRoute in TopLevelDestination.routes
+    val currentBookId = backStackEntry?.arguments?.getString(Routes.ARG_BOOK_ID)
+    var editBottomBarState by remember { mutableStateOf<EditBottomBarState?>(null) }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (showTopLevelNavigation) {
-                FolioreNavigationBar(
-                    selectedRoute = currentRoute,
-                    isLoading = libraryState.hasActiveProgress,
-                    progress = libraryState.activeProgress,
-                    onSyncClick = libraryViewModel::syncNow,
-                    onDestinationClick = { route ->
-                        navController.navigateTopLevel(route)
-                    },
-                )
-            }
-        },
-    ) { paddingValues ->
-        NavContent(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(if (showTopLevelNavigation) paddingValues else PaddingValues(0.dp)),
-            navController = navController,
-            libraryViewModel = libraryViewModel,
-            themeMode = themeMode,
-            onThemeModeChange = onThemeModeChange,
-            onBookClick = { bookId ->
-                navController.navigate(Routes.details(bookId))
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val openTabletWorkspace = maxWidth >= 840.dp
+        val showTopLevelNavigation = currentRoute in TopLevelDestination.routes
+        val showEditNavigation = currentRoute == Routes.EDIT && openTabletWorkspace
+        val showNavigation = showTopLevelNavigation || showEditNavigation
+        val editActions = editBottomBarState
+            ?.takeIf { showEditNavigation && it.bookId == currentBookId }
+            ?.actions
+
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                if (showNavigation) {
+                    FolioreNavigationBar(
+                        selectedRoute = currentRoute,
+                        mode = if (showEditNavigation) {
+                            BottomBarMode.Edit
+                        } else {
+                            BottomBarMode.TopLevel
+                        },
+                        editActions = editActions,
+                        isLoading = libraryState.hasActiveProgress,
+                        progress = libraryState.activeProgress,
+                        onLibraryClick = { navController.returnToLibrary() },
+                        onSyncClick = libraryViewModel::syncNow,
+                        onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
+                    )
+                }
             },
-            onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
-            onBack = { navController.popBackStack() },
-        )
+        ) { paddingValues ->
+            NavContent(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(if (showNavigation) paddingValues else PaddingValues(0.dp)),
+                navController = navController,
+                openTabletWorkspace = openTabletWorkspace,
+                libraryViewModel = libraryViewModel,
+                themeMode = themeMode,
+                onThemeModeChange = onThemeModeChange,
+                onBookClick = { bookId ->
+                    navController.navigate(Routes.details(bookId))
+                },
+                onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
+                onBack = { navController.popBackStack() },
+                onEditBottomBarActionsChange = { actions ->
+                    editBottomBarState = actions?.let {
+                        EditBottomBarState(
+                            bookId = currentBookId.orEmpty(),
+                            actions = it,
+                        )
+                    }
+                },
+            )
+        }
     }
 }
 
@@ -103,67 +144,60 @@ fun FolioreNavHost(
 private fun NavContent(
     modifier: Modifier,
     navController: NavHostController,
+    openTabletWorkspace: Boolean,
     libraryViewModel: LibraryViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
     onBookClick: (String) -> Unit,
     onEditBook: (String) -> Unit,
     onBack: () -> Unit,
+    onEditBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
 ) {
-    BoxWithConstraints(modifier = modifier) {
-        val openTabletWorkspace = maxWidth >= 840.dp
-
-        NavHost(
-            navController = navController,
-            startDestination = Routes.LIBRARY,
-            modifier = Modifier.fillMaxSize(),
-            enterTransition = { EnterTransition.None },
-            exitTransition = { ExitTransition.None },
-            popEnterTransition = { EnterTransition.None },
-            popExitTransition = { ExitTransition.None },
-        ) {
-            composable(Routes.LIBRARY) {
-                LibraryRoute(
-                    viewModel = libraryViewModel,
-                    onBookClick = { bookId ->
-                        if (openTabletWorkspace) {
-                            navController.navigate(Routes.edit(bookId))
-                        } else {
-                            onBookClick(bookId)
-                        }
-                    },
-                    onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
-                )
-            }
-            composable(Routes.SETTINGS) {
-                SettingsRoute(
-                    viewModel = libraryViewModel,
-                    themeMode = themeMode,
-                    onThemeModeChange = onThemeModeChange,
-                )
-            }
-            composable(Routes.DETAILS) { backStackEntry ->
-                val bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty()
-                BookDetailsRoute(
-                    viewModel = libraryViewModel,
-                    bookId = bookId,
-                    onEditMetadata = { onEditBook(bookId) },
-                    onBack = onBack,
-                )
-            }
-            composable(Routes.EDIT) { backStackEntry ->
-                EditMetadataRoute(
-                    viewModel = libraryViewModel,
-                    bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty(),
-                    onBack = onBack,
-                    onLibraryClick = {
-                        navController.returnToLibrary()
-                    },
-                    onSettingsClick = {
-                        navController.navigateTopLevel(Routes.SETTINGS)
-                    },
-                )
-            }
+    NavHost(
+        navController = navController,
+        startDestination = Routes.LIBRARY,
+        modifier = modifier.fillMaxSize(),
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+    ) {
+        composable(Routes.LIBRARY) {
+            LibraryRoute(
+                viewModel = libraryViewModel,
+                onBookClick = { bookId ->
+                    if (openTabletWorkspace) {
+                        navController.navigate(Routes.edit(bookId))
+                    } else {
+                        onBookClick(bookId)
+                    }
+                },
+                onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
+            )
+        }
+        composable(Routes.SETTINGS) {
+            SettingsRoute(
+                viewModel = libraryViewModel,
+                themeMode = themeMode,
+                onThemeModeChange = onThemeModeChange,
+            )
+        }
+        composable(Routes.DETAILS) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty()
+            BookDetailsRoute(
+                viewModel = libraryViewModel,
+                bookId = bookId,
+                onEditMetadata = { onEditBook(bookId) },
+                onBack = onBack,
+            )
+        }
+        composable(Routes.EDIT) { backStackEntry ->
+            EditMetadataRoute(
+                viewModel = libraryViewModel,
+                bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty(),
+                onBack = onBack,
+                onBottomBarActionsChange = onEditBottomBarActionsChange,
+            )
         }
     }
 }
@@ -171,11 +205,26 @@ private fun NavContent(
 @Composable
 private fun FolioreNavigationBar(
     selectedRoute: String?,
+    mode: BottomBarMode,
+    editActions: EditBottomBarActions?,
     isLoading: Boolean,
     progress: SyncProgress?,
+    onLibraryClick: () -> Unit,
     onSyncClick: () -> Unit,
-    onDestinationClick: (String) -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
+    val editMode = mode == BottomBarMode.Edit
+    val navWeight by animateFloatAsState(
+        targetValue = if (editMode) 0.46f else 1f,
+        animationSpec = tween(durationMillis = 260),
+        label = "bottomBarNavWeight",
+    )
+    val actionWeight by animateFloatAsState(
+        targetValue = if (editMode) 0.54f else 0.001f,
+        animationSpec = tween(durationMillis = 260),
+        label = "bottomBarActionWeight",
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -199,45 +248,192 @@ private fun FolioreNavigationBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(82.dp),
+                .height(BottomBarHeight),
         ) {
             Row(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .widthIn(max = 560.dp)
                     .fillMaxWidth()
-                    .padding(horizontal = 28.dp),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    .height(BottomBarHeight),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val libraryDestination = TopLevelDestination.items.first()
-                val settingsDestination = TopLevelDestination.items.last()
-                FolioreBottomNavigationItem(
-                    icon = libraryDestination.icon,
-                    label = stringResource(libraryDestination.labelRes),
-                    contentDescription = stringResource(libraryDestination.labelRes),
-                    selected = selectedRoute == libraryDestination.route,
-                    onClick = { onDestinationClick(libraryDestination.route) },
-                    modifier = Modifier.weight(1f),
+                Box(
+                    modifier = Modifier
+                        .weight(navWeight)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    FolioreBottomNavigationItems(
+                        selectedRoute = selectedRoute,
+                        editMode = editMode,
+                        isLoading = isLoading,
+                        onLibraryClick = onLibraryClick,
+                        onSyncClick = onSyncClick,
+                        onSettingsClick = onSettingsClick,
+                        modifier = Modifier
+                            .widthIn(max = if (editMode) 760.dp else 560.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = if (editMode) 42.dp else 28.dp),
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(1.dp)
+                        .background(
+                            if (editMode) {
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)
+                            } else {
+                                Color.Transparent
+                            },
+                        ),
                 )
-                FolioreBottomNavigationItem(
-                    icon = Icons.Outlined.Sync,
-                    label = stringResource(R.string.nav_sync),
-                    contentDescription = stringResource(R.string.action_sync_now),
-                    selected = false,
-                    enabled = !isLoading,
-                    onClick = onSyncClick,
-                    modifier = Modifier.weight(1f),
-                )
-                FolioreBottomNavigationItem(
-                    icon = settingsDestination.icon,
-                    label = stringResource(settingsDestination.labelRes),
-                    contentDescription = stringResource(settingsDestination.labelRes),
-                    selected = selectedRoute == settingsDestination.route,
-                    onClick = { onDestinationClick(settingsDestination.route) },
-                    modifier = Modifier.weight(1f),
-                )
+                Box(
+                    modifier = Modifier
+                        .weight(actionWeight)
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    androidx.compose.animation.AnimatedVisibility(visible = editMode) {
+                        FolioreEditActions(
+                            actions = editActions,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun FolioreBottomNavigationItems(
+    selectedRoute: String?,
+    editMode: Boolean,
+    isLoading: Boolean,
+    onLibraryClick: () -> Unit,
+    onSyncClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val libraryDestination = TopLevelDestination.items.first()
+    val settingsDestination = TopLevelDestination.items.last()
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = if (editMode) {
+            Arrangement.SpaceBetween
+        } else {
+            Arrangement.spacedBy(18.dp)
+        },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        FolioreBottomNavigationItem(
+            icon = libraryDestination.icon,
+            label = stringResource(libraryDestination.labelRes),
+            contentDescription = stringResource(libraryDestination.labelRes),
+            selected = selectedRoute == libraryDestination.route || editMode,
+            onClick = onLibraryClick,
+            modifier = if (editMode) {
+                Modifier.width(72.dp)
+            } else {
+                Modifier.weight(1f)
+            },
+        )
+        FolioreBottomNavigationItem(
+            icon = Icons.Outlined.Sync,
+            label = stringResource(R.string.nav_sync),
+            contentDescription = stringResource(R.string.action_sync_now),
+            selected = false,
+            enabled = !isLoading,
+            onClick = onSyncClick,
+            modifier = if (editMode) {
+                Modifier.width(72.dp)
+            } else {
+                Modifier.weight(1f)
+            },
+        )
+        FolioreBottomNavigationItem(
+            icon = settingsDestination.icon,
+            label = stringResource(settingsDestination.labelRes),
+            contentDescription = stringResource(settingsDestination.labelRes),
+            selected = selectedRoute == settingsDestination.route,
+            onClick = onSettingsClick,
+            modifier = if (editMode) {
+                Modifier.width(72.dp)
+            } else {
+                Modifier.weight(1f)
+            },
+        )
+    }
+}
+
+@Composable
+private fun FolioreEditActions(
+    actions: EditBottomBarActions?,
+    modifier: Modifier = Modifier,
+) {
+    val exportLabel = if (actions?.compact == true) {
+        stringResource(R.string.edit_metadata_export_short)
+    } else {
+        stringResource(R.string.details_action_share_export)
+    }
+    val saveEnabled = actions?.saveEnabled == true
+
+    Row(
+        modifier = modifier
+            .height(BottomBarHeight)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedButton(
+            onClick = { actions?.onSave?.invoke() },
+            enabled = saveEnabled,
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp),
+            shape = RoundedCornerShape(5.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Save,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(modifier = Modifier.width(9.dp))
+            Text(
+                text = stringResource(R.string.edit_metadata_save),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Button(
+            onClick = { actions?.onShareExport?.invoke() },
+            enabled = actions != null,
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp),
+            shape = RoundedCornerShape(5.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Share,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(modifier = Modifier.width(9.dp))
+            Text(
+                text = exportLabel,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -304,6 +500,16 @@ private fun NavHostController.returnToLibrary() {
         navigateTopLevel(Routes.LIBRARY)
     }
 }
+
+private enum class BottomBarMode {
+    TopLevel,
+    Edit,
+}
+
+private data class EditBottomBarState(
+    val bookId: String,
+    val actions: EditBottomBarActions,
+)
 
 private object Routes {
     const val LIBRARY = "library"
