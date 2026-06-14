@@ -43,7 +43,7 @@ import com.foliore.android.ui.details.BookDetailsRoute
 import com.foliore.android.ui.details.EditMetadataRoute
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.SettingsRoute
-import com.foliore.android.ui.library.SyncProgressStrip
+import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
@@ -167,25 +167,15 @@ private fun FolioreNavigationBar(
     onSyncClick: () -> Unit,
     onDestinationClick: (String) -> Unit,
 ) {
-    val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        if (isSyncing && syncProgress != null) {
-            SyncProgressStrip(
-                progress = syncProgress,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 28.dp, vertical = 9.dp),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(dividerColor),
+        SyncProgressDivider(
+            isSyncing = isSyncing,
+            progress = syncProgress,
+            modifier = Modifier.fillMaxWidth(),
         )
         Box(
             modifier = Modifier

@@ -1,9 +1,12 @@
 package com.foliore.android.ui.library
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,6 +18,50 @@ import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncProgressPhase
+
+@Composable
+fun SyncProgressDivider(
+    isSyncing: Boolean,
+    progress: SyncProgress?,
+    modifier: Modifier = Modifier,
+) {
+    val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(2.dp),
+    ) {
+        if (isSyncing) {
+            val fraction = progress?.fraction
+            if (fraction == null) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = dividerColor.copy(alpha = 0.32f),
+                )
+            } else {
+                LinearProgressIndicator(
+                    progress = { fraction },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = dividerColor.copy(alpha = 0.32f),
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(dividerColor),
+            )
+        }
+    }
+}
 
 @Composable
 fun SyncProgressStrip(

@@ -75,10 +75,10 @@ import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
-import com.foliore.android.ui.library.SyncProgressStrip
+import com.foliore.android.ui.library.SyncProgressDivider
+import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
-import com.foliore.android.viewmodel.SyncProgress
 import java.io.File
 
 @Composable
@@ -996,19 +996,10 @@ private fun TabletEmbeddedBottomNav(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        if (isSyncing && syncProgress != null) {
-            SyncProgressStrip(
-                progress = syncProgress,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 36.dp, vertical = 9.dp),
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
+        SyncProgressDivider(
+            isSyncing = isSyncing,
+            progress = syncProgress,
+            modifier = Modifier.fillMaxWidth(),
         )
         Row(
             modifier = Modifier
