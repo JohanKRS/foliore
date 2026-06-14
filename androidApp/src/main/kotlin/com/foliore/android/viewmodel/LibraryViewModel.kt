@@ -192,6 +192,30 @@ class LibraryViewModel(
         }
     }
 
+    fun deleteSelectedBooks() {
+        viewModelScope.launch {
+            val selectedIds = _state.value.selectedBookIds
+            val orderedIds = _state.value.books
+                .map { it.book.id }
+                .filter { it in selectedIds }
+            if (orderedIds.isEmpty()) return@launch
+
+            val results = withContext(Dispatchers.IO) {
+                orderedIds.map { bookId -> bookDeleter.delete(bookId) }
+            }
+            val deletedCount = results.count { it is BookDeleteResult.Deleted }
+            val hasFailures = results.any { it !is BookDeleteResult.Deleted }
+            refreshBooks(clearBatchSelection = deletedCount > 0 && !hasFailures)
+            _notice.value = LibraryNotice(
+                when {
+                    deletedCount > 0 && !hasFailures -> LibraryNoticeType.BATCH_DELETED
+                    deletedCount > 0 -> LibraryNoticeType.BATCH_DELETE_FAILED
+                    else -> LibraryNoticeType.DELETE_FAILED
+                },
+            )
+        }
+    }
+
     fun saveMetadataAndPrepare(
         bookId: String,
         draft: BookMetadataDraft,

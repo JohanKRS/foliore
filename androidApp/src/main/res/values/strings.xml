@@ -88,6 +88,8 @@
     <string name="batch_notice_done">Metadados atualizados em lote.</string>
     <string name="batch_notice_failed">Não foi possível editar os livros selecionados.</string>
     <string name="batch_notice_no_changes">Preencha ao menos um campo para aplicar.</string>
+    <string name="batch_delete_notice_done">Livros removidos da biblioteca.</string>
+    <string name="batch_delete_notice_failed">Não foi possível remover todos os livros selecionados.</string>
     <string name="prepare_notice_failed">Não foi possível preparar o EPUB.</string>
     <string name="export_notice_failed">Não foi possível exportar o EPUB.</string>
     <string name="export_share_chooser">Compartilhar EPUB</string>
@@ -140,12 +142,15 @@
     <string name="edit_metadata_field_isbn">ISBN</string>
     <string name="edit_metadata_required">Obrigatório</string>
     <string name="batch_edit_selected">Editar lote</string>
+    <string name="batch_delete_selected">Excluir</string>
     <string name="batch_select_visible">Selecionar visíveis</string>
     <string name="batch_selected_count_one">%1$d selecionado</string>
     <string name="batch_selected_count_many">%1$d selecionados</string>
     <string name="batch_dialog_title">Editar em lote</string>
     <string name="batch_dialog_body">Campos vazios não alteram os livros selecionados.</string>
     <string name="batch_dialog_apply">Aplicar</string>
+    <string name="batch_delete_dialog_title">Excluir livros?</string>
+    <string name="batch_delete_dialog_body">Esta ação remove os livros selecionados e os arquivos locais salvos pelo Foliore.</string>
     <string name="batch_metadata_field_series_start">Número inicial da série</string>
     <string name="batch_metadata_field_series_start_helper">Aplica números em sequência na ordem atual.</string>
     <string name="batch_metadata_invalid_number">Informe um número válido.</string>

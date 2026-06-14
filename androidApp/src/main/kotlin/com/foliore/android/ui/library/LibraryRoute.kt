@@ -51,6 +51,7 @@ fun LibraryRoute(
         onBookSelectionToggle = viewModel::toggleBookSelection,
         onSelectBooks = viewModel::selectBooks,
         onBatchUpdate = viewModel::applyBatchMetadata,
+        onBatchDelete = viewModel::deleteSelectedBooks,
         onSettingsClick = onSettingsClick,
     )
 }

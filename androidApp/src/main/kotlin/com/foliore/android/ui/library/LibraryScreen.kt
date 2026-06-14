@@ -1,6 +1,7 @@
 package com.foliore.android.ui.library
 
 import android.graphics.BitmapFactory
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sync
@@ -105,6 +107,7 @@ fun LibraryScreen(
     onBookSelectionToggle: (String) -> Unit,
     onSelectBooks: (List<String>) -> Unit,
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
+    onBatchDelete: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     val visibleBooks = remember(
@@ -117,7 +120,14 @@ fun LibraryScreen(
         state.visibleBooks()
     }
     var showBatchDialog by rememberSaveable { mutableStateOf(false) }
+    var showBatchDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showControlsDialog by rememberSaveable { mutableStateOf(false) }
+
+    BackHandler(
+        enabled = state.isBatchMode && !showBatchDialog && !showBatchDeleteDialog && !showControlsDialog,
+    ) {
+        onBatchModeChange(false)
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -154,8 +164,10 @@ fun LibraryScreen(
                         onSelectBooks(visibleBooks.map { it.book.id })
                     },
                     onEdit = { showBatchDialog = true },
+                    onDelete = { showBatchDeleteDialog = true },
                     onCancel = {
                         showBatchDialog = false
+                        showBatchDeleteDialog = false
                         onBatchModeChange(false)
                     },
                 )
@@ -205,6 +217,17 @@ fun LibraryScreen(
                 onBatchUpdate(patch) {
                     showBatchDialog = false
                 }
+            },
+        )
+    }
+
+    if (showBatchDeleteDialog && state.selectedBookIds.isNotEmpty()) {
+        BatchDeleteDialog(
+            selectedCount = state.selectedBookIds.size,
+            onDismiss = { showBatchDeleteDialog = false },
+            onConfirm = {
+                showBatchDeleteDialog = false
+                onBatchDelete()
             },
         )
     }
@@ -692,6 +715,7 @@ private fun BatchActionBar(
     visibleBookCount: Int,
     onSelectVisible: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onCancel: () -> Unit,
 ) {
     Row(
@@ -709,6 +733,17 @@ private fun BatchActionBar(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Edit,
+                    contentDescription = null,
+                )
+            },
+        )
+        AssistChip(
+            onClick = onDelete,
+            enabled = selectedCount > 0,
+            label = { Text(text = stringResource(R.string.batch_delete_selected)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
                     contentDescription = null,
                 )
             },
@@ -957,6 +992,38 @@ private fun SelectionBadge(
             }
         }
     }
+}
+
+@Composable
+private fun BatchDeleteDialog(
+    selectedCount: Int,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.batch_delete_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = selectedCountText(selectedCount),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(text = stringResource(R.string.batch_delete_dialog_body))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = stringResource(R.string.delete_book_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.delete_book_cancel))
+            }
+        },
+    )
 }
 
 @Composable
