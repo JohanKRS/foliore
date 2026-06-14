@@ -1527,15 +1527,32 @@ private fun MetadataPreviewContent(preview: MetadataAutofillPreview?) {
             value = preview.title,
         )
         PreviewValueRow(
+            label = stringResource(R.string.edit_metadata_field_subtitle),
+            value = preview.subtitle.orEmpty(),
+        )
+        PreviewValueRow(
             label = stringResource(R.string.edit_metadata_field_authors),
             value = preview.authors.joinToString(", "),
         )
         PreviewValueRow(
+            label = stringResource(R.string.edit_metadata_field_sort_author),
+            value = preview.sortAuthor.orEmpty(),
+        )
+        PreviewValueRow(
             label = stringResource(R.string.edit_metadata_field_series),
-            value = listOfNotNull(
-                preview.seriesName,
-                preview.seriesIndex.formatSeriesIndex().takeIf { it.isNotBlank() },
-            ).joinToString(" "),
+            value = preview.seriesName.orEmpty(),
+        )
+        PreviewValueRow(
+            label = stringResource(R.string.edit_metadata_field_series_index),
+            value = preview.seriesIndex.formatSeriesIndex(),
+        )
+        PreviewValueRow(
+            label = stringResource(R.string.edit_metadata_field_language),
+            value = preview.language.orEmpty(),
+        )
+        PreviewValueRow(
+            label = stringResource(R.string.edit_metadata_field_publisher),
+            value = preview.publisher.orEmpty(),
         )
         PreviewValueRow(
             label = stringResource(R.string.edit_metadata_field_published_date),
@@ -1546,9 +1563,13 @@ private fun MetadataPreviewContent(preview: MetadataAutofillPreview?) {
             value = preview.tags.joinToString(", "),
         )
         PreviewValueRow(
+            label = stringResource(R.string.edit_metadata_field_isbn),
+            value = preview.isbn.orEmpty(),
+        )
+        PreviewValueRow(
             label = stringResource(R.string.edit_metadata_field_description),
             value = preview.description.orEmpty(),
-            maxLines = 5,
+            maxLines = 7,
         )
     }
 }

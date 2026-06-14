@@ -30,7 +30,7 @@ data class LibraryUiState(
         get() = syncProgress ?: importProgress
 
     val hasActiveProgress: Boolean
-        get() = isSyncing || isImporting
+        get() = isSyncing || isImporting || syncProgress != null || importProgress != null
 }
 
 enum class BookFilter {
