@@ -22,7 +22,7 @@ import com.foliore.android.viewmodel.SyncProgressPhase
 
 @Composable
 fun SyncProgressDivider(
-    isSyncing: Boolean,
+    isActive: Boolean,
     progress: SyncProgress?,
     modifier: Modifier = Modifier,
 ) {
@@ -32,7 +32,7 @@ fun SyncProgressDivider(
             .fillMaxWidth()
             .height(2.dp),
     ) {
-        if (isSyncing) {
+        if (isActive) {
             val fraction = progress?.navigationFraction
             if (fraction == null) {
                 LinearProgressIndicator(
@@ -143,6 +143,7 @@ private val SyncProgress.navigationFraction: Float
     get() {
         val phaseFraction = fraction
         return when (phase) {
+            SyncProgressPhase.IMPORTING -> phaseFraction ?: 0.03f
             SyncProgressPhase.PREPARING -> 0.06f
             SyncProgressPhase.CHECKING_REMOTE -> 0.12f + ((phaseFraction ?: 0f) * 0.18f)
             SyncProgressPhase.UPLOADING -> 0.30f + ((phaseFraction ?: 0f) * 0.52f)
@@ -160,6 +161,7 @@ private fun SyncProgress.countText(): String? {
 @Composable
 private fun SyncProgress.message(): String {
     return when (phase) {
+        SyncProgressPhase.IMPORTING -> stringResource(R.string.importing_epubs)
         SyncProgressPhase.PREPARING -> stringResource(R.string.sync_progress_preparing)
         SyncProgressPhase.CHECKING_REMOTE -> stringResource(R.string.sync_progress_checking_remote)
         SyncProgressPhase.UPLOADING -> stringResource(R.string.sync_progress_uploading)

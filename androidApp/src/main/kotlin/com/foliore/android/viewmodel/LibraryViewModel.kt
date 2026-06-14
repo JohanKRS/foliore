@@ -61,18 +61,36 @@ class LibraryViewModel(
         if (uris.isEmpty()) return
 
         viewModelScope.launch {
-            _state.update { it.copy(isImporting = true) }
+            _state.update {
+                it.copy(
+                    isImporting = true,
+                    importProgress = SyncProgress(
+                        phase = SyncProgressPhase.IMPORTING,
+                        current = 0,
+                        total = uris.size,
+                    ),
+                )
+            }
 
             var imported = 0
             var duplicates = 0
             var failed = 0
 
             withContext(Dispatchers.IO) {
-                uris.forEach { uri ->
+                uris.forEachIndexed { index, uri ->
                     when (epubImporter.import(uri)) {
                         is EpubImportResult.Imported -> imported += 1
                         is EpubImportResult.Duplicate -> duplicates += 1
                         is EpubImportResult.Failed -> failed += 1
+                    }
+                    _state.update {
+                        it.copy(
+                            importProgress = SyncProgress(
+                                phase = SyncProgressPhase.IMPORTING,
+                                current = index + 1,
+                                total = uris.size,
+                            ),
+                        )
                     }
                 }
             }
@@ -80,7 +98,7 @@ class LibraryViewModel(
             val books = withContext(Dispatchers.IO) {
                 libraryRepository.getBooks()
             }
-            _state.update { it.withBooks(books).copy(isImporting = false) }
+            _state.update { it.withBooks(books).copy(isImporting = false, importProgress = null) }
             _notice.value = LibraryNotice(
                 type = when {
                     imported > 0 && duplicates == 0 && failed == 0 -> LibraryNoticeType.IMPORTED
@@ -301,7 +319,7 @@ class LibraryViewModel(
     }
 
     fun syncNow() {
-        if (_state.value.isSyncing) return
+        if (_state.value.hasActiveProgress) return
 
         viewModelScope.launch {
             _state.update {
@@ -367,11 +385,12 @@ class LibraryViewModel(
                 current.copy(
                     books = books,
                     isImporting = false,
+                    importProgress = null,
                     isBatchMode = false,
                     selectedBookIds = emptySet(),
                 )
             } else {
-                current.withBooks(books).copy(isImporting = false)
+                current.withBooks(books).copy(isImporting = false, importProgress = null)
             }
         }
     }

@@ -90,8 +90,8 @@ fun EditMetadataScreen(
     onShareExport: () -> Unit,
     onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
-    isSyncing: Boolean,
-    syncProgress: SyncProgress?,
+    isLoading: Boolean,
+    progress: SyncProgress?,
     onLibraryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -188,8 +188,8 @@ fun EditMetadataScreen(
                 onShareExport = onShareExport,
                 onReplaceCover = onReplaceCover,
                 onSyncNow = onSyncNow,
-                isSyncing = isSyncing,
-                syncProgress = syncProgress,
+                isLoading = isLoading,
+                progress = progress,
                 onLibraryClick = onLibraryClick,
                 onSettingsClick = onSettingsClick,
             )
@@ -258,8 +258,8 @@ private fun TabletEditBookScreen(
     onShareExport: () -> Unit,
     onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
-    isSyncing: Boolean,
-    syncProgress: SyncProgress?,
+    isLoading: Boolean,
+    progress: SyncProgress?,
     onLibraryClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
@@ -335,8 +335,8 @@ private fun TabletEditBookScreen(
                 }
             }
             TabletEmbeddedBottomNav(
-                syncProgress = syncProgress,
-                isSyncing = isSyncing,
+                progress = progress,
+                isLoading = isLoading,
                 onLibraryClick = onLibraryClick,
                 onSyncClick = onSyncNow,
                 onSettingsClick = onSettingsClick,
@@ -986,8 +986,8 @@ private fun TabletEditActions(
 
 @Composable
 private fun TabletEmbeddedBottomNav(
-    syncProgress: SyncProgress?,
-    isSyncing: Boolean,
+    progress: SyncProgress?,
+    isLoading: Boolean,
     onLibraryClick: () -> Unit,
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -997,9 +997,17 @@ private fun TabletEmbeddedBottomNav(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background),
     ) {
+        if (isLoading) {
+            SyncProgressStatusLine(
+                progress = progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 42.dp, top = 8.dp, end = 42.dp, bottom = 6.dp),
+            )
+        }
         SyncProgressDivider(
-            isSyncing = isSyncing,
-            progress = syncProgress,
+            isActive = isLoading,
+            progress = progress,
             modifier = Modifier.fillMaxWidth(),
         )
         Box(
@@ -1007,20 +1015,11 @@ private fun TabletEmbeddedBottomNav(
                 .fillMaxWidth()
                 .height(94.dp),
         ) {
-            if (isSyncing) {
-                SyncProgressStatusLine(
-                    progress = syncProgress,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .padding(start = 42.dp, top = 8.dp, end = 42.dp),
-                )
-            }
             Row(
                 modifier = Modifier
-                    .align(if (isSyncing) Alignment.BottomCenter else Alignment.Center)
+                    .align(Alignment.Center)
                     .fillMaxWidth()
-                    .height(if (isSyncing) 70.dp else 94.dp)
+                    .height(94.dp)
                     .padding(horizontal = 42.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -1035,7 +1034,7 @@ private fun TabletEmbeddedBottomNav(
                     icon = Icons.Outlined.Sync,
                     label = stringResource(R.string.nav_sync),
                     selected = false,
-                    enabled = !isSyncing,
+                    enabled = !isLoading,
                     onClick = onSyncClick,
                 )
                 TabletNavItem(

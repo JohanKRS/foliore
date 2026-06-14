@@ -5,6 +5,7 @@ import com.foliore.shared.domain.LibraryBook
 data class LibraryUiState(
     val books: List<LibraryBook> = emptyList(),
     val isImporting: Boolean = false,
+    val importProgress: SyncProgress? = null,
     val isSyncing: Boolean = false,
     val syncProgress: SyncProgress? = null,
     val syncFolderLabel: String? = null,
@@ -17,7 +18,13 @@ data class LibraryUiState(
     val gridColumns: BookGridColumns = BookGridColumns.AUTO,
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
-)
+) {
+    val activeProgress: SyncProgress?
+        get() = syncProgress ?: importProgress
+
+    val hasActiveProgress: Boolean
+        get() = isSyncing || isImporting
+}
 
 enum class BookFilter {
     ALL,
@@ -72,6 +79,7 @@ data class SyncProgress(
 }
 
 enum class SyncProgressPhase {
+    IMPORTING,
     PREPARING,
     CHECKING_REMOTE,
     UPLOADING,

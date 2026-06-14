@@ -73,9 +73,6 @@ class ManualSyncService(
                 ?: return ManualSyncResult.FolderUnavailable
 
             val libraryRoot = root.ensureDirectory(LIBRARY_ROOT_NAME)
-            val booksRoot = libraryRoot.ensureDirectory("books")
-            val devicesRoot = libraryRoot.ensureDirectory("devices")
-            val snapshotsRoot = libraryRoot.ensureDirectory("snapshots")
             val syncedAt = Clock.System.now().toString()
             val deviceId = deviceIdProvider.getDeviceId()
             val remoteManifest = libraryRoot.readManifest()
@@ -138,6 +135,9 @@ class ManualSyncService(
                 )
             }
 
+            val booksRoot = uploadCandidateIds
+                .takeIf { it.isNotEmpty() }
+                ?.let { libraryRoot.ensureDirectory("books") }
             booksAfterRemote.forEach { book ->
                 if (book.book.syncStatus == SyncStatus.CONFLICT ||
                     book.book.id in pendingStatusUpdates.conflictedBookIds
@@ -155,7 +155,10 @@ class ManualSyncService(
                             total = uploadCandidateIds.size,
                         ),
                     )
-                    uploadBook(booksRoot, book)
+                    uploadBook(
+                        booksRoot ?: error("Missing books folder for upload"),
+                        book,
+                    )
                     uploadProgress += 1
                     counters.uploadedBooks += 1
                     pendingStatusUpdates.syncedBookIds += book.book.id
@@ -164,49 +167,55 @@ class ManualSyncService(
                 }
             }
 
-            onProgress(ManualSyncProgress(ManualSyncPhase.WRITING_MANIFEST))
-            devicesRoot.writeTextFile(
-                name = "$deviceId.json",
-                text = json.encodeToString(
-                    DeviceSnapshot(
-                        deviceId = deviceId,
-                        deviceName = android.os.Build.MODEL ?: "Android",
-                        platform = "android",
-                        updatedAt = syncedAt,
-                    ),
-                ),
-            )
-            libraryRoot.writeTextFile(
-                name = "library.manifest.json",
-                text = json.encodeToString(
-                    LibraryManifestSnapshot(
-                        schemaVersion = 1,
-                        libraryId = libraryId(remoteManifest),
-                        updatedAt = syncedAt,
-                        updatedByDeviceId = deviceId,
-                        books = mergedManifestBooks(
-                            remoteBooks = remoteBooks,
-                            localBooks = booksAfterRemote,
-                            conflictedBookIds = pendingStatusUpdates.conflictedBookIds,
+            if (counters.uploadedBooks > 0 || remoteManifest == null) {
+                onProgress(ManualSyncProgress(ManualSyncPhase.WRITING_MANIFEST))
+                val devicesRoot = libraryRoot.ensureDirectory("devices")
+                val snapshotsRoot = libraryRoot.ensureDirectory("snapshots")
+                devicesRoot.writeTextFile(
+                    name = "$deviceId.json",
+                    text = json.encodeToString(
+                        DeviceSnapshot(
+                            deviceId = deviceId,
+                            deviceName = android.os.Build.MODEL ?: "Android",
+                            platform = "android",
+                            updatedAt = syncedAt,
                         ),
                     ),
-                ),
-            )
-            snapshotsRoot.writeTextFile(
-                name = "last-sync.txt",
-                text = syncedAt,
-                mimeType = "text/plain",
-            )
-
-            onProgress(ManualSyncProgress(ManualSyncPhase.APPLYING_STATUS))
-            pendingStatusUpdates.conflictedBookIds.forEach { bookId ->
-                libraryRepository.markSyncConflict(bookId)
+                )
+                libraryRoot.writeTextFile(
+                    name = "library.manifest.json",
+                    text = json.encodeToString(
+                        LibraryManifestSnapshot(
+                            schemaVersion = 1,
+                            libraryId = libraryId(remoteManifest),
+                            updatedAt = syncedAt,
+                            updatedByDeviceId = deviceId,
+                            books = mergedManifestBooks(
+                                remoteBooks = remoteBooks,
+                                localBooks = booksAfterRemote,
+                                conflictedBookIds = pendingStatusUpdates.conflictedBookIds,
+                            ),
+                        ),
+                    ),
+                )
+                snapshotsRoot.writeTextFile(
+                    name = "last-sync.txt",
+                    text = syncedAt,
+                    mimeType = "text/plain",
+                )
             }
-            pendingStatusUpdates.syncedBookIds
-                .filterNot { it in pendingStatusUpdates.conflictedBookIds }
-                .forEach { bookId ->
-                    libraryRepository.markSynced(bookId, syncedAt)
+
+            if (pendingStatusUpdates.hasUpdates()) {
+                onProgress(ManualSyncProgress(ManualSyncPhase.APPLYING_STATUS))
+                pendingStatusUpdates.conflictedBookIds.forEach { bookId ->
+                    libraryRepository.markSyncConflict(bookId)
                 }
+                pendingStatusUpdates.syncedBookIds
+                    .filterNot { it in pendingStatusUpdates.conflictedBookIds }
+                    .forEach { bookId ->
+                        libraryRepository.markSynced(bookId, syncedAt)
+                    }
+            }
 
             ManualSyncResult.Synced(
                 uploadedBooks = counters.uploadedBooks,
@@ -405,13 +414,25 @@ class ManualSyncService(
     }
 
     private fun DocumentFile.ensureDirectory(name: String): DocumentFile {
-        return findFile(name)?.takeIf { it.isDirectory } ?: createDirectory(name) ?: error("Cannot create $name")
+        findExistingDirectory(name)?.let { existing -> return existing }
+        return createDirectory(name) ?: error("Cannot create $name")
+    }
+
+    private fun DocumentFile.findExistingDirectory(name: String): DocumentFile? {
+        val matches = listFiles()
+            .filter { it.name == name }
+            .filter { it.isDirectory || !it.isFile }
+        return matches.maxByOrNull { candidate ->
+            runCatching { candidate.listFiles().size }.getOrDefault(0)
+        }
     }
 
     private fun DocumentFile.replaceFile(name: String, mimeType: String): DocumentFile {
-        findFile(name)?.let { existing ->
-            if (!existing.delete()) error("Cannot replace $name")
-        }
+        listFiles()
+            .filter { it.name == name && !it.isDirectory }
+            .forEach { existing ->
+                if (!existing.delete()) error("Cannot replace $name")
+            }
         return createFile(mimeType, name) ?: error("Cannot create $name")
     }
 
@@ -599,7 +620,9 @@ class ManualSyncService(
     private data class PendingSyncStatusUpdates(
         val syncedBookIds: LinkedHashSet<String> = linkedSetOf(),
         val conflictedBookIds: LinkedHashSet<String> = linkedSetOf(),
-    )
+    ) {
+        fun hasUpdates(): Boolean = syncedBookIds.isNotEmpty() || conflictedBookIds.isNotEmpty()
+    }
 
     private companion object {
         const val PREFERENCES_NAME = "foliore_sync"

@@ -68,8 +68,8 @@ fun FolioreNavHost(
             if (showTopLevelNavigation) {
                 FolioreNavigationBar(
                     selectedRoute = currentRoute,
-                    isSyncing = libraryState.isSyncing,
-                    syncProgress = libraryState.syncProgress,
+                    isLoading = libraryState.hasActiveProgress,
+                    progress = libraryState.activeProgress,
                     onSyncClick = libraryViewModel::syncNow,
                     onDestinationClick = { route ->
                         navController.navigateTopLevel(route)
@@ -163,8 +163,8 @@ private fun NavContent(
 @Composable
 private fun FolioreNavigationBar(
     selectedRoute: String?,
-    isSyncing: Boolean,
-    syncProgress: SyncProgress?,
+    isLoading: Boolean,
+    progress: SyncProgress?,
     onSyncClick: () -> Unit,
     onDestinationClick: (String) -> Unit,
 ) {
@@ -173,9 +173,18 @@ private fun FolioreNavigationBar(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background),
     ) {
+        if (isLoading) {
+            SyncProgressStatusLine(
+                progress = progress,
+                modifier = Modifier
+                    .widthIn(max = 560.dp)
+                    .fillMaxWidth()
+                    .padding(start = 28.dp, top = 8.dp, end = 28.dp, bottom = 6.dp),
+            )
+        }
         SyncProgressDivider(
-            isSyncing = isSyncing,
-            progress = syncProgress,
+            isActive = isLoading,
+            progress = progress,
             modifier = Modifier.fillMaxWidth(),
         )
         Box(
@@ -183,19 +192,9 @@ private fun FolioreNavigationBar(
                 .fillMaxWidth()
                 .height(82.dp),
         ) {
-            if (isSyncing) {
-                SyncProgressStatusLine(
-                    progress = syncProgress,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .widthIn(max = 560.dp)
-                        .fillMaxWidth()
-                        .padding(start = 28.dp, top = 6.dp, end = 28.dp),
-                )
-            }
             Row(
                 modifier = Modifier
-                    .align(if (isSyncing) Alignment.BottomCenter else Alignment.Center)
+                    .align(Alignment.Center)
                     .widthIn(max = 560.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 28.dp),
@@ -217,7 +216,7 @@ private fun FolioreNavigationBar(
                     label = stringResource(R.string.nav_sync),
                     contentDescription = stringResource(R.string.action_sync_now),
                     selected = false,
-                    enabled = !isSyncing,
+                    enabled = !isLoading,
                     onClick = onSyncClick,
                     modifier = Modifier.weight(1f),
                 )

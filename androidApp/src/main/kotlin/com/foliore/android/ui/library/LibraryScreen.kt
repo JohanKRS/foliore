@@ -46,7 +46,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -142,14 +141,6 @@ fun LibraryScreen(
                 onOrganizeClick = { showControlsDialog = true },
             )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
-
-            if (state.isImporting) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                )
-            }
 
             AnimatedVisibility(visible = state.hasActiveLibraryControls()) {
                 LibraryControlsSummary(state = state)
