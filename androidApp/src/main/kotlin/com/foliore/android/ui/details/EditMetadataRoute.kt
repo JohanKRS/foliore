@@ -70,6 +70,7 @@ fun EditMetadataRoute(
                 }
             },
             onAutofillClick = viewModel::requestMetadataAutofill,
+            onGenerateCoverImages = viewModel::requestCoverGeneration,
             onReplaceCover = { coverPicker.launch("image/*") },
             onSyncNow = viewModel::syncNow,
             isLoading = state.hasActiveProgress,

@@ -156,6 +156,16 @@ class LibraryViewModel(
         )
     }
 
+    fun requestCoverGeneration() {
+        _notice.value = LibraryNotice(
+            if (_state.value.aiProviderMode.isEnabled) {
+                LibraryNoticeType.AI_PROVIDER_NOT_READY
+            } else {
+                LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED
+            },
+        )
+    }
+
     fun setBatchMode(isEnabled: Boolean) {
         _state.update {
             it.copy(
