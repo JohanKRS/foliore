@@ -409,12 +409,16 @@ class LibraryViewModel(
             val folderLabel = withContext(Dispatchers.IO) {
                 manualSyncService.folderLabel()
             }
+            val aiCoverPromptRecords = withContext(Dispatchers.IO) {
+                aiCoverPromptRepository.records()
+            }
             _state.update {
                 it.withBooks(books).copy(
                     books = books,
                     isSyncing = false,
                     syncProgress = null,
                     syncFolderLabel = folderLabel,
+                    aiCoverPromptRecords = aiCoverPromptRecords,
                     lastSyncSummary = if (result is ManualSyncResult.Synced) {
                         SyncSummary(
                             uploadedBooks = result.uploadedBooks,

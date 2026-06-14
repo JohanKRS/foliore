@@ -16,13 +16,15 @@ class AiCoverPromptRepository(context: Context) {
         val raw = preferences.getString(KEY_SELECTED_PROMPTS, null) ?: return emptyList()
         return runCatching {
             json.decodeFromString(ListSerializer(AiCoverPromptRecord.serializer()), raw)
-        }.getOrDefault(emptyList())
+        }.getOrDefault(emptyList()).normalized()
     }
 
     fun save(record: AiCoverPromptRecord): List<AiCoverPromptRecord> {
-        val nextRecords = (records() + record)
-            .sortedBy { it.selectedAtEpochMillis }
-            .takeLast(MAX_RECORDS)
+        return replaceAll(records() + record)
+    }
+
+    fun replaceAll(records: List<AiCoverPromptRecord>): List<AiCoverPromptRecord> {
+        val nextRecords = records.normalized()
         preferences.edit()
             .putString(
                 KEY_SELECTED_PROMPTS,
@@ -30,6 +32,14 @@ class AiCoverPromptRepository(context: Context) {
             )
             .apply()
         return nextRecords
+    }
+
+    private fun List<AiCoverPromptRecord>.normalized(): List<AiCoverPromptRecord> {
+        return groupBy { it.id }
+            .values
+            .map { records -> records.maxBy { it.selectedAtEpochMillis } }
+            .sortedWith(compareBy<AiCoverPromptRecord> { it.selectedAtEpochMillis }.thenBy { it.id })
+            .takeLast(MAX_RECORDS)
     }
 
     private companion object {

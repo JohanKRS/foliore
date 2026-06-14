@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.shared.data.MetadataSnapshot
 import com.foliore.shared.data.TechnicalSnapshot
 import com.foliore.shared.domain.Book
@@ -27,6 +28,7 @@ class ManualSyncService(
     context: Context,
     private val libraryRepository: LibraryRepository,
     private val deviceIdProvider: DeviceIdProvider,
+    private val aiCoverPromptRepository: AiCoverPromptRepository,
 ) {
     private val appContext = context.applicationContext
     private val preferences = appContext.getSharedPreferences(SyncPreferenceKeys.PREFERENCES_NAME, Context.MODE_PRIVATE)
@@ -221,8 +223,18 @@ class ManualSyncService(
                 expectedFolderNames = remoteLayoutsByBookId.values.mapTo(mutableSetOf()) { it.folderName },
                 documentCache = documentCache,
             ) == true
+            val aiCoverPromptSync = syncAiCoverPrompts(
+                libraryRoot = libraryRoot,
+                documentCache = documentCache,
+                syncedAt = syncedAt,
+                deviceId = deviceId,
+            )
 
-            if (counters.uploadedBooks > 0 || shouldRewriteRemoteMetadata || cleanedRemoteBooks) {
+            if (counters.uploadedBooks > 0 ||
+                shouldRewriteRemoteMetadata ||
+                cleanedRemoteBooks ||
+                aiCoverPromptSync.shouldWriteRemote
+            ) {
                 onProgress(ManualSyncProgress(ManualSyncPhase.WRITING_MANIFEST))
                 val devicesRoot = libraryRoot.ensureDirectory("devices", documentCache)
                 val snapshotsRoot = libraryRoot.ensureDirectory("snapshots", documentCache)
@@ -246,6 +258,10 @@ class ManualSyncService(
                             libraryId = libraryId(remoteManifest),
                             updatedAt = syncedAt,
                             updatedByDeviceId = deviceId,
+                            aiCoverPromptsFile = aiCoverPromptSync
+                                .mergedRecords
+                                .takeIf { it.isNotEmpty() }
+                                ?.let { AI_COVER_PROMPTS_FILE },
                             books = mergedManifestBooks(
                                 remoteBooks = remoteBooks - removedRemoteBookIds,
                                 localBooks = booksAfterRemote,
@@ -256,6 +272,13 @@ class ManualSyncService(
                     ),
                     documentCache = documentCache,
                 )
+                if (aiCoverPromptSync.shouldWriteRemote) {
+                    libraryRoot.writeTextFile(
+                        name = AI_COVER_PROMPTS_FILE,
+                        text = json.encodeToString(aiCoverPromptSync.snapshot),
+                        documentCache = documentCache,
+                    )
+                }
                 snapshotsRoot.writeTextFile(
                     name = "last-sync.txt",
                     text = syncedAt,
@@ -293,6 +316,36 @@ class ManualSyncService(
             Log.e(TAG, "Manual sync failed", error)
             ManualSyncResult.Failed
         }
+    }
+
+    private fun syncAiCoverPrompts(
+        libraryRoot: DocumentFile,
+        documentCache: DocumentFileCache,
+        syncedAt: String,
+        deviceId: String,
+    ): AiCoverPromptSync {
+        val localRecords = aiCoverPromptRepository.records()
+        val remoteSnapshot = libraryRoot.readAiCoverPromptSnapshot(documentCache)
+        val remoteRecords = remoteSnapshot?.records.orEmpty().normalizedAiCoverPromptRecords()
+        val mergedRecords = (remoteRecords + localRecords).normalizedAiCoverPromptRecords()
+
+        if (mergedRecords != localRecords) {
+            aiCoverPromptRepository.replaceAll(mergedRecords)
+        }
+
+        val shouldWriteRemote = mergedRecords.isNotEmpty() &&
+            (remoteSnapshot == null || remoteRecords != mergedRecords)
+
+        return AiCoverPromptSync(
+            mergedRecords = mergedRecords,
+            shouldWriteRemote = shouldWriteRemote,
+            snapshot = AiCoverPromptLibrarySnapshot(
+                schemaVersion = 1,
+                updatedAt = syncedAt,
+                updatedByDeviceId = deviceId,
+                records = mergedRecords,
+            ),
+        )
     }
 
     private fun LibraryBook.shouldUploadTo(
@@ -611,6 +664,10 @@ class ManualSyncService(
             .forEach { manifest ->
                 if (!manifest.delete()) error("Cannot delete legacy library manifest")
             }
+        documentCache.filesNamed(this, AI_COVER_PROMPTS_FILE)
+            .forEach { promptFile ->
+                if (!promptFile.delete()) error("Cannot delete legacy AI cover prompt file")
+            }
         listOf("books", "devices", "snapshots")
             .flatMap { name -> documentCache.directoriesNamed(this, name) }
             .forEach { directory -> directory.deleteTree(documentCache) }
@@ -679,6 +736,16 @@ class ManualSyncService(
     private fun DocumentFile.readManifest(documentCache: DocumentFileCache): LibraryManifestSnapshot? {
         return findUniqueFile("library.manifest.json", documentCache)?.let { manifestFile ->
             json.decodeFromString<LibraryManifestSnapshot>(manifestFile.readText())
+        }
+    }
+
+    private fun DocumentFile.readAiCoverPromptSnapshot(
+        documentCache: DocumentFileCache,
+    ): AiCoverPromptLibrarySnapshot? {
+        return findUniqueFile(AI_COVER_PROMPTS_FILE, documentCache)?.let { promptFile ->
+            runCatching {
+                json.decodeFromString<AiCoverPromptLibrarySnapshot>(promptFile.readText())
+            }.getOrNull()
         }
     }
 
@@ -1007,6 +1074,7 @@ class ManualSyncService(
         val libraryId: String,
         val updatedAt: String,
         val updatedByDeviceId: String,
+        val aiCoverPromptsFile: String? = null,
         val books: List<ManifestBookSnapshot>,
     )
 
@@ -1036,6 +1104,20 @@ class ManualSyncService(
         var uploadedBooks: Int = 0,
         var downloadedBooks: Int = 0,
         var conflictedBooks: Int = 0,
+    )
+
+    @Serializable
+    private data class AiCoverPromptLibrarySnapshot(
+        val schemaVersion: Int,
+        val updatedAt: String,
+        val updatedByDeviceId: String,
+        val records: List<AiCoverPromptRecord>,
+    )
+
+    private data class AiCoverPromptSync(
+        val mergedRecords: List<AiCoverPromptRecord>,
+        val shouldWriteRemote: Boolean,
+        val snapshot: AiCoverPromptLibrarySnapshot,
     )
 
     private data class LocalSyncFile(
@@ -1115,6 +1197,14 @@ class ManualSyncService(
         const val CURRENT_SYNC_UPLOAD_STRATEGY_VERSION = 2
         const val LIBRARY_ROOT_NAME = "Foliore Library"
         const val DEFAULT_FOLDER_LABEL = "Foliore Library"
+        const val AI_COVER_PROMPTS_FILE = "ai-cover-prompts.json"
         const val TAG = "ManualSyncService"
     }
+}
+
+private fun List<AiCoverPromptRecord>.normalizedAiCoverPromptRecords(): List<AiCoverPromptRecord> {
+    return groupBy { it.id }
+        .values
+        .map { records -> records.maxBy { it.selectedAtEpochMillis } }
+        .sortedWith(compareBy<AiCoverPromptRecord> { it.selectedAtEpochMillis }.thenBy { it.id })
 }

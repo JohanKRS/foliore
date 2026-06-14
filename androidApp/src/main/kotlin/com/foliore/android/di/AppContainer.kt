@@ -46,5 +46,6 @@ class AppContainer(context: Context) {
         context = appContext,
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,
+        aiCoverPromptRepository = aiCoverPromptRepository,
     )
 }
