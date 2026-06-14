@@ -4,10 +4,11 @@ import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -549,6 +550,7 @@ private fun BookGridRow(
                                 onBookClick(item.book.id)
                             }
                         },
+                        onLongClick = { onBookSelectionToggle(item.book.id) },
                     )
                 }
             }
@@ -557,6 +559,7 @@ private fun BookGridRow(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun BookCoverItem(
     item: LibraryBook,
     coverAspectRatio: Float,
@@ -564,6 +567,7 @@ private fun BookCoverItem(
     isBatchMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     val title = item.metadata.title
     val author = item.metadata.authors.firstOrNull().orEmpty()
@@ -586,7 +590,10 @@ private fun BookCoverItem(
                         color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                         shape = RoundedCornerShape(6.dp),
                     )
-                    .clickable(onClick = onClick),
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    ),
             ) {
                 if (coverPath != null) {
                     Image(
