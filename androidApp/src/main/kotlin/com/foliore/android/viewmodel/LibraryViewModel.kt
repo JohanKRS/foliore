@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidBookDeleter
+import com.foliore.android.storage.BatchBookEditResult
 import com.foliore.android.storage.BookEditResult
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
@@ -14,7 +15,9 @@ import com.foliore.android.storage.EpubImportResult
 import com.foliore.android.storage.ManualSyncResult
 import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.PreparedEpubResult
+import com.foliore.shared.domain.BatchMetadataPatch
 import com.foliore.shared.domain.BookMetadataDraft
+import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.library.LibraryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +51,7 @@ class LibraryViewModel(
             val books = withContext(Dispatchers.IO) {
                 libraryRepository.getBooks()
             }
-            _state.update { it.copy(books = books) }
+            _state.update { it.withBooks(books) }
         }
     }
 
@@ -75,7 +78,7 @@ class LibraryViewModel(
             val books = withContext(Dispatchers.IO) {
                 libraryRepository.getBooks()
             }
-            _state.update { it.copy(books = books, isImporting = false) }
+            _state.update { it.withBooks(books).copy(isImporting = false) }
             _notice.value = LibraryNotice(
                 type = when {
                     imported > 0 && duplicates == 0 && failed == 0 -> LibraryNoticeType.IMPORTED
@@ -97,6 +100,64 @@ class LibraryViewModel(
 
     fun setFilter(filter: BookFilter) {
         _state.update { it.copy(activeFilter = filter) }
+    }
+
+    fun setBatchMode(isEnabled: Boolean) {
+        _state.update {
+            it.copy(
+                isBatchMode = isEnabled,
+                selectedBookIds = if (isEnabled) it.selectedBookIds else emptySet(),
+            )
+        }
+    }
+
+    fun toggleBookSelection(bookId: String) {
+        _state.update { current ->
+            val selectedBookIds = current.selectedBookIds.toMutableSet().apply {
+                if (!add(bookId)) remove(bookId)
+            }
+            current.copy(
+                isBatchMode = true,
+                selectedBookIds = selectedBookIds,
+            )
+        }
+    }
+
+    fun selectBooks(bookIds: List<String>) {
+        if (bookIds.isEmpty()) return
+        _state.update { current ->
+            current.copy(
+                isBatchMode = true,
+                selectedBookIds = current.selectedBookIds + bookIds,
+            )
+        }
+    }
+
+    fun applyBatchMetadata(
+        patch: BatchMetadataPatch,
+        onApplied: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            val selectedIds = _state.value.selectedBookIds
+            val orderedIds = _state.value.books
+                .map { it.book.id }
+                .filter { it in selectedIds }
+            val result = withContext(Dispatchers.IO) {
+                bookEditor.updateMetadataBatch(orderedIds, patch)
+            }
+            refreshBooks(clearBatchSelection = result is BatchBookEditResult.Success)
+            _notice.value = LibraryNotice(
+                when (result) {
+                    is BatchBookEditResult.Success -> LibraryNoticeType.BATCH_UPDATED
+                    BatchBookEditResult.EmptySelection,
+                    BatchBookEditResult.Failed -> LibraryNoticeType.BATCH_FAILED
+                    BatchBookEditResult.NoChanges -> LibraryNoticeType.BATCH_NO_CHANGES
+                },
+            )
+            if (result is BatchBookEditResult.Success) {
+                onApplied()
+            }
+        }
     }
 
     fun saveMetadata(
@@ -236,7 +297,7 @@ class LibraryViewModel(
                 manualSyncService.folderLabel()
             }
             _state.update {
-                it.copy(
+                it.withBooks(books).copy(
                     books = books,
                     isSyncing = false,
                     syncFolderLabel = folderLabel,
@@ -267,11 +328,22 @@ class LibraryViewModel(
         _notice.value = null
     }
 
-    private suspend fun refreshBooks() {
+    private suspend fun refreshBooks(clearBatchSelection: Boolean = false) {
         val books = withContext(Dispatchers.IO) {
             libraryRepository.getBooks()
         }
-        _state.update { it.copy(books = books, isImporting = false) }
+        _state.update { current ->
+            if (clearBatchSelection) {
+                current.copy(
+                    books = books,
+                    isImporting = false,
+                    isBatchMode = false,
+                    selectedBookIds = emptySet(),
+                )
+            } else {
+                current.withBooks(books).copy(isImporting = false)
+            }
+        }
     }
 
     private fun refreshSyncFolder() {
@@ -297,5 +369,15 @@ class LibraryViewModel(
                 }
             }
         }
+    }
+
+    private fun LibraryUiState.withBooks(books: List<LibraryBook>): LibraryUiState {
+        val currentIds = books.map { it.book.id }.toSet()
+        val selectedIds = selectedBookIds.intersect(currentIds)
+        return copy(
+            books = books,
+            selectedBookIds = selectedIds,
+            isBatchMode = isBatchMode && selectedIds.isNotEmpty(),
+        )
     }
 }

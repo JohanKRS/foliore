@@ -44,3 +44,22 @@ data class BookMetadataDraft(
     fun isValid(): Boolean = title.isNotBlank()
 }
 
+data class BatchMetadataPatch(
+    val authors: List<String>? = null,
+    val sortAuthor: String? = null,
+    val language: String? = null,
+    val publisher: String? = null,
+    val tags: List<String>? = null,
+    val seriesName: String? = null,
+    val seriesIndexStart: Double? = null,
+) {
+    fun hasChanges(): Boolean {
+        return authors != null ||
+            sortAuthor != null ||
+            language != null ||
+            publisher != null ||
+            tags != null ||
+            seriesName != null ||
+            seriesIndexStart != null
+    }
+}

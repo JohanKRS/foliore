@@ -7,3 +7,9 @@ sealed interface BookEditResult {
     data object Failed : BookEditResult
 }
 
+sealed interface BatchBookEditResult {
+    data class Success(val count: Int) : BatchBookEditResult
+    data object EmptySelection : BatchBookEditResult
+    data object NoChanges : BatchBookEditResult
+    data object Failed : BatchBookEditResult
+}

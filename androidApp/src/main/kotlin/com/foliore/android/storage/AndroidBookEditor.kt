@@ -3,6 +3,7 @@ package com.foliore.android.storage
 import android.content.Context
 import android.net.Uri
 import com.foliore.shared.data.PortableSnapshots
+import com.foliore.shared.domain.BatchMetadataPatch
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.library.LibraryRepository
@@ -34,6 +35,31 @@ class AndroidBookEditor(
             writePortableMetadata(updated, changeType = "metadata_updated")
             BookEditResult.Success(bookId)
         }.getOrDefault(BookEditResult.Failed)
+    }
+
+    fun updateMetadataBatch(
+        bookIds: List<String>,
+        patch: BatchMetadataPatch,
+    ): BatchBookEditResult {
+        if (bookIds.isEmpty()) return BatchBookEditResult.EmptySelection
+        if (!patch.hasChanges()) return BatchBookEditResult.NoChanges
+
+        return runCatching {
+            val updatedBooks = libraryRepository.updateMetadataBatch(
+                bookIds = bookIds,
+                patch = patch,
+                updatedAt = Clock.System.now().toString(),
+                updatedByDeviceId = deviceIdProvider.getDeviceId(),
+            )
+            if (updatedBooks.isEmpty()) {
+                return BatchBookEditResult.Failed
+            }
+
+            updatedBooks.forEach { updated ->
+                writePortableMetadata(updated, changeType = "metadata_batch_updated")
+            }
+            BatchBookEditResult.Success(updatedBooks.size)
+        }.getOrDefault(BatchBookEditResult.Failed)
     }
 
     fun replaceCover(bookId: String, imageUri: Uri): BookEditResult {
@@ -78,4 +104,3 @@ class AndroidBookEditor(
         )
     }
 }
-

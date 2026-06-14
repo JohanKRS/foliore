@@ -44,6 +44,10 @@ fun LibraryRoute(
         onQueryChange = viewModel::setQuery,
         onFilterChange = viewModel::setFilter,
         onBookClick = onBookClick,
+        onBatchModeChange = viewModel::setBatchMode,
+        onBookSelectionToggle = viewModel::toggleBookSelection,
+        onSelectBooks = viewModel::selectBooks,
+        onBatchUpdate = viewModel::applyBatchMetadata,
         onSyncClick = viewModel::syncNow,
         onSettingsClick = onSettingsClick,
     )

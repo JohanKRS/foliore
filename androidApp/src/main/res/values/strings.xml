@@ -14,6 +14,8 @@
     <string name="action_more">Mais opções</string>
     <string name="action_back">Voltar</string>
     <string name="action_clear_search">Limpar busca</string>
+    <string name="action_batch_edit">Editar em lote</string>
+    <string name="action_cancel_batch">Cancelar lote</string>
 
     <string name="empty_library_title">Sua biblioteca EPUB está vazia.</string>
     <string name="empty_library_body">Importe arquivos EPUB para organizar capas, metadados e preparar cópias limpas para seus leitores.</string>
@@ -57,6 +59,9 @@
     <string name="edit_notice_invalid_title">Informe um título para salvar.</string>
     <string name="delete_notice_done">Livro removido da biblioteca.</string>
     <string name="delete_notice_failed">Não foi possível remover o livro.</string>
+    <string name="batch_notice_done">Metadados atualizados em lote.</string>
+    <string name="batch_notice_failed">Não foi possível editar os livros selecionados.</string>
+    <string name="batch_notice_no_changes">Preencha ao menos um campo para aplicar.</string>
     <string name="prepare_notice_done">EPUB preparado.</string>
     <string name="prepare_notice_failed">Não foi possível preparar o EPUB.</string>
     <string name="export_notice_failed">Não foi possível exportar o EPUB.</string>
@@ -101,6 +106,16 @@
     <string name="edit_metadata_field_tags_helper">Separe tags por vírgula.</string>
     <string name="edit_metadata_field_isbn">ISBN</string>
     <string name="edit_metadata_required">Obrigatório</string>
+    <string name="batch_edit_selected">Editar lote</string>
+    <string name="batch_select_visible">Selecionar visíveis</string>
+    <string name="batch_selected_count_one">%1$d selecionado</string>
+    <string name="batch_selected_count_many">%1$d selecionados</string>
+    <string name="batch_dialog_title">Editar em lote</string>
+    <string name="batch_dialog_body">Campos vazios não alteram os livros selecionados.</string>
+    <string name="batch_dialog_apply">Aplicar</string>
+    <string name="batch_metadata_field_series_start">Número inicial da série</string>
+    <string name="batch_metadata_field_series_start_helper">Aplica números em sequência na ordem atual.</string>
+    <string name="batch_metadata_invalid_number">Informe um número válido.</string>
 
     <string name="settings_appearance">Aparência</string>
     <string name="settings_theme">Tema</string>

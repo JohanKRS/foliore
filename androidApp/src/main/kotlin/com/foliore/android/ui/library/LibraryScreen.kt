@@ -25,13 +25,18 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -44,8 +49,13 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,12 +66,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.LibraryUiState
+import com.foliore.shared.domain.BatchMetadataPatch
 import com.foliore.shared.domain.BookStatus
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.domain.SyncStatus
@@ -77,12 +89,17 @@ fun LibraryScreen(
     onQueryChange: (String) -> Unit,
     onFilterChange: (BookFilter) -> Unit,
     onBookClick: (String) -> Unit,
+    onBatchModeChange: (Boolean) -> Unit,
+    onBookSelectionToggle: (String) -> Unit,
+    onSelectBooks: (List<String>) -> Unit,
+    onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     val visibleBooks = remember(state.books, state.activeFilter, state.query) {
         state.visibleBooks()
     }
+    var showBatchDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -100,6 +117,9 @@ fun LibraryScreen(
                 onSearchClick = onSearchClick,
                 onCloseSearch = onCloseSearch,
                 onImportClick = onImportClick,
+                hasBooks = state.books.isNotEmpty(),
+                isBatchMode = state.isBatchMode,
+                onBatchModeChange = onBatchModeChange,
                 isSyncConfigured = state.syncFolderLabel != null,
                 isSyncing = state.isSyncing,
                 onSyncClick = onSyncClick,
@@ -119,6 +139,21 @@ fun LibraryScreen(
                 selectedFilter = state.activeFilter,
                 onFilterChange = onFilterChange,
             )
+
+            AnimatedVisibility(visible = state.isBatchMode) {
+                BatchActionBar(
+                    selectedCount = state.selectedBookIds.size,
+                    visibleBookCount = visibleBooks.size,
+                    onSelectVisible = {
+                        onSelectBooks(visibleBooks.map { it.book.id })
+                    },
+                    onEdit = { showBatchDialog = true },
+                    onCancel = {
+                        showBatchDialog = false
+                        onBatchModeChange(false)
+                    },
+                )
+            }
 
             when {
                 state.books.isEmpty() -> {
@@ -145,11 +180,26 @@ fun LibraryScreen(
                 else -> {
                     BookGrid(
                         books = visibleBooks,
+                        isBatchMode = state.isBatchMode,
+                        selectedBookIds = state.selectedBookIds,
                         onBookClick = onBookClick,
+                        onBookSelectionToggle = onBookSelectionToggle,
                     )
                 }
             }
         }
+    }
+
+    if (showBatchDialog && state.selectedBookIds.isNotEmpty()) {
+        BatchMetadataDialog(
+            selectedCount = state.selectedBookIds.size,
+            onDismiss = { showBatchDialog = false },
+            onApply = { patch ->
+                onBatchUpdate(patch) {
+                    showBatchDialog = false
+                }
+            },
+        )
     }
 }
 
@@ -161,6 +211,9 @@ private fun LibraryHeader(
     onSearchClick: () -> Unit,
     onCloseSearch: () -> Unit,
     onImportClick: () -> Unit,
+    hasBooks: Boolean,
+    isBatchMode: Boolean,
+    onBatchModeChange: (Boolean) -> Unit,
     isSyncConfigured: Boolean,
     isSyncing: Boolean,
     onSyncClick: () -> Unit,
@@ -181,34 +234,48 @@ private fun LibraryHeader(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = onSearchClick) {
-                Icon(
-                    imageVector = Icons.Outlined.Search,
-                    contentDescription = stringResource(R.string.action_search),
-                )
-            }
-            IconButton(onClick = onImportClick) {
-                Icon(
-                    imageVector = Icons.Outlined.Add,
-                    contentDescription = stringResource(R.string.action_import_epubs),
-                )
-            }
-            if (isSyncConfigured) {
-                IconButton(
-                    onClick = onSyncClick,
-                    enabled = !isSyncing,
-                ) {
+            if (hasBooks) {
+                IconButton(onClick = { onBatchModeChange(!isBatchMode) }) {
                     Icon(
-                        imageVector = Icons.Outlined.Sync,
-                        contentDescription = stringResource(R.string.action_sync_now),
+                        imageVector = if (isBatchMode) Icons.Outlined.Close else Icons.Outlined.Edit,
+                        contentDescription = if (isBatchMode) {
+                            stringResource(R.string.action_cancel_batch)
+                        } else {
+                            stringResource(R.string.action_batch_edit)
+                        },
                     )
                 }
             }
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = stringResource(R.string.nav_settings),
-                )
+            if (!isBatchMode) {
+                IconButton(onClick = onSearchClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Search,
+                        contentDescription = stringResource(R.string.action_search),
+                    )
+                }
+                IconButton(onClick = onImportClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = stringResource(R.string.action_import_epubs),
+                    )
+                }
+                if (isSyncConfigured) {
+                    IconButton(
+                        onClick = onSyncClick,
+                        enabled = !isSyncing,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Sync,
+                            contentDescription = stringResource(R.string.action_sync_now),
+                        )
+                    }
+                }
+                IconButton(onClick = onSettingsClick) {
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = stringResource(R.string.nav_settings),
+                    )
+                }
             }
         }
 
@@ -257,9 +324,69 @@ private fun FilterRow(
 }
 
 @Composable
+private fun BatchActionBar(
+    selectedCount: Int,
+    visibleBookCount: Int,
+    onSelectVisible: () -> Unit,
+    onEdit: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(start = 24.dp, end = 24.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AssistChip(
+            onClick = onEdit,
+            enabled = selectedCount > 0,
+            label = { Text(text = stringResource(R.string.batch_edit_selected)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = null,
+                )
+            },
+        )
+        AssistChip(
+            onClick = onSelectVisible,
+            enabled = visibleBookCount > 0,
+            label = { Text(text = stringResource(R.string.batch_select_visible)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = null,
+                )
+            },
+        )
+        AssistChip(
+            onClick = onCancel,
+            label = { Text(text = stringResource(R.string.action_cancel_batch)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = null,
+                )
+            },
+        )
+        Text(
+            text = selectedCountText(selectedCount),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 private fun BookGrid(
     books: List<LibraryBook>,
+    isBatchMode: Boolean,
+    selectedBookIds: Set<String>,
     onBookClick: (String) -> Unit,
+    onBookSelectionToggle: (String) -> Unit,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 150.dp),
@@ -274,7 +401,15 @@ private fun BookGrid(
         ) { item ->
             BookCoverItem(
                 item = item,
-                onClick = { onBookClick(item.book.id) },
+                isBatchMode = isBatchMode,
+                isSelected = item.book.id in selectedBookIds,
+                onClick = {
+                    if (isBatchMode) {
+                        onBookSelectionToggle(item.book.id)
+                    } else {
+                        onBookClick(item.book.id)
+                    }
+                },
             )
         }
     }
@@ -283,6 +418,8 @@ private fun BookGrid(
 @Composable
 private fun BookCoverItem(
     item: LibraryBook,
+    isBatchMode: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
 ) {
     val title = item.metadata.title
@@ -302,6 +439,11 @@ private fun BookCoverItem(
                 )
                 .clip(RoundedCornerShape(6.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(
+                    width = if (isSelected) 2.dp else 0.dp,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    shape = RoundedCornerShape(6.dp),
+                )
                 .clickable(onClick = onClick),
         ) {
             if (coverPath != null) {
@@ -313,6 +455,15 @@ private fun BookCoverItem(
                 )
             } else {
                 CoverPlaceholder(modifier = Modifier.fillMaxSize())
+            }
+
+            if (isBatchMode) {
+                SelectionBadge(
+                    selected = isSelected,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                )
             }
         }
 
@@ -337,6 +488,178 @@ private fun BookCoverItem(
             syncStatus = item.book.syncStatus,
         )
     }
+}
+
+@Composable
+private fun SelectionBadge(
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val badgeColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Surface(
+        modifier = modifier.size(28.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = badgeColor,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+        ),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = contentColor,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatchMetadataDialog(
+    selectedCount: Int,
+    onDismiss: () -> Unit,
+    onApply: (BatchMetadataPatch) -> Unit,
+) {
+    var authors by rememberSaveable { mutableStateOf("") }
+    var sortAuthor by rememberSaveable { mutableStateOf("") }
+    var seriesName by rememberSaveable { mutableStateOf("") }
+    var seriesIndexStart by rememberSaveable { mutableStateOf("") }
+    var language by rememberSaveable { mutableStateOf("") }
+    var publisher by rememberSaveable { mutableStateOf("") }
+    var tags by rememberSaveable { mutableStateOf("") }
+
+    val parsedSeriesIndexStart = seriesIndexStart.cleanOptional()?.toDoubleOrNull()
+    val seriesIndexHasError = seriesIndexStart.cleanOptional() != null && parsedSeriesIndexStart == null
+    val hasChanges = listOf(authors, sortAuthor, seriesName, seriesIndexStart, language, publisher, tags)
+        .any { it.isNotBlank() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.batch_dialog_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = selectedCountText(selectedCount),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(R.string.batch_dialog_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                BatchMetadataField(
+                    value = authors,
+                    onValueChange = { authors = it },
+                    label = stringResource(R.string.edit_metadata_field_authors),
+                    supportingText = stringResource(R.string.edit_metadata_field_authors_helper),
+                )
+                BatchMetadataField(
+                    value = sortAuthor,
+                    onValueChange = { sortAuthor = it },
+                    label = stringResource(R.string.edit_metadata_field_sort_author),
+                )
+                BatchMetadataField(
+                    value = seriesName,
+                    onValueChange = { seriesName = it },
+                    label = stringResource(R.string.edit_metadata_field_series),
+                )
+                BatchMetadataField(
+                    value = seriesIndexStart,
+                    onValueChange = { seriesIndexStart = it },
+                    label = stringResource(R.string.batch_metadata_field_series_start),
+                    supportingText = if (seriesIndexHasError) {
+                        stringResource(R.string.batch_metadata_invalid_number)
+                    } else {
+                        stringResource(R.string.batch_metadata_field_series_start_helper)
+                    },
+                    isError = seriesIndexHasError,
+                    keyboardType = KeyboardType.Decimal,
+                )
+                BatchMetadataField(
+                    value = language,
+                    onValueChange = { language = it },
+                    label = stringResource(R.string.edit_metadata_field_language),
+                )
+                BatchMetadataField(
+                    value = publisher,
+                    onValueChange = { publisher = it },
+                    label = stringResource(R.string.edit_metadata_field_publisher),
+                )
+                BatchMetadataField(
+                    value = tags,
+                    onValueChange = { tags = it },
+                    label = stringResource(R.string.edit_metadata_field_tags),
+                    supportingText = stringResource(R.string.edit_metadata_field_tags_helper),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onApply(
+                        BatchMetadataPatch(
+                            authors = authors.splitValues().takeIf { it.isNotEmpty() },
+                            sortAuthor = sortAuthor.cleanOptional(),
+                            language = language.cleanOptional(),
+                            publisher = publisher.cleanOptional(),
+                            tags = tags.splitValues().takeIf { it.isNotEmpty() },
+                            seriesName = seriesName.cleanOptional(),
+                            seriesIndexStart = parsedSeriesIndexStart,
+                        ),
+                    )
+                },
+                enabled = hasChanges && !seriesIndexHasError,
+            ) {
+                Text(text = stringResource(R.string.batch_dialog_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.edit_metadata_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun BatchMetadataField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    supportingText: String? = null,
+    isError: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(text = label) },
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        isError = isError,
+        supportingText = supportingText?.let { text ->
+            { Text(text = text) }
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+    )
 }
 
 @Composable
@@ -479,6 +802,22 @@ fun EditorialDivider(modifier: Modifier = Modifier) {
                 .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
         )
     }
+}
+
+private fun String.cleanOptional(): String? = trim().takeIf { it.isNotEmpty() }
+
+private fun String.splitValues(): List<String> {
+    return split(',')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+}
+
+@Composable
+private fun selectedCountText(count: Int): String {
+    return stringResource(
+        id = if (count == 1) R.string.batch_selected_count_one else R.string.batch_selected_count_many,
+        count,
+    )
 }
 
 private fun LibraryUiState.visibleBooks(): List<LibraryBook> {

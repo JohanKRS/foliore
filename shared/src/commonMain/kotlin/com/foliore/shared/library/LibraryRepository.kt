@@ -1,6 +1,7 @@
 package com.foliore.shared.library
 
 import app.cash.sqldelight.db.SqlDriver
+import com.foliore.shared.domain.BatchMetadataPatch
 import com.foliore.shared.db.FolioreDatabase
 import com.foliore.shared.domain.Book
 import com.foliore.shared.domain.BookMetadataDraft
@@ -211,6 +212,40 @@ class LibraryRepository(
         }
 
         return LibraryBook(nextBook, nextMetadata)
+    }
+
+    fun updateMetadataBatch(
+        bookIds: List<String>,
+        patch: BatchMetadataPatch,
+        updatedAt: String,
+        updatedByDeviceId: String,
+    ): List<LibraryBook> {
+        if (bookIds.isEmpty() || !patch.hasChanges()) return emptyList()
+
+        val currentBooks = bookIds.distinct().mapNotNull(::getBook)
+        val updatedBooks = currentBooks.mapIndexed { index, current ->
+            val nextBook = current.book.asEdited(updatedAt, updatedByDeviceId)
+            val nextMetadata = current.metadata.copy(
+                authors = patch.authors?.mapNotNull { it.cleanOptional() } ?: current.metadata.authors,
+                sortAuthor = patch.sortAuthor.cleanOptional() ?: current.metadata.sortAuthor,
+                language = patch.language.cleanOptional() ?: current.metadata.language,
+                publisher = patch.publisher.cleanOptional() ?: current.metadata.publisher,
+                tags = patch.tags?.mapNotNull { it.cleanOptional() } ?: current.metadata.tags,
+                seriesName = patch.seriesName.cleanOptional() ?: current.metadata.seriesName,
+                seriesIndex = patch.seriesIndexStart?.let { it + index } ?: current.metadata.seriesIndex,
+                source = MetadataSource.MANUAL,
+            )
+            LibraryBook(nextBook, nextMetadata)
+        }
+
+        database.transaction {
+            updatedBooks.forEach { updated ->
+                upsertBook(updated.book)
+                upsertMetadata(updated.metadata)
+            }
+        }
+
+        return updatedBooks
     }
 
     fun updateCover(

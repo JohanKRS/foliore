@@ -11,6 +11,8 @@ data class LibraryUiState(
     val isSearchOpen: Boolean = false,
     val query: String = "",
     val activeFilter: BookFilter = BookFilter.ALL,
+    val isBatchMode: Boolean = false,
+    val selectedBookIds: Set<String> = emptySet(),
 )
 
 enum class BookFilter {
@@ -43,6 +45,9 @@ enum class LibraryNoticeType {
     INVALID_TITLE,
     BOOK_DELETED,
     DELETE_FAILED,
+    BATCH_UPDATED,
+    BATCH_FAILED,
+    BATCH_NO_CHANGES,
     EPUB_PREPARED,
     PREPARE_FAILED,
     EXPORT_FAILED,
