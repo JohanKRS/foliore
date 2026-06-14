@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.viewmodel.BookFilter
+import com.foliore.android.viewmodel.BookGridColumns
 import com.foliore.android.viewmodel.BookSortOrder
 import com.foliore.android.viewmodel.LibraryUiState
 import com.foliore.android.viewmodel.SeriesFilter
@@ -94,6 +95,7 @@ fun LibraryScreen(
     onFilterChange: (BookFilter) -> Unit,
     onSortOrderChange: (BookSortOrder) -> Unit,
     onSeriesFilterChange: (SeriesFilter) -> Unit,
+    onGridColumnsChange: (BookGridColumns) -> Unit,
     onBookClick: (String) -> Unit,
     onBatchModeChange: (Boolean) -> Unit,
     onBookSelectionToggle: (String) -> Unit,
@@ -154,8 +156,10 @@ fun LibraryScreen(
             OrganizationRows(
                 selectedSortOrder = state.sortOrder,
                 selectedSeriesFilter = state.seriesFilter,
+                selectedGridColumns = state.gridColumns,
                 onSortOrderChange = onSortOrderChange,
                 onSeriesFilterChange = onSeriesFilterChange,
+                onGridColumnsChange = onGridColumnsChange,
             )
 
             AnimatedVisibility(visible = state.isBatchMode) {
@@ -198,6 +202,7 @@ fun LibraryScreen(
                 else -> {
                     BookGrid(
                         books = visibleBooks,
+                        gridColumns = state.gridColumns,
                         isBatchMode = state.isBatchMode,
                         selectedBookIds = state.selectedBookIds,
                         onBookClick = onBookClick,
@@ -345,8 +350,10 @@ private fun FilterRow(
 private fun OrganizationRows(
     selectedSortOrder: BookSortOrder,
     selectedSeriesFilter: SeriesFilter,
+    selectedGridColumns: BookGridColumns,
     onSortOrderChange: (BookSortOrder) -> Unit,
     onSeriesFilterChange: (SeriesFilter) -> Unit,
+    onGridColumnsChange: (BookGridColumns) -> Unit,
 ) {
     OrganizationChipRow(
         label = stringResource(R.string.organization_sort_label),
@@ -367,6 +374,17 @@ private fun OrganizationRows(
                 selected = selectedSeriesFilter == filter,
                 onClick = { onSeriesFilterChange(filter) },
                 label = { Text(text = stringResource(filter.labelRes())) },
+            )
+        }
+    }
+    OrganizationChipRow(
+        label = stringResource(R.string.organization_grid_label),
+    ) {
+        BookGridColumns.values().forEach { columns ->
+            FilterChip(
+                selected = selectedGridColumns == columns,
+                onClick = { onGridColumnsChange(columns) },
+                label = { Text(text = stringResource(columns.labelRes())) },
             )
         }
     }
@@ -455,13 +473,14 @@ private fun BatchActionBar(
 @Composable
 private fun BookGrid(
     books: List<LibraryBook>,
+    gridColumns: BookGridColumns,
     isBatchMode: Boolean,
     selectedBookIds: Set<String>,
     onBookClick: (String) -> Unit,
     onBookSelectionToggle: (String) -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 150.dp),
+        columns = gridColumns.gridCells(),
         contentPadding = PaddingValues(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 32.dp),
         horizontalArrangement = Arrangement.spacedBy(28.dp),
         verticalArrangement = Arrangement.spacedBy(28.dp),
@@ -523,7 +542,7 @@ private fun BookCoverItem(
                 AsyncImage(
                     model = File(coverPath),
                     contentDescription = stringResource(R.string.cover_content_description, title),
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
@@ -1031,6 +1050,21 @@ private fun SeriesFilter.labelRes(): Int {
         SeriesFilter.WITH_SERIES -> R.string.series_filter_with_series
         SeriesFilter.WITHOUT_SERIES -> R.string.series_filter_without_series
     }
+}
+
+private fun BookGridColumns.labelRes(): Int {
+    return when (this) {
+        BookGridColumns.AUTO -> R.string.grid_columns_auto
+        BookGridColumns.TWO -> R.string.grid_columns_two
+        BookGridColumns.THREE -> R.string.grid_columns_three
+        BookGridColumns.FOUR -> R.string.grid_columns_four
+        BookGridColumns.FIVE -> R.string.grid_columns_five
+        BookGridColumns.SIX -> R.string.grid_columns_six
+    }
+}
+
+private fun BookGridColumns.gridCells(): GridCells {
+    return fixedCount?.let { GridCells.Fixed(it) } ?: GridCells.Adaptive(minSize = 150.dp)
 }
 
 fun BookStatus.labelRes(): Int {

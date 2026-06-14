@@ -13,6 +13,7 @@ data class LibraryUiState(
     val activeFilter: BookFilter = BookFilter.ALL,
     val sortOrder: BookSortOrder = BookSortOrder.IMPORTED_NEWEST,
     val seriesFilter: SeriesFilter = SeriesFilter.ALL,
+    val gridColumns: BookGridColumns = BookGridColumns.AUTO,
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
 )
@@ -41,6 +42,15 @@ enum class SeriesFilter {
     ALL,
     WITH_SERIES,
     WITHOUT_SERIES,
+}
+
+enum class BookGridColumns(val fixedCount: Int?) {
+    AUTO(null),
+    TWO(2),
+    THREE(3),
+    FOUR(4),
+    FIVE(5),
+    SIX(6),
 }
 
 data class SyncSummary(

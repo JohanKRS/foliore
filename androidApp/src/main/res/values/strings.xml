@@ -32,6 +32,7 @@
     <string name="filter_error">Com erro</string>
     <string name="organization_sort_label">Ordenar</string>
     <string name="organization_series_label">Séries</string>
+    <string name="organization_grid_label">Grade</string>
     <string name="sort_imported_newest">Recentes</string>
     <string name="sort_title_asc">Título A-Z</string>
     <string name="sort_title_desc">Título Z-A</string>
@@ -43,6 +44,12 @@
     <string name="series_filter_all">Todas</string>
     <string name="series_filter_with_series">Com série</string>
     <string name="series_filter_without_series">Sem série</string>
+    <string name="grid_columns_auto">Auto</string>
+    <string name="grid_columns_two">2</string>
+    <string name="grid_columns_three">3</string>
+    <string name="grid_columns_four">4</string>
+    <string name="grid_columns_five">5</string>
+    <string name="grid_columns_six">6</string>
 
     <string name="status_imported">Importado</string>
     <string name="status_needs_review">Revisar</string>

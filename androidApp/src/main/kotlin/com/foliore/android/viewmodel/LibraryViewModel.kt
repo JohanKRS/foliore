@@ -110,6 +110,10 @@ class LibraryViewModel(
         _state.update { it.copy(seriesFilter = seriesFilter) }
     }
 
+    fun setGridColumns(gridColumns: BookGridColumns) {
+        _state.update { it.copy(gridColumns = gridColumns) }
+    }
+
     fun setBatchMode(isEnabled: Boolean) {
         _state.update {
             it.copy(

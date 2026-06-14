@@ -45,6 +45,7 @@ fun LibraryRoute(
         onFilterChange = viewModel::setFilter,
         onSortOrderChange = viewModel::setSortOrder,
         onSeriesFilterChange = viewModel::setSeriesFilter,
+        onGridColumnsChange = viewModel::setGridColumns,
         onBookClick = onBookClick,
         onBatchModeChange = viewModel::setBatchMode,
         onBookSelectionToggle = viewModel::toggleBookSelection,
