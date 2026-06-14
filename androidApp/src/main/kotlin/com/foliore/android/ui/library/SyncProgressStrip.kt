@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.viewmodel.SyncProgress
@@ -32,7 +33,7 @@ fun SyncProgressDivider(
             .height(2.dp),
     ) {
         if (isSyncing) {
-            val fraction = progress?.fraction
+            val fraction = progress?.navigationFraction
             if (fraction == null) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -58,6 +59,36 @@ fun SyncProgressDivider(
                     .fillMaxWidth()
                     .height(1.dp)
                     .background(dividerColor),
+            )
+        }
+    }
+}
+
+@Composable
+fun SyncProgressStatusLine(
+    progress: SyncProgress?,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = progress?.message() ?: stringResource(R.string.sync_progress_preparing),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val countText = progress?.countText()
+        if (countText != null) {
+            Text(
+                text = countText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
             )
         }
     }
@@ -105,6 +136,24 @@ fun SyncProgressStrip(
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
             )
         }
+    }
+}
+
+private val SyncProgress.navigationFraction: Float
+    get() {
+        val phaseFraction = fraction
+        return when (phase) {
+            SyncProgressPhase.PREPARING -> 0.06f
+            SyncProgressPhase.CHECKING_REMOTE -> 0.12f + ((phaseFraction ?: 0f) * 0.18f)
+            SyncProgressPhase.UPLOADING -> 0.30f + ((phaseFraction ?: 0f) * 0.52f)
+            SyncProgressPhase.WRITING_MANIFEST -> 0.9f
+            SyncProgressPhase.APPLYING_STATUS -> 0.96f
+        }.coerceIn(0.03f, 0.98f)
+    }
+
+private fun SyncProgress.countText(): String? {
+    return total.takeIf { it > 0 }?.let { boundedTotal ->
+        "${current.coerceIn(0, boundedTotal)} / $boundedTotal"
     }
 }
 

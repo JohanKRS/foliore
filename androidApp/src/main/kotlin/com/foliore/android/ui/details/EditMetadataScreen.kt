@@ -76,6 +76,7 @@ import com.foliore.android.R
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressDivider
+import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
@@ -1001,33 +1002,49 @@ private fun TabletEmbeddedBottomNav(
             progress = syncProgress,
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(94.dp)
-                .padding(horizontal = 42.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .height(94.dp),
         ) {
-            TabletNavItem(
-                icon = Icons.AutoMirrored.Outlined.MenuBook,
-                label = stringResource(R.string.nav_library),
-                selected = true,
-                onClick = onLibraryClick,
-            )
-            TabletNavItem(
-                icon = Icons.Outlined.Sync,
-                label = stringResource(R.string.nav_sync),
-                selected = false,
-                enabled = !isSyncing,
-                onClick = onSyncClick,
-            )
-            TabletNavItem(
-                icon = Icons.Outlined.Settings,
-                label = stringResource(R.string.nav_settings),
-                selected = false,
-                onClick = onSettingsClick,
-            )
+            if (isSyncing) {
+                SyncProgressStatusLine(
+                    progress = syncProgress,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .padding(start = 42.dp, top = 8.dp, end = 42.dp),
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .align(if (isSyncing) Alignment.BottomCenter else Alignment.Center)
+                    .fillMaxWidth()
+                    .height(if (isSyncing) 70.dp else 94.dp)
+                    .padding(horizontal = 42.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TabletNavItem(
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
+                    label = stringResource(R.string.nav_library),
+                    selected = true,
+                    onClick = onLibraryClick,
+                )
+                TabletNavItem(
+                    icon = Icons.Outlined.Sync,
+                    label = stringResource(R.string.nav_sync),
+                    selected = false,
+                    enabled = !isSyncing,
+                    onClick = onSyncClick,
+                )
+                TabletNavItem(
+                    icon = Icons.Outlined.Settings,
+                    label = stringResource(R.string.nav_settings),
+                    selected = false,
+                    onClick = onSettingsClick,
+                )
+            }
         }
     }
 }

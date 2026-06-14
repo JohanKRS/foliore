@@ -44,6 +44,7 @@ import com.foliore.android.ui.details.EditMetadataRoute
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.SettingsRoute
 import com.foliore.android.ui.library.SyncProgressDivider
+import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
@@ -182,9 +183,19 @@ private fun FolioreNavigationBar(
                 .fillMaxWidth()
                 .height(82.dp),
         ) {
+            if (isSyncing) {
+                SyncProgressStatusLine(
+                    progress = syncProgress,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .widthIn(max = 560.dp)
+                        .fillMaxWidth()
+                        .padding(start = 28.dp, top = 6.dp, end = 28.dp),
+                )
+            }
             Row(
                 modifier = Modifier
-                    .align(Alignment.Center)
+                    .align(if (isSyncing) Alignment.BottomCenter else Alignment.Center)
                     .widthIn(max = 560.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 28.dp),
