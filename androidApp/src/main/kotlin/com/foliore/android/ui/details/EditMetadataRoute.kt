@@ -56,6 +56,7 @@ fun EditMetadataRoute(
         EditMetadataScreen(
             book = book,
             aiProviderMode = state.aiProviderMode,
+            aiCoverPromptRecords = state.aiCoverPromptRecords,
             onBack = onBack,
             onSave = { draft ->
                 viewModel.saveMetadataAndPrepare(
@@ -71,6 +72,7 @@ fun EditMetadataRoute(
             },
             onAutofillClick = viewModel::requestMetadataAutofill,
             onGenerateCoverImages = viewModel::requestCoverGeneration,
+            onSelectedCoverPrompt = viewModel::saveSelectedCoverPrompt,
             onReplaceCover = { coverPicker.launch("image/*") },
             onSyncNow = viewModel::syncNow,
             isLoading = state.hasActiveProgress,

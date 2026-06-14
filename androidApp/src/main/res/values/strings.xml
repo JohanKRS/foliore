@@ -199,6 +199,9 @@
     <string name="ai_notice_provider_required">Ative uma opção de IA nas configurações.</string>
     <string name="ai_notice_provider_not_ready">Conector de IA ainda não está ligado ao provedor.</string>
     <string name="ai_notice_cover_provider_required">Ative uma opção de IA para gerar capas.</string>
+    <string name="ai_notice_cover_prompt_saved">Prompt de capa salvo como referência.</string>
+    <string name="ai_edit_prompt">Editar prompt</string>
+    <string name="ai_hide_prompt">Ocultar prompt</string>
     <string name="ai_metadata_dialog_title">Prévia do auto-fill</string>
     <string name="ai_metadata_prompt_label">Prompt de metadados</string>
     <string name="ai_metadata_default_prompt">Preencha e corrija metadados bibliográficos para este EPUB. Use apenas informação verificável. O campo Sobre deve ser curto, elegante e sem spoilers: não revele final, reviravoltas, mortes ou identidades ocultas. Responda com título, subtítulo, autores, série, número da série, idioma, editora, ano, tags, ISBN e sobre.</string>
@@ -210,6 +213,7 @@
     <string name="ai_cover_dialog_title">Gerar capas</string>
     <string name="ai_cover_prompt_label">Prompt de capa</string>
     <string name="ai_cover_default_prompt">Crie exatamente duas capas para este livro, em proporção vertical 2:3. As duas imagens devem ser completamente diferentes entre si, com estilos visuais distintos, composições distintas e paletas distintas. Não inclua texto pequeno ilegível. Evite spoilers visuais.</string>
+    <string name="ai_cover_series_reference">Usando referência visual da série: %1$s.</string>
     <string name="ai_cover_aspect_ratio">Proporção 2:3</string>
     <string name="ai_cover_generate">Gerar capas</string>
     <string name="ai_cover_regenerate">Gerar novas</string>

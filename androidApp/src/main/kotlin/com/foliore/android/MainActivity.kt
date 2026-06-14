@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
                             preparedEpubService = appContainer.preparedEpubService,
                             manualSyncService = appContainer.manualSyncService,
                             aiPreferenceRepository = appContainer.aiPreferenceRepository,
+                            aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
                         )
                     }
                     val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

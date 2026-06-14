@@ -36,5 +36,6 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.AI_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_provider_required)
         LibraryNoticeType.AI_PROVIDER_NOT_READY -> stringResource(R.string.ai_notice_provider_not_ready)
         LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_cover_provider_required)
+        LibraryNoticeType.AI_COVER_PROMPT_SAVED -> stringResource(R.string.ai_notice_cover_prompt_saved)
     }
 }

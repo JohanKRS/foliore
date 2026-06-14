@@ -108,6 +108,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
                         preparedEpubService = appContainer.preparedEpubService,
                         manualSyncService = appContainer.manualSyncService,
                         aiPreferenceRepository = appContainer.aiPreferenceRepository,
+                        aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
                     )
                 }
                 val viewModel: LibraryViewModel = viewModel(factory = factory)

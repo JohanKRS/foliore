@@ -4,8 +4,10 @@ import android.net.Uri
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.ai.isEnabled
+import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidBookDeleter
@@ -40,9 +42,13 @@ class LibraryViewModel(
     private val preparedEpubService: AndroidPreparedEpubService,
     private val manualSyncService: ManualSyncService,
     private val aiPreferenceRepository: AiPreferenceRepository,
+    private val aiCoverPromptRepository: AiCoverPromptRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
-        LibraryUiState(aiProviderMode = aiPreferenceRepository.providerMode.value),
+        LibraryUiState(
+            aiProviderMode = aiPreferenceRepository.providerMode.value,
+            aiCoverPromptRecords = aiCoverPromptRepository.records(),
+        ),
     )
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
 
@@ -164,6 +170,12 @@ class LibraryViewModel(
                 LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED
             },
         )
+    }
+
+    fun saveSelectedCoverPrompt(record: AiCoverPromptRecord) {
+        val records = aiCoverPromptRepository.save(record)
+        _state.update { it.copy(aiCoverPromptRecords = records) }
+        _notice.value = LibraryNotice(LibraryNoticeType.AI_COVER_PROMPT_SAVED)
     }
 
     fun setBatchMode(isEnabled: Boolean) {

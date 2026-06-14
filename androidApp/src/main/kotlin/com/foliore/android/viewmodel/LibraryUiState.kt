@@ -1,5 +1,6 @@
 package com.foliore.android.viewmodel
 
+import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiProviderMode
 import com.foliore.shared.domain.LibraryBook
 
@@ -20,6 +21,7 @@ data class LibraryUiState(
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
+    val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
 ) {
     val activeProgress: SyncProgress?
         get() = syncProgress ?: importProgress
@@ -122,4 +124,5 @@ enum class LibraryNoticeType {
     AI_PROVIDER_REQUIRED,
     AI_PROVIDER_NOT_READY,
     AI_COVER_PROVIDER_REQUIRED,
+    AI_COVER_PROMPT_SAVED,
 }
