@@ -1,6 +1,8 @@
 package com.foliore.android.ui.details
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -32,6 +34,14 @@ fun EditMetadataRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val message = notice?.type?.let { noticeMessage(it) }
     val shareChooserTitle = stringResource(R.string.export_share_chooser)
+    val coverPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                viewModel.replaceCover(bookId, uri)
+            }
+        },
+    )
 
     LaunchedEffect(message) {
         if (message != null) {
@@ -58,6 +68,7 @@ fun EditMetadataRoute(
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                 }
             },
+            onReplaceCover = { coverPicker.launch("image/*") },
             onSyncNow = viewModel::syncNow,
             isSyncing = state.isSyncing,
             onLibraryClick = onLibraryClick,

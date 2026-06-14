@@ -216,17 +216,25 @@ class LibraryViewModel(
             val result = withContext(Dispatchers.IO) {
                 bookEditor.replaceCover(bookId, imageUri)
             }
-            refreshBooks()
-            _notice.value = LibraryNotice(
-                when (result) {
-                    is BookEditResult.Success -> LibraryNoticeType.COVER_UPDATED
-                    BookEditResult.InvalidTitle,
-                    BookEditResult.Failed,
-                    BookEditResult.NotFound -> LibraryNoticeType.UPDATE_FAILED
-                },
-            )
-            if (result is BookEditResult.Success) {
-                onUpdated()
+            when (result) {
+                is BookEditResult.Success -> {
+                    val prepareResult = withContext(Dispatchers.IO) {
+                        preparedEpubService.prepare(bookId)
+                    }
+                    refreshBooks()
+                    if (prepareResult is PreparedEpubResult.Prepared) {
+                        _notice.value = LibraryNotice(LibraryNoticeType.COVER_UPDATED)
+                        onUpdated()
+                    } else {
+                        _notice.value = LibraryNotice(LibraryNoticeType.PREPARE_FAILED)
+                    }
+                }
+                BookEditResult.InvalidTitle,
+                BookEditResult.Failed,
+                BookEditResult.NotFound -> {
+                    refreshBooks()
+                    _notice.value = LibraryNotice(LibraryNoticeType.UPDATE_FAILED)
+                }
             }
         }
     }

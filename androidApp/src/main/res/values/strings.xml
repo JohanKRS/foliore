@@ -80,7 +80,7 @@
     <string name="import_notice_failed">Não foi possível importar o EPUB.</string>
     <string name="import_notice_mixed">Importação concluída com avisos.</string>
     <string name="edit_notice_metadata_saved">Metadados salvos e EPUB preparado.</string>
-    <string name="edit_notice_cover_updated">Capa atualizada.</string>
+    <string name="edit_notice_cover_updated">Capa atualizada e EPUB preparado.</string>
     <string name="edit_notice_update_failed">Não foi possível salvar a alteração.</string>
     <string name="edit_notice_invalid_title">Informe um título para salvar.</string>
     <string name="delete_notice_done">Livro removido da biblioteca.</string>
@@ -93,6 +93,7 @@
     <string name="export_share_chooser">Compartilhar EPUB</string>
 
     <string name="details_series">Série</string>
+    <string name="details_published_year">Ano</string>
     <string name="details_language">Idioma</string>
     <string name="details_publisher">Editora</string>
     <string name="details_file_format">Formato</string>

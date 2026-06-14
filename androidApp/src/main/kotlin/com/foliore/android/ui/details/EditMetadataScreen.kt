@@ -29,10 +29,12 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.Numbers
@@ -83,6 +85,7 @@ fun EditMetadataScreen(
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
     onShareExport: () -> Unit,
+    onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
     onLibraryClick: () -> Unit,
@@ -169,6 +172,8 @@ fun EditMetadataScreen(
                 onSeriesIndexChange = { seriesIndex = it },
                 language = language,
                 onLanguageChange = { language = it },
+                publishedDate = publishedDate,
+                onPublishedDateChange = { publishedDate = it },
                 tags = tags,
                 onTagsChange = { tags = it },
                 isbn = isbn,
@@ -177,6 +182,7 @@ fun EditMetadataScreen(
                 onBack = onBack,
                 onSave = saveDraft,
                 onShareExport = onShareExport,
+                onReplaceCover = onReplaceCover,
                 onSyncNow = onSyncNow,
                 isSyncing = isSyncing,
                 onLibraryClick = onLibraryClick,
@@ -212,6 +218,7 @@ fun EditMetadataScreen(
                 onTagsChange = { tags = it },
                 isbn = isbn,
                 onIsbnChange = { isbn = it },
+                onReplaceCover = onReplaceCover,
                 onBack = onBack,
                 onSave = saveDraft,
             )
@@ -234,6 +241,8 @@ private fun TabletEditBookScreen(
     onSeriesIndexChange: (String) -> Unit,
     language: String,
     onLanguageChange: (String) -> Unit,
+    publishedDate: String,
+    onPublishedDateChange: (String) -> Unit,
     tags: String,
     onTagsChange: (String) -> Unit,
     isbn: String,
@@ -242,6 +251,7 @@ private fun TabletEditBookScreen(
     onBack: () -> Unit,
     onSave: () -> Unit,
     onShareExport: () -> Unit,
+    onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
     onLibraryClick: () -> Unit,
@@ -270,7 +280,31 @@ private fun TabletEditBookScreen(
                         book = book,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onReplaceCover,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(5.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.details_action_replace_cover),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
                         style = MaterialTheme.typography.titleLarge,
@@ -392,6 +426,19 @@ private fun TabletEditBookScreen(
                         )
                     }
                     TabletMetadataField(
+                        icon = Icons.Outlined.CalendarToday,
+                        label = stringResource(R.string.details_published_year),
+                    ) {
+                        MetadataTextField(
+                            value = publishedDate,
+                            onValueChange = onPublishedDateChange,
+                            label = stringResource(R.string.edit_metadata_field_published_date),
+                            showLabel = false,
+                            singleLine = true,
+                            keyboardType = KeyboardType.Number,
+                        )
+                    }
+                    TabletMetadataField(
                         icon = Icons.Outlined.LocalOffer,
                         label = stringResource(R.string.edit_metadata_field_tags),
                     ) {
@@ -475,6 +522,7 @@ private fun PhoneEditMetadataContent(
     onTagsChange: (String) -> Unit,
     isbn: String,
     onIsbnChange: (String) -> Unit,
+    onReplaceCover: () -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
 ) {
@@ -501,6 +549,18 @@ private fun PhoneEditMetadataContent(
                 isError = titleError,
                 supportingText = if (titleError) stringResource(R.string.edit_metadata_required) else null,
             )
+            OutlinedButton(
+                onClick = onReplaceCover,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Image,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.details_action_replace_cover))
+            }
             MetadataTextField(
                 value = subtitle,
                 onValueChange = onSubtitleChange,

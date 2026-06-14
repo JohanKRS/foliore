@@ -258,6 +258,10 @@ private fun BookSummary(
             value = book.seriesDisplay() ?: stringResource(R.string.details_not_available),
         )
         DetailsMetadataRow(
+            label = stringResource(R.string.details_published_year),
+            value = book.metadata.publishedDate ?: stringResource(R.string.details_not_available),
+        )
+        DetailsMetadataRow(
             label = stringResource(R.string.details_language),
             value = book.metadata.language ?: stringResource(R.string.details_not_available),
         )
