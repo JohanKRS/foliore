@@ -1,5 +1,9 @@
 package com.foliore.android.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -113,6 +117,10 @@ private fun NavContent(
             navController = navController,
             startDestination = Routes.LIBRARY,
             modifier = Modifier.fillMaxSize(),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) {
             composable(Routes.LIBRARY) {
                 LibraryRoute(
@@ -149,7 +157,7 @@ private fun NavContent(
                     bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty(),
                     onBack = onBack,
                     onLibraryClick = {
-                        navController.navigateTopLevel(Routes.LIBRARY)
+                        navController.returnToLibrary()
                     },
                     onSettingsClick = {
                         navController.navigateTopLevel(Routes.SETTINGS)
@@ -171,6 +179,7 @@ private fun FolioreNavigationBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize(animationSpec = tween(durationMillis = 180))
             .background(MaterialTheme.colorScheme.background),
     ) {
         if (isLoading) {
@@ -287,6 +296,12 @@ private fun androidx.navigation.NavController.navigateTopLevel(route: String) {
         }
         launchSingleTop = true
         restoreState = true
+    }
+}
+
+private fun NavHostController.returnToLibrary() {
+    if (!popBackStack(Routes.LIBRARY, inclusive = false)) {
+        navigateTopLevel(Routes.LIBRARY)
     }
 }
 

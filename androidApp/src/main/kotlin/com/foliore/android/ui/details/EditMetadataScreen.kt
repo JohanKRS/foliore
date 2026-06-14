@@ -1,6 +1,8 @@
 package com.foliore.android.ui.details
 
 import android.graphics.BitmapFactory
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -1244,6 +1246,7 @@ private fun TabletEmbeddedBottomNav(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize(animationSpec = tween(durationMillis = 180))
             .background(MaterialTheme.colorScheme.background),
     ) {
         if (isLoading) {
