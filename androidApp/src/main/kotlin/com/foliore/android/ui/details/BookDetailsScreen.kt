@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.text.HtmlCompat
 import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.ui.library.EditorialDivider
@@ -256,6 +257,9 @@ private fun BookMetadataPanel(
     } else {
         modifier
     }
+    val descriptionText = remember(book.metadata.description) {
+        book.metadata.description.toDisplayDescription()
+    } ?: stringResource(R.string.book_no_description)
 
     Column(
         modifier = panelModifier,
@@ -322,11 +326,23 @@ private fun BookMetadataPanel(
         )
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = book.metadata.description ?: stringResource(R.string.book_no_description),
+            text = descriptionText,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )
     }
+}
+
+private fun String?.toDisplayDescription(): String? {
+    val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val plain = HtmlCompat.fromHtml(raw, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        .toString()
+        .replace('\u00A0', ' ')
+    return plain.lines()
+        .joinToString("\n") { it.trim() }
+        .replace(Regex("\\n{3,}"), "\n\n")
+        .trim()
+        .takeIf { it.isNotEmpty() }
 }
 
 @Composable
