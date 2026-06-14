@@ -550,6 +550,7 @@ private fun PhoneEditMetadataContent(
                 value = publishedDate,
                 onValueChange = onPublishedDateChange,
                 label = stringResource(R.string.edit_metadata_field_published_date),
+                keyboardType = KeyboardType.Number,
             )
             MetadataTextField(
                 value = description,

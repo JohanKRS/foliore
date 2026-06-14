@@ -1,5 +1,7 @@
 package com.foliore.shared.epub
 
+import com.foliore.shared.domain.publicationYearOrNull
+
 class EpubParser {
     fun parse(archive: EpubArchive): EpubParseResult {
         val warnings = mutableListOf<String>()
@@ -44,7 +46,7 @@ class EpubParser {
             identifier = tagText(opfXml, "identifier"),
             description = tagText(opfXml, "description"),
             publisher = tagText(opfXml, "publisher"),
-            publishedDate = tagText(opfXml, "date"),
+            publishedDate = publicationYear(opfXml),
         )
 
         val technicalInfo = ParsedEpubTechnicalInfo(
@@ -164,6 +166,78 @@ class EpubParser {
         return tagTexts(xml, localName).firstOrNull()
     }
 
+    private fun publicationYear(opfXml: String): String? {
+        val candidates = dateTagCandidates(opfXml) + metaDateCandidates(opfXml)
+        return candidates.firstYear(DateKind.PUBLICATION)
+            ?: candidates.firstYear(DateKind.NEUTRAL)
+    }
+
+    private fun List<DateCandidate>.firstYear(kind: DateKind): String? {
+        return firstNotNullOfOrNull { candidate ->
+            if (candidate.kind == kind) candidate.value.publicationYearOrNull() else null
+        }
+    }
+
+    private fun dateTagCandidates(xml: String): List<DateCandidate> {
+        val options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        val regex = Regex(
+            "<(?:[A-Za-z0-9_-]+:)?date\\b([^>]*)>(.*?)</(?:[A-Za-z0-9_-]+:)?date>",
+            options,
+        )
+        return regex.findAll(xml)
+            .mapNotNull { match ->
+                val attrs = match.groupValues[1]
+                val value = match.groupValues[2].cleanXmlText()
+                if (value.isBlank()) return@mapNotNull null
+                DateCandidate(value = value, kind = classifyDate(attrs))
+            }
+            .filterNot { it.kind == DateKind.MODIFICATION }
+            .toList()
+    }
+
+    private fun metaDateCandidates(xml: String): List<DateCandidate> {
+        val options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        val regex = Regex("<meta\\b([^>]*)>(.*?)</meta>|<meta\\b([^>]*)/>", options)
+        return regex.findAll(xml)
+            .mapNotNull { match ->
+                val attrs = match.groupValues[1].ifBlank { match.groupValues[3] }
+                val marker = attr(attrs, "property") ?: attr(attrs, "name") ?: return@mapNotNull null
+                val markerKey = marker.lowercase()
+                if (!markerKey.contains("date") &&
+                    !markerKey.contains("issued") &&
+                    !markerKey.contains("modified") &&
+                    !markerKey.contains("timestamp")
+                ) {
+                    return@mapNotNull null
+                }
+
+                val value = match.groupValues[2].ifBlank { attr(attrs, "content").orEmpty() }.cleanXmlText()
+                if (value.isBlank()) return@mapNotNull null
+                DateCandidate(value = value, kind = classifyDate(attrs))
+            }
+            .filterNot { it.kind == DateKind.MODIFICATION }
+            .toList()
+    }
+
+    private fun classifyDate(attrs: String): DateKind {
+        val marker = listOfNotNull(
+            attr(attrs, "opf:event"),
+            attr(attrs, "event"),
+            attr(attrs, "property"),
+            attr(attrs, "name"),
+        ).joinToString(" ").lowercase()
+
+        return when {
+            marker.contains("modification") ||
+                marker.contains("modified") ||
+                marker.contains("timestamp") -> DateKind.MODIFICATION
+            marker.contains("publication") ||
+                marker.contains("published") ||
+                marker.contains("issued") -> DateKind.PUBLICATION
+            else -> DateKind.NEUTRAL
+        }
+    }
+
     private fun tagTexts(xml: String, localName: String): List<String> {
         val options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
         val regex = Regex(
@@ -227,9 +301,19 @@ class EpubParser {
         val properties: String,
     )
 
+    private data class DateCandidate(
+        val value: String,
+        val kind: DateKind,
+    )
+
+    private enum class DateKind {
+        PUBLICATION,
+        NEUTRAL,
+        MODIFICATION,
+    }
+
     private companion object {
         const val EPUB_MIME_TYPE = "application/epub+zip"
         const val CONTAINER_PATH = "META-INF/container.xml"
     }
 }
-

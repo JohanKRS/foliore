@@ -135,7 +135,7 @@
     <string name="edit_metadata_field_series_index">Número da série</string>
     <string name="edit_metadata_field_language">Idioma</string>
     <string name="edit_metadata_field_publisher">Editora</string>
-    <string name="edit_metadata_field_published_date">Data de publicação</string>
+    <string name="edit_metadata_field_published_date">Ano de publicação</string>
     <string name="edit_metadata_field_description">Descrição</string>
     <string name="edit_metadata_field_tags">Tags</string>
     <string name="edit_metadata_field_tags_helper">Separe tags por vírgula.</string>

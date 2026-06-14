@@ -46,6 +46,88 @@ class EpubParserTest {
         assertEquals("OPS/nav.xhtml", result.technicalInfo.navPath)
     }
 
+    @Test
+    fun prefersPublicationYearOverModificationDate() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="content.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "content.opf" to """
+                    <package version="2.0">
+                      <metadata>
+                        <dc:title>Publication Date Test</dc:title>
+                        <dc:date opf:event="modification">2026-06-14T01:23:45Z</dc:date>
+                        <dc:date opf:event="publication">2011-04-12</dc:date>
+                      </metadata>
+                    </package>
+                """.trimIndent(),
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals("2011", result.metadata.publishedDate)
+    }
+
+    @Test
+    fun ignoresModificationOnlyDates() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="content.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "content.opf" to """
+                    <package version="3.0">
+                      <metadata>
+                        <dc:title>Modified Only</dc:title>
+                        <meta property="dcterms:modified">2026-06-14T01:23:45Z</meta>
+                      </metadata>
+                    </package>
+                """.trimIndent(),
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals(null, result.metadata.publishedDate)
+    }
+
+    @Test
+    fun normalizesNeutralDateToYear() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="content.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "content.opf" to """
+                    <package version="3.0">
+                      <metadata>
+                        <dc:title>Neutral Date</dc:title>
+                        <dc:date>1999-08-07T00:00:00Z</dc:date>
+                      </metadata>
+                    </package>
+                """.trimIndent(),
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals("1999", result.metadata.publishedDate)
+    }
+
     private class FakeArchive(private val entries: Map<String, String>) : EpubArchive {
         override fun listEntries(): List<String> = entries.keys.toList()
 
@@ -54,4 +136,3 @@ class EpubParserTest {
         override fun readBytes(path: String): ByteArray? = entries[path]?.encodeToByteArray()
     }
 }
-
