@@ -47,13 +47,12 @@ fun EditMetadataRoute(
             book = book,
             onBack = onBack,
             onSave = { draft ->
-                viewModel.saveMetadata(
+                viewModel.saveMetadataAndPrepare(
                     bookId = bookId,
                     draft = draft,
                     onSaved = onBack,
                 )
             },
-            onPrepareEpub = { viewModel.prepareEpub(bookId) },
             onShareExport = {
                 viewModel.sharePreparedEpub(bookId) { intent ->
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))

@@ -57,7 +57,6 @@ fun BookDetailsScreen(
     book: LibraryBook?,
     onEditMetadata: () -> Unit,
     onReplaceCover: () -> Unit,
-    onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
     onDeleteBook: () -> Unit,
     onBack: () -> Unit,
@@ -113,7 +112,6 @@ fun BookDetailsScreen(
                     DetailsActionList(
                         onEditMetadata = onEditMetadata,
                         onReplaceCover = onReplaceCover,
-                        onPrepareEpub = onPrepareEpub,
                         onShareExport = onShareExport,
                         onDeleteBook = onDeleteBook,
                     )
@@ -310,7 +308,6 @@ private fun DetailsMetadataRow(
 private fun DetailsActionList(
     onEditMetadata: () -> Unit,
     onReplaceCover: () -> Unit,
-    onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
     onDeleteBook: () -> Unit,
 ) {
@@ -325,12 +322,6 @@ private fun DetailsActionList(
             icon = Icons.Outlined.Image,
             label = stringResource(R.string.details_action_replace_cover),
             onClick = onReplaceCover,
-        )
-        DetailsRowDivider()
-        DetailsActionRow(
-            icon = Icons.Outlined.Description,
-            label = stringResource(R.string.details_action_prepare_epub),
-            onClick = onPrepareEpub,
         )
         DetailsRowDivider()
         DetailsActionRow(

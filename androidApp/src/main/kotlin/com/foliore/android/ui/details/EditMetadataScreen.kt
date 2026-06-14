@@ -82,7 +82,6 @@ fun EditMetadataScreen(
     book: LibraryBook?,
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
-    onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
@@ -177,7 +176,6 @@ fun EditMetadataScreen(
                 description = description,
                 onBack = onBack,
                 onSave = saveDraft,
-                onPrepareEpub = onPrepareEpub,
                 onShareExport = onShareExport,
                 onSyncNow = onSyncNow,
                 isSyncing = isSyncing,
@@ -243,7 +241,6 @@ private fun TabletEditBookScreen(
     description: String,
     onBack: () -> Unit,
     onSave: () -> Unit,
-    onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
@@ -443,7 +440,6 @@ private fun TabletEditBookScreen(
             )
             TabletEditActions(
                 onSave = onSave,
-                onPrepareEpub = onPrepareEpub,
                 onShareExport = onShareExport,
                 saveEnabled = title.isNotBlank(),
                 compact = compactActions,
@@ -853,16 +849,10 @@ private fun TabletInfoRow(
 @Composable
 private fun TabletEditActions(
     onSave: () -> Unit,
-    onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
     saveEnabled: Boolean,
     compact: Boolean,
 ) {
-    val prepareLabel = if (compact) {
-        stringResource(R.string.edit_metadata_prepare_short)
-    } else {
-        stringResource(R.string.details_action_prepare_epub)
-    }
     val exportLabel = if (compact) {
         stringResource(R.string.edit_metadata_export_short)
     } else {
@@ -884,6 +874,9 @@ private fun TabletEditActions(
                 .weight(1f)
                 .height(56.dp),
             shape = RoundedCornerShape(5.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
         ) {
             Icon(
@@ -894,26 +887,6 @@ private fun TabletEditActions(
             Spacer(modifier = Modifier.width(9.dp))
             Text(
                 text = stringResource(R.string.edit_metadata_save),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        OutlinedButton(
-            onClick = onPrepareEpub,
-            modifier = Modifier
-                .weight(1.12f)
-                .height(56.dp),
-            shape = RoundedCornerShape(5.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Description,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(modifier = Modifier.width(9.dp))
-            Text(
-                text = prepareLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

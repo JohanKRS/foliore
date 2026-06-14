@@ -63,7 +63,6 @@ fun BookDetailsRoute(
             book = book,
             onEditMetadata = onEditMetadata,
             onReplaceCover = { coverPicker.launch("image/*") },
-            onPrepareEpub = { viewModel.prepareEpub(bookId) },
             onShareExport = {
                 viewModel.sharePreparedEpub(bookId) { intent ->
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))

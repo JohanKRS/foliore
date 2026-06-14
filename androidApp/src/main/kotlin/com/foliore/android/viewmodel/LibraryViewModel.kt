@@ -172,7 +172,7 @@ class LibraryViewModel(
         }
     }
 
-    fun saveMetadata(
+    fun saveMetadataAndPrepare(
         bookId: String,
         draft: BookMetadataDraft,
         onSaved: () -> Unit,
@@ -181,17 +181,26 @@ class LibraryViewModel(
             val result = withContext(Dispatchers.IO) {
                 bookEditor.updateMetadata(bookId, draft)
             }
-            refreshBooks()
             when (result) {
                 is BookEditResult.Success -> {
-                    _notice.value = LibraryNotice(LibraryNoticeType.METADATA_SAVED)
-                    onSaved()
+                    val prepareResult = withContext(Dispatchers.IO) {
+                        preparedEpubService.prepare(bookId)
+                    }
+                    refreshBooks()
+                    if (prepareResult is PreparedEpubResult.Prepared) {
+                        _notice.value = LibraryNotice(LibraryNoticeType.METADATA_SAVED)
+                        onSaved()
+                    } else {
+                        _notice.value = LibraryNotice(LibraryNoticeType.PREPARE_FAILED)
+                    }
                 }
                 BookEditResult.InvalidTitle -> {
+                    refreshBooks()
                     _notice.value = LibraryNotice(LibraryNoticeType.INVALID_TITLE)
                 }
                 BookEditResult.Failed,
                 BookEditResult.NotFound -> {
+                    refreshBooks()
                     _notice.value = LibraryNotice(LibraryNoticeType.UPDATE_FAILED)
                 }
             }
@@ -241,21 +250,6 @@ class LibraryViewModel(
             if (result is BookDeleteResult.Deleted) {
                 onDeleted()
             }
-        }
-    }
-
-    fun prepareEpub(bookId: String) {
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                preparedEpubService.prepare(bookId)
-            }
-            refreshBooks()
-            _notice.value = LibraryNotice(
-                when (result) {
-                    is PreparedEpubResult.Prepared -> LibraryNoticeType.EPUB_PREPARED
-                    else -> LibraryNoticeType.PREPARE_FAILED
-                },
-            )
         }
     }
 

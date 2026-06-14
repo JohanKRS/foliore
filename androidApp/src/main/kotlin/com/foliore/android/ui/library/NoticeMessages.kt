@@ -21,7 +21,6 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.BATCH_UPDATED -> stringResource(R.string.batch_notice_done)
         LibraryNoticeType.BATCH_FAILED -> stringResource(R.string.batch_notice_failed)
         LibraryNoticeType.BATCH_NO_CHANGES -> stringResource(R.string.batch_notice_no_changes)
-        LibraryNoticeType.EPUB_PREPARED -> stringResource(R.string.prepare_notice_done)
         LibraryNoticeType.PREPARE_FAILED -> stringResource(R.string.prepare_notice_failed)
         LibraryNoticeType.EXPORT_FAILED -> stringResource(R.string.export_notice_failed)
         LibraryNoticeType.SYNC_FOLDER_CONFIGURED -> stringResource(R.string.sync_notice_folder_configured)

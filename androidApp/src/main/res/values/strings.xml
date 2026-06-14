@@ -79,7 +79,7 @@
     <string name="import_notice_duplicates">Este EPUB já está na biblioteca.</string>
     <string name="import_notice_failed">Não foi possível importar o EPUB.</string>
     <string name="import_notice_mixed">Importação concluída com avisos.</string>
-    <string name="edit_notice_metadata_saved">Metadados salvos.</string>
+    <string name="edit_notice_metadata_saved">Metadados salvos e EPUB preparado.</string>
     <string name="edit_notice_cover_updated">Capa atualizada.</string>
     <string name="edit_notice_update_failed">Não foi possível salvar a alteração.</string>
     <string name="edit_notice_invalid_title">Informe um título para salvar.</string>
@@ -88,7 +88,6 @@
     <string name="batch_notice_done">Metadados atualizados em lote.</string>
     <string name="batch_notice_failed">Não foi possível editar os livros selecionados.</string>
     <string name="batch_notice_no_changes">Preencha ao menos um campo para aplicar.</string>
-    <string name="prepare_notice_done">EPUB preparado.</string>
     <string name="prepare_notice_failed">Não foi possível preparar o EPUB.</string>
     <string name="export_notice_failed">Não foi possível exportar o EPUB.</string>
     <string name="export_share_chooser">Compartilhar EPUB</string>
@@ -106,7 +105,6 @@
     <string name="details_about_book">Sobre este livro</string>
     <string name="details_action_edit_metadata">Editar metadados</string>
     <string name="details_action_replace_cover">Trocar capa</string>
-    <string name="details_action_prepare_epub">Preparar EPUB</string>
     <string name="details_action_share_export">Compartilhar / exportar</string>
     <string name="details_action_delete_book">Excluir da biblioteca</string>
     <string name="delete_book_dialog_title">Excluir livro?</string>
@@ -123,7 +121,6 @@
     <string name="edit_metadata_location">Local</string>
     <string name="edit_metadata_location_value">Biblioteca Foliore / %1$s</string>
     <string name="edit_metadata_save">Salvar</string>
-    <string name="edit_metadata_prepare_short">Preparar</string>
     <string name="edit_metadata_export_short">Exportar</string>
     <string name="edit_metadata_cancel">Cancelar</string>
     <string name="edit_metadata_field_title">Título</string>
