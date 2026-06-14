@@ -10,7 +10,8 @@
         android:resizeableActivity="true"
         android:roundIcon="@drawable/ic_launcher_foreground"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Foliore">
+        android:theme="@style/Theme.Foliore"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"

@@ -16,5 +16,8 @@ data class AiGeneratedCoverOption(
 
 sealed class OpenAiResult<out T> {
     data class Success<T>(val value: T) : OpenAiResult<T>()
-    data class Failure(val message: String? = null) : OpenAiResult<Nothing>()
+    data class Failure(
+        val message: String? = null,
+        val code: String? = null,
+    ) : OpenAiResult<Nothing>()
 }

@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
                             aiPreferenceRepository = appContainer.aiPreferenceRepository,
                             aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
                             openAiApiService = appContainer.openAiApiService,
+                            codexBridgeService = appContainer.codexBridgeService,
                         )
                     }
                     val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

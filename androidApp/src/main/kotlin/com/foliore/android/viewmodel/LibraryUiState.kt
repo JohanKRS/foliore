@@ -22,6 +22,8 @@ data class LibraryUiState(
     val selectedBookIds: Set<String> = emptySet(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
+    val codexBridgeBaseUrl: String? = null,
+    val hasCodexBridgeToken: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
 ) {
     val activeProgress: SyncProgress?
@@ -126,6 +128,10 @@ enum class LibraryNoticeType {
     AI_SETTINGS_UPDATED,
     AI_API_KEY_SAVED,
     AI_API_KEY_CLEARED,
+    AI_BRIDGE_SETTINGS_SAVED,
+    AI_BRIDGE_SETTINGS_CLEARED,
+    AI_BRIDGE_CONNECTED,
+    AI_BRIDGE_COVERS_UNAVAILABLE,
     AI_PROVIDER_REQUIRED,
     AI_PROVIDER_NOT_READY,
     AI_REQUEST_FAILED,

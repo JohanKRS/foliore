@@ -50,6 +50,8 @@ fun SettingsScreen(
     themeMode: ThemeMode,
     aiProviderMode: AiProviderMode,
     hasOpenAiApiKey: Boolean,
+    codexBridgeBaseUrl: String?,
+    hasCodexBridgeToken: Boolean,
     syncFolderLabel: String?,
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
@@ -57,12 +59,19 @@ fun SettingsScreen(
     onAiProviderModeChange: (AiProviderMode) -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
+    onCodexBridgeSettingsSave: (String, String) -> Unit,
+    onCodexBridgeSettingsClear: () -> Unit,
+    onCodexBridgeConnectionTest: () -> Unit,
     onChooseSyncFolder: () -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var openAiApiKeyInput by rememberSaveable { mutableStateOf("") }
+    var codexBridgeUrlInput by rememberSaveable(codexBridgeBaseUrl) {
+        mutableStateOf(codexBridgeBaseUrl.orEmpty())
+    }
+    var codexBridgeTokenInput by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -209,20 +218,101 @@ fun SettingsScreen(
             }
         }
         SelectableOptionRow(
-            selected = aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL,
+            selected = aiProviderMode == AiProviderMode.CODEX_BRIDGE_LOCAL ||
+                aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL,
             icon = Icons.Outlined.TaskAlt,
-            title = stringResource(R.string.settings_ai_codex_oauth),
-            description = stringResource(R.string.settings_ai_codex_oauth_description),
-            onClick = { onAiProviderModeChange(AiProviderMode.CODEX_OAUTH_EXPERIMENTAL) },
+            title = stringResource(R.string.settings_ai_codex_bridge),
+            description = stringResource(R.string.settings_ai_codex_bridge_description),
+            onClick = { onAiProviderModeChange(AiProviderMode.CODEX_BRIDGE_LOCAL) },
         )
-        if (aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL) {
+        if (aiProviderMode == AiProviderMode.CODEX_BRIDGE_LOCAL ||
+            aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL
+        ) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.settings_ai_oauth_note),
-                modifier = Modifier.padding(start = 40.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = if (hasCodexBridgeToken && codexBridgeBaseUrl != null) {
+                        stringResource(R.string.settings_ai_bridge_configured, codexBridgeBaseUrl)
+                    } else {
+                        stringResource(R.string.settings_ai_bridge_missing)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = codexBridgeUrlInput,
+                    onValueChange = { codexBridgeUrlInput = it },
+                    label = { Text(text = stringResource(R.string.settings_ai_bridge_url_label)) },
+                    placeholder = { Text(text = stringResource(R.string.settings_ai_bridge_url_placeholder)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+                )
+                OutlinedTextField(
+                    value = codexBridgeTokenInput,
+                    onValueChange = { codexBridgeTokenInput = it },
+                    label = { Text(text = stringResource(R.string.settings_ai_bridge_token_label)) },
+                    placeholder = {
+                        Text(
+                            text = if (hasCodexBridgeToken) {
+                                stringResource(R.string.settings_ai_bridge_token_placeholder_saved)
+                            } else {
+                                stringResource(R.string.settings_ai_bridge_token_placeholder)
+                            },
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Button(
+                        onClick = {
+                            onCodexBridgeSettingsSave(codexBridgeUrlInput, codexBridgeTokenInput)
+                            codexBridgeTokenInput = ""
+                        },
+                        enabled = codexBridgeUrlInput.isNotBlank() &&
+                            (codexBridgeTokenInput.isNotBlank() || hasCodexBridgeToken),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(text = stringResource(R.string.settings_ai_bridge_save))
+                    }
+                    OutlinedButton(
+                        onClick = onCodexBridgeConnectionTest,
+                        enabled = hasCodexBridgeToken && codexBridgeBaseUrl != null,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(text = stringResource(R.string.settings_ai_bridge_test))
+                    }
+                }
+                OutlinedButton(
+                    onClick = {
+                        onCodexBridgeSettingsClear()
+                        codexBridgeUrlInput = ""
+                        codexBridgeTokenInput = ""
+                    },
+                    enabled = hasCodexBridgeToken || codexBridgeBaseUrl != null,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(text = stringResource(R.string.settings_ai_bridge_clear))
+                }
+                Text(
+                    text = stringResource(R.string.settings_ai_bridge_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(28.dp))
