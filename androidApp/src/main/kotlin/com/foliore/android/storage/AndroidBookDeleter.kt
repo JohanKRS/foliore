@@ -9,10 +9,12 @@ class AndroidBookDeleter(
     private val libraryRepository: LibraryRepository,
 ) {
     private val appContext = context.applicationContext
+    private val pendingRemoteDeletionStore = PendingRemoteDeletionStore(appContext)
 
     fun delete(bookId: String): BookDeleteResult {
         val deleted = libraryRepository.deleteBook(bookId) ?: return BookDeleteResult.NotFound
         val bookDir = File(appContext.filesDir, "books/$bookId")
+        pendingRemoteDeletionStore.markDeleted(bookId)
 
         return runCatching {
             if (bookDir.isSafeBookDirectory(bookId) && bookDir.exists()) {

@@ -29,7 +29,8 @@ class ManualSyncService(
     private val deviceIdProvider: DeviceIdProvider,
 ) {
     private val appContext = context.applicationContext
-    private val preferences = appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val preferences = appContext.getSharedPreferences(SyncPreferenceKeys.PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val pendingRemoteDeletionStore = PendingRemoteDeletionStore(appContext)
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -41,7 +42,11 @@ class ManualSyncService(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
             )
-            preferences.edit().putString(KEY_SYNC_TREE_URI, uri.toString()).apply()
+            preferences.edit()
+                .putString(KEY_SYNC_TREE_URI, uri.toString())
+                .remove(KEY_LIBRARY_ROOT_URI)
+                .remove(KEY_LIBRARY_ROOT_INITIALIZED)
+                .apply()
             ManualSyncResult.Configured(folderLabel(uri) ?: DEFAULT_FOLDER_LABEL)
         }.getOrDefault(ManualSyncResult.Failed)
     }
@@ -56,7 +61,11 @@ class ManualSyncService(
                 )
             }
         }
-        preferences.edit().remove(KEY_SYNC_TREE_URI).apply()
+        preferences.edit()
+            .remove(KEY_SYNC_TREE_URI)
+            .remove(KEY_LIBRARY_ROOT_URI)
+            .remove(KEY_LIBRARY_ROOT_INITIALIZED)
+            .apply()
     }
 
     fun folderLabel(): String? {
@@ -73,7 +82,7 @@ class ManualSyncService(
                 ?: return ManualSyncResult.FolderUnavailable
 
             val documentCache = DocumentFileCache()
-            val libraryRoot = root.ensureDirectory(LIBRARY_ROOT_NAME, documentCache)
+            val libraryRoot = root.resolveLibraryRoot(documentCache)
             val syncedAt = Clock.System.now().toString()
             val deviceId = deviceIdProvider.getDeviceId()
             val remoteManifest = libraryRoot.readManifest(documentCache)
@@ -85,8 +94,10 @@ class ManualSyncService(
             val pendingStatusUpdates = PendingSyncStatusUpdates()
             val localBooks = libraryRepository.getBooks()
             val localBooksById = localBooks.associateBy { it.book.id }
+            val pendingDeletedBookIds = pendingRemoteDeletionStore.pendingBookIds() - localBooksById.keys
             val remoteBookList = remoteBooks.values.toList()
             val missingRemoteBookIds = linkedSetOf<String>()
+            val removedRemoteBookIds = linkedSetOf<String>()
 
             onProgress(
                 ManualSyncProgress(
@@ -96,17 +107,28 @@ class ManualSyncService(
                 ),
             )
             remoteBookList.forEachIndexed { index, remoteBook ->
-                if (remoteBook.hasBookDirectory(libraryRoot, documentCache)) {
+                val localBook = localBooksById[remoteBook.bookId]
+                // Before remote tombstones existed, a local delete could leave this device's
+                // own upload behind. Keep remote-only books from other devices downloadable.
+                val shouldDeleteRemoteBook = remoteBook.bookId in pendingDeletedBookIds ||
+                    (localBook == null && remoteBook.updatedByDeviceId == deviceId)
+
+                if (shouldDeleteRemoteBook) {
+                    remoteBook.deleteRemoteFiles(libraryRoot, documentCache)
+                    removedRemoteBookIds += remoteBook.bookId
+                } else if (remoteBook.hasBookDirectory(libraryRoot, documentCache)) {
                     applyRemoteBook(
                         libraryRoot = libraryRoot,
                         documentCache = documentCache,
                         remoteBook = remoteBook,
-                        local = localBooksById[remoteBook.bookId],
+                        local = localBook,
                         syncedAt = syncedAt,
                         currentDeviceId = deviceId,
                         counters = counters,
                         pendingStatusUpdates = pendingStatusUpdates,
                     )
+                } else if (localBook == null) {
+                    removedRemoteBookIds += remoteBook.bookId
                 } else {
                     missingRemoteBookIds += remoteBook.bookId
                 }
@@ -120,6 +142,7 @@ class ManualSyncService(
             }
             val shouldRewriteRemoteMetadata = remoteManifest == null ||
                 missingRemoteBookIds.isNotEmpty() ||
+                removedRemoteBookIds.isNotEmpty() ||
                 !libraryRoot.hasDirectory("devices", documentCache) ||
                 !libraryRoot.hasDirectory("snapshots", documentCache)
 
@@ -224,7 +247,7 @@ class ManualSyncService(
                             updatedAt = syncedAt,
                             updatedByDeviceId = deviceId,
                             books = mergedManifestBooks(
-                                remoteBooks = remoteBooks,
+                                remoteBooks = remoteBooks - removedRemoteBookIds,
                                 localBooks = booksAfterRemote,
                                 remoteLayoutsByBookId = remoteLayoutsByBookId,
                                 conflictedBookIds = pendingStatusUpdates.conflictedBookIds,
@@ -258,6 +281,7 @@ class ManualSyncService(
                     .putInt(KEY_SYNC_UPLOAD_STRATEGY_VERSION, CURRENT_SYNC_UPLOAD_STRATEGY_VERSION)
                     .apply()
             }
+            pendingRemoteDeletionStore.clear(pendingDeletedBookIds)
 
             ManualSyncResult.Synced(
                 uploadedBooks = counters.uploadedBooks,
@@ -535,6 +559,66 @@ class ManualSyncService(
         return changed
     }
 
+    private fun DocumentFile.resolveLibraryRoot(documentCache: DocumentFileCache): DocumentFile {
+        val nestedLibraryRoots = documentCache.directoriesNamed(this, LIBRARY_ROOT_NAME)
+        val selfIsLibraryRoot = name == LIBRARY_ROOT_NAME || libraryRootStructureScore(documentCache) > 0
+
+        if (selfIsLibraryRoot) {
+            if (nestedLibraryRoots.isNotEmpty()) {
+                nestedLibraryRoots.forEach { duplicate -> duplicate.deleteTree(documentCache) }
+                documentCache.invalidate(this)
+            }
+            markLibraryRootInitialized(this)
+            return this
+        }
+
+        if (nestedLibraryRoots.isNotEmpty()) {
+            val canonical = nestedLibraryRoots.bestLibraryRoot(documentCache)
+                ?: error("Cannot resolve $LIBRARY_ROOT_NAME")
+            nestedLibraryRoots
+                .filterNot { duplicate -> duplicate.uri == canonical.uri }
+                .forEach { duplicate -> duplicate.deleteTree(documentCache) }
+            documentCache.invalidate(this)
+            markLibraryRootInitialized(canonical)
+            return canonical
+        }
+
+        val created = createDirectory(LIBRARY_ROOT_NAME) ?: error("Cannot create $LIBRARY_ROOT_NAME")
+        documentCache.invalidate(this)
+        markLibraryRootInitialized(created)
+        return created
+    }
+
+    private fun DocumentFile.libraryRootStructureScore(documentCache: DocumentFileCache): Int {
+        var score = 0
+        if (documentCache.filesNamed(this, "library.manifest.json").isNotEmpty()) score += 1_000
+        if (documentCache.directoriesNamed(this, "books").isNotEmpty()) score += 200
+        if (documentCache.directoriesNamed(this, "devices").isNotEmpty()) score += 50
+        if (documentCache.directoriesNamed(this, "snapshots").isNotEmpty()) score += 50
+        return score
+    }
+
+    private fun DocumentFile.libraryRootScore(documentCache: DocumentFileCache): Int {
+        return libraryRootStructureScore(documentCache) + documentCache.childrenOf(this).size.coerceAtMost(40)
+    }
+
+    private fun List<DocumentFile>.bestLibraryRoot(documentCache: DocumentFileCache): DocumentFile? {
+        val storedRootUri = preferences.getString(KEY_LIBRARY_ROOT_URI, null)
+        return maxWithOrNull(
+            compareBy<DocumentFile> { candidate -> candidate.libraryRootScore(documentCache) }
+                .thenBy { candidate -> if (candidate.uri.toString() == storedRootUri) 1 else 0 }
+                .thenBy { candidate -> candidate.lastModified() }
+                .thenBy { candidate -> candidate.uri.toString() },
+        )
+    }
+
+    private fun markLibraryRootInitialized(libraryRoot: DocumentFile) {
+        preferences.edit()
+            .putBoolean(KEY_LIBRARY_ROOT_INITIALIZED, true)
+            .putString(KEY_LIBRARY_ROOT_URI, libraryRoot.uri.toString())
+            .apply()
+    }
+
     private fun DocumentFile.ensureDirectory(
         name: String,
         documentCache: DocumentFileCache,
@@ -707,6 +791,17 @@ class ManualSyncService(
         documentCache: DocumentFileCache,
     ): Boolean {
         return libraryRoot.findRelativeDirectory(bookFolderPath(), documentCache) != null
+    }
+
+    private fun ManifestBookSnapshot.deleteRemoteFiles(
+        libraryRoot: DocumentFile,
+        documentCache: DocumentFileCache,
+    ) {
+        listOf(bookFolderPath(), "books/$bookId")
+            .distinct()
+            .forEach { path ->
+                libraryRoot.findRelativeDirectory(path, documentCache)?.deleteTree(documentCache)
+            }
     }
 
     private fun ManifestBookSnapshot.hasDifferentPathsThan(expected: ManifestBookSnapshot): Boolean {
@@ -988,9 +1083,10 @@ class ManualSyncService(
     }
 
     private companion object {
-        const val PREFERENCES_NAME = "foliore_sync"
         const val KEY_SYNC_TREE_URI = "sync_tree_uri"
         const val KEY_LIBRARY_ID = "library_id"
+        const val KEY_LIBRARY_ROOT_INITIALIZED = "library_root_initialized"
+        const val KEY_LIBRARY_ROOT_URI = "library_root_uri"
         const val KEY_SYNC_UPLOAD_STRATEGY_VERSION = "sync_upload_strategy_version"
         const val CURRENT_SYNC_UPLOAD_STRATEGY_VERSION = 2
         const val LIBRARY_ROOT_NAME = "Foliore Library"
