@@ -1,13 +1,16 @@
 package com.foliore.android.ui.library
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -20,9 +23,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,9 +61,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -69,8 +69,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.foliore.android.R
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.BookGridColumns
@@ -479,29 +480,78 @@ private fun BookGrid(
     onBookClick: (String) -> Unit,
     onBookSelectionToggle: (String) -> Unit,
 ) {
-    LazyVerticalGrid(
-        columns = gridColumns.gridCells(),
-        contentPadding = PaddingValues(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 32.dp),
-        horizontalArrangement = Arrangement.spacedBy(28.dp),
-        verticalArrangement = Arrangement.spacedBy(28.dp),
-        modifier = Modifier.fillMaxSize(),
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val columnCount = gridColumns.columnCount(maxWidth)
+        val rows = remember(books, columnCount) { books.chunked(columnCount) }
+
+        LazyColumn(
+            contentPadding = PaddingValues(
+                start = BookGridHorizontalPadding,
+                end = BookGridHorizontalPadding,
+                top = 8.dp,
+                bottom = 32.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(BookGridVerticalSpacing),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(
+                items = rows,
+                key = { row -> row.joinToString(separator = "|") { it.book.id } },
+            ) { rowBooks ->
+                BookGridRow(
+                    books = rowBooks,
+                    columnCount = columnCount,
+                    isBatchMode = isBatchMode,
+                    selectedBookIds = selectedBookIds,
+                    onBookClick = onBookClick,
+                    onBookSelectionToggle = onBookSelectionToggle,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookGridRow(
+    books: List<LibraryBook>,
+    columnCount: Int,
+    isBatchMode: Boolean,
+    selectedBookIds: Set<String>,
+    onBookClick: (String) -> Unit,
+    onBookSelectionToggle: (String) -> Unit,
+) {
+    val coverKeys = remember(books) { books.map { it.book.id to it.coverPath() } }
+    val coverAspectRatios = remember(coverKeys) {
+        coverKeys.associate { (bookId, coverPath) ->
+            bookId to coverPath.coverAspectRatio()
+        }
+    }
+    val rowCoverAspectRatio = coverAspectRatios.values.minOrNull() ?: DefaultCoverAspectRatio
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(BookGridHorizontalSpacing),
     ) {
-        items(
-            items = books,
-            key = { it.book.id },
-        ) { item ->
-            BookCoverItem(
-                item = item,
-                isBatchMode = isBatchMode,
-                isSelected = item.book.id in selectedBookIds,
-                onClick = {
-                    if (isBatchMode) {
-                        onBookSelectionToggle(item.book.id)
-                    } else {
-                        onBookClick(item.book.id)
-                    }
-                },
-            )
+        repeat(columnCount) { index ->
+            val item = books.getOrNull(index)
+            Box(modifier = Modifier.weight(1f)) {
+                if (item != null) {
+                    BookCoverItem(
+                        item = item,
+                        coverAspectRatio = coverAspectRatios[item.book.id] ?: DefaultCoverAspectRatio,
+                        rowCoverAspectRatio = rowCoverAspectRatio,
+                        isBatchMode = isBatchMode,
+                        isSelected = item.book.id in selectedBookIds,
+                        onClick = {
+                            if (isBatchMode) {
+                                onBookSelectionToggle(item.book.id)
+                            } else {
+                                onBookClick(item.book.id)
+                            }
+                        },
+                    )
+                }
+            }
         }
     }
 }
@@ -509,6 +559,8 @@ private fun BookGrid(
 @Composable
 private fun BookCoverItem(
     item: LibraryBook,
+    coverAspectRatio: Float,
+    rowCoverAspectRatio: Float,
     isBatchMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -516,46 +568,46 @@ private fun BookCoverItem(
     val title = item.metadata.title
     val author = item.metadata.authors.firstOrNull().orEmpty()
     val seriesLabel = item.metadata.seriesLabel()
-    val coverPath = item.book.coverThumbPath ?: item.book.coverImagePath
+    val coverPath = item.coverPath()
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f)
-                .shadow(
-                    elevation = 5.dp,
-                    shape = RoundedCornerShape(6.dp),
-                    ambientColor = Color.Black.copy(alpha = 0.10f),
-                    spotColor = Color.Black.copy(alpha = 0.10f),
-                )
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(
-                    width = if (isSelected) 2.dp else 0.dp,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    shape = RoundedCornerShape(6.dp),
-                )
-                .clickable(onClick = onClick),
+                .aspectRatio(rowCoverAspectRatio),
         ) {
-            if (coverPath != null) {
-                AsyncImage(
-                    model = File(coverPath),
-                    contentDescription = stringResource(R.string.cover_content_description, title),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                CoverPlaceholder(modifier = Modifier.fillMaxSize())
-            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .aspectRatio(coverAspectRatio)
+                    .border(
+                        width = if (isSelected) 2.dp else 0.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(6.dp),
+                    )
+                    .clickable(onClick = onClick),
+            ) {
+                if (coverPath != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = File(coverPath)),
+                        contentDescription = stringResource(R.string.cover_content_description, title),
+                        alignment = Alignment.BottomCenter,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    CoverPlaceholder(modifier = Modifier.fillMaxSize())
+                }
 
-            if (isBatchMode) {
-                SelectionBadge(
-                    selected = isSelected,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp),
-                )
+                if (isBatchMode) {
+                    SelectionBadge(
+                        selected = isSelected,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp),
+                    )
+                }
             }
         }
 
@@ -919,6 +971,12 @@ private fun selectedCountText(count: Int): String {
     )
 }
 
+private val BookGridHorizontalPadding = 28.dp
+private val BookGridHorizontalSpacing = 28.dp
+private val BookGridVerticalSpacing = 28.dp
+private val BookGridMinCellWidth = 150.dp
+private const val DefaultCoverAspectRatio = 2f / 3f
+
 private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
     val trimmedQuery = query.trim()
 
@@ -993,6 +1051,23 @@ private fun List<LibraryBook>.sortedBy(sortOrder: BookSortOrder): List<LibraryBo
 
 private fun LibraryBook.titleSortKey(): String = metadata.title.sortKey()
 
+private fun LibraryBook.coverPath(): String? = book.coverThumbPath ?: book.coverImagePath
+
+private fun String?.coverAspectRatio(): Float {
+    if (this == null) return DefaultCoverAspectRatio
+
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(this, options)
+    val width = options.outWidth
+    val height = options.outHeight
+
+    return if (width > 0 && height > 0) {
+        width.toFloat() / height.toFloat()
+    } else {
+        DefaultCoverAspectRatio
+    }
+}
+
 private fun LibraryBook.authorSortKey(): String? {
     return metadata.sortAuthor.cleanOptional()
         ?: metadata.authors.firstOrNull()?.cleanOptional()
@@ -1063,8 +1138,15 @@ private fun BookGridColumns.labelRes(): Int {
     }
 }
 
-private fun BookGridColumns.gridCells(): GridCells {
-    return fixedCount?.let { GridCells.Fixed(it) } ?: GridCells.Adaptive(minSize = 150.dp)
+private fun BookGridColumns.columnCount(availableWidth: Dp): Int {
+    fixedCount?.let { return it }
+
+    val contentWidth = (availableWidth - (BookGridHorizontalPadding * 2)).value
+        .coerceAtLeast(BookGridMinCellWidth.value)
+    val columnWidthWithGap = BookGridMinCellWidth.value + BookGridHorizontalSpacing.value
+    return ((contentWidth + BookGridHorizontalSpacing.value) / columnWidthWithGap)
+        .toInt()
+        .coerceAtLeast(1)
 }
 
 fun BookStatus.labelRes(): Int {
