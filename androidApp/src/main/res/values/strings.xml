@@ -124,6 +124,7 @@
     <string name="sync_notice_disconnected">Pasta de sincronização desconectada.</string>
 
     <string name="share_label_use_as_cover">Usar como capa</string>
+    <string name="share_label_import_epub">Importar EPUB</string>
     <string name="share_cover_title">Usar imagem como capa</string>
     <string name="share_cover_subtitle">Escolha o livro que receberá esta capa.</string>
     <string name="share_cover_preview_description">Imagem recebida para capa</string>

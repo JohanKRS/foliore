@@ -19,6 +19,34 @@
             </intent-filter>
         </activity>
 
+        <activity-alias
+            android:name=".share.EpubShareReceiverActivity"
+            android:exported="true"
+            android:label="@string/share_label_import_epub"
+            android:targetActivity=".MainActivity">
+            <intent-filter android:label="@string/share_label_import_epub">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="application/x-epub+zip" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter android:label="@string/share_label_import_epub">
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="application/x-epub+zip" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter android:label="@string/share_label_import_epub">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="application/x-epub+zip" />
+            </intent-filter>
+        </activity-alias>
+
         <activity
             android:name=".share.CoverShareReceiverActivity"
             android:exported="true"
