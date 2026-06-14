@@ -129,6 +129,8 @@ class ManualSyncService(
                 val layout = remoteLayoutsByBookId.getValue(book.book.id)
                 book.book.id to book.toManifestBook(layout)
             }
+            val shouldRefreshRemoteBookFolders =
+                preferences.getInt(KEY_SYNC_UPLOAD_STRATEGY_VERSION, 0) < CURRENT_SYNC_UPLOAD_STRATEGY_VERSION
             val uploadCandidateIds = booksAfterRemote
                 .filterNot { book ->
                     book.book.syncStatus == SyncStatus.CONFLICT ||
@@ -137,7 +139,7 @@ class ManualSyncService(
                 .filter { book ->
                     book.shouldUploadTo(
                         remoteBook = remoteBooks[book.book.id],
-                        forceUpload = book.book.id in missingRemoteBookIds,
+                        forceUpload = shouldRefreshRemoteBookFolders || book.book.id in missingRemoteBookIds,
                         expectedRemoteBook = expectedRemoteBooksById[book.book.id],
                     )
                 }
@@ -249,6 +251,12 @@ class ManualSyncService(
                     .forEach { bookId ->
                         libraryRepository.markSynced(bookId, syncedAt)
                     }
+            }
+
+            if (shouldRefreshRemoteBookFolders) {
+                preferences.edit()
+                    .putInt(KEY_SYNC_UPLOAD_STRATEGY_VERSION, CURRENT_SYNC_UPLOAD_STRATEGY_VERSION)
+                    .apply()
             }
 
             ManualSyncResult.Synced(
@@ -426,18 +434,20 @@ class ManualSyncService(
         layout: RemoteBookLayout,
         previousRemoteBook: ManifestBookSnapshot?,
     ) {
-        val bookDir = booksRoot.ensureDirectory(layout.folderName, documentCache)
         val localDir = File(libraryBook.book.originalFilePath).parentFile
             ?: error("Missing local directory for ${libraryBook.book.id}")
         val epubSource = libraryBook.book.preparedFilePath
             ?.let(::File)
             ?.takeIf { it.exists() }
             ?: localDir.resolve("original.epub")
-
-        bookDir.deleteEpubsExcept(
-            keepName = layout.epubFileName,
+        libraryRoot.deleteObsoleteBookFolders(
+            bookId = libraryBook.book.id,
+            activeFolderPath = layout.folderPath,
+            previousRemoteBook = previousRemoteBook,
             documentCache = documentCache,
         )
+        val bookDir = booksRoot.ensureCleanDirectory(layout.folderName, documentCache)
+
         bookDir.replaceFiles(
             files = listOf(
                 LocalSyncFile(epubSource, layout.epubFileName, "application/epub+zip"),
@@ -447,12 +457,6 @@ class ManualSyncService(
                 LocalSyncFile(localDir.resolve("technical.json"), "technical.json", "application/json"),
                 LocalSyncFile(localDir.resolve("changes.jsonl"), "changes.jsonl", "application/json"),
             ),
-            documentCache = documentCache,
-        )
-        libraryRoot.deleteObsoleteBookFolders(
-            bookId = libraryBook.book.id,
-            activeFolderPath = layout.folderPath,
-            previousRemoteBook = previousRemoteBook,
             documentCache = documentCache,
         )
     }
@@ -500,20 +504,19 @@ class ManualSyncService(
         documentCache.invalidate(this)
     }
 
-    private fun DocumentFile.deleteEpubsExcept(
-        keepName: String,
+    private fun DocumentFile.ensureCleanDirectory(
+        name: String,
         documentCache: DocumentFileCache,
-    ) {
-        documentCache.childrenOf(this)
-            .filter { file ->
-                val fileName = file.name.orEmpty()
-                fileName.endsWith(".epub", ignoreCase = true) &&
-                    fileName != keepName &&
-                    !file.isDirectory
-            }
-            .forEach { file ->
-                if (!file.delete()) error("Cannot delete duplicate file ${file.name}")
-            }
+    ): DocumentFile {
+        val directory = ensureDirectory(name, documentCache)
+        directory.deleteChildren(documentCache)
+        return directory
+    }
+
+    private fun DocumentFile.deleteChildren(documentCache: DocumentFileCache) {
+        documentCache.childrenOf(this).forEach { child ->
+            child.deleteTree(documentCache)
+        }
         documentCache.invalidate(this)
     }
 
@@ -988,6 +991,8 @@ class ManualSyncService(
         const val PREFERENCES_NAME = "foliore_sync"
         const val KEY_SYNC_TREE_URI = "sync_tree_uri"
         const val KEY_LIBRARY_ID = "library_id"
+        const val KEY_SYNC_UPLOAD_STRATEGY_VERSION = "sync_upload_strategy_version"
+        const val CURRENT_SYNC_UPLOAD_STRATEGY_VERSION = 2
         const val LIBRARY_ROOT_NAME = "Foliore Library"
         const val DEFAULT_FOLDER_LABEL = "Foliore Library"
         const val TAG = "ManualSyncService"
