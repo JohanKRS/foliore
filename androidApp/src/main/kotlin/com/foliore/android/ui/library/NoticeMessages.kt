@@ -16,6 +16,8 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.COVER_UPDATED -> stringResource(R.string.edit_notice_cover_updated)
         LibraryNoticeType.UPDATE_FAILED -> stringResource(R.string.edit_notice_update_failed)
         LibraryNoticeType.INVALID_TITLE -> stringResource(R.string.edit_notice_invalid_title)
+        LibraryNoticeType.BOOK_DELETED -> stringResource(R.string.delete_notice_done)
+        LibraryNoticeType.DELETE_FAILED -> stringResource(R.string.delete_notice_failed)
         LibraryNoticeType.EPUB_PREPARED -> stringResource(R.string.prepare_notice_done)
         LibraryNoticeType.PREPARE_FAILED -> stringResource(R.string.prepare_notice_failed)
         LibraryNoticeType.EXPORT_FAILED -> stringResource(R.string.export_notice_failed)

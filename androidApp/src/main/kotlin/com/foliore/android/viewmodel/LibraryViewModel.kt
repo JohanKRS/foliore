@@ -5,9 +5,11 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.foliore.android.storage.AndroidBookEditor
+import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.BookEditResult
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
+import com.foliore.android.storage.BookDeleteResult
 import com.foliore.android.storage.EpubImportResult
 import com.foliore.android.storage.ManualSyncResult
 import com.foliore.android.storage.ManualSyncService
@@ -26,6 +28,7 @@ class LibraryViewModel(
     private val libraryRepository: LibraryRepository,
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
+    private val bookDeleter: AndroidBookDeleter,
     private val preparedEpubService: AndroidPreparedEpubService,
     private val manualSyncService: ManualSyncService,
 ) : ViewModel() {
@@ -142,6 +145,28 @@ class LibraryViewModel(
             )
             if (result is BookEditResult.Success) {
                 onUpdated()
+            }
+        }
+    }
+
+    fun deleteBook(
+        bookId: String,
+        onDeleted: () -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                bookDeleter.delete(bookId)
+            }
+            refreshBooks()
+            _notice.value = LibraryNotice(
+                when (result) {
+                    is BookDeleteResult.Deleted -> LibraryNoticeType.BOOK_DELETED
+                    BookDeleteResult.Failed,
+                    BookDeleteResult.NotFound -> LibraryNoticeType.DELETE_FAILED
+                },
+            )
+            if (result is BookDeleteResult.Deleted) {
+                onDeleted()
             }
         }
     }

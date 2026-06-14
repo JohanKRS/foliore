@@ -3,14 +3,20 @@ package com.foliore.android.ui.details
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -31,6 +37,7 @@ fun BookDetailsRoute(
     val context = LocalContext.current
     val book = state.books.firstOrNull { it.book.id == bookId }
     val snackbarHostState = remember { SnackbarHostState() }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val shareChooserTitle = stringResource(R.string.export_share_chooser)
     val coverPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -62,8 +69,32 @@ fun BookDetailsRoute(
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                 }
             },
+            onDeleteBook = { showDeleteDialog = true },
             onBack = onBack,
             modifier = Modifier.padding(paddingValues),
+        )
+    }
+
+    if (showDeleteDialog && book != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(text = stringResource(R.string.delete_book_dialog_title)) },
+            text = { Text(text = stringResource(R.string.delete_book_dialog_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteBook(bookId, onDeleted = onBack)
+                    },
+                ) {
+                    Text(text = stringResource(R.string.delete_book_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(text = stringResource(R.string.delete_book_cancel))
+                }
+            },
         )
     }
 }

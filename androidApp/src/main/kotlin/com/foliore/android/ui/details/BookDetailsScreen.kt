@@ -21,10 +21,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +53,7 @@ fun BookDetailsScreen(
     onReplaceCover: () -> Unit,
     onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
+    onDeleteBook: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -99,6 +100,7 @@ fun BookDetailsScreen(
                         onReplaceCover = onReplaceCover,
                         onPrepareEpub = onPrepareEpub,
                         onShareExport = onShareExport,
+                        onDeleteBook = onDeleteBook,
                     )
                 }
             } else {
@@ -117,6 +119,7 @@ fun BookDetailsScreen(
                         onReplaceCover = onReplaceCover,
                         onPrepareEpub = onPrepareEpub,
                         onShareExport = onShareExport,
+                        onDeleteBook = onDeleteBook,
                     )
                 }
             }
@@ -144,13 +147,6 @@ private fun DetailsTopBar(onBack: () -> Unit) {
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = {}) {
-            Icon(
-                imageVector = Icons.Outlined.MoreVert,
-                contentDescription = stringResource(R.string.action_more),
-            )
-        }
     }
 }
 
@@ -226,6 +222,7 @@ private fun BookMetadataPanel(
     onReplaceCover: () -> Unit,
     onPrepareEpub: () -> Unit,
     onShareExport: () -> Unit,
+    onDeleteBook: () -> Unit,
 ) {
     val panelModifier = if (scrollable) {
         modifier.verticalScroll(rememberScrollState())
@@ -280,6 +277,12 @@ private fun BookMetadataPanel(
             label = stringResource(R.string.details_action_share_export),
             onClick = onShareExport,
         )
+        DetailsActionRow(
+            icon = Icons.Outlined.Delete,
+            label = stringResource(R.string.details_action_delete_book),
+            onClick = onDeleteBook,
+            color = MaterialTheme.colorScheme.error,
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
@@ -330,7 +333,10 @@ private fun DetailsActionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     onClick: () -> Unit,
+    color: androidx.compose.ui.graphics.Color? = null,
 ) {
+    val contentColor = color ?: MaterialTheme.colorScheme.onBackground
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -342,13 +348,13 @@ private fun DetailsActionRow(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(28.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = contentColor,
         )
         Spacer(modifier = Modifier.width(18.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = contentColor,
         )
         Spacer(modifier = Modifier.weight(1f))
         Icon(

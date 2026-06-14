@@ -109,6 +109,16 @@ class LibraryRepository(
         return database.libraryQueries.findBookIdByHash(hash).executeAsOneOrNull()
     }
 
+    fun deleteBook(bookId: String): LibraryBook? {
+        val current = getBook(bookId) ?: return null
+        database.transaction {
+            database.libraryQueries.deleteMetadata(bookId)
+            database.libraryQueries.deleteTechnicalInfo(bookId)
+            database.libraryQueries.deleteBook(bookId)
+        }
+        return current
+    }
+
     fun insertImportedBook(record: ImportedBookRecord) {
         val book = record.book
         val metadata = record.metadata

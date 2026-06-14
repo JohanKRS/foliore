@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
                             libraryRepository = appContainer.libraryRepository,
                             epubImporter = appContainer.epubImporter,
                             bookEditor = appContainer.bookEditor,
+                            bookDeleter = appContainer.bookDeleter,
                             preparedEpubService = appContainer.preparedEpubService,
                             manualSyncService = appContainer.manualSyncService,
                         )

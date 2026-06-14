@@ -55,6 +55,8 @@
     <string name="edit_notice_cover_updated">Capa atualizada.</string>
     <string name="edit_notice_update_failed">Não foi possível salvar a alteração.</string>
     <string name="edit_notice_invalid_title">Informe um título para salvar.</string>
+    <string name="delete_notice_done">Livro removido da biblioteca.</string>
+    <string name="delete_notice_failed">Não foi possível remover o livro.</string>
     <string name="prepare_notice_done">EPUB preparado.</string>
     <string name="prepare_notice_failed">Não foi possível preparar o EPUB.</string>
     <string name="export_notice_failed">Não foi possível exportar o EPUB.</string>
@@ -74,6 +76,11 @@
     <string name="details_action_replace_cover">Trocar capa</string>
     <string name="details_action_prepare_epub">Preparar EPUB</string>
     <string name="details_action_share_export">Compartilhar / exportar</string>
+    <string name="details_action_delete_book">Excluir da biblioteca</string>
+    <string name="delete_book_dialog_title">Excluir livro?</string>
+    <string name="delete_book_dialog_body">Esta ação remove o livro e os arquivos locais salvos pelo Foliore.</string>
+    <string name="delete_book_confirm">Excluir</string>
+    <string name="delete_book_cancel">Cancelar</string>
 
     <string name="edit_metadata_title">Editar livro</string>
     <string name="edit_metadata_section">Metadados</string>

@@ -192,3 +192,11 @@ INSERT OR REPLACE INTO epub_technical_info (
 deleteBook:
 DELETE FROM book
 WHERE id = ?;
+
+deleteMetadata:
+DELETE FROM book_metadata
+WHERE book_id = ?;
+
+deleteTechnicalInfo:
+DELETE FROM epub_technical_info
+WHERE book_id = ?;

@@ -2,6 +2,7 @@ package com.foliore.android.di
 
 import android.content.Context
 import com.foliore.android.storage.AndroidBookEditor
+import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.DeviceIdProvider
@@ -27,6 +28,10 @@ class AppContainer(context: Context) {
         context = appContext,
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,
+    )
+    val bookDeleter = AndroidBookDeleter(
+        context = appContext,
+        libraryRepository = libraryRepository,
     )
     val preparedEpubService = AndroidPreparedEpubService(
         context = appContext,
