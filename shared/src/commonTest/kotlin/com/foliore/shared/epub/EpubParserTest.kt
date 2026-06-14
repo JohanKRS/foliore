@@ -128,6 +128,36 @@ class EpubParserTest {
         assertEquals("1999", result.metadata.publishedDate)
     }
 
+    @Test
+    fun extractsIsbnFromMultipleIdentifiers() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="content.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "content.opf" to """
+                    <package version="3.0">
+                      <metadata>
+                        <dc:title>Identifier Test</dc:title>
+                        <dc:identifier id="uuid">urn:uuid:12345678-1234-1234-1234-123456789abc</dc:identifier>
+                        <dc:identifier id="isbn" opf:scheme="ISBN">978-0-306-40615-7</dc:identifier>
+                      </metadata>
+                    </package>
+                """.trimIndent(),
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals("urn:uuid:12345678-1234-1234-1234-123456789abc", result.metadata.identifier)
+        assertEquals("9780306406157", result.metadata.isbn)
+        assertEquals("978-0-306-40615-7", result.metadata.identifiers["isbn"])
+    }
+
     private class FakeArchive(private val entries: Map<String, String>) : EpubArchive {
         override fun listEntries(): List<String> = entries.keys.toList()
 

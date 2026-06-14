@@ -352,6 +352,17 @@ class LibraryViewModel(
                             prompt = prompt,
                             reference = reference,
                             styles = styles,
+                            onProgress = { current, total ->
+                                _state.update {
+                                    it.copy(
+                                        importProgress = SyncProgress(
+                                            phase = SyncProgressPhase.GENERATING_COVERS,
+                                            current = current,
+                                            total = total,
+                                        ),
+                                    )
+                                }
+                            },
                         )
                         AiProviderMode.CODEX_BRIDGE_LOCAL,
                         AiProviderMode.CODEX_OAUTH_EXPERIMENTAL -> codexBridgeService.generateCoverOptions(

@@ -242,11 +242,48 @@ class CodexBridgeService(
             publishedDate = publishedDate.yearOnlyOrNull(),
             description = description.cleanOptional(),
             tags = cleanTags,
-            isbn = isbn.cleanOptional(),
+            isbn = isbn.extractIsbn() ?: current.bestIsbn(),
             identifiers = current.identifiers,
             seriesName = seriesName.cleanOptional(),
             seriesIndex = seriesIndex,
         )
+    }
+
+    private fun BookMetadataDraft.bestIsbn(): String? {
+        isbn.extractIsbn()?.let { return it }
+        return identifiers.values.mapNotNull { it.extractIsbn() }.firstOrNull()
+    }
+
+    private fun String?.extractIsbn(): String? {
+        val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val compact = raw.filter { it.isDigit() || it == 'X' || it == 'x' }.uppercase()
+        Regex("97[89]\\d{10}").findAll(compact)
+            .map { it.value }
+            .firstOrNull { it.isValidIsbn13() }
+            ?.let { return it }
+        Regex("\\d{9}[\\dX]").findAll(compact)
+            .map { it.value }
+            .firstOrNull { it.isValidIsbn10() }
+            ?.let { return it }
+        return null
+    }
+
+    private fun String.isValidIsbn13(): Boolean {
+        if (length != 13 || any { !it.isDigit() }) return false
+        val sum = take(12).mapIndexed { index, char ->
+            char.digitToInt() * if (index % 2 == 0) 1 else 3
+        }.sum()
+        val check = (10 - (sum % 10)) % 10
+        return check == last().digitToInt()
+    }
+
+    private fun String.isValidIsbn10(): Boolean {
+        if (length != 10) return false
+        val sum = mapIndexed { index, char ->
+            val value = if (index == 9 && char == 'X') 10 else char.digitToIntOrNull() ?: return false
+            value * (10 - index)
+        }.sum()
+        return sum % 11 == 0
     }
 
     private fun List<BridgeCoverOptionPayload>.toGeneratedOptions(bookId: String): List<AiGeneratedCoverOption> {

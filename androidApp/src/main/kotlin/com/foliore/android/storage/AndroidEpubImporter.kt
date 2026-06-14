@@ -108,8 +108,10 @@ class AndroidEpubImporter(
                 publishedDate = parsedMetadata.publishedDate,
                 description = parsedMetadata.description,
                 tags = emptyList(),
-                isbn = null,
-                identifiers = parsedMetadata.identifier?.let { mapOf("package" to it) }.orEmpty(),
+                isbn = parsedMetadata.isbn,
+                identifiers = parsedMetadata.identifiers.ifEmpty {
+                    parsedMetadata.identifier?.let { mapOf("package" to it) }.orEmpty()
+                },
                 seriesName = null,
                 seriesIndex = null,
                 source = MetadataSource.EPUB,

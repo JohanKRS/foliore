@@ -12,6 +12,8 @@ data class ParsedEpubMetadata(
     val authors: List<String>,
     val language: String?,
     val identifier: String?,
+    val identifiers: Map<String, String>,
+    val isbn: String?,
     val description: String?,
     val publisher: String?,
     val publishedDate: String?,
@@ -31,4 +33,3 @@ data class ParsedEpubTechnicalInfo(
     val warnings: List<String>,
     val errors: List<String>,
 )
-

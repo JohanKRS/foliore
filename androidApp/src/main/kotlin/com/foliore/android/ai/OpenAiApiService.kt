@@ -58,6 +58,7 @@ class OpenAiApiService(
         prompt: String,
         reference: AiCoverPromptRecord?,
         styles: List<AiCoverStyleRequest>,
+        onProgress: (Int, Int) -> Unit = { _, _ -> },
     ): OpenAiResult<List<AiGeneratedCoverOption>> {
         val apiKey = aiPreferenceRepository.openAiApiKey()
             ?: return OpenAiResult.Failure("Missing API key")
@@ -98,6 +99,7 @@ class OpenAiApiService(
                 prompt = finalPrompt,
                 imagePath = imageFile.absolutePath,
             )
+            onProgress(index + 1, styles.size)
         }
 
         return OpenAiResult.Success(options)
@@ -113,7 +115,10 @@ class OpenAiApiService(
             Return only JSON matching the schema.
             Do not invent bibliographic facts. If a field is unknown, preserve the current value or return null.
             The description/about field must be elegant, brief, and spoiler-free: do not reveal endings, twists, deaths, secret identities, or late-story revelations.
+            Write the description/about with literary quality in the book's general tone and register, using the title, author, existing description, tags, and language as cues. Avoid generic marketing copy, hype, melodrama, cringe, or embarrassing phrasing.
             publishedDate must be only a four-digit year when known.
+            Generate natural-language fields in the EPUB language, especially description/about and tags. If the language field is present, use that language. If it is missing, infer it and return an ISO 639 language code.
+            Inspect isbn and every identifier. If any identifier is an ISBN-10 or ISBN-13, return it in isbn.
         """.trimIndent()
         val userPrompt = buildString {
             appendLine(prompt)
@@ -124,11 +129,12 @@ class OpenAiApiService(
             appendLine("Authors: ${draft.authors.joinToString(", ")}")
             appendLine("Sort author: ${draft.sortAuthor.orEmpty()}")
             appendLine("Series: ${draft.seriesName.orEmpty()}")
-            appendLine("Series number: ${draft.seriesIndex?.toString().orEmpty()}")
+            appendLine("Series number: ${draft.seriesIndex.formatSeriesIndex()}")
             appendLine("Language: ${draft.language.orEmpty()}")
             appendLine("Publisher: ${draft.publisher.orEmpty()}")
             appendLine("Published year/date: ${draft.publishedDate.orEmpty()}")
             appendLine("ISBN: ${draft.isbn.orEmpty()}")
+            appendLine("ISBN candidates from identifiers: ${draft.isbnCandidates().joinToString(", ")}")
             appendLine("Tags: ${draft.tags.joinToString(", ")}")
             appendLine("About: ${draft.description.orEmpty()}")
             appendLine("Original file path: ${book.book.originalFilePath}")
@@ -248,7 +254,7 @@ class OpenAiApiService(
             publishedDate = publishedDate.yearOnlyOrNull(),
             description = description.cleanOptional(),
             tags = cleanTags,
-            isbn = isbn.cleanOptional(),
+            isbn = isbn.extractIsbn() ?: current.bestIsbn(),
             identifiers = current.identifiers,
             seriesName = seriesName.cleanOptional(),
             seriesIndex = seriesIndex,
@@ -400,6 +406,64 @@ class OpenAiApiService(
         val seriesName: String? = null,
         val seriesIndex: Double? = null,
     )
+
+    private fun BookMetadataDraft.bestIsbn(): String? {
+        isbn.extractIsbn()?.let { return it }
+        return isbnCandidates().firstOrNull()
+    }
+
+    private fun BookMetadataDraft.isbnCandidates(): List<String> {
+        val values = buildList {
+            add(isbn.orEmpty())
+            identifiers.forEach { (key, value) ->
+                if (key.contains("isbn", ignoreCase = true)) add(value)
+                add(value)
+            }
+        }
+        return values.mapNotNull { it.extractIsbn() }.distinct()
+    }
+
+    private fun String?.extractIsbn(): String? {
+        val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val compact = raw.filter { it.isDigit() || it == 'X' || it == 'x' }.uppercase()
+        Regex("97[89]\\d{10}").findAll(compact)
+            .map { it.value }
+            .firstOrNull { it.isValidIsbn13() }
+            ?.let { return it }
+        Regex("\\d{9}[\\dX]").findAll(compact)
+            .map { it.value }
+            .firstOrNull { it.isValidIsbn10() }
+            ?.let { return it }
+        return null
+    }
+
+    private fun String.isValidIsbn13(): Boolean {
+        if (length != 13 || any { !it.isDigit() }) return false
+        val sum = take(12).mapIndexed { index, char ->
+            char.digitToInt() * if (index % 2 == 0) 1 else 3
+        }.sum()
+        val check = (10 - (sum % 10)) % 10
+        return check == last().digitToInt()
+    }
+
+    private fun String.isValidIsbn10(): Boolean {
+        if (length != 10) return false
+        val sum = mapIndexed { index, char ->
+            val value = if (index == 9 && char == 'X') 10 else char.digitToIntOrNull() ?: return false
+            value * (10 - index)
+        }.sum()
+        return sum % 11 == 0
+    }
+
+    private fun Double?.formatSeriesIndex(): String {
+        val value = this ?: return ""
+        val whole = value.toLong()
+        return if (value == whole.toDouble()) {
+            whole.toString()
+        } else {
+            value.toString().trimEnd('0').trimEnd('.')
+        }
+    }
 
     private companion object {
         const val RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses"

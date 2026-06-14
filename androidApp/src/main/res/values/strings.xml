@@ -236,11 +236,12 @@
     <string name="ai_hide_prompt">Ocultar prompt</string>
     <string name="ai_metadata_dialog_title">Prévia do auto-fill</string>
     <string name="ai_metadata_prompt_label">Prompt de metadados</string>
-    <string name="ai_metadata_default_prompt">Preencha e corrija metadados bibliográficos para este EPUB. Use apenas informação verificável. O campo Sobre deve ser curto, elegante e sem spoilers: não revele final, reviravoltas, mortes ou identidades ocultas. Responda com título, subtítulo, autores, série, número da série, idioma, editora, ano, tags, ISBN e sobre.</string>
+    <string name="ai_metadata_default_prompt">Preencha e corrija metadados bibliográficos para este EPUB. Use apenas informação verificável. Gere os campos textuais no idioma declarado do EPUB; se o idioma estiver ausente, infira e preencha o código do idioma. O campo Sobre deve ser curto, elegante e sem spoilers: não revele final, reviravoltas, mortes ou identidades ocultas. Escreva o Sobre com qualidade literária, no tom e registro geral do livro; evite linguagem promocional genérica, exagerada, cringe ou vergonha alheia. Procure ISBN-10 ou ISBN-13 no campo ISBN e nos identificadores do EPUB. Responda com título, subtítulo, autores, série, número da série, idioma, editora, ano, tags, ISBN e sobre.</string>
     <string name="ai_metadata_preview_label">Prévia</string>
     <string name="ai_metadata_preview_empty">Gere uma prévia antes de aplicar alterações.</string>
     <string name="ai_metadata_generate_preview">Gerar prévia</string>
     <string name="ai_metadata_regenerate_preview">Gerar nova prévia</string>
+    <string name="ai_metadata_generating_preview">Gerando...</string>
     <string name="ai_metadata_apply_preview">Aplicar prévia</string>
     <string name="ai_cover_dialog_title">Gerar capas</string>
     <string name="ai_cover_prompt_label">Prompt de capa</string>
@@ -249,9 +250,11 @@
     <string name="ai_cover_aspect_ratio">Proporção 2:3</string>
     <string name="ai_cover_generate">Gerar capas</string>
     <string name="ai_cover_regenerate">Gerar novas</string>
+    <string name="ai_cover_generating">Gerando...</string>
     <string name="ai_cover_option_a">Opção A</string>
     <string name="ai_cover_option_b">Opção B</string>
     <string name="ai_cover_option_pending">Aguardando geração.</string>
+    <string name="ai_cover_option_generating">Gerando imagem.</string>
     <string name="ai_cover_option_selected">Selecionada</string>
     <string name="ai_cover_use_selected">Usar capa</string>
     <string name="ai_cover_option_a_style">Editorial minimalista, silencioso, com composição limpa.</string>

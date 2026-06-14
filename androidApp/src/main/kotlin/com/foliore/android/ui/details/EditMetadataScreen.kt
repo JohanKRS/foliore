@@ -48,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -87,6 +88,7 @@ import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.viewmodel.SyncProgress
+import com.foliore.android.viewmodel.SyncProgressPhase
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
 import java.io.File
@@ -141,7 +143,7 @@ fun EditMetadataScreen(
     var authors by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.authors.joinToString(", ")) }
     var sortAuthor by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.sortAuthor.orEmpty()) }
     var seriesName by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.seriesName.orEmpty()) }
-    var seriesIndex by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.seriesIndex?.toString().orEmpty()) }
+    var seriesIndex by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.seriesIndex.formatSeriesIndex()) }
     var language by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.language.orEmpty()) }
     var publisher by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.publisher.orEmpty()) }
     var publishedDate by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.publishedDate.orEmpty()) }
@@ -163,6 +165,8 @@ fun EditMetadataScreen(
         aiCoverPromptRecords.coverPromptReferenceFor(book)
     }
     val titleError = titleTouched && title.isBlank()
+    val isGeneratingMetadata = isLoading && progress?.phase == SyncProgressPhase.GENERATING_METADATA
+    val isGeneratingCovers = isLoading && progress?.phase == SyncProgressPhase.GENERATING_COVERS
     val currentDraft = {
         BookMetadataDraft(
             title = title,
@@ -309,12 +313,16 @@ fun EditMetadataScreen(
             onPromptChange = { metadataPrompt = it },
             preview = metadataPreview,
             aiProviderMode = aiProviderMode,
+            isGenerating = isGeneratingMetadata,
+            progress = progress,
             onGeneratePreview = {
-                if (!aiProviderMode.isEnabled) {
-                    onAutofillClick()
-                } else {
-                    onGenerateMetadataPreview(metadataPrompt, currentDraft()) { previewDraft ->
-                        metadataPreview = previewDraft.toAutofillPreview()
+                if (!isGeneratingMetadata) {
+                    if (!aiProviderMode.isEnabled) {
+                        onAutofillClick()
+                    } else {
+                        onGenerateMetadataPreview(metadataPrompt, currentDraft()) { previewDraft ->
+                            metadataPreview = previewDraft.toAutofillPreview()
+                        }
                     }
                 }
             },
@@ -330,31 +338,35 @@ fun EditMetadataScreen(
             seriesPromptReference = seriesPromptReference,
             options = coverOptions,
             selectedOptionId = selectedCoverOptionId,
+            isGenerating = isGeneratingCovers,
+            progress = progress,
             onGenerate = {
-                if (!aiProviderMode.isEnabled) {
-                    onCoverGenerationUnavailable()
-                } else {
-                    val styles = listOf(
-                        AiCoverStyleRequest(
-                            id = "a-$coverGenerationRound",
-                            label = optionALabel,
-                            style = optionAStyle,
-                        ),
-                        AiCoverStyleRequest(
-                            id = "b-$coverGenerationRound",
-                            label = optionBLabel,
-                            style = optionBStyle,
-                        ),
-                    )
-                    onGenerateCoverImages(
-                        coverPrompt,
-                        currentDraft(),
-                        seriesPromptReference,
-                        styles,
-                    ) { generatedOptions ->
-                        coverOptions = generatedOptions
-                        selectedCoverOptionId = null
-                        coverGenerationRound += 1
+                if (!isGeneratingCovers) {
+                    if (!aiProviderMode.isEnabled) {
+                        onCoverGenerationUnavailable()
+                    } else {
+                        val styles = listOf(
+                            AiCoverStyleRequest(
+                                id = "a-$coverGenerationRound",
+                                label = optionALabel,
+                                style = optionAStyle,
+                            ),
+                            AiCoverStyleRequest(
+                                id = "b-$coverGenerationRound",
+                                label = optionBLabel,
+                                style = optionBStyle,
+                            ),
+                        )
+                        onGenerateCoverImages(
+                            coverPrompt,
+                            currentDraft(),
+                            seriesPromptReference,
+                            styles,
+                        ) { generatedOptions ->
+                            coverOptions = generatedOptions
+                            selectedCoverOptionId = null
+                            coverGenerationRound += 1
+                        }
                     }
                 }
             },
@@ -1338,6 +1350,8 @@ private fun MetadataAutofillDialog(
     onPromptChange: (String) -> Unit,
     preview: MetadataAutofillPreview?,
     aiProviderMode: AiProviderMode,
+    isGenerating: Boolean,
+    progress: SyncProgress?,
     onGeneratePreview: () -> Unit,
     onApplyPreview: (MetadataAutofillPreview) -> Unit,
     onDismiss: () -> Unit,
@@ -1369,6 +1383,14 @@ private fun MetadataAutofillDialog(
                 Spacer(modifier = Modifier.height(12.dp))
                 EditorialDivider(modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(18.dp))
+
+                if (isGenerating) {
+                    AiDialogProgress(
+                        progress = progress,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
 
                 PromptEditorToggle(
                     expanded = showPromptEditor,
@@ -1406,7 +1428,10 @@ private fun MetadataAutofillDialog(
                     TextButton(onClick = onDismiss) {
                         Text(text = stringResource(R.string.edit_metadata_cancel))
                     }
-                    OutlinedButton(onClick = onGeneratePreview) {
+                    OutlinedButton(
+                        onClick = onGeneratePreview,
+                        enabled = !isGenerating,
+                    ) {
                         Icon(
                             imageVector = Icons.Outlined.AutoAwesome,
                             contentDescription = null,
@@ -1414,7 +1439,9 @@ private fun MetadataAutofillDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (preview == null || !aiProviderMode.isEnabled) {
+                            text = if (isGenerating) {
+                                stringResource(R.string.ai_metadata_generating_preview)
+                            } else if (preview == null || !aiProviderMode.isEnabled) {
                                 stringResource(R.string.ai_metadata_generate_preview)
                             } else {
                                 stringResource(R.string.ai_metadata_regenerate_preview)
@@ -1423,7 +1450,7 @@ private fun MetadataAutofillDialog(
                     }
                     Button(
                         onClick = { preview?.let(onApplyPreview) },
-                        enabled = preview != null,
+                        enabled = preview != null && !isGenerating,
                     ) {
                         Text(text = stringResource(R.string.ai_metadata_apply_preview))
                     }
@@ -1457,6 +1484,29 @@ private fun PromptEditorToggle(
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun AiDialogProgress(
+    progress: SyncProgress?,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(7.dp),
+    ) {
+        SyncProgressStatusLine(
+            progress = progress,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+        )
     }
 }
 
@@ -1540,6 +1590,8 @@ private fun CoverGenerationDialog(
     seriesPromptReference: AiCoverPromptRecord?,
     options: List<AiGeneratedCoverOption>,
     selectedOptionId: String?,
+    isGenerating: Boolean,
+    progress: SyncProgress?,
     onGenerate: () -> Unit,
     onSelectOption: (String) -> Unit,
     onUseSelected: () -> Unit,
@@ -1584,6 +1636,14 @@ private fun CoverGenerationDialog(
                 EditorialDivider(modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(18.dp))
 
+                if (isGenerating) {
+                    AiDialogProgress(
+                        progress = progress,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
+
                 PromptEditorToggle(
                     expanded = showPromptEditor,
                     onToggle = { showPromptEditor = !showPromptEditor },
@@ -1615,7 +1675,11 @@ private fun CoverGenerationDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val pendingStyle = stringResource(R.string.ai_cover_option_pending)
+                    val pendingStyle = if (isGenerating) {
+                        stringResource(R.string.ai_cover_option_generating)
+                    } else {
+                        stringResource(R.string.ai_cover_option_pending)
+                    }
                     val displayedOptions = if (options.isEmpty()) {
                         listOf(
                             AiGeneratedCoverOption(
@@ -1675,7 +1739,10 @@ private fun CoverGenerationDialog(
                     TextButton(onClick = onDismiss) {
                         Text(text = stringResource(R.string.edit_metadata_cancel))
                     }
-                    OutlinedButton(onClick = onGenerate) {
+                    OutlinedButton(
+                        onClick = onGenerate,
+                        enabled = !isGenerating,
+                    ) {
                         Icon(
                             imageVector = Icons.Outlined.AutoAwesome,
                             contentDescription = null,
@@ -1683,7 +1750,9 @@ private fun CoverGenerationDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (options.isEmpty()) {
+                            text = if (isGenerating) {
+                                stringResource(R.string.ai_cover_generating)
+                            } else if (options.isEmpty()) {
                                 stringResource(R.string.ai_cover_generate)
                             } else {
                                 stringResource(R.string.ai_cover_regenerate)
@@ -1692,7 +1761,7 @@ private fun CoverGenerationDialog(
                     }
                     Button(
                         onClick = onUseSelected,
-                        enabled = selectedOptionId != null,
+                        enabled = selectedOptionId != null && !isGenerating,
                     ) {
                         Text(text = stringResource(R.string.ai_cover_use_selected))
                     }

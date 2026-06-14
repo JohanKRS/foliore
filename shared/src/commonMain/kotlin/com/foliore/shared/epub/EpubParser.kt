@@ -39,11 +39,14 @@ class EpubParser {
             it.mediaType == "application/x-dtbncx+xml" || it.href.endsWith(".ncx", ignoreCase = true)
         }
 
+        val identifiers = parseIdentifiers(opfXml)
         val metadata = ParsedEpubMetadata(
             title = tagText(opfXml, "title"),
             authors = tagTexts(opfXml, "creator"),
             language = tagText(opfXml, "language"),
-            identifier = tagText(opfXml, "identifier"),
+            identifier = identifiers.values.firstOrNull(),
+            identifiers = identifiers,
+            isbn = identifiers.values.firstNotNullOfOrNull { it.extractIsbn() },
             description = tagText(opfXml, "description"),
             publisher = tagText(opfXml, "publisher"),
             publishedDate = publicationYear(opfXml),
@@ -83,6 +86,8 @@ class EpubParser {
                 authors = emptyList(),
                 language = null,
                 identifier = null,
+                identifiers = emptyMap(),
+                isbn = null,
                 description = null,
                 publisher = null,
                 publishedDate = null,
@@ -164,6 +169,29 @@ class EpubParser {
 
     private fun tagText(xml: String, localName: String): String? {
         return tagTexts(xml, localName).firstOrNull()
+    }
+
+    private fun parseIdentifiers(xml: String): Map<String, String> {
+        val options = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        val regex = Regex(
+            "<(?:[A-Za-z0-9_-]+:)?identifier\\b([^>]*)>(.*?)</(?:[A-Za-z0-9_-]+:)?identifier>",
+            options,
+        )
+        val identifiers = linkedMapOf<String, String>()
+        regex.findAll(xml).forEach { match ->
+            val attrs = match.groupValues[1]
+            val value = match.groupValues[2].cleanXmlText().takeIf { it.isNotBlank() } ?: return@forEach
+            val scheme = attr(attrs, "opf:scheme") ?: attr(attrs, "scheme")
+            val id = attr(attrs, "id")
+            val baseKey = when {
+                value.extractIsbn() != null -> "isbn"
+                scheme != null -> scheme.toIdentifierKey()
+                id != null -> id.toIdentifierKey()
+                else -> "identifier"
+            }
+            identifiers[baseKey.uniqueIdentifierKey(identifiers)] = value
+        }
+        return identifiers
     }
 
     private fun publicationYear(opfXml: String): String? {
@@ -275,6 +303,53 @@ class EpubParser {
 
     private fun String.containsToken(token: String): Boolean {
         return split(Regex("\\s+")).any { it.equals(token, ignoreCase = true) }
+    }
+
+    private fun String.toIdentifierKey(): String {
+        return lowercase()
+            .replace(Regex("[^a-z0-9]+"), "_")
+            .trim('_')
+            .ifBlank { "identifier" }
+    }
+
+    private fun String.uniqueIdentifierKey(existing: Map<String, String>): String {
+        if (!existing.containsKey(this)) return this
+        var index = 2
+        while (existing.containsKey("$this$index")) {
+            index += 1
+        }
+        return "$this$index"
+    }
+
+    private fun String.extractIsbn(): String? {
+        val compact = filter { it.isDigit() || it == 'X' || it == 'x' }.uppercase()
+        Regex("97[89]\\d{10}").findAll(compact)
+            .map { it.value }
+            .firstOrNull { it.isValidIsbn13() }
+            ?.let { return it }
+        Regex("\\d{9}[\\dX]").findAll(compact)
+            .map { it.value }
+            .firstOrNull { it.isValidIsbn10() }
+            ?.let { return it }
+        return null
+    }
+
+    private fun String.isValidIsbn13(): Boolean {
+        if (length != 13 || any { !it.isDigit() }) return false
+        val sum = take(12).mapIndexed { index, char ->
+            char.digitToInt() * if (index % 2 == 0) 1 else 3
+        }.sum()
+        val check = (10 - (sum % 10)) % 10
+        return check == last().digitToInt()
+    }
+
+    private fun String.isValidIsbn10(): Boolean {
+        if (length != 10) return false
+        val sum = mapIndexed { index, char ->
+            val value = if (index == 9 && char == 'X') 10 else char.digitToIntOrNull() ?: return false
+            value * (10 - index)
+        }.sum()
+        return sum % 11 == 0
     }
 
     private fun String.cleanXmlText(): String {
