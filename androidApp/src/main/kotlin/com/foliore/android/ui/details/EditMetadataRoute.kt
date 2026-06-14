@@ -71,8 +71,33 @@ fun EditMetadataRoute(
                 }
             },
             onAutofillClick = viewModel::requestMetadataAutofill,
-            onGenerateCoverImages = viewModel::requestCoverGeneration,
-            onSelectedCoverPrompt = viewModel::saveSelectedCoverPrompt,
+            onCoverGenerationUnavailable = viewModel::requestCoverGeneration,
+            onGenerateMetadataPreview = { prompt, draft, onPreviewReady ->
+                viewModel.generateMetadataPreview(
+                    bookId = bookId,
+                    prompt = prompt,
+                    draft = draft,
+                    onPreviewReady = onPreviewReady,
+                )
+            },
+            onGenerateCoverImages = { prompt, draft, reference, styles, onOptionsReady ->
+                viewModel.generateCoverImages(
+                    bookId = bookId,
+                    prompt = prompt,
+                    draft = draft,
+                    reference = reference,
+                    styles = styles,
+                    onOptionsReady = onOptionsReady,
+                )
+            },
+            onUseGeneratedCover = { option, record, onUpdated ->
+                viewModel.useGeneratedCover(
+                    bookId = bookId,
+                    option = option,
+                    record = record,
+                    onUpdated = onUpdated,
+                )
+            },
             onReplaceCover = { coverPicker.launch("image/*") },
             onSyncNow = viewModel::syncNow,
             isLoading = state.hasActiveProgress,

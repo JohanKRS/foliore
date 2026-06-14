@@ -25,12 +25,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.ai.AiProviderMode
@@ -41,16 +49,21 @@ import com.foliore.android.viewmodel.SyncSummary
 fun SettingsScreen(
     themeMode: ThemeMode,
     aiProviderMode: AiProviderMode,
+    hasOpenAiApiKey: Boolean,
     syncFolderLabel: String?,
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
     onAiProviderModeChange: (AiProviderMode) -> Unit,
+    onOpenAiApiKeySave: (String) -> Unit,
+    onOpenAiApiKeyClear: () -> Unit,
     onChooseSyncFolder: () -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var openAiApiKeyInput by rememberSaveable { mutableStateOf("") }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -140,6 +153,61 @@ fun SettingsScreen(
             description = stringResource(R.string.settings_ai_openai_api_description),
             onClick = { onAiProviderModeChange(AiProviderMode.OPENAI_API) },
         )
+        if (aiProviderMode == AiProviderMode.OPENAI_API) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    text = if (hasOpenAiApiKey) {
+                        stringResource(R.string.settings_ai_api_key_configured)
+                    } else {
+                        stringResource(R.string.settings_ai_api_key_missing)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = openAiApiKeyInput,
+                    onValueChange = { openAiApiKeyInput = it },
+                    label = { Text(text = stringResource(R.string.settings_ai_api_key_label)) },
+                    placeholder = { Text(text = stringResource(R.string.settings_ai_api_key_placeholder)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Button(
+                        onClick = {
+                            onOpenAiApiKeySave(openAiApiKeyInput)
+                            openAiApiKeyInput = ""
+                        },
+                        enabled = openAiApiKeyInput.isNotBlank(),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(text = stringResource(R.string.settings_ai_api_key_save))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            onOpenAiApiKeyClear()
+                            openAiApiKeyInput = ""
+                        },
+                        enabled = hasOpenAiApiKey,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(text = stringResource(R.string.settings_ai_api_key_clear))
+                    }
+                }
+            }
+        }
         SelectableOptionRow(
             selected = aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL,
             icon = Icons.Outlined.TaskAlt,
@@ -147,6 +215,15 @@ fun SettingsScreen(
             description = stringResource(R.string.settings_ai_codex_oauth_description),
             onClick = { onAiProviderModeChange(AiProviderMode.CODEX_OAUTH_EXPERIMENTAL) },
         )
+        if (aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.settings_ai_oauth_note),
+                modifier = Modifier.padding(start = 40.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())

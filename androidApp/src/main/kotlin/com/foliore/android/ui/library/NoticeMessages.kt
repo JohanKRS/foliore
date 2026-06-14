@@ -33,9 +33,14 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.SYNC_FAILED -> stringResource(R.string.sync_notice_failed)
         LibraryNoticeType.SYNC_DISCONNECTED -> stringResource(R.string.sync_notice_disconnected)
         LibraryNoticeType.AI_SETTINGS_UPDATED -> stringResource(R.string.ai_notice_settings_updated)
+        LibraryNoticeType.AI_API_KEY_SAVED -> stringResource(R.string.ai_notice_api_key_saved)
+        LibraryNoticeType.AI_API_KEY_CLEARED -> stringResource(R.string.ai_notice_api_key_cleared)
         LibraryNoticeType.AI_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_provider_required)
         LibraryNoticeType.AI_PROVIDER_NOT_READY -> stringResource(R.string.ai_notice_provider_not_ready)
+        LibraryNoticeType.AI_REQUEST_FAILED -> stringResource(R.string.ai_notice_request_failed)
+        LibraryNoticeType.AI_METADATA_PREVIEW_READY -> stringResource(R.string.ai_notice_metadata_preview_ready)
         LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_cover_provider_required)
+        LibraryNoticeType.AI_COVER_OPTIONS_READY -> stringResource(R.string.ai_notice_cover_options_ready)
         LibraryNoticeType.AI_COVER_PROMPT_SAVED -> stringResource(R.string.ai_notice_cover_prompt_saved)
     }
 }

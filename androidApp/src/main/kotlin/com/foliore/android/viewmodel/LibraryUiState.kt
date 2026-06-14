@@ -21,6 +21,7 @@ data class LibraryUiState(
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
+    val hasOpenAiApiKey: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
 ) {
     val activeProgress: SyncProgress?
@@ -89,6 +90,8 @@ enum class SyncProgressPhase {
     UPLOADING,
     WRITING_MANIFEST,
     APPLYING_STATUS,
+    GENERATING_METADATA,
+    GENERATING_COVERS,
 }
 
 data class LibraryNotice(
@@ -121,8 +124,13 @@ enum class LibraryNoticeType {
     SYNC_FAILED,
     SYNC_DISCONNECTED,
     AI_SETTINGS_UPDATED,
+    AI_API_KEY_SAVED,
+    AI_API_KEY_CLEARED,
     AI_PROVIDER_REQUIRED,
     AI_PROVIDER_NOT_READY,
+    AI_REQUEST_FAILED,
+    AI_METADATA_PREVIEW_READY,
     AI_COVER_PROVIDER_REQUIRED,
+    AI_COVER_OPTIONS_READY,
     AI_COVER_PROMPT_SAVED,
 }

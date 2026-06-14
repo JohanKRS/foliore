@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
                             manualSyncService = appContainer.manualSyncService,
                             aiPreferenceRepository = appContainer.aiPreferenceRepository,
                             aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
+                            openAiApiService = appContainer.openAiApiService,
                         )
                     }
                     val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

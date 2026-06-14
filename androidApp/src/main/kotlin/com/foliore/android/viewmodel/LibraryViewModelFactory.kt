@@ -2,6 +2,7 @@ package com.foliore.android.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.foliore.android.ai.OpenAiApiService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
@@ -20,6 +21,7 @@ class LibraryViewModelFactory(
     private val manualSyncService: ManualSyncService,
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
+    private val openAiApiService: OpenAiApiService,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -33,6 +35,7 @@ class LibraryViewModelFactory(
                 manualSyncService = manualSyncService,
                 aiPreferenceRepository = aiPreferenceRepository,
                 aiCoverPromptRepository = aiCoverPromptRepository,
+                openAiApiService = openAiApiService,
             ) as T
         }
         error("Unknown ViewModel class: ${modelClass.name}")

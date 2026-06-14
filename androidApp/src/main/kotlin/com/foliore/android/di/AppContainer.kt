@@ -1,6 +1,7 @@
 package com.foliore.android.di
 
 import android.content.Context
+import com.foliore.android.ai.OpenAiApiService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
@@ -23,6 +24,10 @@ class AppContainer(context: Context) {
     val themePreferenceRepository = ThemePreferenceRepository(appContext)
     val aiPreferenceRepository = AiPreferenceRepository(appContext)
     val aiCoverPromptRepository = AiCoverPromptRepository(appContext)
+    val openAiApiService = OpenAiApiService(
+        context = appContext,
+        aiPreferenceRepository = aiPreferenceRepository,
+    )
     val epubImporter = AndroidEpubImporter(
         context = appContext,
         libraryRepository = libraryRepository,

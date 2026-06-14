@@ -78,6 +78,8 @@ import androidx.core.text.HtmlCompat
 import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.ai.AiCoverPromptRecord
+import com.foliore.android.ai.AiCoverStyleRequest
+import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.ai.isEnabled
 import com.foliore.android.ui.library.EditorialDivider
@@ -98,8 +100,16 @@ fun EditMetadataScreen(
     onSave: (BookMetadataDraft) -> Unit,
     onShareExport: () -> Unit,
     onAutofillClick: () -> Unit,
-    onGenerateCoverImages: () -> Unit,
-    onSelectedCoverPrompt: (AiCoverPromptRecord) -> Unit,
+    onCoverGenerationUnavailable: () -> Unit,
+    onGenerateMetadataPreview: (String, BookMetadataDraft, (BookMetadataDraft) -> Unit) -> Unit,
+    onGenerateCoverImages: (
+        String,
+        BookMetadataDraft,
+        AiCoverPromptRecord?,
+        List<AiCoverStyleRequest>,
+        (List<AiGeneratedCoverOption>) -> Unit,
+    ) -> Unit,
+    onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
     onSyncNow: () -> Unit,
     isLoading: Boolean,
@@ -142,7 +152,7 @@ fun EditMetadataScreen(
     var showMetadataAutofillDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var showCoverGenerationDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var metadataPreview by remember(book.book.id) { mutableStateOf<MetadataAutofillPreview?>(null) }
-    var coverOptions by remember(book.book.id) { mutableStateOf<List<CoverPromptOption>>(emptyList()) }
+    var coverOptions by remember(book.book.id) { mutableStateOf<List<AiGeneratedCoverOption>>(emptyList()) }
     var selectedCoverOptionId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
     var coverGenerationRound by rememberSaveable(book.book.id) { mutableStateOf(0) }
     val defaultMetadataPrompt = stringResource(R.string.ai_metadata_default_prompt)
@@ -208,10 +218,6 @@ fun EditMetadataScreen(
     )
     val optionALabel = stringResource(R.string.ai_cover_option_a)
     val optionBLabel = stringResource(R.string.ai_cover_option_b)
-    val coverReferencePrompt = seriesPromptReference?.let { reference ->
-        "\n\nReferencia visual salva:\nLivro: ${reference.title}\nPrompt selecionado: ${reference.prompt}"
-    }.orEmpty()
-
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -304,10 +310,12 @@ fun EditMetadataScreen(
             preview = metadataPreview,
             aiProviderMode = aiProviderMode,
             onGeneratePreview = {
-                if (aiProviderMode.isEnabled) {
-                    metadataPreview = currentDraft().toAutofillPreview()
-                } else {
+                if (!aiProviderMode.isEnabled) {
                     onAutofillClick()
+                } else {
+                    onGenerateMetadataPreview(metadataPrompt, currentDraft()) { previewDraft ->
+                        metadataPreview = previewDraft.toAutofillPreview()
+                    }
                 }
             },
             onApplyPreview = applyMetadataPreview,
@@ -323,39 +331,48 @@ fun EditMetadataScreen(
             options = coverOptions,
             selectedOptionId = selectedCoverOptionId,
             onGenerate = {
-                if (aiProviderMode.isEnabled) {
-                    coverOptions = listOf(
-                        CoverPromptOption(
+                if (!aiProviderMode.isEnabled) {
+                    onCoverGenerationUnavailable()
+                } else {
+                    val styles = listOf(
+                        AiCoverStyleRequest(
                             id = "a-$coverGenerationRound",
                             label = optionALabel,
                             style = optionAStyle,
-                            prompt = "$coverPrompt$coverReferencePrompt\n\n$optionAStyle",
                         ),
-                        CoverPromptOption(
+                        AiCoverStyleRequest(
                             id = "b-$coverGenerationRound",
                             label = optionBLabel,
                             style = optionBStyle,
-                            prompt = "$coverPrompt$coverReferencePrompt\n\n$optionBStyle",
                         ),
                     )
-                    selectedCoverOptionId = null
-                    coverGenerationRound += 1
-                } else {
-                    onGenerateCoverImages()
+                    onGenerateCoverImages(
+                        coverPrompt,
+                        currentDraft(),
+                        seriesPromptReference,
+                        styles,
+                    ) { generatedOptions ->
+                        coverOptions = generatedOptions
+                        selectedCoverOptionId = null
+                        coverGenerationRound += 1
+                    }
                 }
             },
             onSelectOption = { selectedCoverOptionId = it },
             onUseSelected = {
                 val selectedOption = coverOptions.firstOrNull { it.id == selectedCoverOptionId }
                 if (selectedOption != null) {
-                    onSelectedCoverPrompt(
+                    onUseGeneratedCover(
+                        selectedOption,
                         AiCoverPromptRecord(
                             id = "${book.book.id}-${System.currentTimeMillis()}",
                             bookId = book.book.id,
                             title = book.metadata.title,
                             seriesName = book.metadata.seriesName,
                             seriesIndex = book.metadata.seriesIndex,
-                            coverImagePath = book.book.coverImagePath ?: book.book.coverThumbPath,
+                            coverImagePath = selectedOption.imagePath
+                                ?: book.book.coverImagePath
+                                ?: book.book.coverThumbPath,
                             prompt = selectedOption.prompt,
                             style = selectedOption.style,
                             selectedAtEpochMillis = System.currentTimeMillis(),
@@ -363,10 +380,11 @@ fun EditMetadataScreen(
                             referencePrompt = seriesPromptReference?.prompt,
                             referenceCoverImagePath = seriesPromptReference?.coverImagePath,
                         ),
-                    )
-                    showCoverGenerationDialog = false
+                    ) {
+                        showCoverGenerationDialog = false
+                    }
                 } else {
-                    onGenerateCoverImages()
+                    onCoverGenerationUnavailable()
                 }
             },
             onDismiss = { showCoverGenerationDialog = false },
@@ -1520,7 +1538,7 @@ private fun CoverGenerationDialog(
     prompt: String,
     onPromptChange: (String) -> Unit,
     seriesPromptReference: AiCoverPromptRecord?,
-    options: List<CoverPromptOption>,
+    options: List<AiGeneratedCoverOption>,
     selectedOptionId: String?,
     onGenerate: () -> Unit,
     onSelectOption: (String) -> Unit,
@@ -1600,17 +1618,19 @@ private fun CoverGenerationDialog(
                     val pendingStyle = stringResource(R.string.ai_cover_option_pending)
                     val displayedOptions = if (options.isEmpty()) {
                         listOf(
-                            CoverPromptOption(
+                            AiGeneratedCoverOption(
                                 id = "pending-a",
                                 label = stringResource(R.string.ai_cover_option_a),
                                 style = pendingStyle,
                                 prompt = prompt,
+                                imagePath = null,
                             ),
-                            CoverPromptOption(
+                            AiGeneratedCoverOption(
                                 id = "pending-b",
                                 label = stringResource(R.string.ai_cover_option_b),
                                 style = pendingStyle,
                                 prompt = prompt,
+                                imagePath = null,
                             ),
                         )
                     } else {
@@ -1684,7 +1704,7 @@ private fun CoverGenerationDialog(
 
 @Composable
 private fun CoverOptionCard(
-    option: CoverPromptOption,
+    option: AiGeneratedCoverOption,
     selected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
@@ -1707,36 +1727,70 @@ private fun CoverOptionCard(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
             border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor),
         ) {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = option.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = option.style,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (selected) {
-                    Spacer(modifier = Modifier.height(10.dp))
+            if (option.imagePath != null) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    AsyncImage(
+                        model = File(option.imagePath),
+                        contentDescription = option.label,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    if (selected) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(10.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.ai_cover_option_selected),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
                     Text(
-                        text = stringResource(R.string.ai_cover_option_selected),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        text = option.label,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = option.style,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = option.label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = option.style,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -1811,13 +1865,6 @@ private data class MetadataAutofillPreview(
     val isbn: String?,
     val seriesName: String?,
     val seriesIndex: Double?,
-)
-
-private data class CoverPromptOption(
-    val id: String,
-    val label: String,
-    val style: String,
-    val prompt: String,
 )
 
 private fun BookMetadataDraft.toAutofillPreview(): MetadataAutofillPreview {

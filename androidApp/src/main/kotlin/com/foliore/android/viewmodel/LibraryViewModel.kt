@@ -5,7 +5,11 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.foliore.android.ai.AiCoverPromptRecord
+import com.foliore.android.ai.AiCoverStyleRequest
+import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.ai.OpenAiApiService
+import com.foliore.android.ai.OpenAiResult
 import com.foliore.android.ai.isEnabled
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
@@ -33,6 +37,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class LibraryViewModel(
     private val libraryRepository: LibraryRepository,
@@ -43,10 +48,12 @@ class LibraryViewModel(
     private val manualSyncService: ManualSyncService,
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
+    private val openAiApiService: OpenAiApiService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
         LibraryUiState(
             aiProviderMode = aiPreferenceRepository.providerMode.value,
+            hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
         ),
     )
@@ -152,30 +159,171 @@ class LibraryViewModel(
         _notice.value = LibraryNotice(LibraryNoticeType.AI_SETTINGS_UPDATED)
     }
 
+    fun saveOpenAiApiKey(apiKey: String) {
+        viewModelScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                aiPreferenceRepository.saveOpenAiApiKey(apiKey)
+            }
+            _state.update { it.copy(hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value) }
+            _notice.value = LibraryNotice(
+                if (saved) {
+                    LibraryNoticeType.AI_API_KEY_SAVED
+                } else {
+                    LibraryNoticeType.AI_REQUEST_FAILED
+                },
+            )
+        }
+    }
+
+    fun clearOpenAiApiKey() {
+        aiPreferenceRepository.clearOpenAiApiKey()
+        _state.update { it.copy(hasOpenAiApiKey = false) }
+        _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
+    }
+
     fun requestMetadataAutofill() {
         _notice.value = LibraryNotice(
-            if (_state.value.aiProviderMode.isEnabled) {
-                LibraryNoticeType.AI_PROVIDER_NOT_READY
-            } else {
+            if (!_state.value.aiProviderMode.isEnabled) {
                 LibraryNoticeType.AI_PROVIDER_REQUIRED
+            } else {
+                LibraryNoticeType.AI_PROVIDER_NOT_READY
             },
         )
     }
 
     fun requestCoverGeneration() {
         _notice.value = LibraryNotice(
-            if (_state.value.aiProviderMode.isEnabled) {
-                LibraryNoticeType.AI_PROVIDER_NOT_READY
-            } else {
+            if (!_state.value.aiProviderMode.isEnabled) {
                 LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED
+            } else {
+                LibraryNoticeType.AI_PROVIDER_NOT_READY
             },
         )
+    }
+
+    fun generateMetadataPreview(
+        bookId: String,
+        prompt: String,
+        draft: BookMetadataDraft,
+        onPreviewReady: (BookMetadataDraft) -> Unit,
+    ) {
+        if (!hasUsableOpenAiApiProvider()) {
+            requestMetadataAutofill()
+            return
+        }
+        if (_state.value.hasActiveProgress) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    importProgress = SyncProgress(SyncProgressPhase.GENERATING_METADATA),
+                )
+            }
+            val book = withContext(Dispatchers.IO) {
+                libraryRepository.getBook(bookId)
+            }
+            val result = if (book == null) {
+                OpenAiResult.Failure("Book not found")
+            } else {
+                withContext(Dispatchers.IO) {
+                    openAiApiService.generateMetadataPreview(
+                        book = book,
+                        draft = draft,
+                        prompt = prompt,
+                    )
+                }
+            }
+            _state.update { it.copy(importProgress = null) }
+            when (result) {
+                is OpenAiResult.Success -> {
+                    onPreviewReady(result.value)
+                    _notice.value = LibraryNotice(LibraryNoticeType.AI_METADATA_PREVIEW_READY)
+                }
+                is OpenAiResult.Failure -> {
+                    _notice.value = LibraryNotice(LibraryNoticeType.AI_REQUEST_FAILED)
+                }
+            }
+        }
+    }
+
+    fun generateCoverImages(
+        bookId: String,
+        prompt: String,
+        draft: BookMetadataDraft,
+        reference: AiCoverPromptRecord?,
+        styles: List<AiCoverStyleRequest>,
+        onOptionsReady: (List<AiGeneratedCoverOption>) -> Unit,
+    ) {
+        if (!hasUsableOpenAiApiProvider()) {
+            requestCoverGeneration()
+            return
+        }
+        if (_state.value.hasActiveProgress) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    importProgress = SyncProgress(
+                        phase = SyncProgressPhase.GENERATING_COVERS,
+                        current = 0,
+                        total = styles.size,
+                    ),
+                )
+            }
+            val book = withContext(Dispatchers.IO) {
+                libraryRepository.getBook(bookId)
+            }
+            val result = if (book == null) {
+                OpenAiResult.Failure("Book not found")
+            } else {
+                withContext(Dispatchers.IO) {
+                    openAiApiService.generateCoverOptions(
+                        book = book,
+                        draft = draft,
+                        prompt = prompt,
+                        reference = reference,
+                        styles = styles,
+                    )
+                }
+            }
+            _state.update { it.copy(importProgress = null) }
+            when (result) {
+                is OpenAiResult.Success -> {
+                    onOptionsReady(result.value)
+                    _notice.value = LibraryNotice(LibraryNoticeType.AI_COVER_OPTIONS_READY)
+                }
+                is OpenAiResult.Failure -> {
+                    _notice.value = LibraryNotice(LibraryNoticeType.AI_REQUEST_FAILED)
+                }
+            }
+        }
     }
 
     fun saveSelectedCoverPrompt(record: AiCoverPromptRecord) {
         val records = aiCoverPromptRepository.save(record)
         _state.update { it.copy(aiCoverPromptRecords = records) }
         _notice.value = LibraryNotice(LibraryNoticeType.AI_COVER_PROMPT_SAVED)
+    }
+
+    fun useGeneratedCover(
+        bookId: String,
+        option: AiGeneratedCoverOption,
+        record: AiCoverPromptRecord,
+        onUpdated: () -> Unit = {},
+    ) {
+        val imagePath = option.imagePath
+        if (imagePath == null) {
+            requestCoverGeneration()
+            return
+        }
+
+        replaceCover(
+            bookId = bookId,
+            imageUri = Uri.fromFile(File(imagePath)),
+        ) {
+            saveSelectedCoverPrompt(record)
+            onUpdated()
+        }
     }
 
     fun setBatchMode(isEnabled: Boolean) {
@@ -474,6 +622,11 @@ class LibraryViewModel(
             }
             _state.update { it.copy(syncFolderLabel = folderLabel) }
         }
+    }
+
+    private fun hasUsableOpenAiApiProvider(): Boolean {
+        val current = _state.value
+        return current.aiProviderMode == AiProviderMode.OPENAI_API && current.hasOpenAiApiKey
     }
 
     private fun ManualSyncResult.toNoticeType(): LibraryNoticeType {

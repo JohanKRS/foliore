@@ -109,6 +109,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
                         manualSyncService = appContainer.manualSyncService,
                         aiPreferenceRepository = appContainer.aiPreferenceRepository,
                         aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
+                        openAiApiService = appContainer.openAiApiService,
                     )
                 }
                 val viewModel: LibraryViewModel = viewModel(factory = factory)
