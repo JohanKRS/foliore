@@ -6,6 +6,8 @@
     <string name="details_title">Detalhes</string>
 
     <string name="nav_library">Biblioteca</string>
+    <string name="nav_activity">Atividade</string>
+    <string name="nav_sync">Sync</string>
     <string name="nav_settings">Configurações</string>
 
     <string name="action_import_epubs">Importar EPUBs</string>
@@ -23,6 +25,8 @@
     <string name="search_placeholder">Buscar título ou autor</string>
     <string name="search_no_results">Nenhum livro encontrado.</string>
     <string name="importing_epubs">Importando EPUBs...</string>
+    <string name="action_done">Pronto</string>
+    <string name="action_organize_library">Organizar biblioteca</string>
 
     <string name="filter_all">Todos</string>
     <string name="filter_needs_review">Revisar</string>
@@ -31,8 +35,11 @@
     <string name="filter_conflicts">Conflitos</string>
     <string name="filter_error">Com erro</string>
     <string name="organization_sort_label">Ordenar</string>
+    <string name="organization_status_label">Status</string>
     <string name="organization_series_label">Séries</string>
     <string name="organization_grid_label">Grade</string>
+    <string name="organization_selection_label">Seleção</string>
+    <string name="organization_dialog_title">Organizar biblioteca</string>
     <string name="sort_imported_newest">Recentes</string>
     <string name="sort_title_asc">Título A-Z</string>
     <string name="sort_title_desc">Título Z-A</string>
@@ -93,6 +100,7 @@
     <string name="details_file_format">Formato</string>
     <string name="details_file_format_epub">EPUB</string>
     <string name="details_imported_at">Importado em</string>
+    <string name="details_last_synced">Último sync</string>
     <string name="details_status">Status</string>
     <string name="details_not_available">-</string>
     <string name="details_book_not_found">Livro não encontrado.</string>
@@ -109,7 +117,14 @@
 
     <string name="edit_metadata_title">Editar livro</string>
     <string name="edit_metadata_section">Metadados</string>
+    <string name="edit_metadata_autofill">Auto-fill</string>
+    <string name="edit_metadata_sync_section">Sync</string>
+    <string name="edit_metadata_sync_connected">Pasta de sync conectada</string>
+    <string name="edit_metadata_revision">Revisão</string>
+    <string name="edit_metadata_location">Local</string>
+    <string name="edit_metadata_location_value">Biblioteca Foliore / %1$s</string>
     <string name="edit_metadata_save">Salvar</string>
+    <string name="edit_metadata_prepare_short">Preparar</string>
     <string name="edit_metadata_cancel">Cancelar</string>
     <string name="edit_metadata_field_title">Título</string>
     <string name="edit_metadata_field_subtitle">Subtítulo</string>

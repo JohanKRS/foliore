@@ -1,11 +1,14 @@
 package com.foliore.android
 
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +38,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode = appContainer.themePreferenceRepository.themeMode.collectAsStateWithLifecycle()
             val incomingImportUris = pendingImportUris.collectAsStateWithLifecycle()
+            val systemDarkTheme = isSystemInDarkTheme()
+            val darkTheme = when (themeMode.value) {
+                com.foliore.android.ui.theme.ThemeMode.SYSTEM -> systemDarkTheme
+                com.foliore.android.ui.theme.ThemeMode.LIGHT -> false
+                com.foliore.android.ui.theme.ThemeMode.DARK -> true
+            }
+
+            LaunchedEffect(darkTheme) {
+                val lightSystemBar = Color.rgb(248, 243, 234)
+                val darkSystemBar = Color.rgb(17, 20, 17)
+                val systemBarStyle = if (darkTheme) {
+                    SystemBarStyle.dark(darkSystemBar)
+                } else {
+                    SystemBarStyle.light(lightSystemBar, darkSystemBar)
+                }
+                enableEdgeToEdge(
+                    statusBarStyle = systemBarStyle,
+                    navigationBarStyle = systemBarStyle,
+                )
+            }
 
             FolioreTheme(themeMode = themeMode.value) {
                 Surface(color = MaterialTheme.colorScheme.background) {

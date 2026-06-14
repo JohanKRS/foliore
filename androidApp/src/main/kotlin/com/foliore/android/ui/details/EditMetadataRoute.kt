@@ -18,6 +18,8 @@ fun EditMetadataRoute(
     viewModel: LibraryViewModel,
     bookId: String,
     onBack: () -> Unit,
+    onLibraryClick: () -> Unit,
+    onSettingsClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -45,6 +47,11 @@ fun EditMetadataRoute(
                     onSaved = onBack,
                 )
             },
+            onPrepareEpub = { viewModel.prepareEpub(bookId) },
+            onSyncNow = viewModel::syncNow,
+            isSyncing = state.isSyncing,
+            onLibraryClick = onLibraryClick,
+            onSettingsClick = onSettingsClick,
             modifier = Modifier.padding(paddingValues),
         )
     }

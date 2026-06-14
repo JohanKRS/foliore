@@ -8,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,15 +16,16 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.horizontalScroll
@@ -38,11 +40,10 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -72,6 +73,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.foliore.android.R
 import com.foliore.android.viewmodel.BookFilter
@@ -103,7 +106,6 @@ fun LibraryScreen(
     onBookSelectionToggle: (String) -> Unit,
     onSelectBooks: (List<String>) -> Unit,
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
-    onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     val visibleBooks = remember(
@@ -116,6 +118,7 @@ fun LibraryScreen(
         state.visibleBooks()
     }
     var showBatchDialog by rememberSaveable { mutableStateOf(false) }
+    var showControlsDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -136,10 +139,7 @@ fun LibraryScreen(
                 hasBooks = state.books.isNotEmpty(),
                 isBatchMode = state.isBatchMode,
                 onBatchModeChange = onBatchModeChange,
-                isSyncConfigured = state.syncFolderLabel != null,
-                isSyncing = state.isSyncing,
-                onSyncClick = onSyncClick,
-                onSettingsClick = onSettingsClick,
+                onOrganizeClick = { showControlsDialog = true },
             )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
 
@@ -151,18 +151,9 @@ fun LibraryScreen(
                 )
             }
 
-            FilterRow(
-                selectedFilter = state.activeFilter,
-                onFilterChange = onFilterChange,
-            )
-            OrganizationRows(
-                selectedSortOrder = state.sortOrder,
-                selectedSeriesFilter = state.seriesFilter,
-                selectedGridColumns = state.gridColumns,
-                onSortOrderChange = onSortOrderChange,
-                onSeriesFilterChange = onSeriesFilterChange,
-                onGridColumnsChange = onGridColumnsChange,
-            )
+            AnimatedVisibility(visible = state.hasActiveLibraryControls()) {
+                LibraryControlsSummary(state = state)
+            }
 
             AnimatedVisibility(visible = state.isBatchMode) {
                 BatchActionBar(
@@ -226,6 +217,24 @@ fun LibraryScreen(
             },
         )
     }
+
+    if (showControlsDialog) {
+        LibraryControlsDialog(
+            selectedFilter = state.activeFilter,
+            selectedSortOrder = state.sortOrder,
+            selectedSeriesFilter = state.seriesFilter,
+            selectedGridColumns = state.gridColumns,
+            onFilterChange = onFilterChange,
+            onSortOrderChange = onSortOrderChange,
+            onSeriesFilterChange = onSeriesFilterChange,
+            onGridColumnsChange = onGridColumnsChange,
+            onBatchModeChange = {
+                showControlsDialog = false
+                onBatchModeChange(true)
+            },
+            onDismiss = { showControlsDialog = false },
+        )
+    }
 }
 
 @Composable
@@ -239,10 +248,7 @@ private fun LibraryHeader(
     hasBooks: Boolean,
     isBatchMode: Boolean,
     onBatchModeChange: (Boolean) -> Unit,
-    isSyncConfigured: Boolean,
-    isSyncing: Boolean,
-    onSyncClick: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onOrganizeClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -259,48 +265,31 @@ private fun LibraryHeader(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.weight(1f))
-            if (hasBooks) {
-                IconButton(onClick = { onBatchModeChange(!isBatchMode) }) {
-                    Icon(
-                        imageVector = if (isBatchMode) Icons.Outlined.Close else Icons.Outlined.Edit,
-                        contentDescription = if (isBatchMode) {
-                            stringResource(R.string.action_cancel_batch)
-                        } else {
-                            stringResource(R.string.action_batch_edit)
-                        },
-                    )
-                }
+            if (hasBooks && isBatchMode) {
+                LibraryHeaderIconButton(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = stringResource(R.string.action_cancel_batch),
+                    onClick = { onBatchModeChange(!isBatchMode) },
+                )
             }
             if (!isBatchMode) {
-                IconButton(onClick = onSearchClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.Search,
-                        contentDescription = stringResource(R.string.action_search),
+                if (hasBooks) {
+                    LibraryHeaderIconButton(
+                        imageVector = Icons.Outlined.Tune,
+                        contentDescription = stringResource(R.string.action_organize_library),
+                        onClick = onOrganizeClick,
                     )
                 }
-                IconButton(onClick = onImportClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.Add,
-                        contentDescription = stringResource(R.string.action_import_epubs),
-                    )
-                }
-                if (isSyncConfigured) {
-                    IconButton(
-                        onClick = onSyncClick,
-                        enabled = !isSyncing,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Sync,
-                            contentDescription = stringResource(R.string.action_sync_now),
-                        )
-                    }
-                }
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.Settings,
-                        contentDescription = stringResource(R.string.nav_settings),
-                    )
-                }
+                LibraryHeaderIconButton(
+                    imageVector = Icons.Outlined.Search,
+                    contentDescription = stringResource(R.string.action_search),
+                    onClick = onSearchClick,
+                )
+                LibraryHeaderIconButton(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = stringResource(R.string.action_import_epubs),
+                    onClick = onImportClick,
+                )
             }
         }
 
@@ -327,93 +316,384 @@ private fun LibraryHeader(
 }
 
 @Composable
-private fun FilterRow(
-    selectedFilter: BookFilter,
-    onFilterChange: (BookFilter) -> Unit,
+private fun LibraryHeaderIconButton(
+    imageVector: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.size(40.dp),
     ) {
-        BookFilter.values().forEach { filter ->
-            FilterChip(
-                selected = selectedFilter == filter,
-                onClick = { onFilterChange(filter) },
-                label = { Text(text = stringResource(filter.labelRes())) },
-            )
-        }
+        Icon(
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(21.dp),
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.82f else 0.34f),
+        )
     }
 }
 
 @Composable
-private fun OrganizationRows(
+private fun LibraryControlsSummary(state: LibraryUiState) {
+    Text(
+        text = state.controlsSummary(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 10.dp),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.86f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+}
+
+@Composable
+private fun LibraryControlsDialog(
+    selectedFilter: BookFilter,
     selectedSortOrder: BookSortOrder,
     selectedSeriesFilter: SeriesFilter,
     selectedGridColumns: BookGridColumns,
+    onFilterChange: (BookFilter) -> Unit,
     onSortOrderChange: (BookSortOrder) -> Unit,
     onSeriesFilterChange: (SeriesFilter) -> Unit,
     onGridColumnsChange: (BookGridColumns) -> Unit,
+    onBatchModeChange: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    OrganizationChipRow(
-        label = stringResource(R.string.organization_sort_label),
-    ) {
-        BookSortOrder.values().forEach { sortOrder ->
-            FilterChip(
-                selected = selectedSortOrder == sortOrder,
-                onClick = { onSortOrderChange(sortOrder) },
-                label = { Text(text = stringResource(sortOrder.labelRes())) },
-            )
-        }
-    }
-    OrganizationChipRow(
-        label = stringResource(R.string.organization_series_label),
-    ) {
-        SeriesFilter.values().forEach { filter ->
-            FilterChip(
-                selected = selectedSeriesFilter == filter,
-                onClick = { onSeriesFilterChange(filter) },
-                label = { Text(text = stringResource(filter.labelRes())) },
-            )
-        }
-    }
-    OrganizationChipRow(
-        label = stringResource(R.string.organization_grid_label),
-    ) {
-        BookGridColumns.values().forEach { columns ->
-            FilterChip(
-                selected = selectedGridColumns == columns,
-                onClick = { onGridColumnsChange(columns) },
-                label = { Text(text = stringResource(columns.labelRes())) },
-            )
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 740.dp)
+                .heightIn(max = 720.dp)
+                .padding(20.dp),
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.background,
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.52f),
+            ),
+            tonalElevation = 0.dp,
+            shadowElevation = 10.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 26.dp, vertical = 22.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.organization_dialog_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                DialogDivider()
+                Spacer(modifier = Modifier.height(10.dp))
+
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    if (maxWidth >= 420.dp) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                StatusControlSection(
+                                    selectedFilter = selectedFilter,
+                                    onFilterChange = onFilterChange,
+                                )
+                                SeriesControlSection(
+                                    selectedSeriesFilter = selectedSeriesFilter,
+                                    onSeriesFilterChange = onSeriesFilterChange,
+                                )
+                                GridControlSection(
+                                    selectedGridColumns = selectedGridColumns,
+                                    onGridColumnsChange = onGridColumnsChange,
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                SortControlSection(
+                                    selectedSortOrder = selectedSortOrder,
+                                    onSortOrderChange = onSortOrderChange,
+                                )
+                                SelectionControlSection(onBatchModeChange = onBatchModeChange)
+                            }
+                        }
+                    } else {
+                        Column {
+                            StatusControlSection(
+                                selectedFilter = selectedFilter,
+                                onFilterChange = onFilterChange,
+                            )
+                            SortControlSection(
+                                selectedSortOrder = selectedSortOrder,
+                                onSortOrderChange = onSortOrderChange,
+                            )
+                            SeriesControlSection(
+                                selectedSeriesFilter = selectedSeriesFilter,
+                                onSeriesFilterChange = onSeriesFilterChange,
+                            )
+                            GridControlSection(
+                                selectedGridColumns = selectedGridColumns,
+                                onGridColumnsChange = onGridColumnsChange,
+                            )
+                            SelectionControlSection(onBatchModeChange = onBatchModeChange)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(text = stringResource(R.string.action_done))
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun OrganizationChipRow(
-    label: String,
-    content: @Composable RowScope.() -> Unit,
-) {
+private fun DialogDivider() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
-            maxLines = 1,
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
         )
-        content()
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .size(6.dp)
+                .rotate(45f)
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
+        )
     }
 }
+
+@Composable
+private fun StatusControlSection(
+    selectedFilter: BookFilter,
+    onFilterChange: (BookFilter) -> Unit,
+) {
+    LibraryControlSectionCard(label = stringResource(R.string.organization_status_label)) {
+        LibraryControlOptionGrid(
+            columns = 2,
+            options = BookFilter.values().map { filter ->
+                LibraryControlItem(
+                    label = stringResource(filter.labelRes()),
+                    selected = selectedFilter == filter,
+                    onClick = { onFilterChange(filter) },
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun SortControlSection(
+    selectedSortOrder: BookSortOrder,
+    onSortOrderChange: (BookSortOrder) -> Unit,
+) {
+    LibraryControlSectionCard(label = stringResource(R.string.organization_sort_label)) {
+        LibraryControlOptionGrid(
+            columns = 1,
+            options = BookSortOrder.values().map { sortOrder ->
+                LibraryControlItem(
+                    label = stringResource(sortOrder.labelRes()),
+                    selected = selectedSortOrder == sortOrder,
+                    onClick = { onSortOrderChange(sortOrder) },
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun SeriesControlSection(
+    selectedSeriesFilter: SeriesFilter,
+    onSeriesFilterChange: (SeriesFilter) -> Unit,
+) {
+    LibraryControlSectionCard(label = stringResource(R.string.organization_series_label)) {
+        LibraryControlOptionGrid(
+            columns = 1,
+            options = SeriesFilter.values().map { filter ->
+                LibraryControlItem(
+                    label = stringResource(filter.labelRes()),
+                    selected = selectedSeriesFilter == filter,
+                    onClick = { onSeriesFilterChange(filter) },
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun GridControlSection(
+    selectedGridColumns: BookGridColumns,
+    onGridColumnsChange: (BookGridColumns) -> Unit,
+) {
+    LibraryControlSectionCard(label = stringResource(R.string.organization_grid_label)) {
+        LibraryControlOptionGrid(
+            columns = 3,
+            options = BookGridColumns.values().map { columns ->
+                LibraryControlItem(
+                    label = stringResource(columns.labelRes()),
+                    selected = selectedGridColumns == columns,
+                    onClick = { onGridColumnsChange(columns) },
+                )
+            },
+        )
+    }
+}
+
+@Composable
+private fun SelectionControlSection(onBatchModeChange: () -> Unit) {
+    LibraryControlSectionCard(label = stringResource(R.string.organization_selection_label)) {
+        LibraryControlOptionGrid(
+            columns = 1,
+            options = listOf(
+                LibraryControlItem(
+                    label = stringResource(R.string.action_batch_edit),
+                    selected = false,
+                    onClick = onBatchModeChange,
+                ),
+            ),
+        )
+    }
+}
+
+@Composable
+private fun LibraryControlSectionCard(
+    label: String,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.42f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.32f),
+        ),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                maxLines = 1,
+            )
+            Spacer(modifier = Modifier.height(9.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun LibraryControlOptionGrid(
+    options: List<LibraryControlItem>,
+    columns: Int,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.chunked(columns).forEach { rowItems ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(columns) { index ->
+                    val item = rowItems.getOrNull(index)
+                    if (item != null) {
+                        LibraryControlTile(
+                            item = item,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryControlTile(
+    item: LibraryControlItem,
+    modifier: Modifier = Modifier,
+) {
+    val selectedColor = MaterialTheme.colorScheme.primary
+    Surface(
+        modifier = modifier
+            .heightIn(min = 40.dp)
+            .clickable(onClick = item.onClick),
+        shape = RoundedCornerShape(6.dp),
+        color = if (item.selected) {
+            selectedColor.copy(alpha = 0.1f)
+        } else {
+            Color.Transparent
+        },
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (item.selected) {
+                selectedColor.copy(alpha = 0.45f)
+            } else {
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)
+            },
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = item.label,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                ),
+                color = if (item.selected) {
+                    selectedColor
+                } else {
+                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.84f)
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (item.selected) {
+                Icon(
+                    imageVector = Icons.Outlined.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(13.dp),
+                    tint = selectedColor,
+                )
+            }
+        }
+    }
+}
+
+private data class LibraryControlItem(
+    val label: String,
+    val selected: Boolean,
+    val onClick: () -> Unit,
+)
 
 @Composable
 private fun BatchActionBar(
@@ -618,17 +898,17 @@ private fun BookCoverItem(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = author.ifBlank { stringResource(R.string.book_unknown_author) },
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -636,13 +916,13 @@ private fun BookCoverItem(
         if (seriesLabel != null) {
             Text(
                 text = seriesLabel,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         StatusPill(
             status = item.book.status,
             syncStatus = item.book.syncStatus,
@@ -846,15 +1126,19 @@ fun StatusPill(
 
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(4.dp),
+        shape = RoundedCornerShape(3.dp),
         color = Color.Transparent,
-        border = BorderStroke(1.dp, tint.copy(alpha = 0.72f)),
+        border = BorderStroke(0.75.dp, tint.copy(alpha = 0.48f)),
     ) {
         Text(
             text = label.uppercase(),
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = tint,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                letterSpacing = 0.sp,
+            ),
+            color = tint.copy(alpha = 0.9f),
             maxLines = 1,
         )
     }
@@ -997,6 +1281,31 @@ private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
                 item.metadata.seriesName?.contains(trimmedQuery, ignoreCase = true) == true
         }
         .sortedBy(sortOrder)
+}
+
+private fun LibraryUiState.hasActiveLibraryControls(): Boolean {
+    return activeFilter != BookFilter.ALL ||
+        sortOrder != BookSortOrder.IMPORTED_NEWEST ||
+        seriesFilter != SeriesFilter.ALL ||
+        gridColumns != BookGridColumns.AUTO
+}
+
+@Composable
+private fun LibraryUiState.controlsSummary(): String {
+    val parts = mutableListOf<String>()
+    if (activeFilter != BookFilter.ALL) {
+        parts += stringResource(activeFilter.labelRes())
+    }
+    if (sortOrder != BookSortOrder.IMPORTED_NEWEST) {
+        parts += stringResource(sortOrder.labelRes())
+    }
+    if (seriesFilter != SeriesFilter.ALL) {
+        parts += stringResource(seriesFilter.labelRes())
+    }
+    if (gridColumns != BookGridColumns.AUTO) {
+        parts += stringResource(gridColumns.labelRes())
+    }
+    return parts.joinToString(separator = " · ")
 }
 
 private fun LibraryBook.matchesStatusFilter(filter: BookFilter): Boolean {

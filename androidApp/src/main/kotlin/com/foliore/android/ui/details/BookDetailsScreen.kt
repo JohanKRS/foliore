@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -39,8 +40,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.text.HtmlCompat
 import coil.compose.AsyncImage
 import com.foliore.android.R
@@ -65,10 +68,8 @@ fun BookDetailsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        DetailsTopBar(onBack = onBack)
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
-
         if (book == null) {
+            DetailsTopBar(onBack = onBack)
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -83,47 +84,43 @@ fun BookDetailsScreen(
         }
 
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val expanded = maxWidth >= 760.dp
-            if (expanded) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    horizontalArrangement = Arrangement.spacedBy(42.dp),
-                ) {
-                    BookIdentityPanel(
-                        book = book,
-                        modifier = Modifier.weight(0.92f),
-                    )
-                    BookMetadataPanel(
-                        book = book,
-                        modifier = Modifier.weight(1.08f),
-                        scrollable = true,
-                        onEditMetadata = onEditMetadata,
-                        onReplaceCover = onReplaceCover,
-                        onPrepareEpub = onPrepareEpub,
-                        onShareExport = onShareExport,
-                        onDeleteBook = onDeleteBook,
-                    )
-                }
-            } else {
+            val expanded = maxWidth >= 560.dp
+            val contentMaxWidth = if (expanded) 720.dp else 560.dp
+            val horizontalPadding = if (maxWidth >= contentMaxWidth + 56.dp) 0.dp else 28.dp
+            Box(modifier = Modifier.fillMaxSize()) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .align(Alignment.TopCenter)
+                        .widthIn(max = contentMaxWidth)
+                        .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 28.dp, vertical = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(28.dp),
+                        .padding(
+                            start = horizontalPadding,
+                            end = horizontalPadding,
+                            top = 18.dp,
+                            bottom = 36.dp,
+                        ),
                 ) {
-                    BookIdentityPanel(book = book)
-                    BookMetadataPanel(
+                    DetailsTopBar(onBack = onBack)
+                    Spacer(modifier = Modifier.height(22.dp))
+                    BookHeroSection(
                         book = book,
-                        scrollable = false,
+                        expanded = expanded,
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    EditorialDivider(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(20.dp))
+                    DetailsActionList(
                         onEditMetadata = onEditMetadata,
                         onReplaceCover = onReplaceCover,
                         onPrepareEpub = onPrepareEpub,
                         onShareExport = onShareExport,
                         onDeleteBook = onDeleteBook,
                     )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    EditorialDivider(modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(28.dp))
+                    AboutBookSection(description = book.metadata.description)
                 }
             }
         }
@@ -135,93 +132,317 @@ private fun DetailsTopBar(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, top = 20.dp, end = 16.dp, bottom = 12.dp),
+            .padding(start = 18.dp, top = 22.dp, end = 18.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = onBack) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.size(44.dp),
+        ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
                 contentDescription = stringResource(R.string.action_back),
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.82f),
             )
         }
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = stringResource(R.string.details_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
     }
 }
 
 @Composable
-private fun BookIdentityPanel(
+private fun BookHeroSection(
+    book: LibraryBook,
+    expanded: Boolean,
+) {
+    if (expanded) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(34.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            BookCover(
+                book = book,
+                modifier = Modifier.width(260.dp),
+            )
+            BookSummary(
+                book = book,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    } else {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+        ) {
+            BookCover(
+                book = book,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            BookSummary(book = book)
+        }
+    }
+}
+
+@Composable
+private fun BookCover(
     book: LibraryBook,
     modifier: Modifier = Modifier,
 ) {
     val coverPath = book.book.coverImagePath ?: book.book.coverThumbPath
     val coverAspectRatio = remember(coverPath) { coverPath.coverAspectRatio() }
 
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.Start,
-    ) {
-        if (coverPath != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(coverAspectRatio)
-                    .shadow(8.dp, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                AsyncImage(
-                    model = File(coverPath),
-                    contentDescription = stringResource(
-                        R.string.cover_content_description,
-                        book.metadata.title,
-                    ),
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(DefaultCoverAspectRatio)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.cover_placeholder),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+    if (coverPath != null) {
+        Box(
+            modifier = modifier
+                .aspectRatio(coverAspectRatio)
+                .shadow(5.dp, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(
+                model = File(coverPath),
+                contentDescription = stringResource(
+                    R.string.cover_content_description,
+                    book.metadata.title,
+                ),
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
+    } else {
+        Box(
+            modifier = modifier
+                .aspectRatio(DefaultCoverAspectRatio)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.cover_placeholder),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
 
-        Spacer(modifier = Modifier.height(22.dp))
+@Composable
+private fun BookSummary(
+    book: LibraryBook,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
         Text(
             text = book.metadata.title,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 2,
+            maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = book.metadata.authors.firstOrNull().orEmpty()
                 .ifBlank { stringResource(R.string.book_unknown_author) },
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(18.dp))
         StatusPill(
             status = book.book.status,
             syncStatus = book.book.syncStatus,
         )
+        Spacer(modifier = Modifier.height(26.dp))
+        DetailsMetadataRow(
+            label = stringResource(R.string.details_series),
+            value = book.seriesDisplay() ?: stringResource(R.string.details_not_available),
+        )
+        DetailsMetadataRow(
+            label = stringResource(R.string.details_language),
+            value = book.metadata.language ?: stringResource(R.string.details_not_available),
+        )
+        DetailsMetadataRow(
+            label = stringResource(R.string.details_publisher),
+            value = book.metadata.publisher ?: stringResource(R.string.details_not_available),
+        )
+        DetailsMetadataRow(
+            label = stringResource(R.string.details_file_format),
+            value = stringResource(R.string.details_file_format_epub),
+        )
+        DetailsMetadataRow(
+            label = stringResource(R.string.details_last_synced),
+            value = book.book.lastSyncedAt.toDisplayTimestamp()
+                ?: stringResource(R.string.details_not_available),
+        )
     }
+}
+
+@Composable
+private fun DetailsMetadataRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 7.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.width(108.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f),
+        )
+    }
+}
+
+@Composable
+private fun DetailsActionList(
+    onEditMetadata: () -> Unit,
+    onReplaceCover: () -> Unit,
+    onPrepareEpub: () -> Unit,
+    onShareExport: () -> Unit,
+    onDeleteBook: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        DetailsActionRow(
+            icon = Icons.Outlined.Edit,
+            label = stringResource(R.string.details_action_edit_metadata),
+            onClick = onEditMetadata,
+        )
+        DetailsRowDivider()
+        DetailsActionRow(
+            icon = Icons.Outlined.Image,
+            label = stringResource(R.string.details_action_replace_cover),
+            onClick = onReplaceCover,
+        )
+        DetailsRowDivider()
+        DetailsActionRow(
+            icon = Icons.Outlined.Description,
+            label = stringResource(R.string.details_action_prepare_epub),
+            onClick = onPrepareEpub,
+        )
+        DetailsRowDivider()
+        DetailsActionRow(
+            icon = Icons.Outlined.Share,
+            label = stringResource(R.string.details_action_share_export),
+            onClick = onShareExport,
+        )
+        DetailsRowDivider()
+        DetailsActionRow(
+            icon = Icons.Outlined.Delete,
+            label = stringResource(R.string.details_action_delete_book),
+            onClick = onDeleteBook,
+            color = MaterialTheme.colorScheme.error,
+        )
+    }
+}
+
+@Composable
+private fun DetailsActionRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    color: androidx.compose.ui.graphics.Color? = null,
+) {
+    val contentColor = color ?: MaterialTheme.colorScheme.onBackground
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 17.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = contentColor.copy(alpha = if (color == null) 0.8f else 0.92f),
+        )
+        Spacer(modifier = Modifier.width(24.dp))
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge,
+            color = contentColor.copy(alpha = if (color == null) 0.88f else 0.94f),
+        )
+        Icon(
+            imageVector = Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+        )
+    }
+}
+
+@Composable
+private fun DetailsRowDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.36f)),
+    )
+}
+
+@Composable
+private fun AboutBookSection(description: String?) {
+    val descriptionText = remember(description) {
+        description.toDisplayDescription()
+    } ?: stringResource(R.string.book_no_description)
+
+    Text(
+        text = stringResource(R.string.details_about_book).uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Spacer(modifier = Modifier.height(18.dp))
+    Text(
+        text = descriptionText,
+        style = MaterialTheme.typography.bodyLarge.copy(
+            fontFamily = FontFamily.Serif,
+            lineHeight = 28.sp,
+        ),
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+    )
+}
+
+private fun LibraryBook.seriesDisplay(): String? {
+    val name = metadata.seriesName?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val index = metadata.seriesIndex?.let { value ->
+        val asLong = value.toLong()
+        if (value == asLong.toDouble()) asLong.toString() else value.toString()
+    }
+    return if (index == null) name else "$name #$index"
+}
+
+private fun String?.toDisplayTimestamp(): String? {
+    val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val compact = raw.substringBefore('.').replace('T', ' ')
+    return if (compact.length >= 16) compact.take(16) else compact
+}
+
+private fun String?.toDisplayDescription(): String? {
+    val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val plain = HtmlCompat.fromHtml(raw, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        .toString()
+        .replace('\u00A0', ' ')
+    return plain.lines()
+        .joinToString("\n") { it.trim() }
+        .replace(Regex("\\n{3,}"), "\n\n")
+        .trim()
+        .takeIf { it.isNotEmpty() }
 }
 
 private fun String?.coverAspectRatio(): Float {
@@ -240,170 +461,3 @@ private fun String?.coverAspectRatio(): Float {
 }
 
 private const val DefaultCoverAspectRatio = 2f / 3f
-
-@Composable
-private fun BookMetadataPanel(
-    book: LibraryBook,
-    modifier: Modifier = Modifier,
-    scrollable: Boolean,
-    onEditMetadata: () -> Unit,
-    onReplaceCover: () -> Unit,
-    onPrepareEpub: () -> Unit,
-    onShareExport: () -> Unit,
-    onDeleteBook: () -> Unit,
-) {
-    val panelModifier = if (scrollable) {
-        modifier.verticalScroll(rememberScrollState())
-    } else {
-        modifier
-    }
-    val descriptionText = remember(book.metadata.description) {
-        book.metadata.description.toDisplayDescription()
-    } ?: stringResource(R.string.book_no_description)
-
-    Column(
-        modifier = panelModifier,
-    ) {
-        MetadataRow(
-            label = stringResource(R.string.details_series),
-            value = book.metadata.seriesName ?: stringResource(R.string.details_not_available),
-        )
-        MetadataRow(
-            label = stringResource(R.string.details_language),
-            value = book.metadata.language ?: stringResource(R.string.details_not_available),
-        )
-        MetadataRow(
-            label = stringResource(R.string.details_publisher),
-            value = book.metadata.publisher ?: stringResource(R.string.details_not_available),
-        )
-        MetadataRow(
-            label = stringResource(R.string.details_file_format),
-            value = stringResource(R.string.details_file_format_epub),
-        )
-        MetadataRow(
-            label = stringResource(R.string.details_imported_at),
-            value = book.book.importedAt,
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(18.dp))
-
-        DetailsActionRow(
-            icon = Icons.Outlined.Edit,
-            label = stringResource(R.string.details_action_edit_metadata),
-            onClick = onEditMetadata,
-        )
-        DetailsActionRow(
-            icon = Icons.Outlined.Image,
-            label = stringResource(R.string.details_action_replace_cover),
-            onClick = onReplaceCover,
-        )
-        DetailsActionRow(
-            icon = Icons.Outlined.Description,
-            label = stringResource(R.string.details_action_prepare_epub),
-            onClick = onPrepareEpub,
-        )
-        DetailsActionRow(
-            icon = Icons.Outlined.Share,
-            label = stringResource(R.string.details_action_share_export),
-            onClick = onShareExport,
-        )
-        DetailsActionRow(
-            icon = Icons.Outlined.Delete,
-            label = stringResource(R.string.details_action_delete_book),
-            onClick = onDeleteBook,
-            color = MaterialTheme.colorScheme.error,
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = stringResource(R.string.details_about_book).uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = descriptionText,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-    }
-}
-
-private fun String?.toDisplayDescription(): String? {
-    val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-    val plain = HtmlCompat.fromHtml(raw, HtmlCompat.FROM_HTML_MODE_LEGACY)
-        .toString()
-        .replace('\u00A0', ' ')
-    return plain.lines()
-        .joinToString("\n") { it.trim() }
-        .replace(Regex("\\n{3,}"), "\n\n")
-        .trim()
-        .takeIf { it.isNotEmpty() }
-}
-
-@Composable
-private fun MetadataRow(
-    label: String,
-    value: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.width(116.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-    }
-}
-
-@Composable
-private fun DetailsActionRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    color: androidx.compose.ui.graphics.Color? = null,
-) {
-    val contentColor = color ?: MaterialTheme.colorScheme.onBackground
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(28.dp),
-            tint = contentColor,
-        )
-        Spacer(modifier = Modifier.width(18.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = contentColor,
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = Icons.Outlined.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
