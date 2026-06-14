@@ -39,6 +39,7 @@ import androidx.compose.material.icons.outlined.Numbers
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -82,6 +83,7 @@ fun EditMetadataScreen(
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
     onPrepareEpub: () -> Unit,
+    onShareExport: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
     onLibraryClick: () -> Unit,
@@ -176,6 +178,7 @@ fun EditMetadataScreen(
                 onBack = onBack,
                 onSave = saveDraft,
                 onPrepareEpub = onPrepareEpub,
+                onShareExport = onShareExport,
                 onSyncNow = onSyncNow,
                 isSyncing = isSyncing,
                 onLibraryClick = onLibraryClick,
@@ -241,6 +244,7 @@ private fun TabletEditBookScreen(
     onBack: () -> Unit,
     onSave: () -> Unit,
     onPrepareEpub: () -> Unit,
+    onShareExport: () -> Unit,
     onSyncNow: () -> Unit,
     isSyncing: Boolean,
     onLibraryClick: () -> Unit,
@@ -440,8 +444,7 @@ private fun TabletEditBookScreen(
             TabletEditActions(
                 onSave = onSave,
                 onPrepareEpub = onPrepareEpub,
-                onSyncNow = onSyncNow,
-                isSyncing = isSyncing,
+                onShareExport = onShareExport,
                 saveEnabled = title.isNotBlank(),
                 compact = compactActions,
             )
@@ -850,8 +853,7 @@ private fun TabletInfoRow(
 private fun TabletEditActions(
     onSave: () -> Unit,
     onPrepareEpub: () -> Unit,
-    onSyncNow: () -> Unit,
-    isSyncing: Boolean,
+    onShareExport: () -> Unit,
     saveEnabled: Boolean,
     compact: Boolean,
 ) {
@@ -860,12 +862,10 @@ private fun TabletEditActions(
     } else {
         stringResource(R.string.details_action_prepare_epub)
     }
-    val syncLabel = if (compact) {
-        stringResource(R.string.nav_sync)
-    } else if (isSyncing) {
-        stringResource(R.string.settings_sync_running)
+    val exportLabel = if (compact) {
+        stringResource(R.string.edit_metadata_export_short)
     } else {
-        stringResource(R.string.settings_sync_now)
+        stringResource(R.string.details_action_share_export)
     }
 
     Row(
@@ -918,8 +918,7 @@ private fun TabletEditActions(
             )
         }
         Button(
-            onClick = onSyncNow,
-            enabled = !isSyncing,
+            onClick = onShareExport,
             modifier = Modifier
                 .weight(1f)
                 .height(56.dp),
@@ -930,13 +929,13 @@ private fun TabletEditActions(
             ),
         ) {
             Icon(
-                imageVector = Icons.Outlined.Sync,
+                imageVector = Icons.Outlined.Share,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(9.dp))
             Text(
-                text = syncLabel,
+                text = exportLabel,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -976,12 +975,6 @@ private fun TabletEmbeddedBottomNav(
                 label = stringResource(R.string.nav_library),
                 selected = true,
                 onClick = onLibraryClick,
-            )
-            TabletNavItem(
-                icon = Icons.Outlined.Description,
-                label = stringResource(R.string.nav_activity),
-                selected = false,
-                onClick = {},
             )
             TabletNavItem(
                 icon = Icons.Outlined.Sync,

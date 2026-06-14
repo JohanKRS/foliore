@@ -6,7 +6,6 @@
     <string name="details_title">Detalhes</string>
 
     <string name="nav_library">Biblioteca</string>
-    <string name="nav_activity">Atividade</string>
     <string name="nav_sync">Sync</string>
     <string name="nav_settings">Configurações</string>
 
@@ -125,6 +124,7 @@
     <string name="edit_metadata_location_value">Biblioteca Foliore / %1$s</string>
     <string name="edit_metadata_save">Salvar</string>
     <string name="edit_metadata_prepare_short">Preparar</string>
+    <string name="edit_metadata_export_short">Exportar</string>
     <string name="edit_metadata_cancel">Cancelar</string>
     <string name="edit_metadata_field_title">Título</string>
     <string name="edit_metadata_field_subtitle">Subtítulo</string>
