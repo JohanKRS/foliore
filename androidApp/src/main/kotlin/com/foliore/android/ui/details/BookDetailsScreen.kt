@@ -1,5 +1,6 @@
 package com.foliore.android.ui.details
 
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -156,31 +158,39 @@ private fun BookIdentityPanel(
     modifier: Modifier = Modifier,
 ) {
     val coverPath = book.book.coverImagePath ?: book.book.coverThumbPath
+    val coverAspectRatio = remember(coverPath) { coverPath.coverAspectRatio() }
 
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(2f / 3f)
-                .shadow(8.dp, RoundedCornerShape(8.dp))
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (coverPath != null) {
+        if (coverPath != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(coverAspectRatio)
+                    .shadow(8.dp, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
                 AsyncImage(
                     model = File(coverPath),
                     contentDescription = stringResource(
                         R.string.cover_content_description,
                         book.metadata.title,
                     ),
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else {
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(DefaultCoverAspectRatio)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
                     text = stringResource(R.string.cover_placeholder),
                     style = MaterialTheme.typography.titleLarge,
@@ -212,6 +222,23 @@ private fun BookIdentityPanel(
         )
     }
 }
+
+private fun String?.coverAspectRatio(): Float {
+    if (this == null) return DefaultCoverAspectRatio
+
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(this, options)
+    val width = options.outWidth
+    val height = options.outHeight
+
+    return if (width > 0 && height > 0) {
+        width.toFloat() / height.toFloat()
+    } else {
+        DefaultCoverAspectRatio
+    }
+}
+
+private const val DefaultCoverAspectRatio = 2f / 3f
 
 @Composable
 private fun BookMetadataPanel(
