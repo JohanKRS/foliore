@@ -11,6 +11,8 @@ data class LibraryUiState(
     val isSearchOpen: Boolean = false,
     val query: String = "",
     val activeFilter: BookFilter = BookFilter.ALL,
+    val sortOrder: BookSortOrder = BookSortOrder.IMPORTED_NEWEST,
+    val seriesFilter: SeriesFilter = SeriesFilter.ALL,
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
 )
@@ -22,6 +24,23 @@ enum class BookFilter {
     SYNCED,
     CONFLICT,
     ERROR,
+}
+
+enum class BookSortOrder {
+    IMPORTED_NEWEST,
+    TITLE_ASC,
+    TITLE_DESC,
+    AUTHOR_ASC,
+    AUTHOR_DESC,
+    YEAR_DESC,
+    YEAR_ASC,
+    SERIES,
+}
+
+enum class SeriesFilter {
+    ALL,
+    WITH_SERIES,
+    WITHOUT_SERIES,
 }
 
 data class SyncSummary(

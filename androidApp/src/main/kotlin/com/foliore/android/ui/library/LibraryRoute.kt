@@ -43,6 +43,8 @@ fun LibraryRoute(
         onCloseSearch = { viewModel.setSearchOpen(false) },
         onQueryChange = viewModel::setQuery,
         onFilterChange = viewModel::setFilter,
+        onSortOrderChange = viewModel::setSortOrder,
+        onSeriesFilterChange = viewModel::setSeriesFilter,
         onBookClick = onBookClick,
         onBatchModeChange = viewModel::setBatchMode,
         onBookSelectionToggle = viewModel::toggleBookSelection,

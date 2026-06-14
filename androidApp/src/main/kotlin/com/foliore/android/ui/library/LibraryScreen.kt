@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,8 +73,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.viewmodel.BookFilter
+import com.foliore.android.viewmodel.BookSortOrder
 import com.foliore.android.viewmodel.LibraryUiState
+import com.foliore.android.viewmodel.SeriesFilter
 import com.foliore.shared.domain.BatchMetadataPatch
+import com.foliore.shared.domain.BookMetadata
 import com.foliore.shared.domain.BookStatus
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.domain.SyncStatus
@@ -88,6 +92,8 @@ fun LibraryScreen(
     onCloseSearch: () -> Unit,
     onQueryChange: (String) -> Unit,
     onFilterChange: (BookFilter) -> Unit,
+    onSortOrderChange: (BookSortOrder) -> Unit,
+    onSeriesFilterChange: (SeriesFilter) -> Unit,
     onBookClick: (String) -> Unit,
     onBatchModeChange: (Boolean) -> Unit,
     onBookSelectionToggle: (String) -> Unit,
@@ -96,7 +102,13 @@ fun LibraryScreen(
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
-    val visibleBooks = remember(state.books, state.activeFilter, state.query) {
+    val visibleBooks = remember(
+        state.books,
+        state.activeFilter,
+        state.seriesFilter,
+        state.sortOrder,
+        state.query,
+    ) {
         state.visibleBooks()
     }
     var showBatchDialog by rememberSaveable { mutableStateOf(false) }
@@ -138,6 +150,12 @@ fun LibraryScreen(
             FilterRow(
                 selectedFilter = state.activeFilter,
                 onFilterChange = onFilterChange,
+            )
+            OrganizationRows(
+                selectedSortOrder = state.sortOrder,
+                selectedSeriesFilter = state.seriesFilter,
+                onSortOrderChange = onSortOrderChange,
+                onSeriesFilterChange = onSeriesFilterChange,
             )
 
             AnimatedVisibility(visible = state.isBatchMode) {
@@ -324,6 +342,60 @@ private fun FilterRow(
 }
 
 @Composable
+private fun OrganizationRows(
+    selectedSortOrder: BookSortOrder,
+    selectedSeriesFilter: SeriesFilter,
+    onSortOrderChange: (BookSortOrder) -> Unit,
+    onSeriesFilterChange: (SeriesFilter) -> Unit,
+) {
+    OrganizationChipRow(
+        label = stringResource(R.string.organization_sort_label),
+    ) {
+        BookSortOrder.values().forEach { sortOrder ->
+            FilterChip(
+                selected = selectedSortOrder == sortOrder,
+                onClick = { onSortOrderChange(sortOrder) },
+                label = { Text(text = stringResource(sortOrder.labelRes())) },
+            )
+        }
+    }
+    OrganizationChipRow(
+        label = stringResource(R.string.organization_series_label),
+    ) {
+        SeriesFilter.values().forEach { filter ->
+            FilterChip(
+                selected = selectedSeriesFilter == filter,
+                onClick = { onSeriesFilterChange(filter) },
+                label = { Text(text = stringResource(filter.labelRes())) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrganizationChipRow(
+    label: String,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+        )
+        content()
+    }
+}
+
+@Composable
 private fun BatchActionBar(
     selectedCount: Int,
     visibleBookCount: Int,
@@ -424,6 +496,7 @@ private fun BookCoverItem(
 ) {
     val title = item.metadata.title
     val author = item.metadata.authors.firstOrNull().orEmpty()
+    val seriesLabel = item.metadata.seriesLabel()
     val coverPath = item.book.coverThumbPath ?: item.book.coverImagePath
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -482,6 +555,15 @@ private fun BookCoverItem(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (seriesLabel != null) {
+            Text(
+                text = seriesLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         StatusPill(
             status = item.book.status,
@@ -804,8 +886,6 @@ fun EditorialDivider(modifier: Modifier = Modifier) {
     }
 }
 
-private fun String.cleanOptional(): String? = trim().takeIf { it.isNotEmpty() }
-
 private fun String.splitValues(): List<String> {
     return split(',')
         .map { it.trim() }
@@ -821,24 +901,105 @@ private fun selectedCountText(count: Int): String {
 }
 
 private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
-    val filteredByStatus = books.filter { item ->
-        when (activeFilter) {
-            BookFilter.ALL -> true
-            BookFilter.NEEDS_REVIEW -> item.book.status == BookStatus.NEEDS_REVIEW
-            BookFilter.PREPARED -> item.book.status == BookStatus.PREPARED
-            BookFilter.SYNCED -> item.book.syncStatus == SyncStatus.SYNCED
-            BookFilter.CONFLICT -> item.book.syncStatus == SyncStatus.CONFLICT
-            BookFilter.ERROR -> item.book.status == BookStatus.ERROR
-        }
-    }
     val trimmedQuery = query.trim()
-    if (trimmedQuery.isBlank()) return filteredByStatus
 
-    return filteredByStatus.filter { item ->
-        item.metadata.title.contains(trimmedQuery, ignoreCase = true) ||
-            item.metadata.authors.any { it.contains(trimmedQuery, ignoreCase = true) }
+    return books
+        .filter { item -> item.matchesStatusFilter(activeFilter) }
+        .filter { item -> item.matchesSeriesFilter(seriesFilter) }
+        .filter { item ->
+            trimmedQuery.isBlank() ||
+                item.metadata.title.contains(trimmedQuery, ignoreCase = true) ||
+                item.metadata.authors.any { it.contains(trimmedQuery, ignoreCase = true) } ||
+                item.metadata.seriesName?.contains(trimmedQuery, ignoreCase = true) == true
+        }
+        .sortedBy(sortOrder)
+}
+
+private fun LibraryBook.matchesStatusFilter(filter: BookFilter): Boolean {
+    return when (filter) {
+        BookFilter.ALL -> true
+        BookFilter.NEEDS_REVIEW -> book.status == BookStatus.NEEDS_REVIEW
+        BookFilter.PREPARED -> book.status == BookStatus.PREPARED
+        BookFilter.SYNCED -> book.syncStatus == SyncStatus.SYNCED
+        BookFilter.CONFLICT -> book.syncStatus == SyncStatus.CONFLICT
+        BookFilter.ERROR -> book.status == BookStatus.ERROR
     }
 }
+
+private fun LibraryBook.matchesSeriesFilter(filter: SeriesFilter): Boolean {
+    val hasSeries = metadata.seriesName?.isNotBlank() == true
+    return when (filter) {
+        SeriesFilter.ALL -> true
+        SeriesFilter.WITH_SERIES -> hasSeries
+        SeriesFilter.WITHOUT_SERIES -> !hasSeries
+    }
+}
+
+private fun List<LibraryBook>.sortedBy(sortOrder: BookSortOrder): List<LibraryBook> {
+    return when (sortOrder) {
+        BookSortOrder.IMPORTED_NEWEST -> sortedWith(
+            compareByDescending<LibraryBook> { it.book.importedAt }
+                .thenBy { it.titleSortKey() },
+        )
+        BookSortOrder.TITLE_ASC -> sortedBy { it.titleSortKey() }
+        BookSortOrder.TITLE_DESC -> sortedWith(compareByDescending<LibraryBook> { it.titleSortKey() })
+        BookSortOrder.AUTHOR_ASC -> sortedWith(
+            compareBy<LibraryBook> { it.authorSortKey() == null }
+                .thenBy { it.authorSortKey().orEmpty() }
+                .thenBy { it.titleSortKey() },
+        )
+        BookSortOrder.AUTHOR_DESC -> sortedWith(
+            compareBy<LibraryBook> { it.authorSortKey() == null }
+                .thenByDescending { it.authorSortKey().orEmpty() }
+                .thenBy { it.titleSortKey() },
+        )
+        BookSortOrder.YEAR_DESC -> sortedWith(
+            compareBy<LibraryBook> { it.publishedYear() == null }
+                .thenByDescending { it.publishedYear() ?: Int.MIN_VALUE }
+                .thenBy { it.titleSortKey() },
+        )
+        BookSortOrder.YEAR_ASC -> sortedWith(
+            compareBy<LibraryBook> { it.publishedYear() == null }
+                .thenBy { it.publishedYear() ?: Int.MAX_VALUE }
+                .thenBy { it.titleSortKey() },
+        )
+        BookSortOrder.SERIES -> sortedWith(
+            compareBy<LibraryBook> { it.metadata.seriesName?.isBlank() != false }
+                .thenBy { it.metadata.seriesName.sortKey() }
+                .thenBy { it.metadata.seriesIndex ?: Double.MAX_VALUE }
+                .thenBy { it.titleSortKey() },
+        )
+    }
+}
+
+private fun LibraryBook.titleSortKey(): String = metadata.title.sortKey()
+
+private fun LibraryBook.authorSortKey(): String? {
+    return metadata.sortAuthor.cleanOptional()
+        ?: metadata.authors.firstOrNull()?.cleanOptional()
+}
+
+private fun LibraryBook.publishedYear(): Int? {
+    return metadata.publishedDate
+        ?.let { yearRegex.find(it)?.value }
+        ?.toIntOrNull()
+}
+
+private fun BookMetadata.seriesLabel(): String? {
+    val name = seriesName.cleanOptional() ?: return null
+    val index = seriesIndex?.displayValue()
+    return if (index == null) name else "$name #$index"
+}
+
+private fun Double.displayValue(): String {
+    return if (this % 1.0 == 0.0) toLong().toString() else toString()
+}
+
+private fun String?.cleanOptional(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
+
+private fun String?.sortKey(): String = cleanOptional()?.lowercase().orEmpty()
+
+private val yearRegex = Regex("\\d{4}")
 
 private fun BookFilter.labelRes(): Int {
     return when (this) {
@@ -848,6 +1009,27 @@ private fun BookFilter.labelRes(): Int {
         BookFilter.SYNCED -> R.string.filter_synced
         BookFilter.CONFLICT -> R.string.filter_conflicts
         BookFilter.ERROR -> R.string.filter_error
+    }
+}
+
+private fun BookSortOrder.labelRes(): Int {
+    return when (this) {
+        BookSortOrder.IMPORTED_NEWEST -> R.string.sort_imported_newest
+        BookSortOrder.TITLE_ASC -> R.string.sort_title_asc
+        BookSortOrder.TITLE_DESC -> R.string.sort_title_desc
+        BookSortOrder.AUTHOR_ASC -> R.string.sort_author_asc
+        BookSortOrder.AUTHOR_DESC -> R.string.sort_author_desc
+        BookSortOrder.YEAR_DESC -> R.string.sort_year_desc
+        BookSortOrder.YEAR_ASC -> R.string.sort_year_asc
+        BookSortOrder.SERIES -> R.string.sort_series
+    }
+}
+
+private fun SeriesFilter.labelRes(): Int {
+    return when (this) {
+        SeriesFilter.ALL -> R.string.series_filter_all
+        SeriesFilter.WITH_SERIES -> R.string.series_filter_with_series
+        SeriesFilter.WITHOUT_SERIES -> R.string.series_filter_without_series
     }
 }
 

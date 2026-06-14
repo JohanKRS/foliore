@@ -102,6 +102,14 @@ class LibraryViewModel(
         _state.update { it.copy(activeFilter = filter) }
     }
 
+    fun setSortOrder(sortOrder: BookSortOrder) {
+        _state.update { it.copy(sortOrder = sortOrder) }
+    }
+
+    fun setSeriesFilter(seriesFilter: SeriesFilter) {
+        _state.update { it.copy(seriesFilter = seriesFilter) }
+    }
+
     fun setBatchMode(isEnabled: Boolean) {
         _state.update {
             it.copy(
