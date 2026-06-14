@@ -234,7 +234,7 @@ class LibraryViewModel(
             _notice.value = LibraryNotice(
                 when (result) {
                     is OpenAiResult.Success -> LibraryNoticeType.AI_BRIDGE_CONNECTED
-                    is OpenAiResult.Failure -> LibraryNoticeType.AI_REQUEST_FAILED
+                    is OpenAiResult.Failure -> result.toAiFailureNoticeType()
                 },
             )
         }
@@ -308,7 +308,7 @@ class LibraryViewModel(
                     _notice.value = LibraryNotice(LibraryNoticeType.AI_METADATA_PREVIEW_READY)
                 }
                 is OpenAiResult.Failure -> {
-                    _notice.value = LibraryNotice(LibraryNoticeType.AI_REQUEST_FAILED)
+                    _notice.value = LibraryNotice(result.toAiFailureNoticeType())
                 }
             }
         }
@@ -376,7 +376,7 @@ class LibraryViewModel(
                         if (result.code == "cover_generation_not_available") {
                             LibraryNoticeType.AI_BRIDGE_COVERS_UNAVAILABLE
                         } else {
-                            LibraryNoticeType.AI_REQUEST_FAILED
+                            result.toAiFailureNoticeType()
                         },
                     )
                 }
@@ -728,6 +728,22 @@ class LibraryViewModel(
 
     private fun hasUsableAiCoverProvider(): Boolean {
         return hasUsableOpenAiApiProvider() || hasUsableCodexBridgeProvider()
+    }
+
+    private fun OpenAiResult.Failure.toAiFailureNoticeType(): LibraryNoticeType {
+        return when (code) {
+            "missing_bridge_config" -> LibraryNoticeType.AI_PROVIDER_NOT_READY
+            "unauthorized" -> LibraryNoticeType.AI_BRIDGE_UNAUTHORIZED
+            "bridge_unreachable",
+            "bridge_request_failed" -> LibraryNoticeType.AI_BRIDGE_UNREACHABLE
+            "bridge_timeout",
+            "codex_timeout" -> LibraryNoticeType.AI_BRIDGE_TIMEOUT
+            "EPERM",
+            "codex_spawn_failed",
+            "codex_exit_failed",
+            "codex_invalid_json" -> LibraryNoticeType.AI_BRIDGE_CODEX_FAILED
+            else -> LibraryNoticeType.AI_REQUEST_FAILED
+        }
     }
 
     private fun ManualSyncResult.toNoticeType(): LibraryNoticeType {

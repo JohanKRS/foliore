@@ -6,7 +6,10 @@ import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
 import java.io.File
+import java.net.ConnectException
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.net.URL
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -129,7 +132,21 @@ class CodexBridgeService(
                     errorCode = error?.code,
                 )
             }
-        }.getOrElse { HttpResult(errorMessage = it.message ?: "Codex Bridge request failed") }
+        }.getOrElse {
+            HttpResult(
+                errorMessage = it.message ?: "Codex Bridge request failed",
+                errorCode = it.bridgeRequestErrorCode(),
+            )
+        }
+    }
+
+    private fun Throwable.bridgeRequestErrorCode(): String {
+        return when (this) {
+            is ConnectException,
+            is UnknownHostException -> "bridge_unreachable"
+            is SocketTimeoutException -> "bridge_timeout"
+            else -> "bridge_request_failed"
+        }
     }
 
     private fun metadataRequestBody(

@@ -202,6 +202,10 @@
     <string name="ai_notice_bridge_settings_cleared">Configuração do Codex Bridge removida.</string>
     <string name="ai_notice_bridge_connected">Codex Bridge conectado.</string>
     <string name="ai_notice_bridge_covers_unavailable">Este bridge ainda não gera capas. Use OpenAI API para imagens por enquanto.</string>
+    <string name="ai_notice_bridge_unauthorized">Token do Codex Bridge inválido. Copie o token atual do servidor e salve novamente.</string>
+    <string name="ai_notice_bridge_unreachable">Não foi possível alcançar o Codex Bridge nesta URL.</string>
+    <string name="ai_notice_bridge_timeout">O Codex Bridge demorou demais para responder.</string>
+    <string name="ai_notice_bridge_codex_failed">O bridge conectou, mas o Codex local falhou. Verifique o bridge no PC.</string>
     <string name="ai_notice_provider_required">Ative uma opção de IA nas configurações.</string>
     <string name="ai_notice_provider_not_ready">Configure uma chave API ou o Codex Bridge antes de usar a IA.</string>
     <string name="ai_notice_request_failed">Não foi possível concluir a chamada de IA.</string>
