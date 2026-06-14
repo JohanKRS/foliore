@@ -170,6 +170,11 @@
     <string name="settings_sync_running">Sincronizando...</string>
     <string name="settings_sync_disconnect">Desconectar pasta</string>
     <string name="settings_sync_last_result">Último resultado: %1$d enviados, %2$d recebidos, %3$d conflitos.</string>
+    <string name="sync_progress_preparing">Preparando sincronização...</string>
+    <string name="sync_progress_checking_remote">Conferindo biblioteca remota...</string>
+    <string name="sync_progress_uploading">Enviando alterações...</string>
+    <string name="sync_progress_writing_manifest">Atualizando manifesto...</string>
+    <string name="sync_progress_applying_status">Atualizando status local...</string>
     <string name="sync_notice_folder_configured">Pasta de sincronização configurada.</string>
     <string name="sync_notice_complete">Sincronização concluída.</string>
     <string name="sync_notice_complete_with_conflicts">Sincronização concluída com conflitos.</string>

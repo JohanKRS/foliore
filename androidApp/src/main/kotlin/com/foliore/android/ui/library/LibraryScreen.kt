@@ -143,7 +143,14 @@ fun LibraryScreen(
             )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
 
-            if (state.isImporting || state.isSyncing) {
+            if (state.isSyncing && state.syncProgress != null) {
+                SyncProgressStrip(
+                    progress = state.syncProgress,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+            } else if (state.isImporting || state.isSyncing) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,

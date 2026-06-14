@@ -3,6 +3,7 @@ package com.foliore.android.storage
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.foliore.shared.data.MetadataSnapshot
 import com.foliore.shared.data.TechnicalSnapshot
@@ -63,8 +64,9 @@ class ManualSyncService(
         return folderLabel(uri)
     }
 
-    fun syncNow(): ManualSyncResult {
+    fun syncNow(onProgress: (ManualSyncProgress) -> Unit = {}): ManualSyncResult {
         return runCatching {
+            onProgress(ManualSyncProgress(ManualSyncPhase.PREPARING))
             val treeUri = syncUri() ?: return ManualSyncResult.NotConfigured
             val root = DocumentFile.fromTreeUri(appContext, treeUri)
                 ?.takeIf { it.exists() && it.canWrite() }
@@ -82,33 +84,87 @@ class ManualSyncService(
                 ?.associateBy { it.bookId }
                 .orEmpty()
             val counters = SyncCounters()
+            val pendingStatusUpdates = PendingSyncStatusUpdates()
+            val localBooks = libraryRepository.getBooks()
+            val localBooksById = localBooks.associateBy { it.book.id }
+            val remoteBookList = remoteBooks.values.toList()
 
-            remoteBooks.values.forEach { remoteBook ->
+            onProgress(
+                ManualSyncProgress(
+                    phase = ManualSyncPhase.CHECKING_REMOTE,
+                    current = 0,
+                    total = remoteBookList.size,
+                ),
+            )
+            remoteBookList.forEachIndexed { index, remoteBook ->
                 applyRemoteBook(
                     libraryRoot = libraryRoot,
                     remoteBook = remoteBook,
+                    local = localBooksById[remoteBook.bookId],
                     syncedAt = syncedAt,
                     currentDeviceId = deviceId,
                     counters = counters,
+                    pendingStatusUpdates = pendingStatusUpdates,
+                )
+                onProgress(
+                    ManualSyncProgress(
+                        phase = ManualSyncPhase.CHECKING_REMOTE,
+                        current = index + 1,
+                        total = remoteBookList.size,
+                    ),
                 )
             }
 
-            libraryRepository.getBooks().forEach { book ->
-                if (book.book.syncStatus == SyncStatus.CONFLICT) return@forEach
-
-                val remoteBook = remoteBooks[book.book.id]
-                val shouldUpload = remoteBook == null ||
-                    book.book.revision > remoteBook.revision ||
-                    book.book.syncStatus == SyncStatus.LOCAL_ONLY ||
-                    book.book.syncStatus == SyncStatus.PENDING_UPLOAD
-
-                if (shouldUpload) {
-                    uploadBook(booksRoot, book)
-                    counters.uploadedBooks += 1
+            val booksAfterRemote = libraryRepository.getBooks()
+            val uploadCandidateIds = booksAfterRemote
+                .filterNot { book ->
+                    book.book.syncStatus == SyncStatus.CONFLICT ||
+                        book.book.id in pendingStatusUpdates.conflictedBookIds
                 }
-                libraryRepository.markSynced(book.book.id, syncedAt)
+                .filter { book ->
+                    book.shouldUploadTo(remoteBooks[book.book.id])
+                }
+                .map { it.book.id }
+                .toSet()
+            var uploadProgress = 0
+
+            if (uploadCandidateIds.isNotEmpty()) {
+                onProgress(
+                    ManualSyncProgress(
+                        phase = ManualSyncPhase.UPLOADING,
+                        current = uploadProgress,
+                        total = uploadCandidateIds.size,
+                    ),
+                )
             }
 
+            booksAfterRemote.forEach { book ->
+                if (book.book.syncStatus == SyncStatus.CONFLICT ||
+                    book.book.id in pendingStatusUpdates.conflictedBookIds
+                ) {
+                    return@forEach
+                }
+
+                val shouldUpload = book.book.id in uploadCandidateIds
+
+                if (shouldUpload) {
+                    onProgress(
+                        ManualSyncProgress(
+                            phase = ManualSyncPhase.UPLOADING,
+                            current = uploadProgress + 1,
+                            total = uploadCandidateIds.size,
+                        ),
+                    )
+                    uploadBook(booksRoot, book)
+                    uploadProgress += 1
+                    counters.uploadedBooks += 1
+                    pendingStatusUpdates.syncedBookIds += book.book.id
+                } else if (book.book.syncStatus != SyncStatus.SYNCED) {
+                    pendingStatusUpdates.syncedBookIds += book.book.id
+                }
+            }
+
+            onProgress(ManualSyncProgress(ManualSyncPhase.WRITING_MANIFEST))
             devicesRoot.writeTextFile(
                 name = "$deviceId.json",
                 text = json.encodeToString(
@@ -130,7 +186,8 @@ class ManualSyncService(
                         updatedByDeviceId = deviceId,
                         books = mergedManifestBooks(
                             remoteBooks = remoteBooks,
-                            localBooks = libraryRepository.getBooks(),
+                            localBooks = booksAfterRemote,
+                            conflictedBookIds = pendingStatusUpdates.conflictedBookIds,
                         ),
                     ),
                 ),
@@ -141,28 +198,48 @@ class ManualSyncService(
                 mimeType = "text/plain",
             )
 
+            onProgress(ManualSyncProgress(ManualSyncPhase.APPLYING_STATUS))
+            pendingStatusUpdates.conflictedBookIds.forEach { bookId ->
+                libraryRepository.markSyncConflict(bookId)
+            }
+            pendingStatusUpdates.syncedBookIds
+                .filterNot { it in pendingStatusUpdates.conflictedBookIds }
+                .forEach { bookId ->
+                    libraryRepository.markSynced(bookId, syncedAt)
+                }
+
             ManualSyncResult.Synced(
                 uploadedBooks = counters.uploadedBooks,
                 downloadedBooks = counters.downloadedBooks,
                 conflictedBooks = counters.conflictedBooks,
                 folderLabel = folderLabel(treeUri) ?: DEFAULT_FOLDER_LABEL,
             )
-        }.getOrDefault(ManualSyncResult.Failed)
+        }.getOrElse { error ->
+            Log.e(TAG, "Manual sync failed", error)
+            ManualSyncResult.Failed
+        }
+    }
+
+    private fun LibraryBook.shouldUploadTo(remoteBook: ManifestBookSnapshot?): Boolean {
+        return remoteBook == null ||
+            book.revision > remoteBook.revision ||
+            book.syncStatus == SyncStatus.LOCAL_ONLY ||
+            book.syncStatus == SyncStatus.PENDING_UPLOAD
     }
 
     private fun applyRemoteBook(
         libraryRoot: DocumentFile,
         remoteBook: ManifestBookSnapshot,
+        local: LibraryBook?,
         syncedAt: String,
         currentDeviceId: String,
         counters: SyncCounters,
+        pendingStatusUpdates: PendingSyncStatusUpdates,
     ) {
-        val local = libraryRepository.getBook(remoteBook.bookId)
-
         if (local == null) {
             val duplicateBookId = libraryRepository.findBookIdByHash(remoteBook.originalHashSha256)
             if (duplicateBookId != null) {
-                libraryRepository.markSynced(duplicateBookId, syncedAt)
+                pendingStatusUpdates.syncedBookIds += duplicateBookId
                 return
             }
 
@@ -184,7 +261,7 @@ class ManualSyncService(
                 if (local.book.syncStatus == SyncStatus.PENDING_UPLOAD &&
                     remoteBook.updatedByDeviceId != currentDeviceId
                 ) {
-                    libraryRepository.markSyncConflict(local.book.id)
+                    pendingStatusUpdates.conflictedBookIds += local.book.id
                     counters.conflictedBooks += 1
                 } else {
                     downloadRemoteBook(
@@ -200,10 +277,10 @@ class ManualSyncService(
                 if (remoteBook.updatedAt != local.book.updatedAt &&
                     remoteBook.updatedByDeviceId != local.book.updatedByDeviceId
                 ) {
-                    libraryRepository.markSyncConflict(local.book.id)
+                    pendingStatusUpdates.conflictedBookIds += local.book.id
                     counters.conflictedBooks += 1
-                } else {
-                    libraryRepository.markSynced(local.book.id, syncedAt)
+                } else if (local.book.syncStatus != SyncStatus.SYNCED) {
+                    pendingStatusUpdates.syncedBookIds += local.book.id
                 }
             }
         }
@@ -399,15 +476,16 @@ class ManualSyncService(
     private fun mergedManifestBooks(
         remoteBooks: Map<String, ManifestBookSnapshot>,
         localBooks: List<LibraryBook>,
+        conflictedBookIds: Set<String>,
     ): List<ManifestBookSnapshot> {
         val merged = linkedMapOf<String, ManifestBookSnapshot>()
         localBooks
-            .filter { it.book.syncStatus == SyncStatus.CONFLICT }
+            .filter { it.book.syncStatus == SyncStatus.CONFLICT || it.book.id in conflictedBookIds }
             .mapNotNull { remoteBooks[it.book.id] }
             .forEach { remoteBook -> merged[remoteBook.bookId] = remoteBook }
 
         localBooks
-            .filterNot { it.book.syncStatus == SyncStatus.CONFLICT }
+            .filterNot { it.book.syncStatus == SyncStatus.CONFLICT || it.book.id in conflictedBookIds }
             .map { it.toManifestBook() }
             .forEach { localBook -> merged[localBook.bookId] = localBook }
 
@@ -518,11 +596,17 @@ class ManualSyncService(
         var conflictedBooks: Int = 0,
     )
 
+    private data class PendingSyncStatusUpdates(
+        val syncedBookIds: LinkedHashSet<String> = linkedSetOf(),
+        val conflictedBookIds: LinkedHashSet<String> = linkedSetOf(),
+    )
+
     private companion object {
         const val PREFERENCES_NAME = "foliore_sync"
         const val KEY_SYNC_TREE_URI = "sync_tree_uri"
         const val KEY_LIBRARY_ID = "library_id"
         const val LIBRARY_ROOT_NAME = "Foliore Library"
         const val DEFAULT_FOLDER_LABEL = "Foliore Library"
+        const val TAG = "ManualSyncService"
     }
 }

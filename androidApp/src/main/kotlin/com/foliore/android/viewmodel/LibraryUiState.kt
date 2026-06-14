@@ -6,6 +6,7 @@ data class LibraryUiState(
     val books: List<LibraryBook> = emptyList(),
     val isImporting: Boolean = false,
     val isSyncing: Boolean = false,
+    val syncProgress: SyncProgress? = null,
     val syncFolderLabel: String? = null,
     val lastSyncSummary: SyncSummary? = null,
     val isSearchOpen: Boolean = false,
@@ -58,6 +59,25 @@ data class SyncSummary(
     val downloadedBooks: Int,
     val conflictedBooks: Int,
 )
+
+data class SyncProgress(
+    val phase: SyncProgressPhase,
+    val current: Int = 0,
+    val total: Int = 0,
+) {
+    val fraction: Float?
+        get() = total.takeIf { it > 0 }?.let { boundedTotal ->
+            current.coerceIn(0, boundedTotal).toFloat() / boundedTotal
+        }
+}
+
+enum class SyncProgressPhase {
+    PREPARING,
+    CHECKING_REMOTE,
+    UPLOADING,
+    WRITING_MANIFEST,
+    APPLYING_STATUS,
+}
 
 data class LibraryNotice(
     val type: LibraryNoticeType,

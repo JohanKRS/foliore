@@ -12,6 +12,8 @@ import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.BookDeleteResult
 import com.foliore.android.storage.EpubImportResult
+import com.foliore.android.storage.ManualSyncPhase
+import com.foliore.android.storage.ManualSyncProgress
 import com.foliore.android.storage.ManualSyncResult
 import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.PreparedEpubResult
@@ -299,10 +301,21 @@ class LibraryViewModel(
     }
 
     fun syncNow() {
+        if (_state.value.isSyncing) return
+
         viewModelScope.launch {
-            _state.update { it.copy(isSyncing = true) }
+            _state.update {
+                it.copy(
+                    isSyncing = true,
+                    syncProgress = SyncProgress(SyncProgressPhase.PREPARING),
+                )
+            }
             val result = withContext(Dispatchers.IO) {
-                manualSyncService.syncNow()
+                manualSyncService.syncNow { progress ->
+                    _state.update { current ->
+                        current.copy(syncProgress = progress.toUiProgress())
+                    }
+                }
             }
             val books = withContext(Dispatchers.IO) {
                 libraryRepository.getBooks()
@@ -314,13 +327,16 @@ class LibraryViewModel(
                 it.withBooks(books).copy(
                     books = books,
                     isSyncing = false,
+                    syncProgress = null,
                     syncFolderLabel = folderLabel,
-                    lastSyncSummary = (result as? ManualSyncResult.Synced)?.let { synced ->
+                    lastSyncSummary = if (result is ManualSyncResult.Synced) {
                         SyncSummary(
-                            uploadedBooks = synced.uploadedBooks,
-                            downloadedBooks = synced.downloadedBooks,
-                            conflictedBooks = synced.conflictedBooks,
+                            uploadedBooks = result.uploadedBooks,
+                            downloadedBooks = result.downloadedBooks,
+                            conflictedBooks = result.conflictedBooks,
                         )
+                    } else {
+                        it.lastSyncSummary
                     },
                 )
             }
@@ -333,7 +349,7 @@ class LibraryViewModel(
             withContext(Dispatchers.IO) {
                 manualSyncService.disconnect()
             }
-            _state.update { it.copy(syncFolderLabel = null, isSyncing = false) }
+            _state.update { it.copy(syncFolderLabel = null, isSyncing = false, syncProgress = null) }
             _notice.value = LibraryNotice(LibraryNoticeType.SYNC_DISCONNECTED)
         }
     }
@@ -383,6 +399,20 @@ class LibraryViewModel(
                 }
             }
         }
+    }
+
+    private fun ManualSyncProgress.toUiProgress(): SyncProgress {
+        return SyncProgress(
+            phase = when (phase) {
+                ManualSyncPhase.PREPARING -> SyncProgressPhase.PREPARING
+                ManualSyncPhase.CHECKING_REMOTE -> SyncProgressPhase.CHECKING_REMOTE
+                ManualSyncPhase.UPLOADING -> SyncProgressPhase.UPLOADING
+                ManualSyncPhase.WRITING_MANIFEST -> SyncProgressPhase.WRITING_MANIFEST
+                ManualSyncPhase.APPLYING_STATUS -> SyncProgressPhase.APPLYING_STATUS
+            },
+            current = current,
+            total = total,
+        )
     }
 
     private fun LibraryUiState.withBooks(books: List<LibraryBook>): LibraryUiState {

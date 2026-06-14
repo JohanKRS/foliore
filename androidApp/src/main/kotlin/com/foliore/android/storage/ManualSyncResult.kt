@@ -12,3 +12,17 @@ sealed interface ManualSyncResult {
     data object FolderUnavailable : ManualSyncResult
     data object Failed : ManualSyncResult
 }
+
+data class ManualSyncProgress(
+    val phase: ManualSyncPhase,
+    val current: Int = 0,
+    val total: Int = 0,
+)
+
+enum class ManualSyncPhase {
+    PREPARING,
+    CHECKING_REMOTE,
+    UPLOADING,
+    WRITING_MANIFEST,
+    APPLYING_STATUS,
+}
