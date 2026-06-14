@@ -561,7 +561,7 @@ class ManualSyncService(
 
     private fun DocumentFile.resolveLibraryRoot(documentCache: DocumentFileCache): DocumentFile {
         val nestedLibraryRoots = documentCache.directoriesNamed(this, LIBRARY_ROOT_NAME)
-        val selfIsLibraryRoot = name == LIBRARY_ROOT_NAME || libraryRootStructureScore(documentCache) > 0
+        val selfIsLibraryRoot = name == LIBRARY_ROOT_NAME
 
         if (selfIsLibraryRoot) {
             if (nestedLibraryRoots.isNotEmpty()) {
@@ -579,12 +579,14 @@ class ManualSyncService(
                 .filterNot { duplicate -> duplicate.uri == canonical.uri }
                 .forEach { duplicate -> duplicate.deleteTree(documentCache) }
             documentCache.invalidate(this)
+            deleteLooseLibraryArtifacts(documentCache)
             markLibraryRootInitialized(canonical)
             return canonical
         }
 
         val created = createDirectory(LIBRARY_ROOT_NAME) ?: error("Cannot create $LIBRARY_ROOT_NAME")
         documentCache.invalidate(this)
+        deleteLooseLibraryArtifacts(documentCache)
         markLibraryRootInitialized(created)
         return created
     }
@@ -600,6 +602,28 @@ class ManualSyncService(
 
     private fun DocumentFile.libraryRootScore(documentCache: DocumentFileCache): Int {
         return libraryRootStructureScore(documentCache) + documentCache.childrenOf(this).size.coerceAtMost(40)
+    }
+
+    private fun DocumentFile.deleteLooseLibraryArtifacts(documentCache: DocumentFileCache) {
+        if (!hasLooseLibraryManifest(documentCache)) return
+
+        documentCache.filesNamed(this, "library.manifest.json")
+            .forEach { manifest ->
+                if (!manifest.delete()) error("Cannot delete legacy library manifest")
+            }
+        listOf("books", "devices", "snapshots")
+            .flatMap { name -> documentCache.directoriesNamed(this, name) }
+            .forEach { directory -> directory.deleteTree(documentCache) }
+        documentCache.invalidate(this)
+    }
+
+    private fun DocumentFile.hasLooseLibraryManifest(documentCache: DocumentFileCache): Boolean {
+        return documentCache.filesNamed(this, "library.manifest.json")
+            .any { manifest ->
+                runCatching {
+                    json.decodeFromString<LibraryManifestSnapshot>(manifest.readText())
+                }.isSuccess
+            }
     }
 
     private fun List<DocumentFile>.bestLibraryRoot(documentCache: DocumentFileCache): DocumentFile? {
