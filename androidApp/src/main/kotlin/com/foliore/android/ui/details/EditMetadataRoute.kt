@@ -54,7 +54,7 @@ fun EditMetadataRoute(
     ) { paddingValues ->
         EditMetadataScreen(
             book = book,
-            aiProviderMode = state.aiProviderMode,
+            hasOpenAiApiKey = state.hasOpenAiApiKey,
             aiCoverPromptRecords = state.aiCoverPromptRecords,
             onBack = onBack,
             onSave = { draft ->
@@ -69,8 +69,14 @@ fun EditMetadataRoute(
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                 }
             },
-            onAutofillClick = viewModel::requestMetadataAutofill,
             onCoverGenerationUnavailable = viewModel::requestCoverGeneration,
+            onLookupMetadataCandidates = { draft, onCandidatesReady ->
+                viewModel.lookupMetadataCandidates(
+                    bookId = bookId,
+                    draft = draft,
+                    onCandidatesReady = onCandidatesReady,
+                )
+            },
             onGenerateMetadataPreview = { prompt, draft, onPreviewReady ->
                 viewModel.generateMetadataPreview(
                     bookId = bookId,
@@ -94,6 +100,13 @@ fun EditMetadataRoute(
                     bookId = bookId,
                     option = option,
                     record = record,
+                    onUpdated = onUpdated,
+                )
+            },
+            onUseMetadataLookupCover = { coverImagePath, onUpdated ->
+                viewModel.useMetadataLookupCover(
+                    bookId = bookId,
+                    coverImagePath = coverImagePath,
                     onUpdated = onUpdated,
                 )
             },

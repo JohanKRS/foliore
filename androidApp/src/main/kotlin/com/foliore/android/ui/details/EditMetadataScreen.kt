@@ -80,8 +80,7 @@ import com.foliore.android.R
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiCoverStyleRequest
 import com.foliore.android.ai.AiGeneratedCoverOption
-import com.foliore.android.ai.AiProviderMode
-import com.foliore.android.ai.isEnabled
+import com.foliore.android.metadata.MetadataLookupCandidate
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStatusLine
@@ -94,13 +93,13 @@ import java.io.File
 @Composable
 fun EditMetadataScreen(
     book: LibraryBook?,
-    aiProviderMode: AiProviderMode,
+    hasOpenAiApiKey: Boolean,
     aiCoverPromptRecords: List<AiCoverPromptRecord>,
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
     onShareExport: () -> Unit,
-    onAutofillClick: () -> Unit,
     onCoverGenerationUnavailable: () -> Unit,
+    onLookupMetadataCandidates: (BookMetadataDraft, (List<MetadataLookupCandidate>) -> Unit) -> Unit,
     onGenerateMetadataPreview: (String, BookMetadataDraft, (BookMetadataDraft) -> Unit) -> Unit,
     onGenerateCoverImages: (
         String,
@@ -110,6 +109,7 @@ fun EditMetadataScreen(
         (List<AiGeneratedCoverOption>) -> Unit,
     ) -> Unit,
     onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
+    onUseMetadataLookupCover: (String, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
     isLoading: Boolean,
     progress: SyncProgress?,
@@ -150,6 +150,8 @@ fun EditMetadataScreen(
     var showMetadataAutofillDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var showCoverGenerationDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var metadataPreview by remember(book.book.id) { mutableStateOf<MetadataAutofillPreview?>(null) }
+    var lookupCandidates by remember(book.book.id) { mutableStateOf<List<MetadataLookupCandidate>>(emptyList()) }
+    var selectedLookupCandidateId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
     var coverOptions by remember(book.book.id) { mutableStateOf<List<AiGeneratedCoverOption>>(emptyList()) }
     var selectedCoverOptionId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
     var coverGenerationRound by rememberSaveable(book.book.id) { mutableStateOf(0) }
@@ -161,6 +163,7 @@ fun EditMetadataScreen(
         aiCoverPromptRecords.coverPromptReferenceFor(book)
     }
     val titleError = titleTouched && title.isBlank()
+    val isLookingUpMetadata = isLoading && progress?.phase == SyncProgressPhase.LOOKING_UP_METADATA
     val isGeneratingMetadata = isLoading && progress?.phase == SyncProgressPhase.GENERATING_METADATA
     val isGeneratingCovers = isLoading && progress?.phase == SyncProgressPhase.GENERATING_COVERS
     val currentDraft = {
@@ -188,6 +191,22 @@ fun EditMetadataScreen(
     }
     val latestSaveDraft by rememberUpdatedState(saveDraft)
     val latestShareExport by rememberUpdatedState(onShareExport)
+    val applyMetadataDraft: (BookMetadataDraft) -> Unit = { draft ->
+        title = draft.title
+        subtitle = draft.subtitle.orEmpty()
+        authors = draft.authors.joinToString(", ")
+        sortAuthor = draft.sortAuthor.orEmpty()
+        seriesName = draft.seriesName.orEmpty()
+        seriesIndex = draft.seriesIndex.formatSeriesIndex()
+        language = draft.language.orEmpty()
+        publisher = draft.publisher.orEmpty()
+        publishedDate = draft.publishedDate.yearOnlyOrNull().orEmpty()
+        description = draft.description.toDisplayDescription().orEmpty()
+        tags = draft.tags.joinToString(", ")
+        isbn = draft.isbn.orEmpty()
+        titleTouched = true
+        showMetadataAutofillDialog = false
+    }
     val applyMetadataPreview: (MetadataAutofillPreview) -> Unit = { preview ->
         title = preview.title
         subtitle = preview.subtitle.orEmpty()
@@ -275,12 +294,12 @@ fun EditMetadataScreen(
                 onBack = onBack,
                 onReplaceCover = onReplaceCover,
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
-                aiProviderMode = aiProviderMode,
+                hasOpenAiApiKey = hasOpenAiApiKey,
                 onAutofillClick = { showMetadataAutofillDialog = true },
             )
         } else {
             PhoneEditMetadataContent(
-                aiProviderMode = aiProviderMode,
+                hasOpenAiApiKey = hasOpenAiApiKey,
                 title = title,
                 onTitleChange = {
                     title = it
@@ -323,14 +342,30 @@ fun EditMetadataScreen(
             prompt = metadataPrompt,
             onPromptChange = { metadataPrompt = it },
             preview = metadataPreview,
-            aiProviderMode = aiProviderMode,
+            hasOpenAiApiKey = hasOpenAiApiKey,
+            lookupCandidates = lookupCandidates,
+            selectedLookupCandidateId = selectedLookupCandidateId,
+            isLookingUpMetadata = isLookingUpMetadata,
             isGenerating = isGeneratingMetadata,
             progress = progress,
+            onLookupMetadata = {
+                if (!isLookingUpMetadata) {
+                    onLookupMetadataCandidates(currentDraft()) { candidates ->
+                        lookupCandidates = candidates
+                        selectedLookupCandidateId = candidates.firstOrNull()?.id
+                    }
+                }
+            },
+            onSelectLookupCandidate = { selectedLookupCandidateId = it },
+            onApplyLookupCandidate = { candidate ->
+                applyMetadataDraft(candidate.metadata)
+                candidate.coverImagePath?.let { coverPath ->
+                    onUseMetadataLookupCover(coverPath) {}
+                }
+            },
             onGeneratePreview = {
                 if (!isGeneratingMetadata) {
-                    if (!aiProviderMode.isEnabled) {
-                        onAutofillClick()
-                    } else {
+                    if (hasOpenAiApiKey) {
                         onGenerateMetadataPreview(metadataPrompt, currentDraft()) { previewDraft ->
                             metadataPreview = previewDraft.toAutofillPreview()
                         }
@@ -353,7 +388,7 @@ fun EditMetadataScreen(
             progress = progress,
             onGenerate = {
                 if (!isGeneratingCovers) {
-                    if (!aiProviderMode.isEnabled) {
+                    if (!hasOpenAiApiKey) {
                         onCoverGenerationUnavailable()
                     } else {
                         val styles = listOf(
@@ -439,7 +474,7 @@ private fun TabletEditBookScreen(
     onBack: () -> Unit,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
-    aiProviderMode: AiProviderMode,
+    hasOpenAiApiKey: Boolean,
     onAutofillClick: () -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -489,29 +524,31 @@ private fun TabletEditBookScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = onGenerateCoverClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp),
-                        shape = RoundedCornerShape(5.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.details_action_generate_cover),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    if (hasOpenAiApiKey) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = onGenerateCoverClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            shape = RoundedCornerShape(5.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.details_action_generate_cover),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
@@ -552,7 +589,6 @@ private fun TabletEditBookScreen(
                 .fillMaxHeight(),
         ) {
             TabletRightHeader(
-                aiProviderMode = aiProviderMode,
                 onAutofillClick = onAutofillClick,
             )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
@@ -691,7 +727,7 @@ private fun TabletEditBookScreen(
 
 @Composable
 private fun PhoneEditMetadataContent(
-    aiProviderMode: AiProviderMode,
+    hasOpenAiApiKey: Boolean,
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
@@ -743,11 +779,7 @@ private fun PhoneEditMetadataContent(
                 onClick = onAutofillClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = if (aiProviderMode.isEnabled) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    contentColor = MaterialTheme.colorScheme.primary,
                 ),
             ) {
                 Icon(
@@ -777,17 +809,19 @@ private fun PhoneEditMetadataContent(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = stringResource(R.string.details_action_replace_cover))
             }
-            OutlinedButton(
-                onClick = onGenerateCoverClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(R.string.details_action_generate_cover))
+            if (hasOpenAiApiKey) {
+                OutlinedButton(
+                    onClick = onGenerateCoverClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.details_action_generate_cover))
+                }
             }
             MetadataTextField(
                 value = subtitle,
@@ -922,14 +956,9 @@ private fun TabletLeftTopBar(onBack: () -> Unit) {
 
 @Composable
 private fun TabletRightHeader(
-    aiProviderMode: AiProviderMode,
     onAutofillClick: () -> Unit,
 ) {
-    val actionColor = if (aiProviderMode.isEnabled) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val actionColor = MaterialTheme.colorScheme.primary
 
     Row(
         modifier = Modifier
@@ -1151,14 +1180,31 @@ private fun MetadataAutofillDialog(
     prompt: String,
     onPromptChange: (String) -> Unit,
     preview: MetadataAutofillPreview?,
-    aiProviderMode: AiProviderMode,
+    hasOpenAiApiKey: Boolean,
+    lookupCandidates: List<MetadataLookupCandidate>,
+    selectedLookupCandidateId: String?,
+    isLookingUpMetadata: Boolean,
     isGenerating: Boolean,
     progress: SyncProgress?,
+    onLookupMetadata: () -> Unit,
+    onSelectLookupCandidate: (String) -> Unit,
+    onApplyLookupCandidate: (MetadataLookupCandidate) -> Unit,
     onGeneratePreview: () -> Unit,
     onApplyPreview: (MetadataAutofillPreview) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
+    var selectedSourceName by rememberSaveable(hasOpenAiApiKey) {
+        mutableStateOf(AutofillSource.OPEN_LIBRARY.name)
+    }
+    val selectedSource = if (hasOpenAiApiKey) {
+        runCatching { AutofillSource.valueOf(selectedSourceName) }
+            .getOrDefault(AutofillSource.OPEN_LIBRARY)
+    } else {
+        AutofillSource.OPEN_LIBRARY
+    }
+    val selectedLookupCandidate = lookupCandidates.firstOrNull { it.id == selectedLookupCandidateId }
+        ?: lookupCandidates.firstOrNull()
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1186,75 +1232,323 @@ private fun MetadataAutofillDialog(
                 EditorialDivider(modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(18.dp))
 
-                if (isGenerating) {
-                    AiDialogProgress(
-                        progress = progress,
-                        modifier = Modifier.fillMaxWidth(),
+                if (hasOpenAiApiKey) {
+                    AutofillSourceSelector(
+                        selectedSource = selectedSource,
+                        onSelectSource = { selectedSourceName = it.name },
                     )
                     Spacer(modifier = Modifier.height(18.dp))
                 }
 
-                PromptEditorToggle(
-                    expanded = showPromptEditor,
-                    onToggle = { showPromptEditor = !showPromptEditor },
+                when (selectedSource) {
+                    AutofillSource.OPEN_LIBRARY -> {
+                        if (isLookingUpMetadata) {
+                            AiDialogProgress(
+                                progress = progress,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+
+                        Text(
+                            text = stringResource(R.string.metadata_lookup_section_title).uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.metadata_lookup_section_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        if (lookupCandidates.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.metadata_lookup_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                lookupCandidates.forEach { candidate ->
+                                    MetadataLookupCandidateCard(
+                                        candidate = candidate,
+                                        selected = candidate.id == selectedLookupCandidate?.id,
+                                        onClick = { onSelectLookupCandidate(candidate.id) },
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(18.dp))
+                            Text(
+                                text = stringResource(R.string.ai_metadata_preview_label).uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            MetadataPreviewContent(
+                                preview = selectedLookupCandidate?.metadata?.toAutofillPreview(),
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(onClick = onDismiss) {
+                                Text(text = stringResource(R.string.edit_metadata_cancel))
+                            }
+                            OutlinedButton(
+                                onClick = onLookupMetadata,
+                                enabled = !isLookingUpMetadata,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (lookupCandidates.isEmpty()) {
+                                        stringResource(R.string.metadata_lookup_button)
+                                    } else {
+                                        stringResource(R.string.metadata_lookup_button_again)
+                                    },
+                                )
+                            }
+                            Button(
+                                onClick = { selectedLookupCandidate?.let(onApplyLookupCandidate) },
+                                enabled = selectedLookupCandidate != null && !isLookingUpMetadata,
+                            ) {
+                                Text(text = stringResource(R.string.metadata_lookup_apply_selected))
+                            }
+                        }
+                    }
+
+                    AutofillSource.AI -> {
+                        if (isGenerating) {
+                            AiDialogProgress(
+                                progress = progress,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+
+                        PromptEditorToggle(
+                            expanded = showPromptEditor,
+                            onToggle = { showPromptEditor = !showPromptEditor },
+                        )
+                        if (showPromptEditor) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedTextField(
+                                value = prompt,
+                                onValueChange = onPromptChange,
+                                label = { Text(text = stringResource(R.string.ai_metadata_prompt_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 5,
+                                singleLine = false,
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                shape = RoundedCornerShape(5.dp),
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Text(
+                            text = stringResource(R.string.ai_metadata_preview_label).uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        MetadataPreviewContent(preview = preview)
+
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(onClick = onDismiss) {
+                                Text(text = stringResource(R.string.edit_metadata_cancel))
+                            }
+                            OutlinedButton(
+                                onClick = onGeneratePreview,
+                                enabled = !isGenerating,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isGenerating) {
+                                        stringResource(R.string.ai_metadata_generating_preview)
+                                    } else if (preview == null) {
+                                        stringResource(R.string.ai_metadata_generate_preview)
+                                    } else {
+                                        stringResource(R.string.ai_metadata_regenerate_preview)
+                                    },
+                                )
+                            }
+                            Button(
+                                onClick = { preview?.let(onApplyPreview) },
+                                enabled = preview != null && !isGenerating,
+                            ) {
+                                Text(text = stringResource(R.string.ai_metadata_apply_preview))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutofillSourceSelector(
+    selectedSource: AutofillSource,
+    onSelectSource: (AutofillSource) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        AutofillSourceButton(
+            label = stringResource(R.string.autofill_source_open_library),
+            selected = selectedSource == AutofillSource.OPEN_LIBRARY,
+            onClick = { onSelectSource(AutofillSource.OPEN_LIBRARY) },
+            modifier = Modifier.weight(1f),
+        )
+        AutofillSourceButton(
+            label = stringResource(R.string.autofill_source_ai),
+            selected = selectedSource == AutofillSource.AI,
+            onClick = { onSelectSource(AutofillSource.AI) },
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun AutofillSourceButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (selected) {
+        Button(
+            onClick = onClick,
+            modifier = modifier.height(42.dp),
+            shape = RoundedCornerShape(5.dp),
+        ) {
+            Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier.height(42.dp),
+            shape = RoundedCornerShape(5.dp),
+        ) {
+            Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun MetadataLookupCandidateCard(
+    candidate: MetadataLookupCandidate,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val borderColor = if (selected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.36f)
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(7.dp),
+        color = Color.Transparent,
+        border = BorderStroke(if (selected) 1.5.dp else 1.dp, borderColor),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            val coverPath = candidate.coverImagePath
+            if (coverPath != null) {
+                AsyncImage(
+                    model = File(coverPath),
+                    contentDescription = candidate.metadata.title,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .width(48.dp)
+                        .aspectRatio(DefaultCoverAspectRatio)
+                        .clip(RoundedCornerShape(4.dp)),
                 )
-                if (showPromptEditor) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = prompt,
-                        onValueChange = onPromptChange,
-                        label = { Text(text = stringResource(R.string.ai_metadata_prompt_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 5,
-                        singleLine = false,
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                        shape = RoundedCornerShape(5.dp),
+            } else {
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .aspectRatio(DefaultCoverAspectRatio)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.MenuBook,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
-                    text = stringResource(R.string.ai_metadata_preview_label).uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = candidate.metadata.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                MetadataPreviewContent(preview = preview)
-
-                Spacer(modifier = Modifier.height(18.dp))
+                Text(
+                    text = candidate.metadata.authors.joinToString(", ")
+                        .ifBlank { stringResource(R.string.book_unknown_author) },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(text = stringResource(R.string.edit_metadata_cancel))
-                    }
-                    OutlinedButton(
-                        onClick = onGeneratePreview,
-                        enabled = !isGenerating,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = candidate.sourceName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    candidate.metadata.publishedDate.yearOnlyOrNull()?.let { year ->
                         Text(
-                            text = if (isGenerating) {
-                                stringResource(R.string.ai_metadata_generating_preview)
-                            } else if (preview == null || !aiProviderMode.isEnabled) {
-                                stringResource(R.string.ai_metadata_generate_preview)
-                            } else {
-                                stringResource(R.string.ai_metadata_regenerate_preview)
-                            },
+                            text = year,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Button(
-                        onClick = { preview?.let(onApplyPreview) },
-                        enabled = preview != null && !isGenerating,
-                    ) {
-                        Text(text = stringResource(R.string.ai_metadata_apply_preview))
+                    if (candidate.coverImagePath != null) {
+                        Text(
+                            text = stringResource(R.string.metadata_lookup_cover_available),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.secondary,
+                        )
                     }
                 }
             }
@@ -1742,6 +2036,11 @@ private fun MetadataTextField(
         textStyle = MaterialTheme.typography.bodyMedium,
         shape = RoundedCornerShape(5.dp),
     )
+}
+
+private enum class AutofillSource {
+    OPEN_LIBRARY,
+    AI,
 }
 
 private data class MetadataAutofillPreview(

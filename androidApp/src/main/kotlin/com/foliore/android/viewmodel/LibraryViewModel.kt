@@ -8,10 +8,12 @@ import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiCoverStyleRequest
 import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.ai.AiProviderMode
-import com.foliore.android.ai.CodexBridgeService
 import com.foliore.android.ai.OpenAiApiService
 import com.foliore.android.ai.OpenAiResult
 import com.foliore.android.ai.isEnabled
+import com.foliore.android.metadata.MetadataLookupResult
+import com.foliore.android.metadata.MetadataLookupCandidate
+import com.foliore.android.metadata.OpenLibraryMetadataService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
@@ -50,14 +52,12 @@ class LibraryViewModel(
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val openAiApiService: OpenAiApiService,
-    private val codexBridgeService: CodexBridgeService,
+    private val openLibraryMetadataService: OpenLibraryMetadataService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
         LibraryUiState(
             aiProviderMode = aiPreferenceRepository.providerMode.value,
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
-            codexBridgeBaseUrl = aiPreferenceRepository.codexBridgeBaseUrl.value,
-            hasCodexBridgeToken = aiPreferenceRepository.hasCodexBridgeToken.value,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
         ),
     )
@@ -168,7 +168,15 @@ class LibraryViewModel(
             val saved = withContext(Dispatchers.IO) {
                 aiPreferenceRepository.saveOpenAiApiKey(apiKey)
             }
-            _state.update { it.copy(hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value) }
+            if (saved) {
+                aiPreferenceRepository.setProviderMode(AiProviderMode.OPENAI_API)
+            }
+            _state.update {
+                it.copy(
+                    aiProviderMode = aiPreferenceRepository.providerMode.value,
+                    hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
+                )
+            }
             _notice.value = LibraryNotice(
                 if (saved) {
                     LibraryNoticeType.AI_API_KEY_SAVED
@@ -181,63 +189,9 @@ class LibraryViewModel(
 
     fun clearOpenAiApiKey() {
         aiPreferenceRepository.clearOpenAiApiKey()
-        _state.update { it.copy(hasOpenAiApiKey = false) }
+        aiPreferenceRepository.setProviderMode(AiProviderMode.DISABLED)
+        _state.update { it.copy(aiProviderMode = AiProviderMode.DISABLED, hasOpenAiApiKey = false) }
         _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
-    }
-
-    fun saveCodexBridgeSettings(baseUrl: String, token: String) {
-        viewModelScope.launch {
-            val saved = withContext(Dispatchers.IO) {
-                aiPreferenceRepository.saveCodexBridgeSettings(baseUrl, token)
-            }
-            _state.update {
-                it.copy(
-                    codexBridgeBaseUrl = aiPreferenceRepository.codexBridgeBaseUrl.value,
-                    hasCodexBridgeToken = aiPreferenceRepository.hasCodexBridgeToken.value,
-                )
-            }
-            _notice.value = LibraryNotice(
-                if (saved) {
-                    LibraryNoticeType.AI_BRIDGE_SETTINGS_SAVED
-                } else {
-                    LibraryNoticeType.AI_REQUEST_FAILED
-                },
-            )
-        }
-    }
-
-    fun clearCodexBridgeSettings() {
-        aiPreferenceRepository.clearCodexBridgeSettings()
-        _state.update {
-            it.copy(
-                codexBridgeBaseUrl = null,
-                hasCodexBridgeToken = false,
-            )
-        }
-        _notice.value = LibraryNotice(LibraryNoticeType.AI_BRIDGE_SETTINGS_CLEARED)
-    }
-
-    fun testCodexBridgeConnection() {
-        if (!hasUsableCodexBridgeProvider()) {
-            _notice.value = LibraryNotice(LibraryNoticeType.AI_PROVIDER_NOT_READY)
-            return
-        }
-
-        viewModelScope.launch {
-            _state.update {
-                it.copy(importProgress = SyncProgress(SyncProgressPhase.PREPARING))
-            }
-            val result = withContext(Dispatchers.IO) {
-                codexBridgeService.healthCheck()
-            }
-            _state.update { it.copy(importProgress = null) }
-            _notice.value = LibraryNotice(
-                when (result) {
-                    is OpenAiResult.Success -> LibraryNoticeType.AI_BRIDGE_CONNECTED
-                    is OpenAiResult.Failure -> result.toAiFailureNoticeType()
-                },
-            )
-        }
     }
 
     fun requestMetadataAutofill() {
@@ -258,6 +212,49 @@ class LibraryViewModel(
                 LibraryNoticeType.AI_PROVIDER_NOT_READY
             },
         )
+    }
+
+    fun lookupMetadataCandidates(
+        bookId: String,
+        draft: BookMetadataDraft,
+        onCandidatesReady: (List<MetadataLookupCandidate>) -> Unit,
+    ) {
+        if (_state.value.hasActiveProgress) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(importProgress = SyncProgress(SyncProgressPhase.LOOKING_UP_METADATA))
+            }
+            val book = withContext(Dispatchers.IO) {
+                libraryRepository.getBook(bookId)
+            }
+            val result = if (book == null) {
+                MetadataLookupResult.Failure("Book not found")
+            } else {
+                withContext(Dispatchers.IO) {
+                    openLibraryMetadataService.search(
+                        book = book,
+                        draft = draft,
+                    )
+                }
+            }
+            _state.update { it.copy(importProgress = null) }
+            when (result) {
+                is MetadataLookupResult.Success -> {
+                    onCandidatesReady(result.candidates)
+                    _notice.value = LibraryNotice(
+                        if (result.candidates.isEmpty()) {
+                            LibraryNoticeType.METADATA_LOOKUP_EMPTY
+                        } else {
+                            LibraryNoticeType.METADATA_LOOKUP_READY
+                        },
+                    )
+                }
+                is MetadataLookupResult.Failure -> {
+                    _notice.value = LibraryNotice(LibraryNoticeType.METADATA_LOOKUP_FAILED)
+                }
+            }
+        }
     }
 
     fun generateMetadataPreview(
@@ -287,12 +284,6 @@ class LibraryViewModel(
                 withContext(Dispatchers.IO) {
                     when (_state.value.aiProviderMode) {
                         AiProviderMode.OPENAI_API -> openAiApiService.generateMetadataPreview(
-                            book = book,
-                            draft = draft,
-                            prompt = prompt,
-                        )
-                        AiProviderMode.CODEX_BRIDGE_LOCAL,
-                        AiProviderMode.CODEX_OAUTH_EXPERIMENTAL -> codexBridgeService.generateMetadataPreview(
                             book = book,
                             draft = draft,
                             prompt = prompt,
@@ -364,14 +355,6 @@ class LibraryViewModel(
                                 }
                             },
                         )
-                        AiProviderMode.CODEX_BRIDGE_LOCAL,
-                        AiProviderMode.CODEX_OAUTH_EXPERIMENTAL -> codexBridgeService.generateCoverOptions(
-                            book = book,
-                            draft = draft,
-                            prompt = prompt,
-                            reference = reference,
-                            styles = styles,
-                        )
                         AiProviderMode.DISABLED -> OpenAiResult.Failure(code = "provider_disabled")
                     }
                 }
@@ -383,13 +366,7 @@ class LibraryViewModel(
                     _notice.value = LibraryNotice(LibraryNoticeType.AI_COVER_OPTIONS_READY)
                 }
                 is OpenAiResult.Failure -> {
-                    _notice.value = LibraryNotice(
-                        if (result.code == "cover_generation_not_available") {
-                            LibraryNoticeType.AI_BRIDGE_COVERS_UNAVAILABLE
-                        } else {
-                            result.toAiFailureNoticeType()
-                        },
-                    )
+                    _notice.value = LibraryNotice(result.toAiFailureNoticeType())
                 }
             }
         }
@@ -420,6 +397,18 @@ class LibraryViewModel(
             saveSelectedCoverPrompt(record)
             onUpdated()
         }
+    }
+
+    fun useMetadataLookupCover(
+        bookId: String,
+        coverImagePath: String,
+        onUpdated: () -> Unit = {},
+    ) {
+        replaceCover(
+            bookId = bookId,
+            imageUri = Uri.fromFile(File(coverImagePath)),
+            onUpdated = onUpdated,
+        )
     }
 
     fun setBatchMode(isEnabled: Boolean) {
@@ -725,34 +714,17 @@ class LibraryViewModel(
         return current.aiProviderMode == AiProviderMode.OPENAI_API && current.hasOpenAiApiKey
     }
 
-    private fun hasUsableCodexBridgeProvider(): Boolean {
-        val current = _state.value
-        return (current.aiProviderMode == AiProviderMode.CODEX_BRIDGE_LOCAL ||
-            current.aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL) &&
-            current.codexBridgeBaseUrl != null &&
-            current.hasCodexBridgeToken
-    }
-
     private fun hasUsableAiMetadataProvider(): Boolean {
-        return hasUsableOpenAiApiProvider() || hasUsableCodexBridgeProvider()
+        return hasUsableOpenAiApiProvider()
     }
 
     private fun hasUsableAiCoverProvider(): Boolean {
-        return hasUsableOpenAiApiProvider() || hasUsableCodexBridgeProvider()
+        return hasUsableOpenAiApiProvider()
     }
 
     private fun OpenAiResult.Failure.toAiFailureNoticeType(): LibraryNoticeType {
         return when (code) {
-            "missing_bridge_config" -> LibraryNoticeType.AI_PROVIDER_NOT_READY
-            "unauthorized" -> LibraryNoticeType.AI_BRIDGE_UNAUTHORIZED
-            "bridge_unreachable",
-            "bridge_request_failed" -> LibraryNoticeType.AI_BRIDGE_UNREACHABLE
-            "bridge_timeout",
-            "codex_timeout" -> LibraryNoticeType.AI_BRIDGE_TIMEOUT
-            "EPERM",
-            "codex_spawn_failed",
-            "codex_exit_failed",
-            "codex_invalid_json" -> LibraryNoticeType.AI_BRIDGE_CODEX_FAILED
+            "provider_disabled" -> LibraryNoticeType.AI_PROVIDER_NOT_READY
             else -> LibraryNoticeType.AI_REQUEST_FAILED
         }
     }

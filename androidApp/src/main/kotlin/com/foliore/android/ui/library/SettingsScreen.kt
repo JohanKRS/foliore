@@ -16,8 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.LinkOff
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -41,37 +41,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
-import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 
 @Composable
 fun SettingsScreen(
     themeMode: ThemeMode,
-    aiProviderMode: AiProviderMode,
     hasOpenAiApiKey: Boolean,
-    codexBridgeBaseUrl: String?,
-    hasCodexBridgeToken: Boolean,
     syncFolderLabel: String?,
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
-    onAiProviderModeChange: (AiProviderMode) -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
-    onCodexBridgeSettingsSave: (String, String) -> Unit,
-    onCodexBridgeSettingsClear: () -> Unit,
-    onCodexBridgeConnectionTest: () -> Unit,
     onChooseSyncFolder: () -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var openAiApiKeyInput by rememberSaveable { mutableStateOf("") }
-    var codexBridgeUrlInput by rememberSaveable(codexBridgeBaseUrl) {
-        mutableStateOf(codexBridgeBaseUrl.orEmpty())
-    }
-    var codexBridgeTokenInput by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -148,173 +136,82 @@ fun SettingsScreen(
 
         SectionTitle(text = stringResource(R.string.settings_ai))
         Spacer(modifier = Modifier.height(8.dp))
-        SelectableOptionRow(
-            selected = aiProviderMode == AiProviderMode.DISABLED,
-            icon = Icons.Outlined.LinkOff,
-            title = stringResource(R.string.settings_ai_disabled),
-            description = stringResource(R.string.settings_ai_disabled_description),
-            onClick = { onAiProviderModeChange(AiProviderMode.DISABLED) },
-        )
-        SelectableOptionRow(
-            selected = aiProviderMode == AiProviderMode.OPENAI_API,
-            icon = Icons.Outlined.AutoAwesome,
-            title = stringResource(R.string.settings_ai_openai_api),
-            description = stringResource(R.string.settings_ai_openai_api_description),
-            onClick = { onAiProviderModeChange(AiProviderMode.OPENAI_API) },
-        )
-        if (aiProviderMode == AiProviderMode.OPENAI_API) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (hasOpenAiApiKey) {
-                        stringResource(R.string.settings_ai_api_key_configured)
-                    } else {
-                        stringResource(R.string.settings_ai_api_key_missing)
-                    },
+                    text = stringResource(R.string.settings_ai_openai_api),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = stringResource(R.string.settings_ai_openai_api_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedTextField(
-                    value = openAiApiKeyInput,
-                    onValueChange = { openAiApiKeyInput = it },
-                    label = { Text(text = stringResource(R.string.settings_ai_api_key_label)) },
-                    placeholder = { Text(text = stringResource(R.string.settings_ai_api_key_placeholder)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Button(
-                        onClick = {
-                            onOpenAiApiKeySave(openAiApiKeyInput)
-                            openAiApiKeyInput = ""
-                        },
-                        enabled = openAiApiKeyInput.isNotBlank(),
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(text = stringResource(R.string.settings_ai_api_key_save))
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            onOpenAiApiKeyClear()
-                            openAiApiKeyInput = ""
-                        },
-                        enabled = hasOpenAiApiKey,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(text = stringResource(R.string.settings_ai_api_key_clear))
-                    }
-                }
             }
         }
-        SelectableOptionRow(
-            selected = aiProviderMode == AiProviderMode.CODEX_BRIDGE_LOCAL ||
-                aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL,
-            icon = Icons.Outlined.TaskAlt,
-            title = stringResource(R.string.settings_ai_codex_bridge),
-            description = stringResource(R.string.settings_ai_codex_bridge_description),
-            onClick = { onAiProviderModeChange(AiProviderMode.CODEX_BRIDGE_LOCAL) },
-        )
-        if (aiProviderMode == AiProviderMode.CODEX_BRIDGE_LOCAL ||
-            aiProviderMode == AiProviderMode.CODEX_OAUTH_EXPERIMENTAL
+        Spacer(modifier = Modifier.height(14.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+            Text(
+                text = if (hasOpenAiApiKey) {
+                    stringResource(R.string.settings_ai_api_key_configured)
+                } else {
+                    stringResource(R.string.settings_ai_api_key_missing)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = openAiApiKeyInput,
+                onValueChange = { openAiApiKeyInput = it },
+                label = { Text(text = stringResource(R.string.settings_ai_api_key_label)) },
+                placeholder = { Text(text = stringResource(R.string.settings_ai_api_key_placeholder)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    text = if (hasCodexBridgeToken && codexBridgeBaseUrl != null) {
-                        stringResource(R.string.settings_ai_bridge_configured, codexBridgeBaseUrl)
-                    } else {
-                        stringResource(R.string.settings_ai_bridge_missing)
+                Button(
+                    onClick = {
+                        onOpenAiApiKeySave(openAiApiKeyInput)
+                        openAiApiKeyInput = ""
                     },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = codexBridgeUrlInput,
-                    onValueChange = { codexBridgeUrlInput = it },
-                    label = { Text(text = stringResource(R.string.settings_ai_bridge_url_label)) },
-                    placeholder = { Text(text = stringResource(R.string.settings_ai_bridge_url_placeholder)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
-                )
-                OutlinedTextField(
-                    value = codexBridgeTokenInput,
-                    onValueChange = { codexBridgeTokenInput = it },
-                    label = { Text(text = stringResource(R.string.settings_ai_bridge_token_label)) },
-                    placeholder = {
-                        Text(
-                            text = if (hasCodexBridgeToken) {
-                                stringResource(R.string.settings_ai_bridge_token_placeholder_saved)
-                            } else {
-                                stringResource(R.string.settings_ai_bridge_token_placeholder)
-                            },
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    enabled = openAiApiKeyInput.isNotBlank(),
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Button(
-                        onClick = {
-                            onCodexBridgeSettingsSave(codexBridgeUrlInput, codexBridgeTokenInput)
-                            codexBridgeTokenInput = ""
-                        },
-                        enabled = codexBridgeUrlInput.isNotBlank() &&
-                            (codexBridgeTokenInput.isNotBlank() || hasCodexBridgeToken),
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(text = stringResource(R.string.settings_ai_bridge_save))
-                    }
-                    OutlinedButton(
-                        onClick = onCodexBridgeConnectionTest,
-                        enabled = hasCodexBridgeToken && codexBridgeBaseUrl != null,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(text = stringResource(R.string.settings_ai_bridge_test))
-                    }
+                    Text(text = stringResource(R.string.settings_ai_api_key_save))
                 }
                 OutlinedButton(
                     onClick = {
-                        onCodexBridgeSettingsClear()
-                        codexBridgeUrlInput = ""
-                        codexBridgeTokenInput = ""
+                        onOpenAiApiKeyClear()
+                        openAiApiKeyInput = ""
                     },
-                    enabled = hasCodexBridgeToken || codexBridgeBaseUrl != null,
-                    modifier = Modifier.fillMaxWidth(),
+                    enabled = hasOpenAiApiKey,
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Text(text = stringResource(R.string.settings_ai_bridge_clear))
+                    Text(text = stringResource(R.string.settings_ai_api_key_clear))
                 }
-                Text(
-                    text = stringResource(R.string.settings_ai_bridge_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
-
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(28.dp))

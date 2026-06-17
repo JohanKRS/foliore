@@ -151,6 +151,7 @@ private val SyncProgress.navigationFraction: Float
             SyncProgressPhase.APPLYING_STATUS -> 0.96f
             SyncProgressPhase.GENERATING_METADATA -> phaseFraction ?: 0.48f
             SyncProgressPhase.GENERATING_COVERS -> phaseFraction ?: 0.48f
+            SyncProgressPhase.LOOKING_UP_METADATA -> phaseFraction ?: 0.42f
         }.coerceIn(0.03f, 0.98f)
     }
 
@@ -171,5 +172,6 @@ private fun SyncProgress.message(): String {
         SyncProgressPhase.APPLYING_STATUS -> stringResource(R.string.sync_progress_applying_status)
         SyncProgressPhase.GENERATING_METADATA -> stringResource(R.string.ai_progress_generating_metadata)
         SyncProgressPhase.GENERATING_COVERS -> stringResource(R.string.ai_progress_generating_covers)
+        SyncProgressPhase.LOOKING_UP_METADATA -> stringResource(R.string.metadata_lookup_progress)
     }
 }

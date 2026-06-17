@@ -1,8 +1,8 @@
 package com.foliore.android.di
 
 import android.content.Context
-import com.foliore.android.ai.CodexBridgeService
 import com.foliore.android.ai.OpenAiApiService
+import com.foliore.android.metadata.OpenLibraryMetadataService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
@@ -29,10 +29,7 @@ class AppContainer(context: Context) {
         context = appContext,
         aiPreferenceRepository = aiPreferenceRepository,
     )
-    val codexBridgeService = CodexBridgeService(
-        context = appContext,
-        aiPreferenceRepository = aiPreferenceRepository,
-    )
+    val openLibraryMetadataService = OpenLibraryMetadataService(appContext)
     val epubImporter = AndroidEpubImporter(
         context = appContext,
         libraryRepository = libraryRepository,
