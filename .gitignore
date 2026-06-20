@@ -5,6 +5,7 @@ build/
 local.properties
 captures/
 .codex-artifacts/
+qa/
 *.iml
 *.apk
 *.aab
