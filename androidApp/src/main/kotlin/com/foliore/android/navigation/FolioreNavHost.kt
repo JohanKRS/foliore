@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Sync
@@ -297,6 +298,7 @@ private fun FolioreNavigationBar(
                     androidx.compose.animation.AnimatedVisibility(visible = editMode) {
                         FolioreEditActions(
                             actions = editActions,
+                            isLoading = isLoading,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -371,14 +373,12 @@ private fun FolioreBottomNavigationItems(
 @Composable
 private fun FolioreEditActions(
     actions: EditBottomBarActions?,
+    isLoading: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val exportLabel = if (actions?.compact == true) {
-        stringResource(R.string.edit_metadata_export_short)
-    } else {
-        stringResource(R.string.details_action_share_export)
-    }
-    val saveEnabled = actions?.saveEnabled == true
+    val exportLabel = stringResource(R.string.edit_metadata_export_short)
+    val actionsEnabled = actions != null && !isLoading
+    val saveEnabled = actions?.saveEnabled == true && !isLoading
 
     Row(
         modifier = modifier
@@ -413,7 +413,7 @@ private fun FolioreEditActions(
         }
         Button(
             onClick = { actions?.onShareExport?.invoke() },
-            enabled = actions != null,
+            enabled = actionsEnabled,
             modifier = Modifier
                 .weight(1f)
                 .height(56.dp),
@@ -431,6 +431,30 @@ private fun FolioreEditActions(
             Spacer(modifier = Modifier.width(9.dp))
             Text(
                 text = exportLabel,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        OutlinedButton(
+            onClick = { actions?.onSendToKindle?.invoke() },
+            enabled = actionsEnabled,
+            modifier = Modifier
+                .weight(1f)
+                .height(56.dp),
+            shape = RoundedCornerShape(5.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.primary,
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Email,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(modifier = Modifier.width(9.dp))
+            Text(
+                text = stringResource(R.string.edit_metadata_kindle_short),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

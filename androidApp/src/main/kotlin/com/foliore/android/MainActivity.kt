@@ -71,8 +71,10 @@ class MainActivity : ComponentActivity() {
                             manualSyncService = appContainer.manualSyncService,
                             aiPreferenceRepository = appContainer.aiPreferenceRepository,
                             aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
+                            kindleEmailPreferenceRepository = appContainer.kindleEmailPreferenceRepository,
+                            metadataPreferenceRepository = appContainer.metadataPreferenceRepository,
                             openAiApiService = appContainer.openAiApiService,
-                            openLibraryMetadataService = appContainer.openLibraryMetadataService,
+                            openMetadataLookupService = appContainer.openMetadataLookupService,
                         )
                     }
                     val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

@@ -7,6 +7,8 @@ data class MetadataLookupCandidate(
     val sourceName: String,
     val metadata: BookMetadataDraft,
     val coverImagePath: String?,
+    val coverPixelWidth: Int? = null,
+    val coverPixelHeight: Int? = null,
     val sourceUrl: String?,
 )
 

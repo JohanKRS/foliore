@@ -3,14 +3,16 @@ package com.foliore.android.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.foliore.android.ai.OpenAiApiService
-import com.foliore.android.metadata.OpenLibraryMetadataService
+import com.foliore.android.metadata.OpenMetadataLookupService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
 import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
+import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.ManualSyncService
+import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.shared.library.LibraryRepository
 
 class LibraryViewModelFactory(
@@ -22,8 +24,10 @@ class LibraryViewModelFactory(
     private val manualSyncService: ManualSyncService,
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
+    private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
+    private val metadataPreferenceRepository: MetadataPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
-    private val openLibraryMetadataService: OpenLibraryMetadataService,
+    private val openMetadataLookupService: OpenMetadataLookupService,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -37,8 +41,10 @@ class LibraryViewModelFactory(
                 manualSyncService = manualSyncService,
                 aiPreferenceRepository = aiPreferenceRepository,
                 aiCoverPromptRepository = aiCoverPromptRepository,
+                kindleEmailPreferenceRepository = kindleEmailPreferenceRepository,
+                metadataPreferenceRepository = metadataPreferenceRepository,
                 openAiApiService = openAiApiService,
-                openLibraryMetadataService = openLibraryMetadataService,
+                openMetadataLookupService = openMetadataLookupService,
             ) as T
         }
         error("Unknown ViewModel class: ${modelClass.name}")

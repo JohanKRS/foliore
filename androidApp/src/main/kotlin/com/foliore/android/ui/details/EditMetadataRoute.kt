@@ -69,6 +69,9 @@ fun EditMetadataRoute(
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                 }
             },
+            onSendToKindle = {
+                viewModel.sendPreparedEpubToKindleEmail(bookId)
+            },
             onCoverGenerationUnavailable = viewModel::requestCoverGeneration,
             onLookupMetadataCandidates = { draft, onCandidatesReady ->
                 viewModel.lookupMetadataCandidates(
@@ -100,13 +103,6 @@ fun EditMetadataRoute(
                     bookId = bookId,
                     option = option,
                     record = record,
-                    onUpdated = onUpdated,
-                )
-            },
-            onUseMetadataLookupCover = { coverImagePath, onUpdated ->
-                viewModel.useMetadataLookupCover(
-                    bookId = bookId,
-                    coverImagePath = coverImagePath,
                     onUpdated = onUpdated,
                 )
             },

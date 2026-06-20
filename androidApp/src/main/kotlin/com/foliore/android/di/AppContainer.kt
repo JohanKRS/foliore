@@ -2,6 +2,8 @@ package com.foliore.android.di
 
 import android.content.Context
 import com.foliore.android.ai.OpenAiApiService
+import com.foliore.android.metadata.GoogleBooksMetadataService
+import com.foliore.android.metadata.OpenMetadataLookupService
 import com.foliore.android.metadata.OpenLibraryMetadataService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
@@ -10,7 +12,9 @@ import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.DeviceIdProvider
+import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.ManualSyncService
+import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.ThemePreferenceRepository
 import com.foliore.shared.db.DatabaseDriverFactory
 import com.foliore.shared.library.LibraryRepository
@@ -25,11 +29,21 @@ class AppContainer(context: Context) {
     val themePreferenceRepository = ThemePreferenceRepository(appContext)
     val aiPreferenceRepository = AiPreferenceRepository(appContext)
     val aiCoverPromptRepository = AiCoverPromptRepository(appContext)
+    val kindleEmailPreferenceRepository = KindleEmailPreferenceRepository(appContext)
+    val metadataPreferenceRepository = MetadataPreferenceRepository(appContext)
     val openAiApiService = OpenAiApiService(
         context = appContext,
         aiPreferenceRepository = aiPreferenceRepository,
     )
     val openLibraryMetadataService = OpenLibraryMetadataService(appContext)
+    val googleBooksMetadataService = GoogleBooksMetadataService(
+        context = appContext,
+        metadataPreferenceRepository = metadataPreferenceRepository,
+    )
+    val openMetadataLookupService = OpenMetadataLookupService(
+        openLibraryMetadataService = openLibraryMetadataService,
+        googleBooksMetadataService = googleBooksMetadataService,
+    )
     val epubImporter = AndroidEpubImporter(
         context = appContext,
         libraryRepository = libraryRepository,

@@ -2,23 +2,28 @@ package com.foliore.android.ui.library
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Button
@@ -41,6 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
+import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 
@@ -48,25 +54,55 @@ import com.foliore.android.viewmodel.SyncSummary
 fun SettingsScreen(
     themeMode: ThemeMode,
     hasOpenAiApiKey: Boolean,
+    hasGoogleBooksApiKey: Boolean,
+    kindleEmailSettings: KindleEmailSettings,
     syncFolderLabel: String?,
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
+    onGoogleBooksApiKeySave: (String) -> Unit,
+    onGoogleBooksApiKeyClear: () -> Unit,
+    onKindleEmailSave: (String) -> Unit,
+    onKindleEmailClear: () -> Unit,
+    onKindleSmtpSave: (String, String, String, String, String) -> Unit,
+    onKindleSmtpClear: () -> Unit,
     onChooseSyncFolder: () -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var openAiApiKeyInput by rememberSaveable { mutableStateOf("") }
+    var googleBooksApiKeyInput by rememberSaveable { mutableStateOf("") }
+    var kindleEmailInput by rememberSaveable { mutableStateOf("") }
+    var kindleSenderInput by rememberSaveable(kindleEmailSettings.senderEmail) {
+        mutableStateOf(kindleEmailSettings.senderEmail.orEmpty())
+    }
+    var kindleSmtpHostInput by rememberSaveable(kindleEmailSettings.smtpHost) {
+        mutableStateOf(kindleEmailSettings.smtpHost)
+    }
+    var kindleSmtpPortInput by rememberSaveable(kindleEmailSettings.smtpPort) {
+        mutableStateOf(kindleEmailSettings.smtpPort.toString())
+    }
+    var kindleSmtpUserInput by rememberSaveable(kindleEmailSettings.smtpUsername) {
+        mutableStateOf(kindleEmailSettings.smtpUsername.orEmpty())
+    }
+    var kindleSmtpPasswordInput by rememberSaveable { mutableStateOf("") }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 28.dp, vertical = 24.dp),
+            .imePadding(),
     ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .widthIn(max = 920.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp, vertical = 24.dp),
+        ) {
         Text(
             text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.displayLarge,
@@ -130,6 +166,281 @@ fun SettingsScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(28.dp))
+        EditorialDivider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(28.dp))
+
+        SectionTitle(text = stringResource(R.string.settings_kindle))
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Email,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_kindle_email),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = stringResource(R.string.settings_kindle_email_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = kindleEmailSettings.kindleEmail?.let {
+                    stringResource(R.string.settings_kindle_email_configured, it)
+                } ?: stringResource(R.string.settings_kindle_email_missing),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = kindleEmailInput,
+                onValueChange = { kindleEmailInput = it },
+                label = { Text(text = stringResource(R.string.settings_kindle_email_label)) },
+                placeholder = { Text(text = stringResource(R.string.settings_kindle_email_placeholder)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Button(
+                    onClick = {
+                        onKindleEmailSave(kindleEmailInput)
+                        kindleEmailInput = ""
+                    },
+                    enabled = kindleEmailInput.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.settings_kindle_email_save))
+                }
+                OutlinedButton(
+                    onClick = {
+                        onKindleEmailClear()
+                        kindleEmailInput = ""
+                    },
+                    enabled = kindleEmailSettings.kindleEmail != null,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.settings_kindle_email_clear))
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = if (kindleEmailSettings.isReady) {
+                    stringResource(R.string.settings_kindle_smtp_configured)
+                } else if (kindleEmailSettings.hasSmtpPassword) {
+                    stringResource(R.string.settings_kindle_smtp_incomplete)
+                } else {
+                    stringResource(R.string.settings_kindle_smtp_missing)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = kindleSenderInput,
+                onValueChange = { kindleSenderInput = it },
+                label = { Text(text = stringResource(R.string.settings_kindle_sender_label)) },
+                placeholder = { Text(text = stringResource(R.string.settings_kindle_sender_placeholder)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedTextField(
+                    value = kindleSmtpHostInput,
+                    onValueChange = { kindleSmtpHostInput = it },
+                    label = { Text(text = stringResource(R.string.settings_kindle_smtp_host_label)) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+                )
+                OutlinedTextField(
+                    value = kindleSmtpPortInput,
+                    onValueChange = { kindleSmtpPortInput = it },
+                    label = { Text(text = stringResource(R.string.settings_kindle_smtp_port_label)) },
+                    modifier = Modifier.weight(0.46f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+                )
+            }
+            OutlinedTextField(
+                value = kindleSmtpUserInput,
+                onValueChange = { kindleSmtpUserInput = it },
+                label = { Text(text = stringResource(R.string.settings_kindle_smtp_user_label)) },
+                placeholder = { Text(text = stringResource(R.string.settings_kindle_smtp_user_placeholder)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+            )
+            OutlinedTextField(
+                value = kindleSmtpPasswordInput,
+                onValueChange = { kindleSmtpPasswordInput = it },
+                label = {
+                    Text(
+                        text = if (kindleEmailSettings.hasSmtpPassword) {
+                            stringResource(R.string.settings_kindle_smtp_password_keep_label)
+                        } else {
+                            stringResource(R.string.settings_kindle_smtp_password_label)
+                        },
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Button(
+                    onClick = {
+                        onKindleSmtpSave(
+                            kindleSenderInput,
+                            kindleSmtpHostInput,
+                            kindleSmtpPortInput,
+                            kindleSmtpUserInput,
+                            kindleSmtpPasswordInput,
+                        )
+                        kindleSmtpPasswordInput = ""
+                    },
+                    enabled = kindleSenderInput.isNotBlank() &&
+                        kindleSmtpHostInput.isNotBlank() &&
+                        kindleSmtpPortInput.isNotBlank() &&
+                        kindleSmtpUserInput.isNotBlank() &&
+                        (kindleSmtpPasswordInput.isNotBlank() || kindleEmailSettings.hasSmtpPassword),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.settings_kindle_smtp_save))
+                }
+                OutlinedButton(
+                    onClick = {
+                        onKindleSmtpClear()
+                        kindleSenderInput = ""
+                        kindleSmtpHostInput = kindleEmailSettings.smtpHost
+                        kindleSmtpPortInput = kindleEmailSettings.smtpPort.toString()
+                        kindleSmtpUserInput = ""
+                        kindleSmtpPasswordInput = ""
+                    },
+                    enabled = kindleEmailSettings.senderEmail != null ||
+                        kindleEmailSettings.smtpUsername != null ||
+                        kindleEmailSettings.hasSmtpPassword,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.settings_kindle_smtp_clear))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+        EditorialDivider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(28.dp))
+
+        SectionTitle(text = stringResource(R.string.settings_metadata_sources))
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Public,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.secondary,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_metadata_google_books),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = stringResource(R.string.settings_metadata_google_books_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = if (hasGoogleBooksApiKey) {
+                    stringResource(R.string.settings_metadata_google_books_key_configured)
+                } else {
+                    stringResource(R.string.settings_metadata_google_books_key_missing)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = googleBooksApiKeyInput,
+                onValueChange = { googleBooksApiKeyInput = it },
+                label = { Text(text = stringResource(R.string.settings_metadata_google_books_key_label)) },
+                placeholder = { Text(text = stringResource(R.string.settings_metadata_google_books_key_placeholder)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Button(
+                    onClick = {
+                        onGoogleBooksApiKeySave(googleBooksApiKeyInput)
+                        googleBooksApiKeyInput = ""
+                    },
+                    enabled = googleBooksApiKeyInput.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.settings_metadata_google_books_key_save))
+                }
+                OutlinedButton(
+                    onClick = {
+                        onGoogleBooksApiKeyClear()
+                        googleBooksApiKeyInput = ""
+                    },
+                    enabled = hasGoogleBooksApiKey,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = stringResource(R.string.settings_metadata_google_books_key_clear))
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(28.dp))
@@ -241,6 +552,20 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.settings_sync_folder_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (syncFolderLabel != null && lastSyncSummary == null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.settings_sync_first_run_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (lastSyncSummary != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -281,6 +606,8 @@ fun SettingsScreen(
                     Text(
                         text = if (isSyncing) {
                             stringResource(R.string.settings_sync_running)
+                        } else if (syncFolderLabel != null && lastSyncSummary == null) {
+                            stringResource(R.string.settings_sync_now_first_run)
                         } else {
                             stringResource(R.string.settings_sync_now)
                         },
@@ -302,6 +629,8 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+        Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }

@@ -2,6 +2,7 @@ package com.foliore.android.viewmodel
 
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.shared.domain.LibraryBook
 
 data class LibraryUiState(
@@ -22,7 +23,16 @@ data class LibraryUiState(
     val selectedBookIds: Set<String> = emptySet(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
+    val hasGoogleBooksApiKey: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
+    val kindleEmailSettings: KindleEmailSettings = KindleEmailSettings(
+        kindleEmail = null,
+        senderEmail = null,
+        smtpHost = "smtp.gmail.com",
+        smtpPort = 587,
+        smtpUsername = null,
+        hasSmtpPassword = false,
+    ),
 ) {
     val activeProgress: SyncProgress?
         get() = syncProgress ?: importProgress
@@ -93,6 +103,7 @@ enum class SyncProgressPhase {
     GENERATING_METADATA,
     GENERATING_COVERS,
     LOOKING_UP_METADATA,
+    SENDING_TO_KINDLE,
 }
 
 data class LibraryNotice(
@@ -118,15 +129,20 @@ enum class LibraryNoticeType {
     PREPARE_FAILED,
     EXPORT_FAILED,
     SYNC_FOLDER_CONFIGURED,
+    SYNC_EXISTING_LIBRARY_CONFIGURED,
     SYNC_COMPLETE,
     SYNC_COMPLETE_WITH_CONFLICTS,
     SYNC_NOT_CONFIGURED,
     SYNC_FOLDER_UNAVAILABLE,
+    SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER,
     SYNC_FAILED,
     SYNC_DISCONNECTED,
     AI_SETTINGS_UPDATED,
     AI_API_KEY_SAVED,
     AI_API_KEY_CLEARED,
+    GOOGLE_BOOKS_API_KEY_SAVED,
+    GOOGLE_BOOKS_API_KEY_CLEARED,
+    GOOGLE_BOOKS_API_KEY_INVALID,
     AI_PROVIDER_REQUIRED,
     AI_PROVIDER_NOT_READY,
     AI_REQUEST_FAILED,
@@ -137,4 +153,13 @@ enum class LibraryNoticeType {
     AI_COVER_PROVIDER_REQUIRED,
     AI_COVER_OPTIONS_READY,
     AI_COVER_PROMPT_SAVED,
+    KINDLE_EMAIL_SAVED,
+    KINDLE_EMAIL_CLEARED,
+    KINDLE_EMAIL_INVALID,
+    KINDLE_EMAIL_MISSING,
+    KINDLE_SMTP_SAVED,
+    KINDLE_SMTP_CLEARED,
+    KINDLE_SMTP_INVALID,
+    KINDLE_EMAIL_SENT,
+    KINDLE_EMAIL_FAILED,
 }

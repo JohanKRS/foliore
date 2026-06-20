@@ -1,7 +1,10 @@
 package com.foliore.android.storage
 
 sealed interface ManualSyncResult {
-    data class Configured(val folderLabel: String) : ManualSyncResult
+    data class Configured(
+        val folderLabel: String,
+        val hasExistingLibrary: Boolean,
+    ) : ManualSyncResult
     data class Synced(
         val uploadedBooks: Int,
         val downloadedBooks: Int,
@@ -10,6 +13,7 @@ sealed interface ManualSyncResult {
     ) : ManualSyncResult
     data object NotConfigured : ManualSyncResult
     data object FolderUnavailable : ManualSyncResult
+    data object FolderLooksLikeLibrarySubfolder : ManualSyncResult
     data object Failed : ManualSyncResult
 }
 

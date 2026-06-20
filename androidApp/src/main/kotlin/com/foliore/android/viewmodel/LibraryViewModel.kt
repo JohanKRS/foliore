@@ -13,7 +13,7 @@ import com.foliore.android.ai.OpenAiResult
 import com.foliore.android.ai.isEnabled
 import com.foliore.android.metadata.MetadataLookupResult
 import com.foliore.android.metadata.MetadataLookupCandidate
-import com.foliore.android.metadata.OpenLibraryMetadataService
+import com.foliore.android.metadata.OpenMetadataLookupService
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
@@ -24,10 +24,12 @@ import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.BookDeleteResult
 import com.foliore.android.storage.EpubImportResult
+import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.ManualSyncPhase
 import com.foliore.android.storage.ManualSyncProgress
 import com.foliore.android.storage.ManualSyncResult
 import com.foliore.android.storage.ManualSyncService
+import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.shared.domain.BatchMetadataPatch
 import com.foliore.shared.domain.BookMetadataDraft
@@ -51,14 +53,18 @@ class LibraryViewModel(
     private val manualSyncService: ManualSyncService,
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
+    private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
+    private val metadataPreferenceRepository: MetadataPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
-    private val openLibraryMetadataService: OpenLibraryMetadataService,
+    private val openMetadataLookupService: OpenMetadataLookupService,
 ) : ViewModel() {
     private val _state = MutableStateFlow(
         LibraryUiState(
             aiProviderMode = aiPreferenceRepository.providerMode.value,
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
+            hasGoogleBooksApiKey = metadataPreferenceRepository.hasGoogleBooksApiKey.value,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
+            kindleEmailSettings = kindleEmailPreferenceRepository.settings,
         ),
     )
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
@@ -194,6 +200,83 @@ class LibraryViewModel(
         _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
     }
 
+    fun saveGoogleBooksApiKey(apiKey: String) {
+        viewModelScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                metadataPreferenceRepository.saveGoogleBooksApiKey(apiKey)
+            }
+            _state.update {
+                it.copy(hasGoogleBooksApiKey = metadataPreferenceRepository.hasGoogleBooksApiKey.value)
+            }
+            _notice.value = LibraryNotice(
+                if (saved) {
+                    LibraryNoticeType.GOOGLE_BOOKS_API_KEY_SAVED
+                } else {
+                    LibraryNoticeType.GOOGLE_BOOKS_API_KEY_INVALID
+                },
+            )
+        }
+    }
+
+    fun clearGoogleBooksApiKey() {
+        metadataPreferenceRepository.clearGoogleBooksApiKey()
+        _state.update { it.copy(hasGoogleBooksApiKey = false) }
+        _notice.value = LibraryNotice(LibraryNoticeType.GOOGLE_BOOKS_API_KEY_CLEARED)
+    }
+
+    fun saveKindleEmail(email: String) {
+        val saved = kindleEmailPreferenceRepository.saveKindleEmail(email)
+        _state.update { it.copy(kindleEmailSettings = kindleEmailPreferenceRepository.settings) }
+        _notice.value = LibraryNotice(
+            if (saved) {
+                LibraryNoticeType.KINDLE_EMAIL_SAVED
+            } else {
+                LibraryNoticeType.KINDLE_EMAIL_INVALID
+            },
+        )
+    }
+
+    fun clearKindleEmail() {
+        kindleEmailPreferenceRepository.clearKindleEmail()
+        _state.update { it.copy(kindleEmailSettings = kindleEmailPreferenceRepository.settings) }
+        _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_CLEARED)
+    }
+
+    fun saveKindleSmtpSettings(
+        senderEmail: String,
+        smtpHost: String,
+        smtpPort: String,
+        smtpUsername: String,
+        smtpPassword: String,
+    ) {
+        val port = smtpPort.trim().toIntOrNull()
+        val saved = if (port == null) {
+            false
+        } else {
+            kindleEmailPreferenceRepository.saveSmtpSettings(
+                senderEmail = senderEmail,
+                smtpHost = smtpHost,
+                smtpPort = port,
+                smtpUsername = smtpUsername,
+                smtpPassword = smtpPassword,
+            )
+        }
+        _state.update { it.copy(kindleEmailSettings = kindleEmailPreferenceRepository.settings) }
+        _notice.value = LibraryNotice(
+            if (saved) {
+                LibraryNoticeType.KINDLE_SMTP_SAVED
+            } else {
+                LibraryNoticeType.KINDLE_SMTP_INVALID
+            },
+        )
+    }
+
+    fun clearKindleSmtpSettings() {
+        kindleEmailPreferenceRepository.clearSmtpSettings()
+        _state.update { it.copy(kindleEmailSettings = kindleEmailPreferenceRepository.settings) }
+        _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_SMTP_CLEARED)
+    }
+
     fun requestMetadataAutofill() {
         _notice.value = LibraryNotice(
             if (!_state.value.aiProviderMode.isEnabled) {
@@ -232,7 +315,7 @@ class LibraryViewModel(
                 MetadataLookupResult.Failure("Book not found")
             } else {
                 withContext(Dispatchers.IO) {
-                    openLibraryMetadataService.search(
+                    openMetadataLookupService.search(
                         book = book,
                         draft = draft,
                     )
@@ -598,6 +681,39 @@ class LibraryViewModel(
         }
     }
 
+    fun sendPreparedEpubToKindleEmail(
+        bookId: String,
+    ) {
+        val credentials = kindleEmailPreferenceRepository.credentials()
+        if (credentials == null) {
+            _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_MISSING)
+            return
+        }
+        if (_state.value.hasActiveProgress) return
+
+        _state.update {
+            it.copy(importProgress = SyncProgress(SyncProgressPhase.SENDING_TO_KINDLE))
+        }
+
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                preparedEpubService.sendToKindleEmail(bookId, credentials)
+            }
+            refreshBooks()
+            _state.update {
+                if (it.importProgress?.phase == SyncProgressPhase.SENDING_TO_KINDLE) {
+                    it.copy(importProgress = null)
+                } else {
+                    it
+                }
+            }
+            when (result) {
+                PreparedEpubResult.Sent -> _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_SENT)
+                else -> _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_FAILED)
+            }
+        }
+    }
+
     fun configureSyncFolder(uri: Uri) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -608,12 +724,21 @@ class LibraryViewModel(
                 else -> withContext(Dispatchers.IO) { manualSyncService.folderLabel() }
             }
             _state.update {
-                it.copy(syncFolderLabel = folderLabel)
+                it.copy(
+                    syncFolderLabel = folderLabel,
+                    lastSyncSummary = null,
+                )
             }
             _notice.value = LibraryNotice(
                 when (result) {
-                    is ManualSyncResult.Configured -> LibraryNoticeType.SYNC_FOLDER_CONFIGURED
-                    else -> LibraryNoticeType.SYNC_FAILED
+                    is ManualSyncResult.Configured -> {
+                        if (result.hasExistingLibrary) {
+                            LibraryNoticeType.SYNC_EXISTING_LIBRARY_CONFIGURED
+                        } else {
+                            LibraryNoticeType.SYNC_FOLDER_CONFIGURED
+                        }
+                    }
+                    else -> result.toNoticeType()
                 },
             )
         }
@@ -733,8 +858,15 @@ class LibraryViewModel(
         return when (this) {
             ManualSyncResult.NotConfigured -> LibraryNoticeType.SYNC_NOT_CONFIGURED
             ManualSyncResult.FolderUnavailable -> LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE
+            ManualSyncResult.FolderLooksLikeLibrarySubfolder -> LibraryNoticeType.SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER
             ManualSyncResult.Failed -> LibraryNoticeType.SYNC_FAILED
-            is ManualSyncResult.Configured -> LibraryNoticeType.SYNC_FOLDER_CONFIGURED
+            is ManualSyncResult.Configured -> {
+                if (hasExistingLibrary) {
+                    LibraryNoticeType.SYNC_EXISTING_LIBRARY_CONFIGURED
+                } else {
+                    LibraryNoticeType.SYNC_FOLDER_CONFIGURED
+                }
+            }
             is ManualSyncResult.Synced -> {
                 if (conflictedBooks > 0) {
                     LibraryNoticeType.SYNC_COMPLETE_WITH_CONFLICTS
@@ -768,4 +900,5 @@ class LibraryViewModel(
             isBatchMode = isBatchMode && selectedIds.isNotEmpty(),
         )
     }
+
 }

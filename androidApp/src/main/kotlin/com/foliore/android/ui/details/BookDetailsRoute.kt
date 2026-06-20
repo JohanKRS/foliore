@@ -61,12 +61,17 @@ fun BookDetailsRoute(
     ) { paddingValues ->
         BookDetailsScreen(
             book = book,
+            isLoading = state.hasActiveProgress,
+            progress = state.activeProgress,
             onEditMetadata = onEditMetadata,
             onReplaceCover = { coverPicker.launch("image/*") },
             onShareExport = {
                 viewModel.sharePreparedEpub(bookId) { intent ->
                     context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                 }
+            },
+            onSendToKindle = {
+                viewModel.sendPreparedEpubToKindleEmail(bookId)
             },
             onDeleteBook = { showDeleteDialog = true },
             onBack = onBack,

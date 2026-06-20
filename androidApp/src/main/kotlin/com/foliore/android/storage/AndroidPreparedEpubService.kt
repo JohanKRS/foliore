@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ClipData
 import android.content.Intent
 import androidx.core.content.FileProvider
+import com.foliore.android.R
 import com.foliore.shared.data.PortableSnapshots
 import com.foliore.shared.domain.BookMetadata
 import com.foliore.shared.domain.BookStatus
@@ -26,6 +27,7 @@ class AndroidPreparedEpubService(
     private val libraryRepository: LibraryRepository,
     private val deviceIdProvider: DeviceIdProvider,
     private val parser: EpubParser = EpubParser(),
+    private val smtpEmailSender: SmtpEmailSender = SmtpEmailSender(),
 ) {
     private val appContext = context.applicationContext
     private val json = Json { prettyPrint = true }
@@ -63,50 +65,78 @@ class AndroidPreparedEpubService(
 
     fun share(bookId: String): PreparedEpubResult {
         return runCatching {
-            var current = libraryRepository.getBook(bookId) ?: return PreparedEpubResult.NotFound
-            val preparedPath = current.book.preparedFilePath
-            val needsPrepare = preparedPath == null ||
-                current.book.status == BookStatus.OUTDATED_PREPARED ||
-                !File(preparedPath).exists()
-
-            if (needsPrepare) {
-                when (prepare(bookId)) {
-                    is PreparedEpubResult.Prepared -> Unit
-                    PreparedEpubResult.NotFound -> return PreparedEpubResult.NotFound
-                    else -> return PreparedEpubResult.Failed
-                }
-                current = libraryRepository.getBook(bookId) ?: return PreparedEpubResult.NotFound
+            val exported = when (val exportResult = exportPreparedEpub(bookId)) {
+                ExportPreparedResult.Failed -> return PreparedEpubResult.Failed
+                ExportPreparedResult.NotFound -> return PreparedEpubResult.NotFound
+                is ExportPreparedResult.Ready -> exportResult
             }
-
-            val prepared = current.book.preparedFilePath?.let(::File)?.takeIf { it.exists() }
-                ?: return PreparedEpubResult.Failed
-            val exportDir = File(appContext.filesDir, "exports").apply { mkdirs() }
-            val exportFile = File(exportDir, current.metadata.exportFileName())
-            prepared.copyTo(exportFile, overwrite = true)
-
-            libraryRepository.markExported(
-                bookId = bookId,
-                exportedAt = Clock.System.now().toString(),
-            )
-
-            val uri = FileProvider.getUriForFile(
-                appContext,
-                "${appContext.packageName}.fileprovider",
-                exportFile,
-            )
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = COMPATIBLE_SHARE_MIME_TYPE
-                data = uri
-                clipData = ClipData.newUri(appContext.contentResolver, exportFile.name, uri)
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_TITLE, exportFile.name)
-                putExtra(Intent.EXTRA_SUBJECT, exportFile.name)
+                type = EPUB_MIME_TYPE
+                clipData = ClipData.newUri(appContext.contentResolver, exported.file.name, exported.uri)
+                putExtra(Intent.EXTRA_STREAM, exported.uri)
+                putExtra(Intent.EXTRA_TITLE, exported.file.name)
+                putExtra(Intent.EXTRA_SUBJECT, exported.file.name)
                 putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(EPUB_MIME_TYPE, COMPATIBLE_SHARE_MIME_TYPE))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
             PreparedEpubResult.ShareIntentReady(shareIntent)
         }.getOrDefault(PreparedEpubResult.Failed)
+    }
+
+    fun sendToKindleEmail(
+        bookId: String,
+        credentials: KindleEmailCredentials,
+    ): PreparedEpubResult {
+        return runCatching {
+            val exported = when (val exportResult = exportPreparedEpub(bookId)) {
+                ExportPreparedResult.Failed -> return PreparedEpubResult.Failed
+                ExportPreparedResult.NotFound -> return PreparedEpubResult.NotFound
+                is ExportPreparedResult.Ready -> exportResult
+            }
+            val sent = smtpEmailSender.sendEpub(
+                credentials = credentials,
+                subject = appContext.getString(R.string.kindle_email_subject, exported.file.nameWithoutExtension),
+                body = appContext.getString(R.string.kindle_email_body),
+                attachment = exported.file,
+            )
+            if (sent) PreparedEpubResult.Sent else PreparedEpubResult.Failed
+        }.getOrDefault(PreparedEpubResult.Failed)
+    }
+
+    private fun exportPreparedEpub(bookId: String): ExportPreparedResult {
+        var current = libraryRepository.getBook(bookId) ?: return ExportPreparedResult.NotFound
+        val preparedPath = current.book.preparedFilePath
+        val needsPrepare = preparedPath == null ||
+            current.book.status == BookStatus.OUTDATED_PREPARED ||
+            !File(preparedPath).exists()
+
+        if (needsPrepare) {
+            when (prepare(bookId)) {
+                is PreparedEpubResult.Prepared -> Unit
+                PreparedEpubResult.NotFound -> return ExportPreparedResult.NotFound
+                else -> return ExportPreparedResult.Failed
+            }
+            current = libraryRepository.getBook(bookId) ?: return ExportPreparedResult.NotFound
+        }
+
+        val prepared = current.book.preparedFilePath?.let(::File)?.takeIf { it.exists() }
+            ?: return ExportPreparedResult.Failed
+        val exportDir = File(appContext.filesDir, "exports").apply { mkdirs() }
+        val exportFile = File(exportDir, current.metadata.exportFileName())
+        prepared.copyTo(exportFile, overwrite = true)
+
+        libraryRepository.markExported(
+            bookId = bookId,
+            exportedAt = Clock.System.now().toString(),
+        )
+
+        val uri = FileProvider.getUriForFile(
+            appContext,
+            "${appContext.packageName}.fileprovider",
+            exportFile,
+        )
+        return ExportPreparedResult.Ready(file = exportFile, uri = uri)
     }
 
     private fun writePreparedEpub(
@@ -347,5 +377,14 @@ class AndroidPreparedEpubService(
         const val COMPATIBLE_SHARE_MIME_TYPE = "application/octet-stream"
         const val COVER_ITEM_ID = "foliore-cover-image"
     }
-}
 
+    private sealed interface ExportPreparedResult {
+        data class Ready(
+            val file: File,
+            val uri: android.net.Uri,
+        ) : ExportPreparedResult
+
+        data object NotFound : ExportPreparedResult
+        data object Failed : ExportPreparedResult
+    }
+}

@@ -40,17 +40,33 @@ class ManualSyncService(
 
     fun configureFolder(uri: Uri): ManualSyncResult {
         return runCatching {
+            val root = DocumentFile.fromTreeUri(appContext, uri)
+                ?.takeIf { it.exists() && it.canWrite() }
+                ?: return ManualSyncResult.FolderUnavailable
+            val documentCache = DocumentFileCache()
+            val selection = root.inspectSyncFolderSelection(documentCache)
+            if (selection is SyncFolderSelection.LibrarySubfolder) {
+                return ManualSyncResult.FolderLooksLikeLibrarySubfolder
+            }
+
             appContext.contentResolver.takePersistableUriPermission(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
             )
-            preferences.edit()
-                .putString(KEY_SYNC_TREE_URI, uri.toString())
-                .remove(KEY_LIBRARY_ROOT_URI)
-                .remove(KEY_LIBRARY_ROOT_INITIALIZED)
-                .apply()
-            ManualSyncResult.Configured(folderLabel(uri) ?: DEFAULT_FOLDER_LABEL)
-        }.getOrDefault(ManualSyncResult.Failed)
+            val readySelection = selection as SyncFolderSelection.Ready
+            persistSyncFolder(
+                treeUri = uri,
+                libraryRoot = readySelection.libraryRoot,
+                folderLabel = readySelection.folderLabel,
+            )
+            ManualSyncResult.Configured(
+                folderLabel = readySelection.folderLabel ?: folderLabel(uri) ?: DEFAULT_FOLDER_LABEL,
+                hasExistingLibrary = readySelection.hasExistingLibrary,
+            )
+        }.getOrElse { error ->
+            Log.e(TAG, "Failed to configure sync folder", error)
+            ManualSyncResult.Failed
+        }
     }
 
     fun disconnect() {
@@ -67,12 +83,15 @@ class ManualSyncService(
             .remove(KEY_SYNC_TREE_URI)
             .remove(KEY_LIBRARY_ROOT_URI)
             .remove(KEY_LIBRARY_ROOT_INITIALIZED)
+            .remove(KEY_LIBRARY_ROOT_LABEL)
             .apply()
     }
 
     fun folderLabel(): String? {
         val uri = syncUri() ?: return null
-        return folderLabel(uri)
+        return preferences.getString(KEY_LIBRARY_ROOT_LABEL, null)
+            ?.takeIf { it.isNotBlank() }
+            ?: folderLabel(uri)
     }
 
     fun syncNow(onProgress: (ManualSyncProgress) -> Unit = {}): ManualSyncResult {
@@ -310,7 +329,7 @@ class ManualSyncService(
                 uploadedBooks = counters.uploadedBooks,
                 downloadedBooks = counters.downloadedBooks,
                 conflictedBooks = counters.conflictedBooks,
-                folderLabel = folderLabel(treeUri) ?: DEFAULT_FOLDER_LABEL,
+                folderLabel = folderLabel() ?: folderLabel(treeUri) ?: DEFAULT_FOLDER_LABEL,
             )
         }.getOrElse { error ->
             Log.e(TAG, "Manual sync failed", error)
@@ -374,7 +393,26 @@ class ManualSyncService(
         if (local == null) {
             val duplicateBookId = libraryRepository.findBookIdByHash(remoteBook.originalHashSha256)
             if (duplicateBookId != null) {
-                pendingStatusUpdates.syncedBookIds += duplicateBookId
+                val duplicateBook = libraryRepository.getBook(duplicateBookId)
+                if (duplicateBook != null && duplicateBook.book.id != remoteBook.bookId) {
+                    if (duplicateBook.canAdoptRemoteDuplicate(remoteBook)) {
+                        downloadRemoteBook(
+                            libraryRoot = libraryRoot,
+                            documentCache = documentCache,
+                            remoteBook = remoteBook,
+                            syncedAt = syncedAt,
+                            currentBook = duplicateBook,
+                        )
+                        removeLocalDuplicateBook(duplicateBook)
+                        pendingStatusUpdates.syncedBookIds += remoteBook.bookId
+                        counters.downloadedBooks += 1
+                    } else {
+                        pendingStatusUpdates.conflictedBookIds += duplicateBook.book.id
+                        counters.conflictedBooks += 1
+                    }
+                } else {
+                    pendingStatusUpdates.syncedBookIds += duplicateBookId
+                }
                 return
             }
 
@@ -421,6 +459,22 @@ class ManualSyncService(
                 }
             }
         }
+    }
+
+    private fun LibraryBook.canAdoptRemoteDuplicate(remoteBook: ManifestBookSnapshot): Boolean {
+        val hasLocalOnlyImport = book.syncStatus == SyncStatus.LOCAL_ONLY &&
+            book.revision <= 1L &&
+            book.status in setOf(BookStatus.IMPORTED, BookStatus.NEEDS_REVIEW, BookStatus.ERROR)
+        val remoteIsAtLeastAsFresh = remoteBook.revision >= book.revision
+        return book.syncStatus == SyncStatus.SYNCED ||
+            book.syncStatus == SyncStatus.PENDING_DOWNLOAD ||
+            (hasLocalOnlyImport && remoteIsAtLeastAsFresh)
+    }
+
+    private fun removeLocalDuplicateBook(duplicateBook: LibraryBook) {
+        val bookDir = File(duplicateBook.book.originalFilePath).parentFile
+        libraryRepository.deleteBook(duplicateBook.book.id)
+        bookDir?.deleteRecursively()
     }
 
     private fun downloadRemoteBook(
@@ -614,10 +668,21 @@ class ManualSyncService(
 
     private fun DocumentFile.resolveLibraryRoot(documentCache: DocumentFileCache): DocumentFile {
         val nestedLibraryRoots = documentCache.directoriesNamed(this, LIBRARY_ROOT_NAME)
-        val selfIsLibraryRoot = name == LIBRARY_ROOT_NAME
+        val selfIsLibraryRoot = isLibraryRootCandidate(documentCache)
 
         if (selfIsLibraryRoot) {
             if (nestedLibraryRoots.isNotEmpty()) {
+                val canonical = (listOf(this) + nestedLibraryRoots).bestLibraryRoot(documentCache)
+                    ?: error("Cannot resolve $LIBRARY_ROOT_NAME")
+                if (canonical.uri != uri) {
+                    nestedLibraryRoots
+                        .filterNot { duplicate -> duplicate.uri == canonical.uri }
+                        .forEach { duplicate -> duplicate.deleteTree(documentCache) }
+                    documentCache.invalidate(this)
+                    deleteLooseLibraryArtifacts(documentCache)
+                    markLibraryRootInitialized(canonical)
+                    return canonical
+                }
                 nestedLibraryRoots.forEach { duplicate -> duplicate.deleteTree(documentCache) }
                 documentCache.invalidate(this)
             }
@@ -644,13 +709,64 @@ class ManualSyncService(
         return created
     }
 
+    private fun DocumentFile.inspectSyncFolderSelection(documentCache: DocumentFileCache): SyncFolderSelection {
+        if (looksLikeLibrarySubfolder(documentCache)) {
+            return SyncFolderSelection.LibrarySubfolder
+        }
+
+        val nestedLibraryRoots = documentCache.directoriesNamed(this, LIBRARY_ROOT_NAME)
+        val selfRoot = takeIf { isLibraryRootCandidate(documentCache) }
+        val canonicalRoot = when {
+            selfRoot != null && nestedLibraryRoots.isNotEmpty() -> {
+                (listOf(selfRoot) + nestedLibraryRoots).bestLibraryRoot(documentCache)
+            }
+            selfRoot != null -> selfRoot
+            nestedLibraryRoots.isNotEmpty() -> nestedLibraryRoots.bestLibraryRoot(documentCache)
+            else -> null
+        }
+
+        return SyncFolderSelection.Ready(
+            libraryRoot = canonicalRoot,
+            folderLabel = canonicalRoot?.name ?: LIBRARY_ROOT_NAME,
+            hasExistingLibrary = canonicalRoot?.hasLibraryArtifacts(documentCache) == true,
+        )
+    }
+
+    private fun DocumentFile.looksLikeLibrarySubfolder(documentCache: DocumentFileCache): Boolean {
+        val childNames = documentCache.childrenOf(this)
+            .mapNotNull { child -> child.name }
+            .toSet()
+        return SyncFolderStructureRules.looksLikeLibrarySubfolder(
+            name = name,
+            childNames = childNames,
+        )
+    }
+
+    private fun DocumentFile.isLibraryRootCandidate(documentCache: DocumentFileCache): Boolean {
+        val children = documentCache.childrenOf(this)
+        return SyncFolderStructureRules.isLibraryRootCandidate(
+            name = name,
+            hasValidManifest = hasLooseLibraryManifest(documentCache),
+            fileNames = children.mapNotNull { child -> child.name.takeUnless { child.isDirectory } }.toSet(),
+            directoryNames = children.mapNotNull { child -> child.name.takeIf { child.isDirectory || !child.isFile } }.toSet(),
+        )
+    }
+
+    private fun DocumentFile.hasLibraryArtifacts(documentCache: DocumentFileCache): Boolean {
+        val children = documentCache.childrenOf(this)
+        return SyncFolderStructureRules.hasLibraryArtifacts(
+            hasValidManifest = hasLooseLibraryManifest(documentCache),
+            fileNames = children.mapNotNull { child -> child.name.takeUnless { child.isDirectory } }.toSet(),
+            directoryNames = children.mapNotNull { child -> child.name.takeIf { child.isDirectory || !child.isFile } }.toSet(),
+        )
+    }
+
     private fun DocumentFile.libraryRootStructureScore(documentCache: DocumentFileCache): Int {
-        var score = 0
-        if (documentCache.filesNamed(this, "library.manifest.json").isNotEmpty()) score += 1_000
-        if (documentCache.directoriesNamed(this, "books").isNotEmpty()) score += 200
-        if (documentCache.directoriesNamed(this, "devices").isNotEmpty()) score += 50
-        if (documentCache.directoriesNamed(this, "snapshots").isNotEmpty()) score += 50
-        return score
+        val children = documentCache.childrenOf(this)
+        return SyncFolderStructureRules.libraryRootStructureScore(
+            fileNames = children.mapNotNull { child -> child.name.takeUnless { child.isDirectory } }.toSet(),
+            directoryNames = children.mapNotNull { child -> child.name.takeIf { child.isDirectory || !child.isFile } }.toSet(),
+        )
     }
 
     private fun DocumentFile.libraryRootScore(documentCache: DocumentFileCache): Int {
@@ -697,7 +813,29 @@ class ManualSyncService(
         preferences.edit()
             .putBoolean(KEY_LIBRARY_ROOT_INITIALIZED, true)
             .putString(KEY_LIBRARY_ROOT_URI, libraryRoot.uri.toString())
+            .putString(KEY_LIBRARY_ROOT_LABEL, libraryRoot.name ?: DEFAULT_FOLDER_LABEL)
             .apply()
+    }
+
+    private fun persistSyncFolder(
+        treeUri: Uri,
+        libraryRoot: DocumentFile?,
+        folderLabel: String?,
+    ) {
+        val editor = preferences.edit()
+            .putString(KEY_SYNC_TREE_URI, treeUri.toString())
+            .remove(KEY_LIBRARY_ROOT_URI)
+            .remove(KEY_LIBRARY_ROOT_INITIALIZED)
+            .remove(KEY_LIBRARY_ROOT_LABEL)
+        if (libraryRoot != null) {
+            editor
+                .putString(KEY_LIBRARY_ROOT_URI, libraryRoot.uri.toString())
+                .putString(KEY_LIBRARY_ROOT_LABEL, libraryRoot.name ?: folderLabel ?: DEFAULT_FOLDER_LABEL)
+                .putBoolean(KEY_LIBRARY_ROOT_INITIALIZED, true)
+        } else {
+            editor.putString(KEY_LIBRARY_ROOT_LABEL, folderLabel ?: DEFAULT_FOLDER_LABEL)
+        }
+        editor.apply()
     }
 
     private fun DocumentFile.ensureDirectory(
@@ -723,7 +861,7 @@ class ManualSyncService(
         documentCache: DocumentFileCache,
     ): DocumentFile {
         documentCache.childrenOf(this)
-            .filter { it.name == name && !it.isDirectory }
+            .filter { it.name.matchesDocumentName(name) && !it.isDirectory }
             .forEach { existing ->
                 if (!existing.delete()) error("Cannot replace $name")
             }
@@ -848,6 +986,8 @@ class ManualSyncService(
         conflictedBookIds: Set<String>,
     ): List<ManifestBookSnapshot> {
         val merged = linkedMapOf<String, ManifestBookSnapshot>()
+        remoteBooks.values.forEach { remoteBook -> merged[remoteBook.bookId] = remoteBook }
+
         localBooks
             .filter { it.book.syncStatus == SyncStatus.CONFLICT || it.book.id in conflictedBookIds }
             .mapNotNull { remoteBooks[it.book.id] }
@@ -1136,6 +1276,16 @@ class ManualSyncService(
         val coverFile: String?,
     )
 
+    private sealed interface SyncFolderSelection {
+        data class Ready(
+            val libraryRoot: DocumentFile?,
+            val folderLabel: String?,
+            val hasExistingLibrary: Boolean,
+        ) : SyncFolderSelection
+
+        data object LibrarySubfolder : SyncFolderSelection
+    }
+
     private class DocumentFileCache {
         private val childrenByDirectoryUri = mutableMapOf<String, List<DocumentFile>>()
 
@@ -1151,12 +1301,12 @@ class ManualSyncService(
 
         fun filesNamed(directory: DocumentFile, name: String): List<DocumentFile> {
             return childrenOf(directory)
-                .filter { file -> file.name == name && !file.isDirectory }
+                .filter { file -> file.name.matchesDocumentName(name) && !file.isDirectory }
         }
 
         fun directoriesNamed(directory: DocumentFile, name: String): List<DocumentFile> {
             return childrenOf(directory)
-                .filter { file -> file.name == name }
+                .filter { file -> file.name.matchesDocumentName(name) }
                 .filter { file -> file.isDirectory || !file.isFile }
         }
 
@@ -1193,9 +1343,10 @@ class ManualSyncService(
         const val KEY_LIBRARY_ID = "library_id"
         const val KEY_LIBRARY_ROOT_INITIALIZED = "library_root_initialized"
         const val KEY_LIBRARY_ROOT_URI = "library_root_uri"
+        const val KEY_LIBRARY_ROOT_LABEL = "library_root_label"
         const val KEY_SYNC_UPLOAD_STRATEGY_VERSION = "sync_upload_strategy_version"
         const val CURRENT_SYNC_UPLOAD_STRATEGY_VERSION = 2
-        const val LIBRARY_ROOT_NAME = "Foliore Library"
+        const val LIBRARY_ROOT_NAME = SyncFolderStructureRules.LIBRARY_ROOT_NAME
         const val DEFAULT_FOLDER_LABEL = "Foliore Library"
         const val AI_COVER_PROMPTS_FILE = "ai-cover-prompts.json"
         const val TAG = "ManualSyncService"
@@ -1207,4 +1358,10 @@ private fun List<AiCoverPromptRecord>.normalizedAiCoverPromptRecords(): List<AiC
         .values
         .map { records -> records.maxBy { it.selectedAtEpochMillis } }
         .sortedWith(compareBy<AiCoverPromptRecord> { it.selectedAtEpochMillis }.thenBy { it.id })
+}
+
+private fun String?.matchesDocumentName(expected: String): Boolean {
+    return this
+        ?.trim()
+        ?.equals(expected.trim(), ignoreCase = true) == true
 }

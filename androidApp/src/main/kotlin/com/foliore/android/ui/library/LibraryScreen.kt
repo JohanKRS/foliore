@@ -1206,7 +1206,12 @@ fun StatusPill(
 private fun CoverPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.46f),
+                shape = RoundedCornerShape(6.dp),
+            )
             .padding(12.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -1425,7 +1430,10 @@ private fun List<LibraryBook>.sortedBy(sortOrder: BookSortOrder): List<LibraryBo
 
 private fun LibraryBook.titleSortKey(): String = metadata.title.sortKey()
 
-private fun LibraryBook.coverPath(): String? = book.coverThumbPath ?: book.coverImagePath
+private fun LibraryBook.coverPath(): String? {
+    return listOfNotNull(book.coverThumbPath, book.coverImagePath)
+        .firstOrNull { it.isReadableCoverFile() }
+}
 
 private fun String?.coverAspectRatio(): Float {
     if (this == null) return DefaultCoverAspectRatio
@@ -1440,6 +1448,13 @@ private fun String?.coverAspectRatio(): Float {
     } else {
         DefaultCoverAspectRatio
     }
+}
+
+private fun String.isReadableCoverFile(): Boolean {
+    if (!File(this).isFile) return false
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(this, options)
+    return options.outWidth > 0 && options.outHeight > 0
 }
 
 private fun LibraryBook.authorSortKey(): String? {

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
@@ -49,15 +50,20 @@ import coil.compose.AsyncImage
 import com.foliore.android.R
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
+import com.foliore.android.ui.library.SyncProgressStrip
+import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.shared.domain.LibraryBook
 import java.io.File
 
 @Composable
 fun BookDetailsScreen(
     book: LibraryBook?,
+    isLoading: Boolean,
+    progress: SyncProgress?,
     onEditMetadata: () -> Unit,
     onReplaceCover: () -> Unit,
     onShareExport: () -> Unit,
+    onSendToKindle: () -> Unit,
     onDeleteBook: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -108,11 +114,22 @@ fun BookDetailsScreen(
                     )
                     Spacer(modifier = Modifier.height(32.dp))
                     EditorialDivider(modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(20.dp))
+                    if (isLoading && progress != null) {
+                        Spacer(modifier = Modifier.height(18.dp))
+                        SyncProgressStrip(
+                            progress = progress,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    } else {
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
                     DetailsActionList(
+                        enabled = !isLoading,
                         onEditMetadata = onEditMetadata,
                         onReplaceCover = onReplaceCover,
                         onShareExport = onShareExport,
+                        onSendToKindle = onSendToKindle,
                         onDeleteBook = onDeleteBook,
                     )
                     Spacer(modifier = Modifier.height(20.dp))
@@ -187,7 +204,8 @@ private fun BookCover(
     book: LibraryBook,
     modifier: Modifier = Modifier,
 ) {
-    val coverPath = book.book.coverImagePath ?: book.book.coverThumbPath
+    val coverPath = listOfNotNull(book.book.coverImagePath, book.book.coverThumbPath)
+        .firstOrNull { it.isReadableCoverFile() }
     val coverAspectRatio = remember(coverPath) { coverPath.coverAspectRatio() }
 
     if (coverPath != null) {
@@ -310,9 +328,11 @@ private fun DetailsMetadataRow(
 
 @Composable
 private fun DetailsActionList(
+    enabled: Boolean,
     onEditMetadata: () -> Unit,
     onReplaceCover: () -> Unit,
     onShareExport: () -> Unit,
+    onSendToKindle: () -> Unit,
     onDeleteBook: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -320,18 +340,28 @@ private fun DetailsActionList(
             icon = Icons.Outlined.Edit,
             label = stringResource(R.string.details_action_edit_metadata),
             onClick = onEditMetadata,
+            enabled = enabled,
         )
         DetailsRowDivider()
         DetailsActionRow(
             icon = Icons.Outlined.Image,
             label = stringResource(R.string.details_action_replace_cover),
             onClick = onReplaceCover,
+            enabled = enabled,
         )
         DetailsRowDivider()
         DetailsActionRow(
             icon = Icons.Outlined.Share,
             label = stringResource(R.string.details_action_share_export),
             onClick = onShareExport,
+            enabled = enabled,
+        )
+        DetailsRowDivider()
+        DetailsActionRow(
+            icon = Icons.Outlined.Email,
+            label = stringResource(R.string.details_action_send_to_kindle),
+            onClick = onSendToKindle,
+            enabled = enabled,
         )
         DetailsRowDivider()
         DetailsActionRow(
@@ -339,6 +369,7 @@ private fun DetailsActionList(
             label = stringResource(R.string.details_action_delete_book),
             onClick = onDeleteBook,
             color = MaterialTheme.colorScheme.error,
+            enabled = enabled,
         )
     }
 }
@@ -349,13 +380,15 @@ private fun DetailsActionRow(
     label: String,
     onClick: () -> Unit,
     color: androidx.compose.ui.graphics.Color? = null,
+    enabled: Boolean = true,
 ) {
-    val contentColor = color ?: MaterialTheme.colorScheme.onBackground
+    val baseColor = color ?: MaterialTheme.colorScheme.onBackground
+    val enabledAlpha = if (enabled) 1f else 0.42f
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(vertical = 17.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -363,20 +396,20 @@ private fun DetailsActionRow(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = contentColor.copy(alpha = if (color == null) 0.8f else 0.92f),
+            tint = baseColor.copy(alpha = (if (color == null) 0.8f else 0.92f) * enabledAlpha),
         )
         Spacer(modifier = Modifier.width(24.dp))
         Text(
             text = label,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyLarge,
-            color = contentColor.copy(alpha = if (color == null) 0.88f else 0.94f),
+            color = baseColor.copy(alpha = (if (color == null) 0.88f else 0.94f) * enabledAlpha),
         )
         Icon(
             imageVector = Icons.Outlined.ChevronRight,
             contentDescription = null,
             modifier = Modifier.size(22.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f * enabledAlpha),
         )
     }
 }
@@ -453,6 +486,13 @@ private fun String?.coverAspectRatio(): Float {
     } else {
         DefaultCoverAspectRatio
     }
+}
+
+private fun String.isReadableCoverFile(): Boolean {
+    if (!File(this).isFile) return false
+    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(this, options)
+    return options.outWidth > 0 && options.outHeight > 0
 }
 
 private const val DefaultCoverAspectRatio = 2f / 3f

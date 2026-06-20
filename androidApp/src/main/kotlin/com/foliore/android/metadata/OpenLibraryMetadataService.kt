@@ -8,6 +8,9 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -29,13 +32,41 @@ class OpenLibraryMetadataService(context: Context) {
         draft: BookMetadataDraft,
         limit: Int = 5,
     ): MetadataLookupResult {
+        val executor = Executors.newSingleThreadExecutor()
+        val future = executor.submit<MetadataLookupResult> {
+            searchBlocking(book = book, draft = draft, limit = limit)
+        }
+
+        return try {
+            future.get(LOOKUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        } catch (_: TimeoutException) {
+            future.cancel(true)
+            MetadataLookupResult.Failure("Open Library lookup timed out")
+        } catch (error: Exception) {
+            MetadataLookupResult.Failure(error.message)
+        } finally {
+            executor.shutdownNow()
+        }
+    }
+
+    private fun searchBlocking(
+        book: LibraryBook,
+        draft: BookMetadataDraft,
+        limit: Int,
+    ): MetadataLookupResult {
         return runCatching {
             val docs = searchDocuments(draft, limit)
             val candidates = docs
                 .distinctBy { it.key ?: it.title.orEmpty() + it.authorName.joinToString() }
                 .take(limit)
                 .mapIndexedNotNull { index, doc ->
-                    doc.toCandidate(book = book, current = draft, index = index)
+                    doc.toCandidate(
+                        book = book,
+                        current = draft,
+                        index = index,
+                        includeDescription = index == 0,
+                        includeCover = false,
+                    )
                 }
             MetadataLookupResult.Success(candidates)
         }.getOrElse {
@@ -78,9 +109,11 @@ class OpenLibraryMetadataService(context: Context) {
         book: LibraryBook,
         current: BookMetadataDraft,
         index: Int,
+        includeDescription: Boolean,
+        includeCover: Boolean,
     ): MetadataLookupCandidate? {
         val cleanTitle = title?.cleanOptional() ?: return null
-        val workDescription = key?.let(::fetchWorkDescription)
+        val workDescription = if (includeDescription) key?.let(::fetchWorkDescription) else null
         val cleanAuthors = authorName.mapNotNull { it.cleanOptional() }
         val cleanTags = subject
             .asSequence()
@@ -89,12 +122,16 @@ class OpenLibraryMetadataService(context: Context) {
             .distinctBy { it.lowercase() }
             .take(8)
             .toList()
-        val coverPath = downloadCover(
-            bookId = book.book.id,
-            candidateId = key?.substringAfterLast('/') ?: "open-library-$index",
-            coverId = coverId,
-            isbn = isbn.bestIsbn(),
-        )
+        val coverPath = if (includeCover) {
+            downloadCover(
+                bookId = book.book.id,
+                candidateId = key?.substringAfterLast('/') ?: "open-library-$index",
+                coverId = coverId,
+                isbn = isbn.bestIsbn(),
+            )
+        } else {
+            null
+        }
         val identifiers = current.identifiers +
             listOfNotNull(
                 key?.let { "openlibrary_work" to it },
@@ -150,8 +187,8 @@ class OpenLibraryMetadataService(context: Context) {
             val outputFile = File(outputDir, "${candidateId.sanitizeFileName()}.jpg")
             val connection = (URL(coverUrl).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                connectTimeout = 15_000
-                readTimeout = 30_000
+                connectTimeout = SECONDARY_CONNECT_TIMEOUT_MS
+                readTimeout = SECONDARY_READ_TIMEOUT_MS
                 setRequestProperty("User-Agent", USER_AGENT)
             }
             if (connection.responseCode !in 200..299) {
@@ -171,8 +208,8 @@ class OpenLibraryMetadataService(context: Context) {
     private fun getText(url: String): String {
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
-            connectTimeout = 15_000
-            readTimeout = 30_000
+            connectTimeout = SEARCH_CONNECT_TIMEOUT_MS
+            readTimeout = SEARCH_READ_TIMEOUT_MS
             setRequestProperty("Accept", "application/json")
             setRequestProperty("User-Agent", USER_AGENT)
         }
@@ -285,6 +322,11 @@ class OpenLibraryMetadataService(context: Context) {
 
     private companion object {
         const val USER_AGENT = "Foliore/0.1 metadata lookup"
+        const val SEARCH_CONNECT_TIMEOUT_MS = 10_000
+        const val SEARCH_READ_TIMEOUT_MS = 12_000
+        const val SECONDARY_CONNECT_TIMEOUT_MS = 4_000
+        const val SECONDARY_READ_TIMEOUT_MS = 6_000
+        const val LOOKUP_TIMEOUT_MS = 18_000L
         const val SEARCH_FIELDS =
             "key,title,author_name,first_publish_year,publisher,language,isbn,subject,cover_i,edition_key"
     }

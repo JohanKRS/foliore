@@ -26,15 +26,24 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.PREPARE_FAILED -> stringResource(R.string.prepare_notice_failed)
         LibraryNoticeType.EXPORT_FAILED -> stringResource(R.string.export_notice_failed)
         LibraryNoticeType.SYNC_FOLDER_CONFIGURED -> stringResource(R.string.sync_notice_folder_configured)
+        LibraryNoticeType.SYNC_EXISTING_LIBRARY_CONFIGURED -> {
+            stringResource(R.string.sync_notice_existing_library_configured)
+        }
         LibraryNoticeType.SYNC_COMPLETE -> stringResource(R.string.sync_notice_complete)
         LibraryNoticeType.SYNC_COMPLETE_WITH_CONFLICTS -> stringResource(R.string.sync_notice_complete_with_conflicts)
         LibraryNoticeType.SYNC_NOT_CONFIGURED -> stringResource(R.string.sync_notice_not_configured)
         LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE -> stringResource(R.string.sync_notice_folder_unavailable)
+        LibraryNoticeType.SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER -> {
+            stringResource(R.string.sync_notice_folder_looks_like_subfolder)
+        }
         LibraryNoticeType.SYNC_FAILED -> stringResource(R.string.sync_notice_failed)
         LibraryNoticeType.SYNC_DISCONNECTED -> stringResource(R.string.sync_notice_disconnected)
         LibraryNoticeType.AI_SETTINGS_UPDATED -> stringResource(R.string.ai_notice_settings_updated)
         LibraryNoticeType.AI_API_KEY_SAVED -> stringResource(R.string.ai_notice_api_key_saved)
         LibraryNoticeType.AI_API_KEY_CLEARED -> stringResource(R.string.ai_notice_api_key_cleared)
+        LibraryNoticeType.GOOGLE_BOOKS_API_KEY_SAVED -> stringResource(R.string.metadata_notice_google_books_key_saved)
+        LibraryNoticeType.GOOGLE_BOOKS_API_KEY_CLEARED -> stringResource(R.string.metadata_notice_google_books_key_cleared)
+        LibraryNoticeType.GOOGLE_BOOKS_API_KEY_INVALID -> stringResource(R.string.metadata_notice_google_books_key_invalid)
         LibraryNoticeType.AI_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_provider_required)
         LibraryNoticeType.AI_PROVIDER_NOT_READY -> stringResource(R.string.ai_notice_provider_not_ready)
         LibraryNoticeType.AI_REQUEST_FAILED -> stringResource(R.string.ai_notice_request_failed)
@@ -45,5 +54,14 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED -> stringResource(R.string.ai_notice_cover_provider_required)
         LibraryNoticeType.AI_COVER_OPTIONS_READY -> stringResource(R.string.ai_notice_cover_options_ready)
         LibraryNoticeType.AI_COVER_PROMPT_SAVED -> stringResource(R.string.ai_notice_cover_prompt_saved)
+        LibraryNoticeType.KINDLE_EMAIL_SAVED -> stringResource(R.string.kindle_notice_email_saved)
+        LibraryNoticeType.KINDLE_EMAIL_CLEARED -> stringResource(R.string.kindle_notice_email_cleared)
+        LibraryNoticeType.KINDLE_EMAIL_INVALID -> stringResource(R.string.kindle_notice_email_invalid)
+        LibraryNoticeType.KINDLE_EMAIL_MISSING -> stringResource(R.string.kindle_notice_email_missing)
+        LibraryNoticeType.KINDLE_SMTP_SAVED -> stringResource(R.string.kindle_notice_smtp_saved)
+        LibraryNoticeType.KINDLE_SMTP_CLEARED -> stringResource(R.string.kindle_notice_smtp_cleared)
+        LibraryNoticeType.KINDLE_SMTP_INVALID -> stringResource(R.string.kindle_notice_smtp_invalid)
+        LibraryNoticeType.KINDLE_EMAIL_SENT -> stringResource(R.string.kindle_notice_sent)
+        LibraryNoticeType.KINDLE_EMAIL_FAILED -> stringResource(R.string.kindle_notice_send_failed)
     }
 }
