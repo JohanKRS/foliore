@@ -36,6 +36,20 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER -> {
             stringResource(R.string.sync_notice_folder_looks_like_subfolder)
         }
+        LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONNECTED -> stringResource(R.string.sync_notice_google_drive_connected)
+        LibraryNoticeType.SYNC_GOOGLE_DRIVE_AUTH_REQUIRED -> {
+            stringResource(R.string.sync_notice_google_drive_auth_required)
+        }
+        LibraryNoticeType.SYNC_GOOGLE_DRIVE_QUOTA_EXCEEDED -> {
+            stringResource(R.string.sync_notice_google_drive_quota_exceeded)
+        }
+        LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE -> {
+            stringResource(R.string.sync_notice_google_drive_unavailable)
+        }
+        LibraryNoticeType.SYNC_GOOGLE_DRIVE_BACKUP_DELETED -> {
+            stringResource(R.string.sync_notice_google_drive_backup_deleted)
+        }
+        LibraryNoticeType.SYNC_AUTO_SETTINGS_UPDATED -> stringResource(R.string.sync_notice_auto_settings_updated)
         LibraryNoticeType.SYNC_FAILED -> stringResource(R.string.sync_notice_failed)
         LibraryNoticeType.SYNC_DISCONNECTED -> stringResource(R.string.sync_notice_disconnected)
         LibraryNoticeType.AI_SETTINGS_UPDATED -> stringResource(R.string.ai_notice_settings_updated)

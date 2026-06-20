@@ -145,8 +145,9 @@ private val SyncProgress.navigationFraction: Float
         return when (phase) {
             SyncProgressPhase.IMPORTING -> phaseFraction ?: 0.03f
             SyncProgressPhase.PREPARING -> 0.06f
-            SyncProgressPhase.CHECKING_REMOTE -> 0.12f + ((phaseFraction ?: 0f) * 0.18f)
-            SyncProgressPhase.UPLOADING -> 0.30f + ((phaseFraction ?: 0f) * 0.52f)
+            SyncProgressPhase.CHECKING_REMOTE -> 0.12f + ((phaseFraction ?: 0f) * 0.12f)
+            SyncProgressPhase.DOWNLOADING -> 0.24f + ((phaseFraction ?: 0f) * 0.28f)
+            SyncProgressPhase.UPLOADING -> 0.52f + ((phaseFraction ?: 0f) * 0.32f)
             SyncProgressPhase.WRITING_MANIFEST -> 0.9f
             SyncProgressPhase.APPLYING_STATUS -> 0.96f
             SyncProgressPhase.GENERATING_METADATA -> phaseFraction ?: 0.48f
@@ -168,6 +169,7 @@ private fun SyncProgress.message(): String {
         SyncProgressPhase.IMPORTING -> stringResource(R.string.importing_epubs)
         SyncProgressPhase.PREPARING -> stringResource(R.string.sync_progress_preparing)
         SyncProgressPhase.CHECKING_REMOTE -> stringResource(R.string.sync_progress_checking_remote)
+        SyncProgressPhase.DOWNLOADING -> stringResource(R.string.sync_progress_downloading)
         SyncProgressPhase.UPLOADING -> stringResource(R.string.sync_progress_uploading)
         SyncProgressPhase.WRITING_MANIFEST -> stringResource(R.string.sync_progress_writing_manifest)
         SyncProgressPhase.APPLYING_STATUS -> stringResource(R.string.sync_progress_applying_status)

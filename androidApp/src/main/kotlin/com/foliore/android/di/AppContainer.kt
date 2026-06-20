@@ -12,9 +12,14 @@ import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.DeviceIdProvider
+import com.foliore.android.storage.GoogleDriveAuthService
+import com.foliore.android.storage.GoogleDriveSyncService
 import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.MetadataPreferenceRepository
+import com.foliore.android.storage.SyncService
+import com.foliore.android.storage.SyncSettingsRepository
+import com.foliore.android.storage.SyncWorkScheduler
 import com.foliore.android.storage.ThemePreferenceRepository
 import com.foliore.shared.db.DatabaseDriverFactory
 import com.foliore.shared.library.LibraryRepository
@@ -31,6 +36,8 @@ class AppContainer(context: Context) {
     val aiCoverPromptRepository = AiCoverPromptRepository(appContext)
     val kindleEmailPreferenceRepository = KindleEmailPreferenceRepository(appContext)
     val metadataPreferenceRepository = MetadataPreferenceRepository(appContext)
+    val syncSettingsRepository = SyncSettingsRepository(appContext)
+    val googleDriveAuthService = GoogleDriveAuthService(appContext)
     val openAiApiService = OpenAiApiService(
         context = appContext,
         aiPreferenceRepository = aiPreferenceRepository,
@@ -68,5 +75,23 @@ class AppContainer(context: Context) {
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,
         aiCoverPromptRepository = aiCoverPromptRepository,
+    )
+    val googleDriveSyncService = GoogleDriveSyncService(
+        context = appContext,
+        libraryRepository = libraryRepository,
+        deviceIdProvider = deviceIdProvider,
+        aiCoverPromptRepository = aiCoverPromptRepository,
+        googleDriveAuthService = googleDriveAuthService,
+        syncSettingsRepository = syncSettingsRepository,
+    )
+    val syncService = SyncService(
+        manualSyncService = manualSyncService,
+        googleDriveSyncService = googleDriveSyncService,
+        googleDriveAuthService = googleDriveAuthService,
+        syncSettingsRepository = syncSettingsRepository,
+    )
+    val syncWorkScheduler = SyncWorkScheduler(
+        context = appContext,
+        syncSettingsRepository = syncSettingsRepository,
     )
 }

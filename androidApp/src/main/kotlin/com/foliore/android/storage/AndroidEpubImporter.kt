@@ -15,6 +15,7 @@ import com.foliore.shared.epub.EpubParser
 import com.foliore.shared.library.LibraryRepository
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.security.MessageDigest
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -46,17 +47,37 @@ class AndroidEpubImporter(
             return@withContext EpubImportResult.Failed(ImportFailureReason.CANNOT_COPY)
         }
 
+        importCopied(displayName, copied)
+    }
+
+    suspend fun importFile(source: File): EpubImportResult = withContext(Dispatchers.IO) {
+        val displayName = source.name
+        if (!isLikelyEpub(displayName, mimeType = null)) {
+            return@withContext EpubImportResult.Failed(ImportFailureReason.NOT_EPUB)
+        }
+
+        val copied = runCatching { copyToTemp(source) }.getOrElse {
+            return@withContext EpubImportResult.Failed(ImportFailureReason.CANNOT_COPY)
+        }
+
+        importCopied(displayName, copied)
+    }
+
+    private fun importCopied(
+        displayName: String,
+        copied: CopiedEpub,
+    ): EpubImportResult {
         val duplicateBookId = libraryRepository.findBookIdByHash(copied.sha256)
         if (duplicateBookId != null) {
             copied.file.delete()
-            return@withContext EpubImportResult.Duplicate(duplicateBookId)
+            return EpubImportResult.Duplicate(duplicateBookId)
         }
 
         val bookId = UUID.randomUUID().toString()
         val bookDir = File(appContext.filesDir, "books/$bookId").apply { mkdirs() }
         val originalFile = File(bookDir, "original.epub")
 
-        try {
+        return try {
             copied.file.copyTo(originalFile, overwrite = true)
             copied.file.delete()
 
@@ -144,12 +165,20 @@ class AndroidEpubImporter(
     }
 
     private fun copyToTemp(uri: Uri): CopiedEpub {
+        val input = contentResolver.openInputStream(uri) ?: error("Cannot open URI")
+        return copyToTemp(input)
+    }
+
+    private fun copyToTemp(source: File): CopiedEpub {
+        return copyToTemp(source.inputStream())
+    }
+
+    private fun copyToTemp(input: InputStream): CopiedEpub {
         val importsDir = File(appContext.cacheDir, "imports").apply { mkdirs() }
         val tempFile = File(importsDir, "${UUID.randomUUID()}.epub")
         val digest = MessageDigest.getInstance("SHA-256")
         var bytesCopied = 0L
 
-        val input = contentResolver.openInputStream(uri) ?: error("Cannot open URI")
         input.use { source ->
             FileOutputStream(tempFile).use { output ->
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)

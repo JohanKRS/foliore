@@ -1,6 +1,7 @@
 package com.foliore.android.ui.library
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -34,12 +35,24 @@ fun SettingsRoute(
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showSyncFolderGuidance by rememberSaveable { mutableStateOf(false) }
+    var showDeleteGoogleDriveBackupConfirmation by rememberSaveable { mutableStateOf(false) }
     val folderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
         if (uri != null) {
             viewModel.configureSyncFolder(uri)
         }
+    }
+    var launchGoogleDriveResolution: (android.app.PendingIntent) -> Unit = {}
+    val googleDriveAuthorizationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        viewModel.completeGoogleDriveAuthorization(result.data, launchGoogleDriveResolution)
+    }
+    launchGoogleDriveResolution = { pendingIntent ->
+        googleDriveAuthorizationLauncher.launch(
+            IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+        )
     }
     val message = notice?.type?.let { noticeMessage(it) }
 
@@ -59,7 +72,12 @@ fun SettingsRoute(
             hasOpenAiApiKey = state.hasOpenAiApiKey,
             hasGoogleBooksApiKey = state.hasGoogleBooksApiKey,
             kindleEmailSettings = state.kindleEmailSettings,
+            syncProvider = state.syncProvider,
             syncFolderLabel = state.syncFolderLabel,
+            googleDriveAccountLabel = state.googleDriveAccountLabel,
+            isGoogleDriveConnected = state.isGoogleDriveConnected,
+            isAutoSyncEnabled = state.isAutoSyncEnabled,
+            isAutoSyncWifiOnly = state.isAutoSyncWifiOnly,
             isSyncing = state.isSyncing,
             lastSyncSummary = state.lastSyncSummary,
             onThemeModeChange = onThemeModeChange,
@@ -72,6 +90,12 @@ fun SettingsRoute(
             onKindleSmtpSave = viewModel::saveKindleSmtpSettings,
             onKindleSmtpClear = viewModel::clearKindleSmtpSettings,
             onChooseSyncFolder = { showSyncFolderGuidance = true },
+            onConnectGoogleDrive = {
+                viewModel.connectGoogleDrive(launchGoogleDriveResolution)
+            },
+            onDeleteGoogleDriveBackup = { showDeleteGoogleDriveBackupConfirmation = true },
+            onAutoSyncEnabledChange = viewModel::setAutoSyncEnabled,
+            onAutoSyncWifiOnlyChange = viewModel::setAutoSyncWifiOnly,
             onSyncNow = viewModel::syncNow,
             onDisconnectSync = viewModel::disconnectSync,
             modifier = Modifier.padding(paddingValues),
@@ -99,6 +123,33 @@ fun SettingsRoute(
             },
             dismissButton = {
                 TextButton(onClick = { showSyncFolderGuidance = false }) {
+                    Text(text = stringResource(R.string.settings_sync_folder_guidance_cancel))
+                }
+            },
+        )
+    }
+
+    if (showDeleteGoogleDriveBackupConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteGoogleDriveBackupConfirmation = false },
+            title = {
+                Text(text = stringResource(R.string.settings_sync_google_drive_delete_backup_title))
+            },
+            text = {
+                Text(text = stringResource(R.string.settings_sync_google_drive_delete_backup_body))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteGoogleDriveBackupConfirmation = false
+                        viewModel.deleteGoogleDriveBackup(launchGoogleDriveResolution)
+                    },
+                ) {
+                    Text(text = stringResource(R.string.settings_sync_google_drive_delete_backup_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteGoogleDriveBackupConfirmation = false }) {
                     Text(text = stringResource(R.string.settings_sync_folder_guidance_cancel))
                 }
             },

@@ -14,6 +14,9 @@ sealed interface ManualSyncResult {
     data object NotConfigured : ManualSyncResult
     data object FolderUnavailable : ManualSyncResult
     data object FolderLooksLikeLibrarySubfolder : ManualSyncResult
+    data object GoogleDriveAuthorizationRequired : ManualSyncResult
+    data object GoogleDriveQuotaExceeded : ManualSyncResult
+    data object GoogleDriveUnavailable : ManualSyncResult
     data object Failed : ManualSyncResult
 }
 
@@ -26,7 +29,14 @@ data class ManualSyncProgress(
 enum class ManualSyncPhase {
     PREPARING,
     CHECKING_REMOTE,
+    DOWNLOADING,
     UPLOADING,
     WRITING_MANIFEST,
     APPLYING_STATUS,
+}
+
+enum class SyncProvider {
+    NONE,
+    MANUAL_FOLDER,
+    GOOGLE_DRIVE_APPDATA,
 }

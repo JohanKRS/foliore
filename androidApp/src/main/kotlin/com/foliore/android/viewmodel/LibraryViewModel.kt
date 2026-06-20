@@ -1,5 +1,6 @@
 package com.foliore.android.viewmodel
 
+import android.app.PendingIntent
 import android.net.Uri
 import android.content.Intent
 import androidx.lifecycle.ViewModel
@@ -28,9 +29,12 @@ import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.ManualSyncPhase
 import com.foliore.android.storage.ManualSyncProgress
 import com.foliore.android.storage.ManualSyncResult
-import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.PreparedEpubResult
+import com.foliore.android.storage.GoogleDriveConnectionResult
+import com.foliore.android.storage.SyncProvider
+import com.foliore.android.storage.SyncService
+import com.foliore.android.storage.SyncWorkScheduler
 import com.foliore.shared.domain.BatchMetadataPatch
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
@@ -50,7 +54,8 @@ class LibraryViewModel(
     private val bookEditor: AndroidBookEditor,
     private val bookDeleter: AndroidBookDeleter,
     private val preparedEpubService: AndroidPreparedEpubService,
-    private val manualSyncService: ManualSyncService,
+    private val syncService: SyncService,
+    private val syncWorkScheduler: SyncWorkScheduler,
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
@@ -71,10 +76,12 @@ class LibraryViewModel(
 
     private val _notice = MutableStateFlow<LibraryNotice?>(null)
     val notice: StateFlow<LibraryNotice?> = _notice.asStateFlow()
+    private var pendingGoogleDriveOperation: GoogleDriveOperation = GoogleDriveOperation.Connect
 
     init {
         refresh()
-        refreshSyncFolder()
+        refreshSyncState()
+        syncWorkScheduler.refreshPeriodicSync()
     }
 
     fun refresh() {
@@ -128,6 +135,9 @@ class LibraryViewModel(
                 libraryRepository.getBooks()
             }
             _state.update { it.withBooks(books).copy(isImporting = false, importProgress = null) }
+            if (imported > 0) {
+                enqueueAutoSync()
+            }
             _notice.value = LibraryNotice(
                 type = when {
                     imported > 0 && duplicates == 0 && failed == 0 -> LibraryNoticeType.IMPORTED
@@ -458,6 +468,7 @@ class LibraryViewModel(
     fun saveSelectedCoverPrompt(record: AiCoverPromptRecord) {
         val records = aiCoverPromptRepository.save(record)
         _state.update { it.copy(aiCoverPromptRecords = records) }
+        enqueueAutoSync()
         _notice.value = LibraryNotice(LibraryNoticeType.AI_COVER_PROMPT_SAVED)
     }
 
@@ -547,6 +558,7 @@ class LibraryViewModel(
                 },
             )
             if (result is BatchBookEditResult.Success) {
+                enqueueAutoSync()
                 onApplied()
             }
         }
@@ -573,6 +585,9 @@ class LibraryViewModel(
                     else -> LibraryNoticeType.DELETE_FAILED
                 },
             )
+            if (deletedCount > 0) {
+                enqueueAutoSync()
+            }
         }
     }
 
@@ -592,6 +607,7 @@ class LibraryViewModel(
                     }
                     refreshBooks()
                     if (prepareResult is PreparedEpubResult.Prepared) {
+                        enqueueAutoSync()
                         _notice.value = LibraryNotice(LibraryNoticeType.METADATA_SAVED)
                         onSaved()
                     } else {
@@ -627,6 +643,7 @@ class LibraryViewModel(
                     }
                     refreshBooks()
                     if (prepareResult is PreparedEpubResult.Prepared) {
+                        enqueueAutoSync()
                         _notice.value = LibraryNotice(LibraryNoticeType.COVER_UPDATED)
                         onUpdated()
                     } else {
@@ -660,6 +677,7 @@ class LibraryViewModel(
                 },
             )
             if (result is BookDeleteResult.Deleted) {
+                enqueueAutoSync()
                 onDeleted()
             }
         }
@@ -717,15 +735,18 @@ class LibraryViewModel(
     fun configureSyncFolder(uri: Uri) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                manualSyncService.configureFolder(uri)
+                syncService.configureManualFolder(uri)
             }
             val folderLabel = when (result) {
                 is ManualSyncResult.Configured -> result.folderLabel
-                else -> withContext(Dispatchers.IO) { manualSyncService.folderLabel() }
+                else -> withContext(Dispatchers.IO) { syncService.syncLabel() }
             }
             _state.update {
                 it.copy(
+                    syncProvider = syncService.activeProvider(),
                     syncFolderLabel = folderLabel,
+                    googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
+                    isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
                     lastSyncSummary = null,
                 )
             }
@@ -755,7 +776,7 @@ class LibraryViewModel(
                 )
             }
             val result = withContext(Dispatchers.IO) {
-                manualSyncService.syncNow { progress ->
+                syncService.syncNow { progress ->
                     _state.update { current ->
                         current.copy(syncProgress = progress.toUiProgress())
                     }
@@ -765,7 +786,7 @@ class LibraryViewModel(
                 libraryRepository.getBooks()
             }
             val folderLabel = withContext(Dispatchers.IO) {
-                manualSyncService.folderLabel()
+                syncService.syncLabel()
             }
             val aiCoverPromptRecords = withContext(Dispatchers.IO) {
                 aiCoverPromptRepository.records()
@@ -775,7 +796,10 @@ class LibraryViewModel(
                     books = books,
                     isSyncing = false,
                     syncProgress = null,
+                    syncProvider = syncService.activeProvider(),
                     syncFolderLabel = folderLabel,
+                    googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
+                    isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
                     aiCoverPromptRecords = aiCoverPromptRecords,
                     lastSyncSummary = if (result is ManualSyncResult.Synced) {
                         SyncSummary(
@@ -795,15 +819,102 @@ class LibraryViewModel(
     fun disconnectSync() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                manualSyncService.disconnect()
+                syncService.disconnectActiveProvider()
             }
-            _state.update { it.copy(syncFolderLabel = null, isSyncing = false, syncProgress = null) }
+            _state.update {
+                it.copy(
+                    syncProvider = syncService.activeProvider(),
+                    syncFolderLabel = syncService.syncLabel(),
+                    googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
+                    isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
+                    isSyncing = false,
+                    syncProgress = null,
+                )
+            }
             _notice.value = LibraryNotice(LibraryNoticeType.SYNC_DISCONNECTED)
         }
     }
 
+    fun connectGoogleDrive(onResolutionRequired: (PendingIntent) -> Unit) {
+        viewModelScope.launch {
+            pendingGoogleDriveOperation = GoogleDriveOperation.Connect
+            val result = withContext(Dispatchers.IO) {
+                syncService.beginGoogleDriveConnection()
+            }
+            handleGoogleDriveConnectionResult(result, onResolutionRequired)
+        }
+    }
+
+    fun completeGoogleDriveAuthorization(
+        data: Intent?,
+        onResolutionRequired: (PendingIntent) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val result = when (pendingGoogleDriveOperation) {
+                GoogleDriveOperation.Connect -> withContext(Dispatchers.IO) {
+                    syncService.completeGoogleDriveConnection(data)
+                }
+                GoogleDriveOperation.DeleteBackup -> withContext(Dispatchers.IO) {
+                    when (val completed = syncService.completeGoogleDriveConnection(data)) {
+                        GoogleDriveConnectionResult.Connected -> syncService.deleteGoogleDriveBackup()
+                        else -> completed
+                    }
+                }
+            }
+            handleGoogleDriveConnectionResult(result, onResolutionRequired)
+        }
+    }
+
+    fun deleteGoogleDriveBackup(onResolutionRequired: (PendingIntent) -> Unit) {
+        viewModelScope.launch {
+            pendingGoogleDriveOperation = GoogleDriveOperation.DeleteBackup
+            val result = withContext(Dispatchers.IO) {
+                syncService.deleteGoogleDriveBackup()
+            }
+            handleGoogleDriveConnectionResult(result, onResolutionRequired)
+        }
+    }
+
+    fun setAutoSyncEnabled(enabled: Boolean) {
+        syncService.setAutoSyncEnabled(enabled)
+        syncWorkScheduler.refreshPeriodicSync()
+        _state.update { it.copy(isAutoSyncEnabled = syncService.autoSyncEnabled()) }
+        _notice.value = LibraryNotice(LibraryNoticeType.SYNC_AUTO_SETTINGS_UPDATED)
+    }
+
+    fun setAutoSyncWifiOnly(enabled: Boolean) {
+        syncService.setAutoSyncWifiOnly(enabled)
+        syncWorkScheduler.refreshPeriodicSync()
+        _state.update { it.copy(isAutoSyncWifiOnly = syncService.autoSyncWifiOnly()) }
+        _notice.value = LibraryNotice(LibraryNoticeType.SYNC_AUTO_SETTINGS_UPDATED)
+    }
+
     fun consumeNotice() {
         _notice.value = null
+    }
+
+    private fun handleGoogleDriveConnectionResult(
+        result: GoogleDriveConnectionResult,
+        onResolutionRequired: (PendingIntent) -> Unit,
+    ) {
+        when (result) {
+            GoogleDriveConnectionResult.Connected -> {
+                refreshSyncState()
+                _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONNECTED)
+            }
+            GoogleDriveConnectionResult.DeletedBackup -> {
+                _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_BACKUP_DELETED)
+            }
+            GoogleDriveConnectionResult.Failed -> {
+                _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE)
+            }
+            is GoogleDriveConnectionResult.NeedsResolution -> {
+                onResolutionRequired(result.pendingIntent)
+            }
+            is GoogleDriveConnectionResult.SyncFailed -> {
+                _notice.value = LibraryNotice(result.result.toNoticeType())
+            }
+        }
     }
 
     private suspend fun refreshBooks(clearBatchSelection: Boolean = false) {
@@ -825,13 +936,26 @@ class LibraryViewModel(
         }
     }
 
-    private fun refreshSyncFolder() {
+    private fun refreshSyncState() {
         viewModelScope.launch {
             val folderLabel = withContext(Dispatchers.IO) {
-                manualSyncService.folderLabel()
+                syncService.syncLabel()
             }
-            _state.update { it.copy(syncFolderLabel = folderLabel) }
+            _state.update {
+                it.copy(
+                    syncProvider = syncService.activeProvider(),
+                    syncFolderLabel = folderLabel,
+                    googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
+                    isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
+                    isAutoSyncEnabled = syncService.autoSyncEnabled(),
+                    isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
+                )
+            }
         }
+    }
+
+    private fun enqueueAutoSync() {
+        syncWorkScheduler.enqueueAutoSync()
     }
 
     private fun hasUsableOpenAiApiProvider(): Boolean {
@@ -859,6 +983,9 @@ class LibraryViewModel(
             ManualSyncResult.NotConfigured -> LibraryNoticeType.SYNC_NOT_CONFIGURED
             ManualSyncResult.FolderUnavailable -> LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE
             ManualSyncResult.FolderLooksLikeLibrarySubfolder -> LibraryNoticeType.SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER
+            ManualSyncResult.GoogleDriveAuthorizationRequired -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_AUTH_REQUIRED
+            ManualSyncResult.GoogleDriveQuotaExceeded -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_QUOTA_EXCEEDED
+            ManualSyncResult.GoogleDriveUnavailable -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE
             ManualSyncResult.Failed -> LibraryNoticeType.SYNC_FAILED
             is ManualSyncResult.Configured -> {
                 if (hasExistingLibrary) {
@@ -882,6 +1009,7 @@ class LibraryViewModel(
             phase = when (phase) {
                 ManualSyncPhase.PREPARING -> SyncProgressPhase.PREPARING
                 ManualSyncPhase.CHECKING_REMOTE -> SyncProgressPhase.CHECKING_REMOTE
+                ManualSyncPhase.DOWNLOADING -> SyncProgressPhase.DOWNLOADING
                 ManualSyncPhase.UPLOADING -> SyncProgressPhase.UPLOADING
                 ManualSyncPhase.WRITING_MANIFEST -> SyncProgressPhase.WRITING_MANIFEST
                 ManualSyncPhase.APPLYING_STATUS -> SyncProgressPhase.APPLYING_STATUS
@@ -901,4 +1029,9 @@ class LibraryViewModel(
         )
     }
 
+}
+
+private enum class GoogleDriveOperation {
+    Connect,
+    DeleteBackup,
 }

@@ -3,6 +3,7 @@ package com.foliore.android.viewmodel
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.storage.KindleEmailSettings
+import com.foliore.android.storage.SyncProvider
 import com.foliore.shared.domain.LibraryBook
 
 data class LibraryUiState(
@@ -11,7 +12,12 @@ data class LibraryUiState(
     val importProgress: SyncProgress? = null,
     val isSyncing: Boolean = false,
     val syncProgress: SyncProgress? = null,
+    val syncProvider: SyncProvider = SyncProvider.NONE,
     val syncFolderLabel: String? = null,
+    val googleDriveAccountLabel: String? = null,
+    val isGoogleDriveConnected: Boolean = false,
+    val isAutoSyncEnabled: Boolean = false,
+    val isAutoSyncWifiOnly: Boolean = true,
     val lastSyncSummary: SyncSummary? = null,
     val isSearchOpen: Boolean = false,
     val query: String = "",
@@ -97,6 +103,7 @@ enum class SyncProgressPhase {
     IMPORTING,
     PREPARING,
     CHECKING_REMOTE,
+    DOWNLOADING,
     UPLOADING,
     WRITING_MANIFEST,
     APPLYING_STATUS,
@@ -135,6 +142,12 @@ enum class LibraryNoticeType {
     SYNC_NOT_CONFIGURED,
     SYNC_FOLDER_UNAVAILABLE,
     SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER,
+    SYNC_GOOGLE_DRIVE_CONNECTED,
+    SYNC_GOOGLE_DRIVE_AUTH_REQUIRED,
+    SYNC_GOOGLE_DRIVE_QUOTA_EXCEEDED,
+    SYNC_GOOGLE_DRIVE_UNAVAILABLE,
+    SYNC_GOOGLE_DRIVE_BACKUP_DELETED,
+    SYNC_AUTO_SETTINGS_UPDATED,
     SYNC_FAILED,
     SYNC_DISCONNECTED,
     AI_SETTINGS_UPDATED,

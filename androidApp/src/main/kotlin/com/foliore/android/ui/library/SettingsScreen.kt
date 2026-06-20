@@ -20,6 +20,8 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Palette
@@ -32,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,6 +50,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.storage.KindleEmailSettings
+import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 
@@ -56,7 +60,12 @@ fun SettingsScreen(
     hasOpenAiApiKey: Boolean,
     hasGoogleBooksApiKey: Boolean,
     kindleEmailSettings: KindleEmailSettings,
+    syncProvider: SyncProvider,
     syncFolderLabel: String?,
+    googleDriveAccountLabel: String?,
+    isGoogleDriveConnected: Boolean,
+    isAutoSyncEnabled: Boolean,
+    isAutoSyncWifiOnly: Boolean,
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
@@ -69,6 +78,10 @@ fun SettingsScreen(
     onKindleSmtpSave: (String, String, String, String, String) -> Unit,
     onKindleSmtpClear: () -> Unit,
     onChooseSyncFolder: () -> Unit,
+    onConnectGoogleDrive: () -> Unit,
+    onDeleteGoogleDriveBackup: () -> Unit,
+    onAutoSyncEnabledChange: (Boolean) -> Unit,
+    onAutoSyncWifiOnlyChange: (Boolean) -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
     modifier: Modifier = Modifier,
@@ -529,6 +542,29 @@ fun SettingsScreen(
 
         SectionTitle(text = stringResource(R.string.settings_sync))
         Spacer(modifier = Modifier.height(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SelectableOptionRow(
+                selected = syncProvider == SyncProvider.MANUAL_FOLDER,
+                icon = Icons.Outlined.Folder,
+                title = stringResource(R.string.settings_sync_manual_folder),
+                description = if (syncProvider == SyncProvider.MANUAL_FOLDER && syncFolderLabel != null) {
+                    stringResource(R.string.settings_sync_configured, syncFolderLabel)
+                } else {
+                    stringResource(R.string.settings_sync_manual_folder_description)
+                },
+                onClick = onChooseSyncFolder,
+            )
+            SelectableOptionRow(
+                selected = syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA,
+                icon = Icons.Outlined.CloudSync,
+                title = stringResource(R.string.settings_sync_google_drive),
+                description = googleDriveAccountLabel?.let {
+                    stringResource(R.string.settings_sync_google_drive_configured, it)
+                } ?: stringResource(R.string.settings_sync_google_drive_description),
+                onClick = onConnectGoogleDrive,
+            )
+        }
+        Spacer(modifier = Modifier.height(14.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -540,25 +576,27 @@ fun SettingsScreen(
                 tint = MaterialTheme.colorScheme.secondary,
             )
             Column(modifier = Modifier.weight(1f)) {
+                val hasActiveProvider = syncProvider != SyncProvider.NONE &&
+                    (syncProvider != SyncProvider.GOOGLE_DRIVE_APPDATA || isGoogleDriveConnected)
                 Text(
-                    text = stringResource(R.string.settings_sync_folder),
+                    text = when (syncProvider) {
+                        SyncProvider.MANUAL_FOLDER -> stringResource(R.string.settings_sync_folder)
+                        SyncProvider.GOOGLE_DRIVE_APPDATA -> stringResource(R.string.settings_sync_google_drive)
+                        SyncProvider.NONE -> stringResource(R.string.settings_sync_no_provider)
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = syncFolderLabel?.let {
-                        stringResource(R.string.settings_sync_configured, it)
-                    } ?: stringResource(R.string.settings_sync_not_configured),
+                    text = when (syncProvider) {
+                        SyncProvider.MANUAL_FOLDER -> stringResource(R.string.settings_sync_folder_hint)
+                        SyncProvider.GOOGLE_DRIVE_APPDATA -> stringResource(R.string.settings_sync_google_drive_hint)
+                        SyncProvider.NONE -> stringResource(R.string.settings_sync_provider_hint)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.settings_sync_folder_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (syncFolderLabel != null && lastSyncSummary == null) {
+                if (hasActiveProvider && lastSyncSummary == null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.settings_sync_first_run_hint),
@@ -580,22 +618,45 @@ fun SettingsScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = onChooseSyncFolder,
-                    enabled = !isSyncing,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Folder,
-                        contentDescription = null,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.settings_sync_choose_folder))
+                if (syncProvider == SyncProvider.MANUAL_FOLDER) {
+                    OutlinedButton(
+                        onClick = onChooseSyncFolder,
+                        enabled = !isSyncing,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Folder,
+                            contentDescription = null,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.settings_sync_choose_folder))
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
-                Spacer(modifier = Modifier.height(10.dp))
+                if (syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
+                    OutlinedButton(
+                        onClick = onConnectGoogleDrive,
+                        enabled = !isSyncing,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CloudSync,
+                            contentDescription = null,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isGoogleDriveConnected) {
+                                stringResource(R.string.settings_sync_google_drive_reconnect)
+                            } else {
+                                stringResource(R.string.settings_sync_google_drive_connect)
+                            },
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
                 Button(
                     onClick = onSyncNow,
-                    enabled = !isSyncing && syncFolderLabel != null,
+                    enabled = !isSyncing && hasActiveProvider,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(
@@ -606,14 +667,14 @@ fun SettingsScreen(
                     Text(
                         text = if (isSyncing) {
                             stringResource(R.string.settings_sync_running)
-                        } else if (syncFolderLabel != null && lastSyncSummary == null) {
+                        } else if (hasActiveProvider && lastSyncSummary == null) {
                             stringResource(R.string.settings_sync_now_first_run)
                         } else {
                             stringResource(R.string.settings_sync_now)
                         },
                     )
                 }
-                if (syncFolderLabel != null) {
+                if (syncProvider != SyncProvider.NONE) {
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedButton(
                         onClick = onDisconnectSync,
@@ -627,6 +688,37 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(text = stringResource(R.string.settings_sync_disconnect))
                     }
+                }
+                if (syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA && isGoogleDriveConnected) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = onDeleteGoogleDriveBackup,
+                        enabled = !isSyncing,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.DeleteOutline,
+                            contentDescription = null,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.settings_sync_google_drive_delete_backup))
+                    }
+                }
+                if (syncProvider != SyncProvider.NONE) {
+                    Spacer(modifier = Modifier.height(18.dp))
+                    SyncSwitchRow(
+                        title = stringResource(R.string.settings_sync_auto),
+                        description = stringResource(R.string.settings_sync_auto_description),
+                        checked = isAutoSyncEnabled,
+                        onCheckedChange = onAutoSyncEnabledChange,
+                    )
+                    SyncSwitchRow(
+                        title = stringResource(R.string.settings_sync_wifi_only),
+                        description = stringResource(R.string.settings_sync_wifi_only_description),
+                        checked = isAutoSyncWifiOnly,
+                        enabled = isAutoSyncEnabled,
+                        onCheckedChange = onAutoSyncWifiOnlyChange,
+                    )
                 }
             }
         }
@@ -642,6 +734,45 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.primary,
     )
+}
+
+@Composable
+private fun SyncSwitchRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onBackground
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                },
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            enabled = enabled,
+            onCheckedChange = onCheckedChange,
+        )
+    }
 }
 
 @Composable

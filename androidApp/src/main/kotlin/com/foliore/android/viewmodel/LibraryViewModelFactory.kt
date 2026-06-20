@@ -11,8 +11,9 @@ import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.KindleEmailPreferenceRepository
-import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.MetadataPreferenceRepository
+import com.foliore.android.storage.SyncService
+import com.foliore.android.storage.SyncWorkScheduler
 import com.foliore.shared.library.LibraryRepository
 
 class LibraryViewModelFactory(
@@ -21,7 +22,8 @@ class LibraryViewModelFactory(
     private val bookEditor: AndroidBookEditor,
     private val bookDeleter: AndroidBookDeleter,
     private val preparedEpubService: AndroidPreparedEpubService,
-    private val manualSyncService: ManualSyncService,
+    private val syncService: SyncService,
+    private val syncWorkScheduler: SyncWorkScheduler,
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
@@ -38,7 +40,8 @@ class LibraryViewModelFactory(
                 bookEditor = bookEditor,
                 bookDeleter = bookDeleter,
                 preparedEpubService = preparedEpubService,
-                manualSyncService = manualSyncService,
+                syncService = syncService,
+                syncWorkScheduler = syncWorkScheduler,
                 aiPreferenceRepository = aiPreferenceRepository,
                 aiCoverPromptRepository = aiCoverPromptRepository,
                 kindleEmailPreferenceRepository = kindleEmailPreferenceRepository,
