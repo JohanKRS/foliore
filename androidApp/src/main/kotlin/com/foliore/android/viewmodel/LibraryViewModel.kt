@@ -26,6 +26,7 @@ import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.BookDeleteResult
 import com.foliore.android.storage.EpubImportResult
 import com.foliore.android.storage.KindleEmailPreferenceRepository
+import com.foliore.android.storage.LibraryDisplayPreferenceRepository
 import com.foliore.android.storage.ManualSyncPhase
 import com.foliore.android.storage.ManualSyncProgress
 import com.foliore.android.storage.ManualSyncResult
@@ -59,6 +60,7 @@ class LibraryViewModel(
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
+    private val libraryDisplayPreferenceRepository: LibraryDisplayPreferenceRepository,
     private val metadataPreferenceRepository: MetadataPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
@@ -70,6 +72,12 @@ class LibraryViewModel(
             hasGoogleBooksApiKey = metadataPreferenceRepository.hasGoogleBooksApiKey.value,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
             kindleEmailSettings = kindleEmailPreferenceRepository.settings,
+            gridColumns = libraryDisplayPreferenceRepository.gridColumns().toBookGridColumns(),
+            displayOptions = LibraryDisplayOptions(
+                showTitle = libraryDisplayPreferenceRepository.showTitle(),
+                showAuthor = libraryDisplayPreferenceRepository.showAuthor(),
+                showSeries = libraryDisplayPreferenceRepository.showSeries(),
+            ),
         ),
     )
     val state: StateFlow<LibraryUiState> = _state.asStateFlow()
@@ -170,7 +178,23 @@ class LibraryViewModel(
     }
 
     fun setGridColumns(gridColumns: BookGridColumns) {
+        libraryDisplayPreferenceRepository.setGridColumns(gridColumns.name)
         _state.update { it.copy(gridColumns = gridColumns) }
+    }
+
+    fun setShowBookTitle(enabled: Boolean) {
+        libraryDisplayPreferenceRepository.setShowTitle(enabled)
+        _state.update { it.copy(displayOptions = it.displayOptions.copy(showTitle = enabled)) }
+    }
+
+    fun setShowBookAuthor(enabled: Boolean) {
+        libraryDisplayPreferenceRepository.setShowAuthor(enabled)
+        _state.update { it.copy(displayOptions = it.displayOptions.copy(showAuthor = enabled)) }
+    }
+
+    fun setShowBookSeries(enabled: Boolean) {
+        libraryDisplayPreferenceRepository.setShowSeries(enabled)
+        _state.update { it.copy(displayOptions = it.displayOptions.copy(showSeries = enabled)) }
     }
 
     fun setAiProviderMode(providerMode: AiProviderMode) {
@@ -1029,6 +1053,12 @@ class LibraryViewModel(
         )
     }
 
+}
+
+private fun String?.toBookGridColumns(): BookGridColumns {
+    return this?.let { raw ->
+        BookGridColumns.values().firstOrNull { it.name == raw }
+    } ?: BookGridColumns.AUTO
 }
 
 private enum class GoogleDriveOperation {

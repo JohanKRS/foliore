@@ -37,8 +37,13 @@
     <string name="organization_status_label">Status</string>
     <string name="organization_series_label">Séries</string>
     <string name="organization_grid_label">Grade</string>
+    <string name="organization_display_label">Exibição</string>
     <string name="organization_selection_label">Seleção</string>
     <string name="organization_dialog_title">Organizar biblioteca</string>
+    <string name="library_display_title">Título</string>
+    <string name="library_display_author">Autor</string>
+    <string name="library_display_series">Série</string>
+    <string name="library_display_custom">Exibição personalizada</string>
     <string name="sort_imported_newest">Recentes</string>
     <string name="sort_title_asc">Título A-Z</string>
     <string name="sort_title_desc">Título Z-A</string>

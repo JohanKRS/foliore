@@ -11,6 +11,7 @@ import com.foliore.android.storage.AndroidBookDeleter
 import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.KindleEmailPreferenceRepository
+import com.foliore.android.storage.LibraryDisplayPreferenceRepository
 import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.SyncService
 import com.foliore.android.storage.SyncWorkScheduler
@@ -27,6 +28,7 @@ class LibraryViewModelFactory(
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
+    private val libraryDisplayPreferenceRepository: LibraryDisplayPreferenceRepository,
     private val metadataPreferenceRepository: MetadataPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
@@ -45,6 +47,7 @@ class LibraryViewModelFactory(
                 aiPreferenceRepository = aiPreferenceRepository,
                 aiCoverPromptRepository = aiCoverPromptRepository,
                 kindleEmailPreferenceRepository = kindleEmailPreferenceRepository,
+                libraryDisplayPreferenceRepository = libraryDisplayPreferenceRepository,
                 metadataPreferenceRepository = metadataPreferenceRepository,
                 openAiApiService = openAiApiService,
                 openMetadataLookupService = openMetadataLookupService,

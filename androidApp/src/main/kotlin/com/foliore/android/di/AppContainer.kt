@@ -15,6 +15,7 @@ import com.foliore.android.storage.DeviceIdProvider
 import com.foliore.android.storage.GoogleDriveAuthService
 import com.foliore.android.storage.GoogleDriveSyncService
 import com.foliore.android.storage.KindleEmailPreferenceRepository
+import com.foliore.android.storage.LibraryDisplayPreferenceRepository
 import com.foliore.android.storage.ManualSyncService
 import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.SyncService
@@ -35,6 +36,7 @@ class AppContainer(context: Context) {
     val aiPreferenceRepository = AiPreferenceRepository(appContext)
     val aiCoverPromptRepository = AiCoverPromptRepository(appContext)
     val kindleEmailPreferenceRepository = KindleEmailPreferenceRepository(appContext)
+    val libraryDisplayPreferenceRepository = LibraryDisplayPreferenceRepository(appContext)
     val metadataPreferenceRepository = MetadataPreferenceRepository(appContext)
     val syncSettingsRepository = SyncSettingsRepository(appContext)
     val googleDriveAuthService = GoogleDriveAuthService(appContext)

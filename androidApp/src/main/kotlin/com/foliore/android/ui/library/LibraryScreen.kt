@@ -1,16 +1,30 @@
 package com.foliore.android.ui.library
 
-import android.graphics.BitmapFactory
+import android.content.Context
+import android.graphics.Canvas as AndroidCanvas
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
+import android.text.TextUtils
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.view.accessibility.AccessibilityManager
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,8 +41,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,9 +72,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -68,19 +85,38 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.window.DialogProperties
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import coil.imageLoader
+import coil.compose.AsyncImage
+import coil.request.Disposable
+import coil.request.ImageRequest
 import com.foliore.android.R
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.BookGridColumns
 import com.foliore.android.viewmodel.BookSortOrder
+import com.foliore.android.viewmodel.LibraryDisplayOptions
 import com.foliore.android.viewmodel.LibraryUiState
 import com.foliore.android.viewmodel.SeriesFilter
 import com.foliore.shared.domain.BatchMetadataPatch
@@ -89,6 +125,7 @@ import com.foliore.shared.domain.BookStatus
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.domain.SyncStatus
 import java.io.File
+import kotlin.math.roundToInt
 
 @Composable
 fun LibraryScreen(
@@ -102,6 +139,9 @@ fun LibraryScreen(
     onSortOrderChange: (BookSortOrder) -> Unit,
     onSeriesFilterChange: (SeriesFilter) -> Unit,
     onGridColumnsChange: (BookGridColumns) -> Unit,
+    onShowBookTitleChange: (Boolean) -> Unit,
+    onShowBookAuthorChange: (Boolean) -> Unit,
+    onShowBookSeriesChange: (Boolean) -> Unit,
     onBookClick: (String) -> Unit,
     onBatchModeChange: (Boolean) -> Unit,
     onBookSelectionToggle: (String) -> Unit,
@@ -199,6 +239,7 @@ fun LibraryScreen(
                     BookGrid(
                         books = visibleBooks,
                         gridColumns = state.gridColumns,
+                        displayOptions = state.displayOptions,
                         isBatchMode = state.isBatchMode,
                         selectedBookIds = state.selectedBookIds,
                         onBookClick = onBookClick,
@@ -238,14 +279,14 @@ fun LibraryScreen(
             selectedSortOrder = state.sortOrder,
             selectedSeriesFilter = state.seriesFilter,
             selectedGridColumns = state.gridColumns,
+            selectedDisplayOptions = state.displayOptions,
             onFilterChange = onFilterChange,
             onSortOrderChange = onSortOrderChange,
             onSeriesFilterChange = onSeriesFilterChange,
             onGridColumnsChange = onGridColumnsChange,
-            onBatchModeChange = {
-                showControlsDialog = false
-                onBatchModeChange(true)
-            },
+            onShowBookTitleChange = onShowBookTitleChange,
+            onShowBookAuthorChange = onShowBookAuthorChange,
+            onShowBookSeriesChange = onShowBookSeriesChange,
             onDismiss = { showControlsDialog = false },
         )
     }
@@ -370,55 +411,103 @@ private fun LibraryControlsDialog(
     selectedSortOrder: BookSortOrder,
     selectedSeriesFilter: SeriesFilter,
     selectedGridColumns: BookGridColumns,
+    selectedDisplayOptions: LibraryDisplayOptions,
     onFilterChange: (BookFilter) -> Unit,
     onSortOrderChange: (BookSortOrder) -> Unit,
     onSeriesFilterChange: (SeriesFilter) -> Unit,
     onGridColumnsChange: (BookGridColumns) -> Unit,
-    onBatchModeChange: () -> Unit,
+    onShowBookTitleChange: (Boolean) -> Unit,
+    onShowBookAuthorChange: (Boolean) -> Unit,
+    onShowBookSeriesChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 740.dp)
-                .heightIn(max = 720.dp)
-                .padding(20.dp),
-            shape = RoundedCornerShape(8.dp),
-            color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.52f),
-            ),
-            tonalElevation = 0.dp,
-            shadowElevation = 10.dp,
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 26.dp, vertical = 22.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.organization_dialog_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                DialogDivider()
-                Spacer(modifier = Modifier.height(10.dp))
+            val horizontalMargin = if (maxWidth < 480.dp) 10.dp else 24.dp
+            val verticalMargin = if (maxHeight < 720.dp) 12.dp else 24.dp
+            val dialogMaxHeight = (maxHeight - verticalMargin * 2).coerceAtLeast(280.dp)
+            val optionsMaxHeight = (dialogMaxHeight - 118.dp).coerceAtLeast(180.dp)
+            val contentHorizontalPadding = if (maxWidth < 480.dp) 20.dp else 26.dp
 
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState()),
+            Surface(
+                modifier = Modifier
+                    .padding(horizontal = horizontalMargin, vertical = verticalMargin)
+                    .widthIn(max = 780.dp)
+                    .fillMaxWidth()
+                    .heightIn(max = dialogMaxHeight),
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.background,
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.52f),
+                ),
+                tonalElevation = 0.dp,
+                shadowElevation = 10.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = contentHorizontalPadding, vertical = 22.dp),
                 ) {
-                    if (maxWidth >= 420.dp) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.organization_dialog_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    DialogDivider()
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .heightIn(max = optionsMaxHeight)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        if (maxWidth >= 420.dp) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    StatusControlSection(
+                                        selectedFilter = selectedFilter,
+                                        onFilterChange = onFilterChange,
+                                    )
+                                    SeriesControlSection(
+                                        selectedSeriesFilter = selectedSeriesFilter,
+                                        onSeriesFilterChange = onSeriesFilterChange,
+                                    )
+                                    GridControlSection(
+                                        selectedGridColumns = selectedGridColumns,
+                                        onGridColumnsChange = onGridColumnsChange,
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    SortControlSection(
+                                        selectedSortOrder = selectedSortOrder,
+                                        onSortOrderChange = onSortOrderChange,
+                                    )
+                                    DisplayControlSection(
+                                        selectedDisplayOptions = selectedDisplayOptions,
+                                        onShowBookTitleChange = onShowBookTitleChange,
+                                        onShowBookAuthorChange = onShowBookAuthorChange,
+                                        onShowBookSeriesChange = onShowBookSeriesChange,
+                                    )
+                                }
+                            }
+                        } else {
+                            Column {
                                 StatusControlSection(
                                     selectedFilter = selectedFilter,
                                     onFilterChange = onFilterChange,
+                                )
+                                SortControlSection(
+                                    selectedSortOrder = selectedSortOrder,
+                                    onSortOrderChange = onSortOrderChange,
                                 )
                                 SeriesControlSection(
                                     selectedSeriesFilter = selectedSeriesFilter,
@@ -428,45 +517,24 @@ private fun LibraryControlsDialog(
                                     selectedGridColumns = selectedGridColumns,
                                     onGridColumnsChange = onGridColumnsChange,
                                 )
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                SortControlSection(
-                                    selectedSortOrder = selectedSortOrder,
-                                    onSortOrderChange = onSortOrderChange,
+                                DisplayControlSection(
+                                    selectedDisplayOptions = selectedDisplayOptions,
+                                    onShowBookTitleChange = onShowBookTitleChange,
+                                    onShowBookAuthorChange = onShowBookAuthorChange,
+                                    onShowBookSeriesChange = onShowBookSeriesChange,
                                 )
-                                SelectionControlSection(onBatchModeChange = onBatchModeChange)
                             }
-                        }
-                    } else {
-                        Column {
-                            StatusControlSection(
-                                selectedFilter = selectedFilter,
-                                onFilterChange = onFilterChange,
-                            )
-                            SortControlSection(
-                                selectedSortOrder = selectedSortOrder,
-                                onSortOrderChange = onSortOrderChange,
-                            )
-                            SeriesControlSection(
-                                selectedSeriesFilter = selectedSeriesFilter,
-                                onSeriesFilterChange = onSeriesFilterChange,
-                            )
-                            GridControlSection(
-                                selectedGridColumns = selectedGridColumns,
-                                onGridColumnsChange = onGridColumnsChange,
-                            )
-                            SelectionControlSection(onBatchModeChange = onBatchModeChange)
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(text = stringResource(R.string.action_done))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text(text = stringResource(R.string.action_done))
+                        }
                     }
                 }
             }
@@ -579,15 +647,30 @@ private fun GridControlSection(
 }
 
 @Composable
-private fun SelectionControlSection(onBatchModeChange: () -> Unit) {
-    LibraryControlSectionCard(label = stringResource(R.string.organization_selection_label)) {
+private fun DisplayControlSection(
+    selectedDisplayOptions: LibraryDisplayOptions,
+    onShowBookTitleChange: (Boolean) -> Unit,
+    onShowBookAuthorChange: (Boolean) -> Unit,
+    onShowBookSeriesChange: (Boolean) -> Unit,
+) {
+    LibraryControlSectionCard(label = stringResource(R.string.organization_display_label)) {
         LibraryControlOptionGrid(
-            columns = 1,
+            columns = 3,
             options = listOf(
                 LibraryControlItem(
-                    label = stringResource(R.string.action_batch_edit),
-                    selected = false,
-                    onClick = onBatchModeChange,
+                    label = stringResource(R.string.library_display_title),
+                    selected = selectedDisplayOptions.showTitle,
+                    onClick = { onShowBookTitleChange(!selectedDisplayOptions.showTitle) },
+                ),
+                LibraryControlItem(
+                    label = stringResource(R.string.library_display_author),
+                    selected = selectedDisplayOptions.showAuthor,
+                    onClick = { onShowBookAuthorChange(!selectedDisplayOptions.showAuthor) },
+                ),
+                LibraryControlItem(
+                    label = stringResource(R.string.library_display_series),
+                    selected = selectedDisplayOptions.showSeries,
+                    onClick = { onShowBookSeriesChange(!selectedDisplayOptions.showSeries) },
                 ),
             ),
         )
@@ -782,164 +865,721 @@ private fun BatchActionBar(
 private fun BookGrid(
     books: List<LibraryBook>,
     gridColumns: BookGridColumns,
+    displayOptions: LibraryDisplayOptions,
     isBatchMode: Boolean,
     selectedBookIds: Set<String>,
     onBookClick: (String) -> Unit,
     onBookSelectionToggle: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val composeView = LocalView.current
+    val accessibilityManager = remember(context) {
+        context.getSystemService(AccessibilityManager::class.java)
+    }
+    val exposeBookSemantics = accessibilityManager?.isTouchExplorationEnabled == true
+    val suppressComposeAccessibility = accessibilityManager?.isEnabled == true && !exposeBookSemantics
+    val semanticsModifier = if (exposeBookSemantics) {
+        Modifier
+    } else {
+        Modifier.clearAndSetSemantics {}
+    }
+    val currentOnBookClick by rememberUpdatedState(onBookClick)
+    val currentOnBookSelectionToggle by rememberUpdatedState(onBookSelectionToggle)
+    val colorScheme = MaterialTheme.colorScheme
+    val gridStyle = BookGridNativeStyle(
+        titleColor = colorScheme.onBackground.toArgb(),
+        authorColor = colorScheme.onSurfaceVariant.toArgb(),
+        seriesColor = colorScheme.primary.toArgb(),
+        placeholderBackgroundColor = colorScheme.surfaceVariant.toArgb(),
+        placeholderTextColor = colorScheme.onSurfaceVariant.toArgb(),
+        selectedColor = colorScheme.primary.toArgb(),
+        selectedContentColor = colorScheme.onPrimary.toArgb(),
+        badgeSurfaceColor = colorScheme.surface.toArgb(),
+        badgeOutlineColor = colorScheme.outline.toArgb(),
+        statusPrimaryColor = colorScheme.primary.toArgb(),
+        statusSecondaryColor = colorScheme.secondary.toArgb(),
+        statusErrorColor = colorScheme.error.toArgb(),
+    )
+
+    DisposableEffect(composeView, suppressComposeAccessibility) {
+        val previousImportance = composeView.importantForAccessibility
+        if (suppressComposeAccessibility) {
+            composeView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        }
+        onDispose {
+            composeView.importantForAccessibility = previousImportance
+        }
+    }
+
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val columnCount = gridColumns.columnCount(maxWidth)
-        val rows = remember(books, columnCount) { books.chunked(columnCount) }
+        val itemLayout = remember(columnCount) {
+            BookGridItemLayout.forColumnCount(columnCount)
+        }
 
-        LazyColumn(
-            contentPadding = PaddingValues(
-                start = BookGridHorizontalPadding,
-                end = BookGridHorizontalPadding,
-                top = 8.dp,
-                bottom = 32.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(BookGridVerticalSpacing),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(
-                items = rows,
-                key = { row -> row.joinToString(separator = "|") { it.book.id } },
-            ) { rowBooks ->
-                BookGridRow(
-                    books = rowBooks,
-                    columnCount = columnCount,
-                    isBatchMode = isBatchMode,
-                    selectedBookIds = selectedBookIds,
-                    onBookClick = onBookClick,
-                    onBookSelectionToggle = onBookSelectionToggle,
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(semanticsModifier),
+            factory = { viewContext ->
+                val layoutManager = GridLayoutManager(viewContext, columnCount)
+                val adapter = BookGridRecyclerAdapter()
+                val decoration = BookGridSpacingDecoration(
+                    spanCount = columnCount,
+                    horizontalSpacingPx = viewContext.dpToPx(BookGridHorizontalSpacing),
+                    verticalSpacingPx = viewContext.dpToPx(BookGridVerticalSpacing),
                 )
-            }
-        }
-    }
-}
 
-@Composable
-private fun BookGridRow(
-    books: List<LibraryBook>,
-    columnCount: Int,
-    isBatchMode: Boolean,
-    selectedBookIds: Set<String>,
-    onBookClick: (String) -> Unit,
-    onBookSelectionToggle: (String) -> Unit,
-) {
-    val coverKeys = remember(books) { books.map { it.book.id to it.coverPath() } }
-    val coverAspectRatios = remember(coverKeys) {
-        coverKeys.associate { (bookId, coverPath) ->
-            bookId to coverPath.coverAspectRatio()
-        }
-    }
-    val rowCoverAspectRatio = coverAspectRatios.values.minOrNull() ?: DefaultCoverAspectRatio
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(BookGridHorizontalSpacing),
-    ) {
-        repeat(columnCount) { index ->
-            val item = books.getOrNull(index)
-            Box(modifier = Modifier.weight(1f)) {
-                if (item != null) {
-                    BookCoverItem(
-                        item = item,
-                        coverAspectRatio = coverAspectRatios[item.book.id] ?: DefaultCoverAspectRatio,
-                        rowCoverAspectRatio = rowCoverAspectRatio,
-                        isBatchMode = isBatchMode,
-                        isSelected = item.book.id in selectedBookIds,
-                        onClick = {
-                            if (isBatchMode) {
-                                onBookSelectionToggle(item.book.id)
-                            } else {
-                                onBookClick(item.book.id)
-                            }
-                        },
-                        onLongClick = { onBookSelectionToggle(item.book.id) },
+                RecyclerView(viewContext).apply {
+                    tag = BookGridRecyclerInternals(
+                        adapter = adapter,
+                        layoutManager = layoutManager,
+                        decoration = decoration,
                     )
+                    this.layoutManager = layoutManager
+                    this.adapter = adapter
+                    itemAnimator = null
+                    setHasFixedSize(true)
+                    clipToPadding = false
+                    overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+                    setPadding(
+                        viewContext.dpToPx(BookGridHorizontalPadding),
+                        viewContext.dpToPx(8.dp),
+                        viewContext.dpToPx(BookGridHorizontalPadding),
+                        viewContext.dpToPx(32.dp),
+                    )
+                    addItemDecoration(decoration)
                 }
-            }
+            },
+            update = { recyclerView ->
+                val internals = recyclerView.tag as BookGridRecyclerInternals
+                internals.layoutManager.spanCount = columnCount
+                internals.decoration.update(
+                    spanCount = columnCount,
+                    horizontalSpacingPx = recyclerView.context.dpToPx(BookGridHorizontalSpacing),
+                    verticalSpacingPx = recyclerView.context.dpToPx(BookGridVerticalSpacing),
+                )
+                recyclerView.invalidateItemDecorations()
+                internals.adapter.onBookClick = { bookId ->
+                    if (isBatchMode) {
+                        currentOnBookSelectionToggle(bookId)
+                    } else {
+                        currentOnBookClick(bookId)
+                    }
+                }
+                internals.adapter.onBookLongClick = { bookId ->
+                    currentOnBookSelectionToggle(bookId)
+                }
+                internals.adapter.submit(
+                    books = books,
+                    selectedBookIds = selectedBookIds,
+                    isBatchMode = isBatchMode,
+                    exposeBookSemantics = exposeBookSemantics,
+                    style = gridStyle,
+                    itemLayout = itemLayout,
+                    displayOptions = displayOptions,
+                )
+            },
+        )
+    }
+}
+
+private data class BookGridRecyclerInternals(
+    val adapter: BookGridRecyclerAdapter,
+    val layoutManager: GridLayoutManager,
+    val decoration: BookGridSpacingDecoration,
+)
+
+private data class BookGridNativeStyle(
+    val titleColor: Int,
+    val authorColor: Int,
+    val seriesColor: Int,
+    val placeholderBackgroundColor: Int,
+    val placeholderTextColor: Int,
+    val selectedColor: Int,
+    val selectedContentColor: Int,
+    val badgeSurfaceColor: Int,
+    val badgeOutlineColor: Int,
+    val statusPrimaryColor: Int,
+    val statusSecondaryColor: Int,
+    val statusErrorColor: Int,
+) {
+    fun statusColor(status: BookStatus, syncStatus: SyncStatus): Int {
+        return when {
+            syncStatus == SyncStatus.CONFLICT || syncStatus == SyncStatus.SYNC_ERROR -> statusErrorColor
+            status == BookStatus.ERROR -> statusErrorColor
+            status == BookStatus.NEEDS_REVIEW -> statusErrorColor
+            syncStatus == SyncStatus.SYNCED -> statusSecondaryColor
+            else -> statusPrimaryColor
         }
     }
 }
 
+private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>() {
+    var onBookClick: (String) -> Unit = {}
+    var onBookLongClick: (String) -> Unit = {}
+
+    private var books: List<LibraryBook> = emptyList()
+    private var selectedBookIds: Set<String> = emptySet()
+    private var isBatchMode: Boolean = false
+    private var exposeBookSemantics: Boolean = false
+    private var style: BookGridNativeStyle? = null
+    private var itemLayout: BookGridItemLayout? = null
+    private var displayOptions: LibraryDisplayOptions = LibraryDisplayOptions()
+
+    init {
+        setHasStableIds(true)
+    }
+
+    fun submit(
+        books: List<LibraryBook>,
+        selectedBookIds: Set<String>,
+        isBatchMode: Boolean,
+        exposeBookSemantics: Boolean,
+        style: BookGridNativeStyle,
+        itemLayout: BookGridItemLayout,
+        displayOptions: LibraryDisplayOptions,
+    ) {
+        this.books = books
+        this.selectedBookIds = selectedBookIds
+        this.isBatchMode = isBatchMode
+        this.exposeBookSemantics = exposeBookSemantics
+        this.style = style
+        this.itemLayout = itemLayout
+        this.displayOptions = displayOptions
+        notifyDataSetChanged()
+    }
+
+    override fun getItemId(position: Int): Long {
+        return books[position].book.id.hashCode().toLong()
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookGridViewHolder {
+        return BookGridViewHolder(BookGridItemView(parent.context))
+    }
+
+    override fun onBindViewHolder(holder: BookGridViewHolder, position: Int) {
+        val book = books[position]
+        holder.item.bind(
+            item = book,
+            isSelected = book.book.id in selectedBookIds,
+            isBatchMode = isBatchMode,
+            exposeBookSemantics = exposeBookSemantics,
+            style = checkNotNull(style),
+            itemLayout = checkNotNull(itemLayout),
+            displayOptions = displayOptions,
+            onClick = onBookClick,
+            onLongClick = onBookLongClick,
+        )
+    }
+
+    override fun onViewRecycled(holder: BookGridViewHolder) {
+        holder.item.clear()
+    }
+
+    override fun getItemCount(): Int = books.size
+}
+
+private class BookGridViewHolder(val item: BookGridItemView) : RecyclerView.ViewHolder(item)
+
+private class BookGridItemView(context: Context) : LinearLayout(context) {
+    private val coverFrame = AspectRatioFrameLayout(context)
+    private val coverImage = ImageView(context)
+    private val placeholder = TextView(context)
+    private val selectionBadge = SelectionBadgeView(context)
+    private val statusMarker = StatusMarkerView(context)
+    private val titleView = TextView(context)
+    private val authorView = TextView(context)
+    private val seriesView = TextView(context)
+    private var imageDisposable: Disposable? = null
+
+    init {
+        orientation = VERTICAL
+        layoutParams = RecyclerView.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+
+        coverFrame.clipToOutline = true
+        coverFrame.addView(
+            coverImage,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
+        coverFrame.addView(
+            placeholder,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER,
+            ),
+        )
+        coverFrame.addView(
+            selectionBadge,
+            FrameLayout.LayoutParams(
+                context.dpToPx(28.dp),
+                context.dpToPx(28.dp),
+                Gravity.TOP or Gravity.END,
+            ).apply {
+                topMargin = context.dpToPx(8.dp)
+                marginEnd = context.dpToPx(8.dp)
+            },
+        )
+        coverFrame.addView(
+            statusMarker,
+            FrameLayout.LayoutParams(
+                context.dpToPx(14.dp),
+                context.dpToPx(14.dp),
+                Gravity.TOP or Gravity.END,
+            ).apply {
+                topMargin = context.dpToPx(8.dp)
+                marginEnd = context.dpToPx(8.dp)
+            },
+        )
+        addView(
+            coverFrame,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        addView(titleView, textLayoutParams())
+        addView(authorView, textLayoutParams())
+        addView(seriesView, textLayoutParams())
+
+        coverImage.scaleType = ImageView.ScaleType.FIT_XY
+        placeholder.text = context.getString(R.string.cover_placeholder)
+        placeholder.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+        placeholder.typeface = Typeface.DEFAULT_BOLD
+        placeholder.gravity = Gravity.CENTER
+
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        titleView.typeface = Typeface.DEFAULT_BOLD
+        titleView.ellipsize = TextUtils.TruncateAt.END
+
+        listOf(authorView, seriesView).forEach { view ->
+            view.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            view.ellipsize = TextUtils.TruncateAt.END
+            view.maxLines = 1
+        }
+    }
+
+    fun bind(
+        item: LibraryBook,
+        isSelected: Boolean,
+        isBatchMode: Boolean,
+        exposeBookSemantics: Boolean,
+        style: BookGridNativeStyle,
+        itemLayout: BookGridItemLayout,
+        displayOptions: LibraryDisplayOptions,
+        onClick: (String) -> Unit,
+        onLongClick: (String) -> Unit,
+    ) {
+        val viewContext = context
+        val title = item.metadata.title
+        val displayedAuthor = item.metadata.authors.firstOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?: viewContext.getString(R.string.book_unknown_author)
+        val seriesLabel = item.metadata.seriesLabel()
+        val coverPath = item.coverPath()
+        val showTitle = displayOptions.showTitle
+        val showAuthor = displayOptions.showAuthor
+        val showSeries = displayOptions.showSeries && seriesLabel != null
+        val showStatus = item.hasProminentGridStatus()
+
+        setOnClickListener { onClick(item.book.id) }
+        setOnLongClickListener {
+            onLongClick(item.book.id)
+            true
+        }
+
+        if (exposeBookSemantics) {
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+            contentDescription = listOfNotNull(
+                title,
+                displayedAuthor,
+                seriesLabel,
+            ).filter { it.isNotBlank() }.joinToString(separator = ". ")
+        } else {
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            contentDescription = null
+        }
+
+        coverFrame.background = roundedDrawable(
+            color = style.placeholderBackgroundColor,
+            radiusPx = viewContext.dpToPx(6.dp).toFloat(),
+        )
+        coverFrame.foreground = if (isSelected) {
+            roundedDrawable(
+                color = android.graphics.Color.TRANSPARENT,
+                radiusPx = viewContext.dpToPx(6.dp).toFloat(),
+                strokeColor = style.selectedColor,
+                strokeWidthPx = viewContext.dpToPx(2.dp),
+            )
+        } else {
+            null
+        }
+
+        titleView.text = title
+        titleView.setTextColor(style.titleColor)
+        titleView.maxLines = itemLayout.titleMaxLines
+
+        authorView.text = displayedAuthor
+        authorView.setTextColor(style.authorColor)
+
+        seriesView.text = seriesLabel.orEmpty()
+        seriesView.setTextColor(style.seriesColor)
+
+        titleView.visibility = if (showTitle) View.VISIBLE else View.GONE
+        authorView.visibility = if (showAuthor) View.VISIBLE else View.GONE
+        seriesView.visibility = if (showSeries) View.VISIBLE else View.GONE
+        applyTextSpacing(itemLayout.textTopSpacing, showTitle, showAuthor, showSeries)
+
+        placeholder.setTextColor(style.placeholderTextColor)
+        placeholder.visibility = if (coverPath == null) View.VISIBLE else View.GONE
+        coverImage.visibility = if (coverPath == null) View.GONE else View.VISIBLE
+        imageDisposable?.dispose()
+        imageDisposable = null
+        coverImage.setImageDrawable(null)
+        if (coverPath != null) {
+            val request = ImageRequest.Builder(viewContext)
+                .data(File(coverPath))
+                .target(coverImage)
+                .size(itemLayout.coverDecodeWidthPx, itemLayout.coverDecodeHeightPx)
+                .crossfade(false)
+                .allowHardware(true)
+                .build()
+            imageDisposable = viewContext.imageLoader.enqueue(request)
+        }
+
+        selectionBadge.visibility = if (isBatchMode) View.VISIBLE else View.GONE
+        selectionBadge.setState(
+            selected = isSelected,
+            selectedColor = style.selectedColor,
+            selectedContentColor = style.selectedContentColor,
+            surfaceColor = style.badgeSurfaceColor,
+            outlineColor = style.badgeOutlineColor,
+        )
+
+        statusMarker.visibility = if (!isBatchMode && showStatus) View.VISIBLE else View.GONE
+        statusMarker.setColors(
+            fillColor = style.statusColor(item.book.status, item.book.syncStatus),
+            strokeColor = style.badgeSurfaceColor,
+        )
+    }
+
+    fun clear() {
+        imageDisposable?.dispose()
+        imageDisposable = null
+        coverImage.setImageDrawable(null)
+    }
+
+    private fun applyTextSpacing(
+        topSpacing: Dp,
+        showTitle: Boolean,
+        showAuthor: Boolean,
+        showSeries: Boolean,
+    ) {
+        var firstVisibleApplied = false
+        listOf(
+            titleView to showTitle,
+            authorView to showAuthor,
+            seriesView to showSeries,
+        ).forEach { (view, visible) ->
+            val params = view.layoutParams as LinearLayout.LayoutParams
+            params.topMargin = if (visible && !firstVisibleApplied) {
+                context.dpToPx(topSpacing)
+            } else {
+                0
+            }
+            view.layoutParams = params
+            if (visible) {
+                firstVisibleApplied = true
+            }
+        }
+    }
+
+    private fun textLayoutParams(): LinearLayout.LayoutParams {
+        return LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
+    }
+}
+
+private class AspectRatioFrameLayout(context: Context) : FrameLayout(context) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        val height = (width / DefaultCoverAspectRatio).roundToInt()
+        super.onMeasure(
+            widthMeasureSpec,
+            MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
+        )
+    }
+}
+
+private class SelectionBadgeView(context: Context) : View(context) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var selected = false
+    private var selectedColor = android.graphics.Color.BLACK
+    private var selectedContentColor = android.graphics.Color.WHITE
+    private var surfaceColor = android.graphics.Color.WHITE
+    private var outlineColor = android.graphics.Color.GRAY
+
+    fun setState(
+        selected: Boolean,
+        selectedColor: Int,
+        selectedContentColor: Int,
+        surfaceColor: Int,
+        outlineColor: Int,
+    ) {
+        this.selected = selected
+        this.selectedColor = selectedColor
+        this.selectedContentColor = selectedContentColor
+        this.surfaceColor = surfaceColor
+        this.outlineColor = outlineColor
+        invalidate()
+    }
+
+    override fun onDraw(canvas: AndroidCanvas) {
+        super.onDraw(canvas)
+        val radius = width.coerceAtMost(height) / 2f
+        paint.style = Paint.Style.FILL
+        paint.color = if (selected) selectedColor else surfaceColor
+        canvas.drawCircle(width / 2f, height / 2f, radius, paint)
+
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = context.dpToPx(1.dp).toFloat()
+        paint.color = if (selected) selectedColor else outlineColor
+        canvas.drawCircle(width / 2f, height / 2f, radius - paint.strokeWidth / 2f, paint)
+
+        if (selected) {
+            paint.color = selectedContentColor
+            paint.strokeWidth = context.dpToPx(2.dp).toFloat()
+            paint.strokeCap = Paint.Cap.ROUND
+            canvas.drawLine(width * 0.30f, height * 0.52f, width * 0.45f, height * 0.67f, paint)
+            canvas.drawLine(width * 0.45f, height * 0.67f, width * 0.72f, height * 0.34f, paint)
+        }
+    }
+}
+
+private class StatusMarkerView(context: Context) : View(context) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var fillColor = android.graphics.Color.BLACK
+    private var strokeColor = android.graphics.Color.WHITE
+
+    fun setColors(fillColor: Int, strokeColor: Int) {
+        this.fillColor = fillColor
+        this.strokeColor = strokeColor
+        invalidate()
+    }
+
+    override fun onDraw(canvas: AndroidCanvas) {
+        super.onDraw(canvas)
+        val radius = width.coerceAtMost(height) / 2f
+        paint.style = Paint.Style.FILL
+        paint.color = fillColor
+        canvas.drawCircle(width / 2f, height / 2f, radius, paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = context.dpToPx(1.dp).toFloat()
+        paint.color = strokeColor
+        canvas.drawCircle(width / 2f, height / 2f, radius - paint.strokeWidth / 2f, paint)
+    }
+}
+
+private class BookGridSpacingDecoration(
+    private var spanCount: Int,
+    private var horizontalSpacingPx: Int,
+    private var verticalSpacingPx: Int,
+) : RecyclerView.ItemDecoration() {
+    fun update(
+        spanCount: Int,
+        horizontalSpacingPx: Int,
+        verticalSpacingPx: Int,
+    ) {
+        this.spanCount = spanCount.coerceAtLeast(1)
+        this.horizontalSpacingPx = horizontalSpacingPx
+        this.verticalSpacingPx = verticalSpacingPx
+    }
+
+    override fun getItemOffsets(
+        outRect: Rect,
+        view: View,
+        parent: RecyclerView,
+        state: RecyclerView.State,
+    ) {
+        val position = parent.getChildAdapterPosition(view)
+        if (position == RecyclerView.NO_POSITION) return
+
+        val column = position % spanCount
+        outRect.left = column * horizontalSpacingPx / spanCount
+        outRect.right = horizontalSpacingPx - (column + 1) * horizontalSpacingPx / spanCount
+        outRect.bottom = verticalSpacingPx
+    }
+}
+
+private fun roundedDrawable(
+    color: Int,
+    radiusPx: Float,
+    strokeColor: Int? = null,
+    strokeWidthPx: Int = 0,
+): GradientDrawable {
+    return GradientDrawable().apply {
+        setColor(color)
+        cornerRadius = radiusPx
+        if (strokeColor != null && strokeWidthPx > 0) {
+            setStroke(strokeWidthPx, strokeColor)
+        }
+    }
+}
+
+private fun Context.dpToPx(dp: Dp): Int {
+    return (dp.value * resources.displayMetrics.density).roundToInt()
+}
+
 @Composable
-@OptIn(ExperimentalFoundationApi::class)
 private fun BookCoverItem(
     item: LibraryBook,
-    coverAspectRatio: Float,
-    rowCoverAspectRatio: Float,
+    itemLayout: BookGridItemLayout,
+    exposeBookSemantics: Boolean,
     isBatchMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     val title = item.metadata.title
+    val currentOnClick by rememberUpdatedState(onClick)
+    val currentOnLongClick by rememberUpdatedState(onLongClick)
     val author = item.metadata.authors.firstOrNull().orEmpty()
-    val seriesLabel = item.metadata.seriesLabel()
+    val needsAuthor = itemLayout.showAuthor || exposeBookSemantics
+    val needsSeries = itemLayout.showSeries || exposeBookSemantics
+    val showCompactStatus = item.hasProminentGridStatus()
+    val needsStatus = showCompactStatus || exposeBookSemantics
+    val displayedAuthor = if (needsAuthor) {
+        author.ifBlank { stringResource(R.string.book_unknown_author) }
+    } else {
+        ""
+    }
+    val seriesLabel = if (needsSeries) item.metadata.seriesLabel() else null
     val coverPath = item.coverPath()
+    val statusLabel = if (needsStatus) {
+        bookStatusLabel(status = item.book.status, syncStatus = item.book.syncStatus)
+    } else {
+        null
+    }
+    val accessibilityLabel = remember(title, displayedAuthor, seriesLabel, statusLabel) {
+        listOfNotNull(title, displayedAuthor, seriesLabel, statusLabel.orEmpty())
+            .filter { it.isNotBlank() }
+            .joinToString(separator = ". ")
+    }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (exposeBookSemantics) {
+                    Modifier.clearAndSetSemantics {
+                        contentDescription = accessibilityLabel
+                        role = Role.Button
+                        onClick {
+                            currentOnClick()
+                            true
+                        }
+                        onLongClick {
+                            currentOnLongClick()
+                            true
+                        }
+                        if (isBatchMode) {
+                            selected = isSelected
+                        }
+                    }
+                } else {
+                    Modifier
+                }
+            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { currentOnClick() },
+                    onLongPress = { currentOnLongClick() },
+                )
+            },
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(rowCoverAspectRatio),
+                .aspectRatio(DefaultCoverAspectRatio)
+                .then(
+                    if (isSelected) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(6.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .aspectRatio(coverAspectRatio)
-                    .border(
-                        width = if (isSelected) 2.dp else 0.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(6.dp),
-                    )
-                    .combinedClickable(
-                        onClick = onClick,
-                        onLongClick = onLongClick,
-                    ),
-            ) {
-                if (coverPath != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = File(coverPath)),
-                        contentDescription = stringResource(R.string.cover_content_description, title),
-                        alignment = Alignment.BottomCenter,
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    CoverPlaceholder(modifier = Modifier.fillMaxSize())
+            if (coverPath != null) {
+                val coverRequest = remember(context, coverPath, itemLayout.coverDecodeWidthPx) {
+                    ImageRequest.Builder(context)
+                        .data(File(coverPath))
+                        .size(itemLayout.coverDecodeWidthPx, itemLayout.coverDecodeHeightPx)
+                        .crossfade(false)
+                        .allowHardware(true)
+                        .build()
                 }
 
-                if (isBatchMode) {
-                    SelectionBadge(
-                        selected = isSelected,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp),
-                    )
-                }
+                AsyncImage(
+                    model = coverRequest,
+                    contentDescription = null,
+                    alignment = Alignment.BottomCenter,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                CoverPlaceholder(modifier = Modifier.fillMaxSize())
+            }
+
+            if (isBatchMode) {
+                SelectionBadge(
+                    selected = isSelected,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                )
+            } else if (showCompactStatus) {
+                CompactStatusMarker(
+                    status = item.book.status,
+                    syncStatus = item.book.syncStatus,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(itemLayout.textTopSpacing))
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 2,
+            maxLines = itemLayout.titleMaxLines,
             overflow = TextOverflow.Ellipsis,
         )
-        Text(
-            text = author.ifBlank { stringResource(R.string.book_unknown_author) },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (seriesLabel != null) {
+        if (itemLayout.showAuthor) {
+            Text(
+                text = displayedAuthor,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (itemLayout.showSeries && seriesLabel != null) {
             Text(
                 text = seriesLabel,
                 style = MaterialTheme.typography.bodySmall,
@@ -948,11 +1588,6 @@ private fun BookCoverItem(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        StatusPill(
-            status = item.book.status,
-            syncStatus = item.book.syncStatus,
-        )
     }
 }
 
@@ -1166,14 +1801,7 @@ fun StatusPill(
     syncStatus: SyncStatus,
     modifier: Modifier = Modifier,
 ) {
-    val label = when {
-        syncStatus == SyncStatus.CONFLICT -> stringResource(R.string.status_conflict)
-        syncStatus == SyncStatus.SYNC_ERROR -> stringResource(R.string.status_sync_error)
-        syncStatus == SyncStatus.SYNCED -> stringResource(R.string.status_synced)
-        syncStatus == SyncStatus.PENDING_UPLOAD -> stringResource(R.string.status_pending_upload)
-        syncStatus == SyncStatus.PENDING_DOWNLOAD -> stringResource(R.string.status_pending_download)
-        else -> stringResource(status.labelRes())
-    }
+    val label = bookStatusLabel(status = status, syncStatus = syncStatus)
     val tint = when {
         syncStatus == SyncStatus.CONFLICT || syncStatus == SyncStatus.SYNC_ERROR -> MaterialTheme.colorScheme.error
         status == BookStatus.ERROR -> MaterialTheme.colorScheme.error
@@ -1199,6 +1827,124 @@ fun StatusPill(
             color = tint.copy(alpha = 0.9f),
             maxLines = 1,
         )
+    }
+}
+
+@Composable
+private fun BookGridStatusPill(
+    status: BookStatus,
+    syncStatus: SyncStatus,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    val tint = when {
+        syncStatus == SyncStatus.CONFLICT || syncStatus == SyncStatus.SYNC_ERROR -> MaterialTheme.colorScheme.error
+        status == BookStatus.ERROR -> MaterialTheme.colorScheme.error
+        syncStatus == SyncStatus.SYNCED -> MaterialTheme.colorScheme.secondary
+        status == BookStatus.NEEDS_REVIEW -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.primary
+    }
+
+    Box(
+        modifier = modifier
+            .border(
+                width = 0.75.dp,
+                color = tint.copy(alpha = 0.48f),
+                shape = RoundedCornerShape(3.dp),
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                letterSpacing = 0.sp,
+            ),
+            color = tint.copy(alpha = 0.9f),
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun CompactStatusMarker(
+    status: BookStatus,
+    syncStatus: SyncStatus,
+    modifier: Modifier = Modifier,
+) {
+    val tint = when {
+        syncStatus == SyncStatus.CONFLICT || syncStatus == SyncStatus.SYNC_ERROR -> MaterialTheme.colorScheme.error
+        status == BookStatus.ERROR -> MaterialTheme.colorScheme.error
+        status == BookStatus.NEEDS_REVIEW -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.primary
+    }
+
+    Box(
+        modifier = modifier
+            .size(14.dp)
+            .background(
+                color = tint.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(7.dp),
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                shape = RoundedCornerShape(7.dp),
+            ),
+    )
+}
+
+private data class BookGridItemLayout(
+    val coverDecodeWidthPx: Int,
+    val titleMaxLines: Int,
+    val showAuthor: Boolean,
+    val showSeries: Boolean,
+    val textTopSpacing: Dp,
+) {
+    val coverDecodeHeightPx: Int = (coverDecodeWidthPx * 1.5f).toInt()
+
+    companion object {
+        fun forColumnCount(columnCount: Int): BookGridItemLayout {
+            return when {
+                columnCount >= 5 -> BookGridItemLayout(
+                    coverDecodeWidthPx = 220,
+                    titleMaxLines = 2,
+                    showAuthor = true,
+                    showSeries = true,
+                    textTopSpacing = 6.dp,
+                )
+                columnCount == 4 -> BookGridItemLayout(
+                    coverDecodeWidthPx = 280,
+                    titleMaxLines = 2,
+                    showAuthor = true,
+                    showSeries = true,
+                    textTopSpacing = 7.dp,
+                )
+                else -> BookGridItemLayout(
+                    coverDecodeWidthPx = 420,
+                    titleMaxLines = 2,
+                    showAuthor = true,
+                    showSeries = true,
+                    textTopSpacing = 8.dp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun bookStatusLabel(
+    status: BookStatus,
+    syncStatus: SyncStatus,
+): String {
+    return when {
+        syncStatus == SyncStatus.CONFLICT -> stringResource(R.string.status_conflict)
+        syncStatus == SyncStatus.SYNC_ERROR -> stringResource(R.string.status_sync_error)
+        syncStatus == SyncStatus.SYNCED -> stringResource(R.string.status_synced)
+        syncStatus == SyncStatus.PENDING_UPLOAD -> stringResource(R.string.status_pending_upload)
+        syncStatus == SyncStatus.PENDING_DOWNLOAD -> stringResource(R.string.status_pending_download)
+        else -> stringResource(status.labelRes())
     }
 }
 
@@ -1329,6 +2075,7 @@ private val BookGridHorizontalPadding = 28.dp
 private val BookGridHorizontalSpacing = 28.dp
 private val BookGridVerticalSpacing = 28.dp
 private val BookGridMinCellWidth = 150.dp
+private const val BookGridAutoMaxColumns = 3
 private const val DefaultCoverAspectRatio = 2f / 3f
 
 private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
@@ -1350,7 +2097,8 @@ private fun LibraryUiState.hasActiveLibraryControls(): Boolean {
     return activeFilter != BookFilter.ALL ||
         sortOrder != BookSortOrder.IMPORTED_NEWEST ||
         seriesFilter != SeriesFilter.ALL ||
-        gridColumns != BookGridColumns.AUTO
+        gridColumns != BookGridColumns.AUTO ||
+        displayOptions != LibraryDisplayOptions()
 }
 
 @Composable
@@ -1367,6 +2115,9 @@ private fun LibraryUiState.controlsSummary(): String {
     }
     if (gridColumns != BookGridColumns.AUTO) {
         parts += stringResource(gridColumns.labelRes())
+    }
+    if (displayOptions != LibraryDisplayOptions()) {
+        parts += stringResource(R.string.library_display_custom)
     }
     return parts.joinToString(separator = " · ")
 }
@@ -1431,30 +2182,16 @@ private fun List<LibraryBook>.sortedBy(sortOrder: BookSortOrder): List<LibraryBo
 private fun LibraryBook.titleSortKey(): String = metadata.title.sortKey()
 
 private fun LibraryBook.coverPath(): String? {
-    return listOfNotNull(book.coverThumbPath, book.coverImagePath)
-        .firstOrNull { it.isReadableCoverFile() }
+    return book.coverThumbPath ?: book.coverImagePath
 }
 
-private fun String?.coverAspectRatio(): Float {
-    if (this == null) return DefaultCoverAspectRatio
-
-    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(this, options)
-    val width = options.outWidth
-    val height = options.outHeight
-
-    return if (width > 0 && height > 0) {
-        width.toFloat() / height.toFloat()
-    } else {
-        DefaultCoverAspectRatio
-    }
-}
-
-private fun String.isReadableCoverFile(): Boolean {
-    if (!File(this).isFile) return false
-    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(this, options)
-    return options.outWidth > 0 && options.outHeight > 0
+private fun LibraryBook.hasProminentGridStatus(): Boolean {
+    return book.syncStatus == SyncStatus.CONFLICT ||
+        book.syncStatus == SyncStatus.SYNC_ERROR ||
+        book.syncStatus == SyncStatus.PENDING_UPLOAD ||
+        book.syncStatus == SyncStatus.PENDING_DOWNLOAD ||
+        book.status == BookStatus.ERROR ||
+        book.status == BookStatus.NEEDS_REVIEW
 }
 
 private fun LibraryBook.authorSortKey(): String? {
@@ -1536,6 +2273,7 @@ private fun BookGridColumns.columnCount(availableWidth: Dp): Int {
     return ((contentWidth + BookGridHorizontalSpacing.value) / columnWidthWithGap)
         .toInt()
         .coerceAtLeast(1)
+        .coerceAtMost(BookGridAutoMaxColumns)
 }
 
 fun BookStatus.labelRes(): Int {

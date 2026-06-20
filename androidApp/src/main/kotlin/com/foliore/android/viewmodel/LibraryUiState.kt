@@ -25,6 +25,7 @@ data class LibraryUiState(
     val sortOrder: BookSortOrder = BookSortOrder.IMPORTED_NEWEST,
     val seriesFilter: SeriesFilter = SeriesFilter.ALL,
     val gridColumns: BookGridColumns = BookGridColumns.AUTO,
+    val displayOptions: LibraryDisplayOptions = LibraryDisplayOptions(),
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
@@ -81,6 +82,12 @@ enum class BookGridColumns(val fixedCount: Int?) {
     FIVE(5),
     SIX(6),
 }
+
+data class LibraryDisplayOptions(
+    val showTitle: Boolean = true,
+    val showAuthor: Boolean = true,
+    val showSeries: Boolean = true,
+)
 
 data class SyncSummary(
     val uploadedBooks: Int,
