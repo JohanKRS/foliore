@@ -7,6 +7,7 @@ import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +39,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -84,11 +87,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -98,6 +104,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -107,6 +114,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import coil.imageLoader
@@ -114,6 +122,7 @@ import coil.compose.AsyncImage
 import coil.request.Disposable
 import coil.request.ImageRequest
 import com.foliore.android.R
+import com.foliore.android.ui.theme.CormorantGaramondFamily
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.BookGridColumns
 import com.foliore.android.viewmodel.BookSortOrder
@@ -125,8 +134,18 @@ import com.foliore.shared.domain.BookMetadata
 import com.foliore.shared.domain.BookStatus
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.domain.SyncStatus
+import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.HazeProgressive
+import dev.chrisbanes.haze.blur.blurEffect
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import java.io.File
 import kotlin.math.roundToInt
+
+private val LibraryDividerHalfHeight = 4.dp
 
 @Composable
 fun LibraryScreen(
@@ -150,6 +169,8 @@ fun LibraryScreen(
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
     onBatchDelete: () -> Unit,
     onSettingsClick: () -> Unit,
+    chromeHazeState: HazeState? = null,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val visibleBooks = remember(
         state.books,
@@ -163,6 +184,11 @@ fun LibraryScreen(
     var showBatchDialog by rememberSaveable { mutableStateOf(false) }
     var showBatchDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showControlsDialog by rememberSaveable { mutableStateOf(false) }
+    val localHazeState = rememberHazeState()
+    val hazeState = chromeHazeState ?: localHazeState
+    val density = LocalDensity.current
+    var topChromeHeightPx by remember { mutableStateOf(0) }
+    val topChromeInset = with(density) { topChromeHeightPx.toDp() }
 
     BackHandler(
         enabled = state.isBatchMode && !showBatchDialog && !showBatchDeleteDialog && !showControlsDialog,
@@ -174,46 +200,14 @@ fun LibraryScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            LibraryHeader(
-                isSearchOpen = state.isSearchOpen,
-                query = state.query,
-                onQueryChange = onQueryChange,
-                onSearchClick = onSearchClick,
-                onCloseSearch = onCloseSearch,
-                onImportClick = onImportClick,
-                hasBooks = state.books.isNotEmpty(),
-                isBatchMode = state.isBatchMode,
-                onBatchModeChange = onBatchModeChange,
-                onOrganizeClick = { showControlsDialog = true },
-            )
-            EditorialDivider(modifier = Modifier.fillMaxWidth())
-
-            AnimatedVisibility(visible = state.isBatchMode) {
-                BatchActionBar(
-                    selectedCount = state.selectedBookIds.size,
-                    visibleBookCount = visibleBooks.size,
-                    onSelectVisible = {
-                        onSelectBooks(visibleBooks.map { it.book.id })
-                    },
-                    onEdit = { showBatchDialog = true },
-                    onDelete = { showBatchDeleteDialog = true },
-                    onCancel = {
-                        showBatchDialog = false
-                        showBatchDeleteDialog = false
-                        onBatchModeChange(false)
-                    },
-                )
-            }
-
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .clipToBounds(),
             ) {
                 when {
@@ -240,16 +234,58 @@ fun LibraryScreen(
                     }
                     else -> {
                         BookGrid(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .hazeSource(state = hazeState),
                             books = visibleBooks,
                             gridColumns = state.gridColumns,
                             displayOptions = state.displayOptions,
+                            topContentPadding = topChromeInset,
+                            bottomContentPadding = bottomChromeInset + 8.dp,
                             isBatchMode = state.isBatchMode,
                             selectedBookIds = state.selectedBookIds,
                             onBookClick = onBookClick,
                             onBookSelectionToggle = onBookSelectionToggle,
                         )
                     }
+                }
+            }
+
+            LibraryTopChrome(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .onSizeChanged { topChromeHeightPx = it.height },
+                hazeState = hazeState,
+            ) {
+                LibraryHeader(
+                    isSearchOpen = state.isSearchOpen,
+                    query = state.query,
+                    onQueryChange = onQueryChange,
+                    onSearchClick = onSearchClick,
+                    onCloseSearch = onCloseSearch,
+                    onImportClick = onImportClick,
+                    hasBooks = state.books.isNotEmpty(),
+                    isBatchMode = state.isBatchMode,
+                    onBatchModeChange = onBatchModeChange,
+                    onOrganizeClick = { showControlsDialog = true },
+                )
+
+                AnimatedVisibility(visible = state.isBatchMode) {
+                    BatchActionBar(
+                        selectedCount = state.selectedBookIds.size,
+                        visibleBookCount = visibleBooks.size,
+                        onSelectVisible = {
+                            onSelectBooks(visibleBooks.map { it.book.id })
+                        },
+                        onEdit = { showBatchDialog = true },
+                        onDelete = { showBatchDeleteDialog = true },
+                        onCancel = {
+                            showBatchDialog = false
+                            showBatchDeleteDialog = false
+                            onBatchModeChange(false)
+                        },
+                    )
                 }
             }
         }
@@ -298,6 +334,52 @@ fun LibraryScreen(
 }
 
 @Composable
+private fun LibraryTopChrome(
+    hazeState: HazeState,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val chromeTint = MaterialTheme.colorScheme.background
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clipToBounds()
+                .hazeEffect(state = hazeState) {
+                    inputScale = HazeInputScale.Fixed(0.5f)
+                    blurEffect {
+                        blurRadius = 40.dp
+                        colorEffects = listOf(
+                            HazeColorEffect.tint(chromeTint.copy(alpha = 0.68f)),
+                        )
+                        progressive = HazeProgressive.verticalGradient(
+                            startIntensity = 1f,
+                            endIntensity = 0f,
+                        )
+                    }
+                }
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0f to chromeTint.copy(alpha = 0.98f),
+                            0.56f to chromeTint.copy(alpha = 0.88f),
+                            0.86f to chromeTint.copy(alpha = 0.42f),
+                            1f to Color.Transparent,
+                        ),
+                    ),
+                ),
+            content = content,
+        )
+        EditorialDivider(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = LibraryDividerHalfHeight)
+                .fillMaxWidth(),
+        )
+    }
+}
+
+@Composable
 private fun LibraryHeader(
     isSearchOpen: Boolean,
     query: String,
@@ -313,7 +395,7 @@ private fun LibraryHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 28.dp, top = 24.dp, end = 20.dp, bottom = 16.dp),
+            .padding(start = 28.dp, top = 12.dp, end = 20.dp, bottom = 12.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -321,7 +403,12 @@ private fun LibraryHeader(
         ) {
             Text(
                 text = stringResource(R.string.library_title),
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontFamily = CormorantGaramondFamily,
+                    fontWeight = FontWeight.Light,
+                    fontSize = 38.sp,
+                    lineHeight = 42.sp,
+                ),
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -858,6 +945,8 @@ private fun BookGrid(
     books: List<LibraryBook>,
     gridColumns: BookGridColumns,
     displayOptions: LibraryDisplayOptions,
+    topContentPadding: Dp = 8.dp,
+    bottomContentPadding: Dp = 32.dp,
     isBatchMode: Boolean,
     selectedBookIds: Set<String>,
     onBookClick: (String) -> Unit,
@@ -932,14 +1021,14 @@ private fun BookGrid(
                     this.adapter = adapter
                     itemAnimator = null
                     setHasFixedSize(true)
-                    clipChildren = true
-                    clipToPadding = true
+                    clipChildren = false
+                    clipToPadding = false
                     overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
                     setPadding(
                         viewContext.dpToPx(BookGridHorizontalPadding),
-                        viewContext.dpToPx(8.dp),
+                        viewContext.dpToPx(topContentPadding),
                         viewContext.dpToPx(BookGridHorizontalPadding),
-                        viewContext.dpToPx(32.dp),
+                        viewContext.dpToPx(bottomContentPadding),
                     )
                     addItemDecoration(decoration)
                 }
@@ -951,6 +1040,12 @@ private fun BookGrid(
                     spanCount = columnCount,
                     horizontalSpacingPx = recyclerView.context.dpToPx(BookGridHorizontalSpacing),
                     verticalSpacingPx = recyclerView.context.dpToPx(BookGridVerticalSpacing),
+                )
+                recyclerView.setPadding(
+                    recyclerView.context.dpToPx(BookGridHorizontalPadding),
+                    recyclerView.context.dpToPx(topContentPadding),
+                    recyclerView.context.dpToPx(BookGridHorizontalPadding),
+                    recyclerView.context.dpToPx(bottomContentPadding),
                 )
                 recyclerView.invalidateItemDecorations()
                 internals.adapter.onBookClick = { bookId ->
@@ -1149,7 +1244,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         placeholder.gravity = Gravity.CENTER
 
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-        titleView.typeface = Typeface.DEFAULT_BOLD
+        titleView.typeface = context.cormorantGaramondTypeface(weight = 600)
         titleView.ellipsize = TextUtils.TruncateAt.END
 
         listOf(authorView, seriesView).forEach { view ->
@@ -1432,6 +1527,15 @@ private fun Context.dpToPx(dp: Dp): Int {
     return (dp.value * resources.displayMetrics.density).roundToInt()
 }
 
+private fun Context.cormorantGaramondTypeface(weight: Int): Typeface {
+    val base = ResourcesCompat.getFont(this, R.font.cormorant_garamond_wght) ?: Typeface.SERIF
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        Typeface.create(base, weight, false)
+    } else {
+        Typeface.create(base, Typeface.NORMAL)
+    }
+}
+
 @Composable
 private fun BookCoverItem(
     item: LibraryBook,
@@ -1558,7 +1662,12 @@ private fun BookCoverItem(
         Spacer(modifier = Modifier.height(itemLayout.textTopSpacing))
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = CormorantGaramondFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                lineHeight = 17.sp,
+            ),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = itemLayout.titleMaxLines,
             overflow = TextOverflow.Ellipsis,

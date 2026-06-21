@@ -2,9 +2,19 @@ package com.foliore.android.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.foliore.android.R
+
+val CormorantGaramondFamily = FontFamily(
+    Font(R.font.cormorant_garamond_wght, weight = FontWeight.Light),
+    Font(R.font.cormorant_garamond_wght, weight = FontWeight.Normal),
+    Font(R.font.cormorant_garamond_wght, weight = FontWeight.Medium),
+    Font(R.font.cormorant_garamond_wght, weight = FontWeight.SemiBold),
+    Font(R.font.cormorant_garamond_wght, weight = FontWeight.Bold),
+)
 
 val FolioreTypography = Typography(
     displayLarge = TextStyle(

@@ -1,8 +1,7 @@
 [versions]
-agp = "8.5.2"
-kotlin = "1.9.24"
-composeBom = "2024.06.00"
-composeCompiler = "1.5.14"
+agp = "9.2.1"
+kotlin = "2.3.21"
+composeBom = "2026.06.00"
 activityCompose = "1.9.2"
 navigationCompose = "2.7.7"
 lifecycle = "2.8.4"
@@ -16,6 +15,7 @@ sqldelight = "2.0.2"
 coil = "2.6.0"
 playServicesAuth = "21.6.0"
 workManager = "2.10.5"
+haze = "2.0.0-alpha03"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -35,6 +35,8 @@ androidx-compose-material-icons-extended = { module = "androidx.compose.material
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 google-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
+haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
@@ -47,7 +49,8 @@ sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", versi
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

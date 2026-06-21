@@ -7,14 +7,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.viewmodel.LibraryViewModel
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun LibraryRoute(
     viewModel: LibraryViewModel,
     onBookClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
+    chromeHazeState: HazeState? = null,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -56,5 +61,7 @@ fun LibraryRoute(
         onBatchUpdate = viewModel::applyBatchMetadata,
         onBatchDelete = viewModel::deleteSelectedBooks,
         onSettingsClick = onSettingsClick,
+        chromeHazeState = chromeHazeState,
+        bottomChromeInset = bottomChromeInset,
     )
 }

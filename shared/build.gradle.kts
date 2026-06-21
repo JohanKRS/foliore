@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.sqldelight)
 }
@@ -8,12 +8,14 @@ plugins {
 kotlin {
     val isMacOs = System.getProperty("os.name") == "Mac OS X"
 
-    androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
+    android {
+        namespace = "com.foliore.shared"
+        compileSdk = 36
+        minSdk = 26
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
+        withHostTest {}
     }
 
     if (isMacOs) {
@@ -49,20 +51,6 @@ kotlin {
                 }
             }
         }
-    }
-}
-
-android {
-    namespace = "com.foliore.shared"
-    compileSdk = 35
-
-    defaultConfig {
-        minSdk = 26
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 

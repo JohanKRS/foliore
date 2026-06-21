@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Save
@@ -46,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,8 +71,16 @@ import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
+import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.HazeProgressive
+import dev.chrisbanes.haze.blur.blurEffect
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.rememberHazeState
 
 private val BottomBarHeight = 94.dp
+private val BottomBarContentInset = BottomBarHeight + 28.dp
 
 @Composable
 fun FolioreNavHost(
@@ -83,6 +95,7 @@ fun FolioreNavHost(
     val currentRoute = currentDestination?.route
     val currentBookId = backStackEntry?.arguments?.getString(Routes.ARG_BOOK_ID)
     var editBottomBarState by remember { mutableStateOf<EditBottomBarState?>(null) }
+    val chromeHazeState = rememberHazeState()
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val openTabletWorkspace = maxWidth >= 840.dp
@@ -107,6 +120,7 @@ fun FolioreNavHost(
                         editActions = editActions,
                         isLoading = libraryState.hasActiveProgress,
                         progress = libraryState.activeProgress,
+                        hazeState = chromeHazeState,
                         onLibraryClick = { navController.returnToLibrary() },
                         onSyncClick = libraryViewModel::syncNow,
                         onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
@@ -114,10 +128,22 @@ fun FolioreNavHost(
                 }
             },
         ) { paddingValues ->
+            val layoutDirection = LocalLayoutDirection.current
+            val contentPadding = when {
+                !showNavigation -> PaddingValues(0.dp)
+                currentRoute == Routes.LIBRARY -> PaddingValues(
+                    start = paddingValues.calculateStartPadding(layoutDirection),
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateEndPadding(layoutDirection),
+                    bottom = 0.dp,
+                )
+                else -> paddingValues
+            }
+
             NavContent(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(if (showNavigation) paddingValues else PaddingValues(0.dp)),
+                    .padding(contentPadding),
                 navController = navController,
                 openTabletWorkspace = openTabletWorkspace,
                 libraryViewModel = libraryViewModel,
@@ -136,6 +162,12 @@ fun FolioreNavHost(
                         )
                     }
                 },
+                chromeHazeState = chromeHazeState,
+                bottomChromeInset = if (showNavigation && currentRoute == Routes.LIBRARY) {
+                    BottomBarContentInset
+                } else {
+                    0.dp
+                },
             )
         }
     }
@@ -153,6 +185,8 @@ private fun NavContent(
     onEditBook: (String) -> Unit,
     onBack: () -> Unit,
     onEditBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
+    chromeHazeState: HazeState,
+    bottomChromeInset: androidx.compose.ui.unit.Dp,
 ) {
     NavHost(
         navController = navController,
@@ -174,6 +208,8 @@ private fun NavContent(
                     }
                 },
                 onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
+                chromeHazeState = chromeHazeState,
+                bottomChromeInset = bottomChromeInset,
             )
         }
         composable(Routes.SETTINGS) {
@@ -210,6 +246,7 @@ private fun FolioreNavigationBar(
     editActions: EditBottomBarActions?,
     isLoading: Boolean,
     progress: SyncProgress?,
+    hazeState: HazeState,
     onLibraryClick: () -> Unit,
     onSyncClick: () -> Unit,
     onSettingsClick: () -> Unit,
@@ -225,12 +262,35 @@ private fun FolioreNavigationBar(
         animationSpec = tween(durationMillis = 260),
         label = "bottomBarActionWeight",
     )
+    val chromeTint = MaterialTheme.colorScheme.background
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(animationSpec = tween(durationMillis = 180))
-            .background(MaterialTheme.colorScheme.background),
+            .hazeEffect(state = hazeState) {
+                inputScale = HazeInputScale.Fixed(0.5f)
+                blurEffect {
+                    blurRadius = 40.dp
+                    colorEffects = listOf(
+                        HazeColorEffect.tint(chromeTint.copy(alpha = 0.7f)),
+                    )
+                    progressive = HazeProgressive.verticalGradient(
+                        startIntensity = 0f,
+                        endIntensity = 1f,
+                    )
+                }
+            }
+            .background(
+                Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to chromeTint.copy(alpha = 0.38f),
+                        0.22f to chromeTint.copy(alpha = 0.68f),
+                        0.58f to chromeTint.copy(alpha = 0.92f),
+                        1f to chromeTint.copy(alpha = 0.98f),
+                    ),
+                ),
+            ),
     ) {
         if (isLoading) {
             SyncProgressStatusLine(
@@ -262,7 +322,7 @@ private fun FolioreNavigationBar(
                     modifier = Modifier
                         .weight(navWeight)
                         .fillMaxHeight(),
-                    contentAlignment = Alignment.Center,
+                    contentAlignment = if (editMode) Alignment.Center else Alignment.TopCenter,
                 ) {
                     FolioreBottomNavigationItems(
                         selectedRoute = selectedRoute,
@@ -274,6 +334,7 @@ private fun FolioreNavigationBar(
                         modifier = Modifier
                             .widthIn(max = if (editMode) 760.dp else 560.dp)
                             .fillMaxWidth()
+                            .padding(top = if (editMode) 0.dp else 8.dp)
                             .padding(horizontal = if (editMode) 42.dp else 28.dp),
                     )
                 }
@@ -480,9 +541,8 @@ private fun FolioreBottomNavigationItem(
 
     Column(
         modifier = modifier
-            .height(72.dp)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(top = 8.dp),
+            .height(56.dp)
+            .clickable(enabled = enabled, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -492,19 +552,12 @@ private fun FolioreBottomNavigationItem(
             modifier = Modifier.size(21.dp),
             tint = itemColor,
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = itemColor,
             maxLines = 1,
-        )
-        Spacer(modifier = Modifier.height(5.dp))
-        Box(
-            modifier = Modifier
-                .width(28.dp)
-                .height(1.dp)
-                .background(if (selected) itemColor else Color.Transparent),
         )
     }
 }

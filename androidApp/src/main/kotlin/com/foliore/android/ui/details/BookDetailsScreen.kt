@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +52,7 @@ import com.foliore.android.R
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStrip
+import com.foliore.android.ui.theme.CormorantGaramondFamily
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.shared.domain.LibraryBook
 import java.io.File
@@ -251,7 +253,10 @@ private fun BookSummary(
     Column(modifier = modifier) {
         Text(
             text = book.metadata.title,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontFamily = CormorantGaramondFamily,
+                fontWeight = FontWeight.SemiBold,
+            ),
             color = MaterialTheme.colorScheme.onBackground,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,

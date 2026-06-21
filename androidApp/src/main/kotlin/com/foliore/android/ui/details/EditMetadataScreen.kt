@@ -70,6 +70,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,6 +85,7 @@ import com.foliore.android.metadata.MetadataLookupCandidate
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStatusLine
+import com.foliore.android.ui.theme.CormorantGaramondFamily
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncProgressPhase
 import com.foliore.shared.domain.BookMetadataDraft
@@ -552,7 +554,10 @@ private fun TabletEditBookScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = CormorantGaramondFamily,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
