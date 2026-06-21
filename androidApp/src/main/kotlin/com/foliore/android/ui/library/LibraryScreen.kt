@@ -1,6 +1,7 @@
 package com.foliore.android.ui.library
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.Canvas as AndroidCanvas
 import android.graphics.Paint
 import android.graphics.Rect
@@ -9,6 +10,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.text.TextUtils
+import android.util.LruCache
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -81,6 +83,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -122,6 +125,8 @@ import coil.compose.AsyncImage
 import coil.request.Disposable
 import coil.request.ImageRequest
 import com.foliore.android.R
+import com.foliore.android.ui.TopChromeDividerHalfHeight
+import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.theme.CormorantGaramondFamily
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.BookGridColumns
@@ -143,9 +148,8 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.roundToInt
-
-private val LibraryDividerHalfHeight = 4.dp
 
 @Composable
 fun LibraryScreen(
@@ -169,8 +173,11 @@ fun LibraryScreen(
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
     onBatchDelete: () -> Unit,
     onSettingsClick: () -> Unit,
+    gridScrollState: BookGridScrollState,
     chromeHazeState: HazeState? = null,
+    topChromeInset: Dp = 0.dp,
     bottomChromeInset: Dp = 0.dp,
+    showTopChrome: Boolean = true,
 ) {
     val visibleBooks = remember(
         state.books,
@@ -181,19 +188,14 @@ fun LibraryScreen(
     ) {
         state.visibleBooks()
     }
-    var showBatchDialog by rememberSaveable { mutableStateOf(false) }
-    var showBatchDeleteDialog by rememberSaveable { mutableStateOf(false) }
-    var showControlsDialog by rememberSaveable { mutableStateOf(false) }
     val localHazeState = rememberHazeState()
     val hazeState = chromeHazeState ?: localHazeState
     val density = LocalDensity.current
     var topChromeHeightPx by remember { mutableStateOf(0) }
-    val topChromeInset = with(density) { topChromeHeightPx.toDp() }
-
-    BackHandler(
-        enabled = state.isBatchMode && !showBatchDialog && !showBatchDeleteDialog && !showControlsDialog,
-    ) {
-        onBatchModeChange(false)
+    val resolvedTopChromeInset = if (showTopChrome) {
+        with(density) { topChromeHeightPx.toDp() }
+    } else {
+        topChromeInset
     }
 
     Scaffold(
@@ -240,8 +242,14 @@ fun LibraryScreen(
                             books = visibleBooks,
                             gridColumns = state.gridColumns,
                             displayOptions = state.displayOptions,
-                            topContentPadding = topChromeInset + 12.dp,
+                            topContentPadding = resolvedTopChromeInset + 12.dp,
                             bottomContentPadding = bottomChromeInset + 8.dp,
+                            scrollState = gridScrollState,
+                            restoreReady = if (showTopChrome) {
+                                topChromeHeightPx > 0
+                            } else {
+                                resolvedTopChromeInset > 0.dp
+                            },
                             isBatchMode = state.isBatchMode,
                             selectedBookIds = state.selectedBookIds,
                             onBookClick = onBookClick,
@@ -251,44 +259,118 @@ fun LibraryScreen(
                 }
             }
 
-            LibraryTopChrome(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .onSizeChanged { topChromeHeightPx = it.height },
-                hazeState = hazeState,
-            ) {
-                LibraryHeader(
-                    isSearchOpen = state.isSearchOpen,
-                    query = state.query,
-                    onQueryChange = onQueryChange,
+            if (showTopChrome) {
+                LibraryTopChromeOverlay(
+                    state = state,
+                    hazeState = hazeState,
+                    onImportClick = onImportClick,
                     onSearchClick = onSearchClick,
                     onCloseSearch = onCloseSearch,
-                    onImportClick = onImportClick,
-                    hasBooks = state.books.isNotEmpty(),
-                    isBatchMode = state.isBatchMode,
+                    onQueryChange = onQueryChange,
+                    onFilterChange = onFilterChange,
+                    onSortOrderChange = onSortOrderChange,
+                    onSeriesFilterChange = onSeriesFilterChange,
+                    onGridColumnsChange = onGridColumnsChange,
+                    onShowBookTitleChange = onShowBookTitleChange,
+                    onShowBookAuthorChange = onShowBookAuthorChange,
+                    onShowBookSeriesChange = onShowBookSeriesChange,
                     onBatchModeChange = onBatchModeChange,
-                    onOrganizeClick = { showControlsDialog = true },
+                    onSelectBooks = onSelectBooks,
+                    onBatchUpdate = onBatchUpdate,
+                    onBatchDelete = onBatchDelete,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .onSizeChanged { topChromeHeightPx = it.height },
                 )
-
-                AnimatedVisibility(visible = state.isBatchMode) {
-                    BatchActionBar(
-                        selectedCount = state.selectedBookIds.size,
-                        visibleBookCount = visibleBooks.size,
-                        onSelectVisible = {
-                            onSelectBooks(visibleBooks.map { it.book.id })
-                        },
-                        onEdit = { showBatchDialog = true },
-                        onDelete = { showBatchDeleteDialog = true },
-                        onCancel = {
-                            showBatchDialog = false
-                            showBatchDeleteDialog = false
-                            onBatchModeChange(false)
-                        },
-                    )
-                }
             }
         }
+    }
+}
+
+@Composable
+fun LibraryTopChromeOverlay(
+    state: LibraryUiState,
+    hazeState: HazeState,
+    onImportClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onCloseSearch: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onFilterChange: (BookFilter) -> Unit,
+    onSortOrderChange: (BookSortOrder) -> Unit,
+    onSeriesFilterChange: (SeriesFilter) -> Unit,
+    onGridColumnsChange: (BookGridColumns) -> Unit,
+    onShowBookTitleChange: (Boolean) -> Unit,
+    onShowBookAuthorChange: (Boolean) -> Unit,
+    onShowBookSeriesChange: (Boolean) -> Unit,
+    onBatchModeChange: (Boolean) -> Unit,
+    onSelectBooks: (List<String>) -> Unit,
+    onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
+    onBatchDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    drawBackground: Boolean = true,
+) {
+    val visibleBooks = remember(
+        state.books,
+        state.activeFilter,
+        state.seriesFilter,
+        state.sortOrder,
+        state.query,
+    ) {
+        state.visibleBooks()
+    }
+    var showBatchDialog by rememberSaveable { mutableStateOf(false) }
+    var showBatchDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showControlsDialog by rememberSaveable { mutableStateOf(false) }
+
+    BackHandler(
+        enabled = state.isBatchMode && !showBatchDialog && !showBatchDeleteDialog && !showControlsDialog,
+    ) {
+        onBatchModeChange(false)
+    }
+
+    val content: @Composable ColumnScope.() -> Unit = {
+        LibraryHeader(
+            isSearchOpen = state.isSearchOpen,
+            query = state.query,
+            onQueryChange = onQueryChange,
+            onSearchClick = onSearchClick,
+            onCloseSearch = onCloseSearch,
+            onImportClick = onImportClick,
+            hasBooks = state.books.isNotEmpty(),
+            isBatchMode = state.isBatchMode,
+            onBatchModeChange = onBatchModeChange,
+            onOrganizeClick = { showControlsDialog = true },
+        )
+
+        AnimatedVisibility(visible = state.isBatchMode) {
+            BatchActionBar(
+                selectedCount = state.selectedBookIds.size,
+                visibleBookCount = visibleBooks.size,
+                onSelectVisible = {
+                    onSelectBooks(visibleBooks.map { it.book.id })
+                },
+                onEdit = { showBatchDialog = true },
+                onDelete = { showBatchDeleteDialog = true },
+                onCancel = {
+                    showBatchDialog = false
+                    showBatchDeleteDialog = false
+                    onBatchModeChange(false)
+                },
+            )
+        }
+    }
+    if (drawBackground) {
+        LibraryTopChrome(
+            modifier = modifier,
+            hazeState = hazeState,
+            content = content,
+        )
+    } else {
+        LibraryTopChromeFrame(
+            modifier = modifier,
+            content = content,
+        )
     }
 
     if (showBatchDialog && state.selectedBookIds.isNotEmpty()) {
@@ -341,9 +423,9 @@ private fun LibraryTopChrome(
 ) {
     val chromeTint = MaterialTheme.colorScheme.background
     Box(modifier = modifier) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .matchParentSize()
                 .clipToBounds()
                 .hazeEffect(state = hazeState) {
                     inputScale = HazeInputScale.Fixed(0.5f)
@@ -368,12 +450,28 @@ private fun LibraryTopChrome(
                         ),
                     ),
                 ),
+        )
+        LibraryTopChromeFrame(
+            modifier = Modifier.fillMaxWidth(),
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun LibraryTopChromeFrame(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
             content = content,
         )
         EditorialDivider(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = LibraryDividerHalfHeight)
+                .offset(y = TopChromeDividerHalfHeight)
                 .fillMaxWidth(),
         )
     }
@@ -393,12 +491,13 @@ private fun LibraryHeader(
     onOrganizeClick: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 28.dp, top = 12.dp, end = 20.dp, bottom = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(TopChromeHeaderHeight)
+                .padding(start = 28.dp, end = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -446,7 +545,7 @@ private fun LibraryHeader(
                 onValueChange = onQueryChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
+                    .padding(start = 28.dp, top = 12.dp, end = 20.dp, bottom = 12.dp),
                 singleLine = true,
                 placeholder = { Text(text = stringResource(R.string.search_placeholder)) },
                 trailingIcon = {
@@ -947,6 +1046,8 @@ private fun BookGrid(
     displayOptions: LibraryDisplayOptions,
     topContentPadding: Dp = 8.dp,
     bottomContentPadding: Dp = 32.dp,
+    scrollState: BookGridScrollState,
+    restoreReady: Boolean = true,
     isBatchMode: Boolean,
     selectedBookIds: Set<String>,
     onBookClick: (String) -> Unit,
@@ -1016,6 +1117,7 @@ private fun BookGrid(
                         adapter = adapter,
                         layoutManager = layoutManager,
                         decoration = decoration,
+                        scrollState = scrollState,
                     )
                     this.layoutManager = layoutManager
                     this.adapter = adapter
@@ -1031,10 +1133,30 @@ private fun BookGrid(
                         viewContext.dpToPx(bottomContentPadding),
                     )
                     addItemDecoration(decoration)
+                    addOnScrollListener(
+                        object : RecyclerView.OnScrollListener() {
+                            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                                val internals = recyclerView.tag as? BookGridRecyclerInternals ?: return
+                                if (!internals.isRestoringScroll) {
+                                    recyclerView.captureScrollState(internals.scrollState)
+                                }
+                            }
+
+                            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                                    val internals = recyclerView.tag as? BookGridRecyclerInternals ?: return
+                                    if (!internals.isRestoringScroll) {
+                                        recyclerView.captureScrollState(internals.scrollState)
+                                    }
+                                }
+                            }
+                        },
+                    )
                 }
             },
             update = { recyclerView ->
                 val internals = recyclerView.tag as BookGridRecyclerInternals
+                internals.scrollState = scrollState
                 internals.layoutManager.spanCount = columnCount
                 internals.decoration.update(
                     spanCount = columnCount,
@@ -1049,6 +1171,7 @@ private fun BookGrid(
                 )
                 recyclerView.invalidateItemDecorations()
                 internals.adapter.onBookClick = { bookId ->
+                    recyclerView.captureScrollState(internals.scrollState)
                     if (isBatchMode) {
                         currentOnBookSelectionToggle(bookId)
                     } else {
@@ -1067,16 +1190,90 @@ private fun BookGrid(
                     itemLayout = itemLayout,
                     displayOptions = displayOptions,
                 )
+                if (restoreReady && !internals.hasRestoredScroll && books.isNotEmpty()) {
+                    internals.hasRestoredScroll = true
+                    val restoredPosition = internals.scrollState.position.coerceIn(0, books.lastIndex)
+                    val restoredOffset = internals.scrollState.offset
+                    internals.isRestoringScroll = restoredPosition != 0 || restoredOffset != 0
+                    recyclerView.post {
+                        internals.layoutManager.scrollToPositionWithOffset(
+                            restoredPosition,
+                            restoredOffset,
+                        )
+                        recyclerView.post {
+                            internals.isRestoringScroll = false
+                            recyclerView.captureScrollState(internals.scrollState)
+                        }
+                    }
+                }
             },
         )
     }
 }
 
-private data class BookGridRecyclerInternals(
+private class BookGridRecyclerInternals(
     val adapter: BookGridRecyclerAdapter,
     val layoutManager: GridLayoutManager,
     val decoration: BookGridSpacingDecoration,
+    var scrollState: BookGridScrollState,
+    var hasRestoredScroll: Boolean = false,
+    var isRestoringScroll: Boolean = scrollState.position != 0 || scrollState.offset != 0,
 )
+
+class BookGridScrollState(
+    var position: Int = 0,
+    var offset: Int = 0,
+) {
+    companion object {
+        val Saver = listSaver<BookGridScrollState, Int>(
+            save = { listOf(it.position, it.offset) },
+            restore = { restored ->
+                BookGridScrollState(
+                    position = restored.getOrNull(0) ?: 0,
+                    offset = restored.getOrNull(1) ?: 0,
+                )
+            },
+        )
+    }
+}
+
+private fun RecyclerView.captureScrollState(scrollState: BookGridScrollState) {
+    val anchorTop = paddingTop
+    var child: View? = null
+    var childPosition = RecyclerView.NO_POSITION
+    var bestDistance = Int.MAX_VALUE
+
+    for (index in 0 until childCount) {
+        val candidate = getChildAt(index) ?: continue
+        val candidatePosition = getChildAdapterPosition(candidate)
+        if (candidatePosition == RecyclerView.NO_POSITION) continue
+        val distance = candidate.top - anchorTop
+        if (distance >= 0 && distance < bestDistance) {
+            child = candidate
+            childPosition = candidatePosition
+            bestDistance = distance
+        }
+    }
+
+    if (child == null) {
+        for (index in 0 until childCount) {
+            val candidate = getChildAt(index) ?: continue
+            val candidatePosition = getChildAdapterPosition(candidate)
+            if (candidatePosition == RecyclerView.NO_POSITION) continue
+            val distance = abs(candidate.top - anchorTop)
+            if (distance < bestDistance) {
+                child = candidate
+                childPosition = candidatePosition
+                bestDistance = distance
+            }
+        }
+    }
+
+    val anchorChild = child ?: return
+    if (childPosition == RecyclerView.NO_POSITION) return
+    scrollState.position = childPosition
+    scrollState.offset = anchorChild.top - anchorTop
+}
 
 private data class BookGridNativeStyle(
     val titleColor: Int,
@@ -1114,6 +1311,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
     private var style: BookGridNativeStyle? = null
     private var itemLayout: BookGridItemLayout? = null
     private var displayOptions: LibraryDisplayOptions = LibraryDisplayOptions()
+    private var coverSlotAspectRatios: FloatArray = FloatArray(0)
 
     init {
         setHasStableIds(true)
@@ -1135,6 +1333,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
         this.style = style
         this.itemLayout = itemLayout
         this.displayOptions = displayOptions
+        this.coverSlotAspectRatios = books.coverSlotAspectRatios(itemLayout.columnCount)
         notifyDataSetChanged()
     }
 
@@ -1156,6 +1355,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
             style = checkNotNull(style),
             itemLayout = checkNotNull(itemLayout),
             displayOptions = displayOptions,
+            coverSlotAspectRatio = coverSlotAspectRatios.getOrElse(position) { DefaultCoverAspectRatio },
             onClick = onBookClick,
             onLongClick = onBookLongClick,
         )
@@ -1170,7 +1370,30 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
 
 private class BookGridViewHolder(val item: BookGridItemView) : RecyclerView.ViewHolder(item)
 
+private fun List<LibraryBook>.coverSlotAspectRatios(columnCount: Int): FloatArray {
+    val safeColumnCount = columnCount.coerceAtLeast(1)
+    val result = FloatArray(size) { DefaultCoverAspectRatio }
+    var rowStart = 0
+    while (rowStart < size) {
+        val rowEnd = (rowStart + safeColumnCount).coerceAtMost(size)
+        val rowAspectRatio = (rowStart until rowEnd)
+            .asSequence()
+            .map { index ->
+                get(index).coverPath()?.let(CoverAspectRatioCache::aspectRatio) ?: DefaultCoverAspectRatio
+            }
+            .filter { it > 0f }
+            .minOrNull()
+            ?: DefaultCoverAspectRatio
+        for (index in rowStart until rowEnd) {
+            result[index] = rowAspectRatio
+        }
+        rowStart = rowEnd
+    }
+    return result
+}
+
 private class BookGridItemView(context: Context) : LinearLayout(context) {
+    private val coverSlot = AspectRatioFrameLayout(context)
     private val coverFrame = AspectRatioFrameLayout(context)
     private val coverImage = ImageView(context)
     private val placeholder = TextView(context)
@@ -1188,6 +1411,8 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
             ViewGroup.LayoutParams.WRAP_CONTENT,
         )
 
+        coverSlot.clipChildren = false
+        coverSlot.clipToPadding = false
         coverFrame.clipToOutline = true
         coverFrame.addView(
             coverImage,
@@ -1226,8 +1451,16 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
                 marginEnd = context.dpToPx(8.dp)
             },
         )
-        addView(
+        coverSlot.addView(
             coverFrame,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM,
+            ),
+        )
+        addView(
+            coverSlot,
             LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1237,7 +1470,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         addView(authorView, textLayoutParams())
         addView(seriesView, textLayoutParams())
 
-        coverImage.scaleType = ImageView.ScaleType.FIT_XY
+        coverImage.scaleType = ImageView.ScaleType.FIT_CENTER
         placeholder.text = context.getString(R.string.cover_placeholder)
         placeholder.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
         placeholder.typeface = Typeface.DEFAULT_BOLD
@@ -1262,6 +1495,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         style: BookGridNativeStyle,
         itemLayout: BookGridItemLayout,
         displayOptions: LibraryDisplayOptions,
+        coverSlotAspectRatio: Float,
         onClick: (String) -> Unit,
         onLongClick: (String) -> Unit,
     ) {
@@ -1328,14 +1562,19 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         placeholder.setTextColor(style.placeholderTextColor)
         placeholder.visibility = if (coverPath == null) View.VISIBLE else View.GONE
         coverImage.visibility = if (coverPath == null) View.GONE else View.VISIBLE
+        val coverAspectRatio = coverPath?.let(CoverAspectRatioCache::aspectRatio)
+            ?: DefaultCoverAspectRatio
+        coverSlot.setAspectRatio(coverSlotAspectRatio)
+        coverFrame.setAspectRatio(coverAspectRatio)
         imageDisposable?.dispose()
         imageDisposable = null
         coverImage.setImageDrawable(null)
         if (coverPath != null) {
+            val coverDecodeHeightPx = itemLayout.coverDecodeHeightPx(coverAspectRatio)
             val request = ImageRequest.Builder(viewContext)
                 .data(File(coverPath))
                 .target(coverImage)
-                .size(itemLayout.coverDecodeWidthPx, itemLayout.coverDecodeHeightPx)
+                .size(itemLayout.coverDecodeWidthPx, coverDecodeHeightPx)
                 .crossfade(false)
                 .allowHardware(true)
                 .build()
@@ -1398,13 +1637,41 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
 }
 
 private class AspectRatioFrameLayout(context: Context) : FrameLayout(context) {
+    private var aspectRatio: Float = DefaultCoverAspectRatio
+
+    fun setAspectRatio(nextAspectRatio: Float) {
+        val sanitizedAspectRatio = nextAspectRatio.takeIf { it > 0f } ?: DefaultCoverAspectRatio
+        if (aspectRatio == sanitizedAspectRatio) return
+        aspectRatio = sanitizedAspectRatio
+        requestLayout()
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
-        val height = (width / DefaultCoverAspectRatio).roundToInt()
+        val height = (width / aspectRatio).roundToInt()
         super.onMeasure(
             widthMeasureSpec,
             MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
         )
+    }
+}
+
+private object CoverAspectRatioCache {
+    private val cache = LruCache<String, Float>(512)
+
+    fun aspectRatio(path: String): Float {
+        cache.get(path)?.let { return it }
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(path, options)
+        val ratio = if (options.outWidth > 0 && options.outHeight > 0) {
+            options.outWidth.toFloat() / options.outHeight.toFloat()
+        } else {
+            DefaultCoverAspectRatio
+        }
+        cache.put(path, ratio)
+        return ratio
     }
 }
 
@@ -1562,6 +1829,9 @@ private fun BookCoverItem(
     }
     val seriesLabel = if (needsSeries) item.metadata.seriesLabel() else null
     val coverPath = item.coverPath()
+    val coverAspectRatio = remember(coverPath) {
+        coverPath?.let(CoverAspectRatioCache::aspectRatio) ?: DefaultCoverAspectRatio
+    }
     val statusLabel = if (needsStatus) {
         bookStatusLabel(status = item.book.status, syncStatus = item.book.syncStatus)
     } else {
@@ -1607,7 +1877,7 @@ private fun BookCoverItem(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(DefaultCoverAspectRatio)
+                .aspectRatio(coverAspectRatio)
                 .then(
                     if (isSelected) {
                         Modifier.border(
@@ -1624,7 +1894,7 @@ private fun BookCoverItem(
                 val coverRequest = remember(context, coverPath, itemLayout.coverDecodeWidthPx) {
                     ImageRequest.Builder(context)
                         .data(File(coverPath))
-                        .size(itemLayout.coverDecodeWidthPx, itemLayout.coverDecodeHeightPx)
+                        .size(itemLayout.coverDecodeWidthPx, itemLayout.coverDecodeHeightPx(coverAspectRatio))
                         .crossfade(false)
                         .allowHardware(true)
                         .build()
@@ -1634,7 +1904,7 @@ private fun BookCoverItem(
                     model = coverRequest,
                     contentDescription = null,
                     alignment = Alignment.BottomCenter,
-                    contentScale = ContentScale.FillBounds,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
@@ -1998,18 +2268,23 @@ private fun CompactStatusMarker(
 }
 
 private data class BookGridItemLayout(
+    val columnCount: Int,
     val coverDecodeWidthPx: Int,
     val titleMaxLines: Int,
     val showAuthor: Boolean,
     val showSeries: Boolean,
     val textTopSpacing: Dp,
 ) {
-    val coverDecodeHeightPx: Int = (coverDecodeWidthPx * 1.5f).toInt()
+    fun coverDecodeHeightPx(aspectRatio: Float): Int {
+        val sanitizedAspectRatio = aspectRatio.takeIf { it > 0f } ?: DefaultCoverAspectRatio
+        return (coverDecodeWidthPx / sanitizedAspectRatio).roundToInt()
+    }
 
     companion object {
         fun forColumnCount(columnCount: Int): BookGridItemLayout {
             return when {
                 columnCount >= 5 -> BookGridItemLayout(
+                    columnCount = columnCount,
                     coverDecodeWidthPx = 220,
                     titleMaxLines = 2,
                     showAuthor = true,
@@ -2017,6 +2292,7 @@ private data class BookGridItemLayout(
                     textTopSpacing = 6.dp,
                 )
                 columnCount == 4 -> BookGridItemLayout(
+                    columnCount = columnCount,
                     coverDecodeWidthPx = 280,
                     titleMaxLines = 2,
                     showAuthor = true,
@@ -2024,6 +2300,7 @@ private data class BookGridItemLayout(
                     textTopSpacing = 7.dp,
                 )
                 else -> BookGridItemLayout(
+                    columnCount = columnCount,
                     coverDecodeWidthPx = 420,
                     titleMaxLines = 2,
                     showAuthor = true,

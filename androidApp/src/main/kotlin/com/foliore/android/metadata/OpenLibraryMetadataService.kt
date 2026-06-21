@@ -115,9 +115,17 @@ class OpenLibraryMetadataService(context: Context) {
         val cleanTitle = title?.cleanOptional() ?: return null
         val workDescription = if (includeDescription) key?.let(::fetchWorkDescription) else null
         val cleanAuthors = authorName.mapNotNull { it.cleanOptional() }
+        val cleanSeriesName = seriesName.firstCleanOptional()
+        val cleanSeriesIndex = seriesPosition
+            .asSequence()
+            .mapNotNull { it.toSeriesIndexOrNull() }
+            .firstOrNull()
+        val resolvedSeriesName = cleanSeriesName ?: current.seriesName?.cleanOptional()
         val cleanTags = subject
             .asSequence()
             .mapNotNull { it.cleanOptional() }
+            .filterNot { it.isOpenLibrarySeriesSubject() }
+            .filterNot { tag -> resolvedSeriesName != null && tag.isSeriesTagFor(resolvedSeriesName) }
             .filterNot { it.length > 42 }
             .distinctBy { it.lowercase() }
             .take(8)
@@ -136,6 +144,7 @@ class OpenLibraryMetadataService(context: Context) {
             listOfNotNull(
                 key?.let { "openlibrary_work" to it },
                 editionKeys.firstOrNull()?.let { "openlibrary_edition" to it },
+                seriesKeys.firstOrNull()?.let { "openlibrary_series" to it },
             )
 
         return MetadataLookupCandidate(
@@ -153,8 +162,8 @@ class OpenLibraryMetadataService(context: Context) {
                 tags = cleanTags.ifEmpty { current.tags },
                 isbn = isbn.bestIsbn() ?: current.bestIsbn(),
                 identifiers = identifiers,
-                seriesName = current.seriesName,
-                seriesIndex = current.seriesIndex,
+                seriesName = resolvedSeriesName,
+                seriesIndex = cleanSeriesIndex ?: current.seriesIndex,
             ),
             coverImagePath = coverPath,
             sourceUrl = key?.let { "https://openlibrary.org$it" },
@@ -250,6 +259,41 @@ class OpenLibraryMetadataService(context: Context) {
 
     private fun String.cleanOptional(): String? = trim().takeIf { it.isNotEmpty() }
 
+    private fun List<String>.firstCleanOptional(): String? {
+        return asSequence()
+            .mapNotNull { it.cleanOptional() }
+            .firstOrNull()
+    }
+
+    private fun String.toSeriesIndexOrNull(): Double? {
+        val normalized = trim().replace(',', '.')
+        return normalized.toDoubleOrNull()
+            ?: Regex("""(?i)(?:book|volume|vol\.?|#)?\s*(\d+(?:[.]\d+)?)""")
+                .find(normalized)
+                ?.groupValues
+                ?.getOrNull(1)
+                ?.toDoubleOrNull()
+    }
+
+    private fun String.isOpenLibrarySeriesSubject(): Boolean {
+        return startsWith("series:", ignoreCase = true)
+    }
+
+    private fun String.isSeriesTagFor(seriesName: String): Boolean {
+        val tag = normalizeSeriesToken()
+        val series = seriesName.normalizeSeriesToken()
+        return tag == series ||
+            tag == "$series series" ||
+            (tag.startsWith("$series ") && tag.contains("series"))
+    }
+
+    private fun String.normalizeSeriesToken(): String {
+        return lowercase()
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
+            .replace(Regex("\\s+"), " ")
+    }
+
     private fun String.urlEncoded(): String = URLEncoder.encode(this, Charsets.UTF_8.name())
 
     private fun String.sanitizeFileName(): String {
@@ -311,6 +355,9 @@ class OpenLibraryMetadataService(context: Context) {
         val language: List<String> = emptyList(),
         val isbn: List<String> = emptyList(),
         val subject: List<String> = emptyList(),
+        @SerialName("series_name") val seriesName: List<String> = emptyList(),
+        @SerialName("series_position") val seriesPosition: List<String> = emptyList(),
+        @SerialName("series_key") val seriesKeys: List<String> = emptyList(),
         @SerialName("cover_i") val coverId: Long? = null,
         @SerialName("edition_key") val editionKeys: List<String> = emptyList(),
     )
@@ -328,6 +375,6 @@ class OpenLibraryMetadataService(context: Context) {
         const val SECONDARY_READ_TIMEOUT_MS = 6_000
         const val LOOKUP_TIMEOUT_MS = 18_000L
         const val SEARCH_FIELDS =
-            "key,title,author_name,first_publish_year,publisher,language,isbn,subject,cover_i,edition_key"
+            "key,title,author_name,first_publish_year,publisher,language,isbn,subject,series_name,series_position,series_key,cover_i,edition_key"
     }
 }

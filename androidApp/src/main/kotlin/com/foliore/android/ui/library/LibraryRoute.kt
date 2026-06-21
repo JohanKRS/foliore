@@ -18,8 +18,11 @@ fun LibraryRoute(
     viewModel: LibraryViewModel,
     onBookClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
+    gridScrollState: BookGridScrollState,
     chromeHazeState: HazeState? = null,
+    topChromeInset: Dp = 0.dp,
     bottomChromeInset: Dp = 0.dp,
+    showTopChrome: Boolean = true,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -61,7 +64,10 @@ fun LibraryRoute(
         onBatchUpdate = viewModel::applyBatchMetadata,
         onBatchDelete = viewModel::deleteSelectedBooks,
         onSettingsClick = onSettingsClick,
+        gridScrollState = gridScrollState,
         chromeHazeState = chromeHazeState,
+        topChromeInset = topChromeInset,
         bottomChromeInset = bottomChromeInset,
+        showTopChrome = showTopChrome,
     )
 }

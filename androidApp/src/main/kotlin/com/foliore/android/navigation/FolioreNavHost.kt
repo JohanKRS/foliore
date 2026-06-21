@@ -2,14 +2,24 @@ package com.foliore.android.navigation
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,17 +66,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -79,10 +95,14 @@ import com.foliore.android.ui.details.EditMetadataRoute
 import com.foliore.android.ui.details.TabletEditLeftPaneWeight
 import com.foliore.android.ui.details.TabletEditRightPaneWeight
 import com.foliore.android.ui.library.EditorialDivider
+import com.foliore.android.ui.library.BookGridScrollState
+import com.foliore.android.ui.library.LibraryTopChromeOverlay
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.SettingsRoute
 import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.library.SyncProgressStatusLine
+import com.foliore.android.ui.TopChromeContent
+import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
@@ -101,10 +121,12 @@ private val BottomBarItemHeight = 56.dp
 private val BottomBarItemBottomPadding = 30.dp
 private val BottomEditActionStripHeight = 58.dp
 private val BottomEditActionStripButtonHeight = 44.dp
+private val BottomEditContentInset = BottomBarHeight + BottomEditActionStripHeight + 48.dp
 private val BottomNavigationMaxWidth = 560.dp
 private val BottomNavigationHorizontalPadding = 28.dp
 private val BottomNavigationTopLevelSpacing = 18.dp
 private val BottomNavigationEditSpacing = 10.dp
+private const val RouteTransitionMillis = 360
 @Composable
 fun FolioreNavHost(
     libraryViewModel: LibraryViewModel,
@@ -118,7 +140,17 @@ fun FolioreNavHost(
     val currentRoute = currentDestination?.route
     val currentBookId = backStackEntry?.arguments?.getString(Routes.ARG_BOOK_ID)
     var editBottomBarState by remember { mutableStateOf<EditBottomBarState?>(null) }
-    val chromeHazeState = rememberHazeState()
+    var editTopChromeContent by remember { mutableStateOf<TopChromeContent?>(null) }
+    var topChromeHeightPx by remember { mutableStateOf(0) }
+    val libraryChromeHazeState = rememberHazeState()
+    val editChromeHazeState = rememberHazeState()
+    val libraryGridScrollState = rememberSaveable(saver = BookGridScrollState.Saver) {
+        BookGridScrollState()
+    }
+    val epubPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        onResult = libraryViewModel::importUris,
+    )
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val openTabletWorkspace = maxWidth >= 840.dp
@@ -129,6 +161,24 @@ fun FolioreNavHost(
         val editActions = editBottomBarState
             ?.takeIf { showEditActions && it.bookId == currentBookId }
             ?.actions
+        val topChromeMode = when (currentRoute) {
+            Routes.LIBRARY -> TopChromeMode.Library
+            Routes.EDIT -> TopChromeMode.Edit
+            else -> TopChromeMode.None
+        }
+        val activeChromeHazeState = when (topChromeMode) {
+            TopChromeMode.Edit -> editChromeHazeState
+            else -> libraryChromeHazeState
+        }
+        val density = LocalDensity.current
+        val measuredTopChromeInset = with(density) { topChromeHeightPx.toDp() }
+        val topChromeInset = if (topChromeMode == TopChromeMode.None) {
+            0.dp
+        } else if (measuredTopChromeInset.value > 0f) {
+            measuredTopChromeInset
+        } else {
+            TopChromeHeaderHeight
+        }
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -146,7 +196,8 @@ fun FolioreNavHost(
                         editActions = editActions,
                         isLoading = libraryState.hasActiveProgress,
                         progress = libraryState.activeProgress,
-                        hazeState = chromeHazeState,
+                        tabletWorkspace = openTabletWorkspace,
+                        hazeState = activeChromeHazeState,
                         onLibraryClick = { navController.returnToLibrary() },
                         onSyncClick = libraryViewModel::syncNow,
                         onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
@@ -157,7 +208,7 @@ fun FolioreNavHost(
             val layoutDirection = LocalLayoutDirection.current
             val contentPadding = when {
                 !showNavigation -> PaddingValues(0.dp)
-                currentRoute == Routes.LIBRARY -> PaddingValues(
+                currentRoute == Routes.LIBRARY || currentRoute == Routes.EDIT -> PaddingValues(
                     start = paddingValues.calculateStartPadding(layoutDirection),
                     top = paddingValues.calculateTopPadding(),
                     end = paddingValues.calculateEndPadding(layoutDirection),
@@ -166,31 +217,100 @@ fun FolioreNavHost(
                 else -> paddingValues
             }
 
-            NavContent(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(contentPadding),
-                navController = navController,
-                libraryViewModel = libraryViewModel,
-                themeMode = themeMode,
-                onThemeModeChange = onThemeModeChange,
-                onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
-                onBack = { navController.popBackStack() },
-                onEditBottomBarActionsChange = { actions ->
-                    editBottomBarState = actions?.let {
-                        EditBottomBarState(
-                            bookId = currentBookId.orEmpty(),
-                            actions = it,
-                        )
+            ) {
+                NavContent(
+                    modifier = Modifier.fillMaxSize(),
+                    navController = navController,
+                    libraryViewModel = libraryViewModel,
+                    themeMode = themeMode,
+                    onThemeModeChange = onThemeModeChange,
+                    onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
+                    onBack = { navController.popBackStack() },
+                    onEditBottomBarActionsChange = { actions ->
+                        editBottomBarState = actions?.let {
+                            EditBottomBarState(
+                                bookId = currentBookId.orEmpty(),
+                                actions = it,
+                            )
+                        }
+                    },
+                    onEditTopChromeContentChange = { content ->
+                        editTopChromeContent = content
+                    },
+                    libraryGridScrollState = libraryGridScrollState,
+                    libraryChromeHazeState = libraryChromeHazeState,
+                    editChromeHazeState = editChromeHazeState,
+                    topChromeInset = topChromeInset,
+                    bottomChromeInset = when {
+                        showNavigation && currentRoute == Routes.LIBRARY -> BottomBarContentInset
+                        showNavigation && currentRoute == Routes.EDIT -> BottomEditContentInset
+                        else -> 0.dp
+                    },
+                )
+
+                if (topChromeMode != TopChromeMode.None) {
+                    TopChromeGlassContainer(
+                        hazeState = activeChromeHazeState,
+                        resetKey = topChromeMode to currentBookId,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .onSizeChanged { size ->
+                                if (size.height > 0) {
+                                    topChromeHeightPx = size.height
+                                }
+                            },
+                    ) {
+                        Crossfade(
+                            targetState = topChromeMode,
+                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                            label = "Top chrome fade",
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { mode ->
+                            when (mode) {
+                                TopChromeMode.Library -> {
+                                    LibraryTopChromeOverlay(
+                                        state = libraryState,
+                                        hazeState = libraryChromeHazeState,
+                                        onImportClick = {
+                                            epubPicker.launch(arrayOf("application/epub+zip", "application/octet-stream"))
+                                        },
+                                        onSearchClick = { libraryViewModel.setSearchOpen(true) },
+                                        onCloseSearch = { libraryViewModel.setSearchOpen(false) },
+                                        onQueryChange = libraryViewModel::setQuery,
+                                        onFilterChange = libraryViewModel::setFilter,
+                                        onSortOrderChange = libraryViewModel::setSortOrder,
+                                        onSeriesFilterChange = libraryViewModel::setSeriesFilter,
+                                        onGridColumnsChange = libraryViewModel::setGridColumns,
+                                        onShowBookTitleChange = libraryViewModel::setShowBookTitle,
+                                        onShowBookAuthorChange = libraryViewModel::setShowBookAuthor,
+                                        onShowBookSeriesChange = libraryViewModel::setShowBookSeries,
+                                        onBatchModeChange = libraryViewModel::setBatchMode,
+                                        onSelectBooks = libraryViewModel::selectBooks,
+                                        onBatchUpdate = libraryViewModel::applyBatchMetadata,
+                                        onBatchDelete = libraryViewModel::deleteSelectedBooks,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        drawBackground = false,
+                                    )
+                                }
+                                TopChromeMode.Edit -> {
+                                    editTopChromeContent?.invoke(Modifier.fillMaxWidth())
+                                        ?: Spacer(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(TopChromeHeaderHeight),
+                                        )
+                                }
+                                TopChromeMode.None -> Unit
+                            }
+                        }
                     }
-                },
-                chromeHazeState = chromeHazeState,
-                bottomChromeInset = if (showNavigation && currentRoute == Routes.LIBRARY) {
-                    BottomBarContentInset
-                } else {
-                    0.dp
-                },
-            )
+                }
+            }
         }
     }
 }
@@ -205,25 +325,32 @@ private fun NavContent(
     onEditBook: (String) -> Unit,
     onBack: () -> Unit,
     onEditBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
-    chromeHazeState: HazeState,
+    onEditTopChromeContentChange: (TopChromeContent?) -> Unit,
+    libraryGridScrollState: BookGridScrollState,
+    libraryChromeHazeState: HazeState,
+    editChromeHazeState: HazeState,
+    topChromeInset: Dp,
     bottomChromeInset: androidx.compose.ui.unit.Dp,
 ) {
     NavHost(
         navController = navController,
         startDestination = Routes.LIBRARY,
         modifier = modifier.fillMaxSize(),
-        enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None },
-        popEnterTransition = { EnterTransition.None },
-        popExitTransition = { ExitTransition.None },
+        enterTransition = { routeEnterTransition() },
+        exitTransition = { routeExitTransition() },
+        popEnterTransition = { routeEnterTransition() },
+        popExitTransition = { routeExitTransition() },
     ) {
         composable(Routes.LIBRARY) {
             LibraryRoute(
                 viewModel = libraryViewModel,
                 onBookClick = { bookId -> navController.navigate(Routes.edit(bookId)) },
                 onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
-                chromeHazeState = chromeHazeState,
+                gridScrollState = libraryGridScrollState,
+                chromeHazeState = libraryChromeHazeState,
+                topChromeInset = topChromeInset,
                 bottomChromeInset = bottomChromeInset,
+                showTopChrome = false,
             )
         }
         composable(Routes.SETTINGS) {
@@ -248,8 +375,57 @@ private fun NavContent(
                 bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty(),
                 onBack = onBack,
                 onBottomBarActionsChange = onEditBottomBarActionsChange,
+                chromeHazeState = editChromeHazeState,
+                topChromeInset = topChromeInset,
+                bottomChromeInset = bottomChromeInset,
+                showTopChrome = false,
+                onTopChromeContentChange = onEditTopChromeContentChange,
             )
         }
+    }
+}
+
+@Composable
+private fun TopChromeGlassContainer(
+    hazeState: HazeState,
+    resetKey: Any,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val chromeTint = MaterialTheme.colorScheme.background
+
+    Box(modifier = modifier) {
+        key(resetKey) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clipToBounds()
+                    .hazeEffect(state = hazeState) {
+                        inputScale = HazeInputScale.Fixed(0.5f)
+                        blurEffect {
+                            blurRadius = 40.dp
+                            colorEffects = listOf(
+                                HazeColorEffect.tint(chromeTint.copy(alpha = 0.68f)),
+                            )
+                            progressive = HazeProgressive.verticalGradient(
+                                startIntensity = 1f,
+                                endIntensity = 0f,
+                            )
+                        }
+                    }
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0f to chromeTint.copy(alpha = 0.98f),
+                                0.56f to chromeTint.copy(alpha = 0.88f),
+                                0.86f to chromeTint.copy(alpha = 0.42f),
+                                1f to Color.Transparent,
+                            ),
+                        ),
+                    ),
+            )
+        }
+        content()
     }
 }
 
@@ -260,6 +436,7 @@ private fun FolioreNavigationBar(
     editActions: EditBottomBarActions?,
     isLoading: Boolean,
     progress: SyncProgress?,
+    tabletWorkspace: Boolean,
     hazeState: HazeState,
     onLibraryClick: () -> Unit,
     onSyncClick: () -> Unit,
@@ -270,11 +447,19 @@ private fun FolioreNavigationBar(
     val stackedEditMode = mode == BottomBarMode.EditStacked
     val navigationSelectedRoute = if (editMode) Routes.LIBRARY else selectedRoute
     val chromeTint = MaterialTheme.colorScheme.background
+    val mobileChrome = !tabletWorkspace
+    val chromeModifier = Modifier
+        .fillMaxWidth()
+        .then(
+            if (tabletWorkspace) {
+                Modifier.animateContentSize(animationSpec = tween(durationMillis = 180))
+            } else {
+                Modifier
+            },
+        )
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(animationSpec = tween(durationMillis = 180))
+        modifier = chromeModifier
             .hazeEffect(state = hazeState) {
                 inputScale = HazeInputScale.Fixed(0.5f)
                 blurEffect {
@@ -299,49 +484,81 @@ private fun FolioreNavigationBar(
                 ),
             ),
     ) {
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            SyncProgressStatusLine(
-                progress = progress,
-                modifier = Modifier
-                    .widthIn(max = 560.dp)
-                    .fillMaxWidth()
-                    .padding(start = 28.dp, end = 28.dp, bottom = 6.dp),
-            )
+        if (mobileChrome) {
+            AnimatedVisibility(
+                visible = isLoading,
+                enter = fadeIn(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
+                    expandVertically(
+                        expandFrom = Alignment.Bottom,
+                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                    ) +
+                    slideInVertically(
+                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                        initialOffsetY = { height -> height },
+                    ),
+                exit = fadeOut(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
+                    shrinkVertically(
+                        shrinkTowards = Alignment.Bottom,
+                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                    ) +
+                    slideOutVertically(
+                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                        targetOffsetY = { height -> height },
+                    ),
+            ) {
+                SyncStatusBlock(progress = progress)
+            }
+        } else if (isLoading) {
+            SyncStatusBlock(progress = progress)
         }
+
         SyncProgressDivider(
             isActive = isLoading,
             progress = progress,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (stackedEditMode) {
+        if (mobileChrome) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(BottomEditActionStripHeight + BottomBarHeight)
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
             ) {
-                EditActionsSlot(
-                    editActions = editActions,
-                    isLoading = isLoading,
-                    compact = true,
-                    delayMillis = 90,
-                    actionStrip = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(BottomEditActionStripHeight),
-                )
-                AnimatedNavigationItemsSlot(
+                AnimatedVisibility(
+                    visible = stackedEditMode,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
+                        expandVertically(
+                            expandFrom = Alignment.Bottom,
+                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                        ) +
+                        slideInVertically(
+                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                            initialOffsetY = { height -> height },
+                        ),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
+                        shrinkVertically(
+                            shrinkTowards = Alignment.Bottom,
+                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                        ) +
+                        slideOutVertically(
+                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                            targetOffsetY = { height -> height },
+                        ),
+                ) {
+                    EditActionsSlot(
+                        editActions = editActions,
+                        isLoading = isLoading,
+                        compact = true,
+                        delayMillis = 0,
+                        actionStrip = true,
+                        animated = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(BottomEditActionStripHeight),
+                    )
+                }
+                StaticNavigationItemsSlot(
                     selectedRoute = navigationSelectedRoute,
-                    splitEditMode = false,
-                    splitNavigationWidth = BottomNavigationMaxWidth,
                     isLoading = isLoading,
                     onLibraryClick = onLibraryClick,
                     onSyncClick = onSyncClick,
@@ -405,6 +622,28 @@ private fun FolioreNavigationBar(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SyncStatusBlock(
+    progress: SyncProgress?,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        SyncProgressStatusLine(
+            progress = progress,
+            modifier = Modifier
+                .widthIn(max = 560.dp)
+                .fillMaxWidth()
+                .padding(start = 28.dp, end = 28.dp, bottom = 6.dp),
+        )
     }
 }
 
@@ -487,6 +726,69 @@ private fun AnimatedNavigationItemsSlot(
 }
 
 @Composable
+private fun StaticNavigationItemsSlot(
+    selectedRoute: String?,
+    isLoading: Boolean,
+    onLibraryClick: () -> Unit,
+    onSyncClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val libraryDestination = TopLevelDestination.items.first()
+    val settingsDestination = TopLevelDestination.items.last()
+
+    BoxWithConstraints(modifier = modifier) {
+        val rowWidth = if (maxWidth < BottomNavigationMaxWidth) {
+            maxWidth
+        } else {
+            BottomNavigationMaxWidth
+        }
+        val rowStart = (maxWidth - rowWidth) / 2f
+        val contentWidth = rowWidth - (BottomNavigationHorizontalPadding * 2f)
+        val itemWidth = (contentWidth - (BottomNavigationTopLevelSpacing * 2f)) / 3f
+
+        FolioreBottomNavigationItem(
+            icon = libraryDestination.icon,
+            label = stringResource(libraryDestination.labelRes),
+            contentDescription = stringResource(libraryDestination.labelRes),
+            selected = selectedRoute == libraryDestination.route,
+            onClick = onLibraryClick,
+            modifier = Modifier
+                .offset(x = rowStart + BottomNavigationHorizontalPadding, y = BottomBarItemTopPadding)
+                .width(itemWidth),
+        )
+        FolioreBottomNavigationItem(
+            icon = Icons.Outlined.Sync,
+            label = stringResource(R.string.nav_sync),
+            contentDescription = stringResource(R.string.action_sync_now),
+            selected = false,
+            enabled = !isLoading,
+            onClick = onSyncClick,
+            modifier = Modifier
+                .offset(
+                    x = rowStart + BottomNavigationHorizontalPadding + itemWidth + BottomNavigationTopLevelSpacing,
+                    y = BottomBarItemTopPadding,
+                )
+                .width(itemWidth),
+        )
+        FolioreBottomNavigationItem(
+            icon = settingsDestination.icon,
+            label = stringResource(settingsDestination.labelRes),
+            contentDescription = stringResource(settingsDestination.labelRes),
+            selected = selectedRoute == settingsDestination.route,
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .offset(
+                    x = rowStart + BottomNavigationHorizontalPadding +
+                        ((itemWidth + BottomNavigationTopLevelSpacing) * 2f),
+                    y = BottomBarItemTopPadding,
+                )
+                .width(itemWidth),
+        )
+    }
+}
+
+@Composable
 private fun AnimatedNavigationItem(
     index: Int,
     transition: androidx.compose.animation.core.Transition<Boolean>,
@@ -556,6 +858,7 @@ private fun EditActionsSlot(
     compact: Boolean,
     delayMillis: Int,
     actionStrip: Boolean = false,
+    animated: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val visibleState = remember {
@@ -563,11 +866,9 @@ private fun EditActionsSlot(
             targetState = true
         }
     }
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        androidx.compose.animation.AnimatedVisibility(
+    Box(modifier = modifier, contentAlignment = Alignment.TopCenter) {
+        if (animated) {
+            AnimatedVisibility(
             visibleState = visibleState,
             enter = fadeIn(
                 animationSpec = tween(
@@ -577,6 +878,15 @@ private fun EditActionsSlot(
             ),
             exit = fadeOut(animationSpec = tween(durationMillis = 90)),
         ) {
+            FolioreEditActions(
+                actions = editActions,
+                isLoading = isLoading,
+                compact = compact,
+                actionStrip = actionStrip,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        } else {
             FolioreEditActions(
                 actions = editActions,
                 isLoading = isLoading,
@@ -759,6 +1069,12 @@ private enum class BottomBarMode {
     EditStacked,
 }
 
+private enum class TopChromeMode {
+    None,
+    Library,
+    Edit,
+}
+
 private data class EditBottomBarState(
     val bookId: String,
     val actions: EditBottomBarActions,
@@ -773,6 +1089,50 @@ private object Routes {
 
     fun details(bookId: String): String = "details/$bookId"
     fun edit(bookId: String): String = "edit/$bookId"
+}
+
+private fun androidx.compose.animation.AnimatedContentTransitionScope<NavBackStackEntry>.routeEnterTransition(): EnterTransition {
+    val from = initialState.destination.route
+    val to = targetState.destination.route
+    val fadeSpec = tween<Float>(durationMillis = 180, easing = FastOutSlowInEasing)
+
+    return when {
+        from == Routes.LIBRARY && to == Routes.EDIT -> {
+            slideInHorizontally(
+                animationSpec = tween(durationMillis = RouteTransitionMillis, easing = FastOutSlowInEasing),
+                initialOffsetX = { fullWidth -> fullWidth },
+            ) + fadeIn(animationSpec = fadeSpec)
+        }
+        from == Routes.EDIT && to == Routes.LIBRARY -> {
+            slideInHorizontally(
+                animationSpec = tween(durationMillis = RouteTransitionMillis, easing = FastOutSlowInEasing),
+                initialOffsetX = { fullWidth -> -fullWidth },
+            ) + fadeIn(animationSpec = fadeSpec)
+        }
+        else -> EnterTransition.None
+    }
+}
+
+private fun androidx.compose.animation.AnimatedContentTransitionScope<NavBackStackEntry>.routeExitTransition(): ExitTransition {
+    val from = initialState.destination.route
+    val to = targetState.destination.route
+    val fadeSpec = tween<Float>(durationMillis = 160, easing = FastOutSlowInEasing)
+
+    return when {
+        from == Routes.LIBRARY && to == Routes.EDIT -> {
+            slideOutHorizontally(
+                animationSpec = tween(durationMillis = RouteTransitionMillis, easing = FastOutSlowInEasing),
+                targetOffsetX = { fullWidth -> -fullWidth },
+            ) + fadeOut(animationSpec = fadeSpec)
+        }
+        from == Routes.EDIT && to == Routes.LIBRARY -> {
+            slideOutHorizontally(
+                animationSpec = tween(durationMillis = RouteTransitionMillis, easing = FastOutSlowInEasing),
+                targetOffsetX = { fullWidth -> fullWidth },
+            ) + fadeOut(animationSpec = fadeSpec)
+        }
+        else -> ExitTransition.None
+    }
 }
 
 private data class TopLevelDestination(

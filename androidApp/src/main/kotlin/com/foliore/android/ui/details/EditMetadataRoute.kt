@@ -14,10 +14,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
+import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.library.noticeMessage
 import com.foliore.android.viewmodel.LibraryViewModel
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun EditMetadataRoute(
@@ -25,6 +29,11 @@ fun EditMetadataRoute(
     bookId: String,
     onBack: () -> Unit,
     onBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
+    chromeHazeState: HazeState? = null,
+    topChromeInset: Dp = 0.dp,
+    bottomChromeInset: Dp = 0.dp,
+    showTopChrome: Boolean = true,
+    onTopChromeContentChange: (TopChromeContent?) -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -110,6 +119,11 @@ fun EditMetadataRoute(
             isLoading = state.hasActiveProgress,
             progress = state.activeProgress,
             onBottomBarActionsChange = onBottomBarActionsChange,
+            chromeHazeState = chromeHazeState,
+            topChromeInset = topChromeInset,
+            bottomChromeInset = bottomChromeInset,
+            showTopChrome = showTopChrome,
+            onTopChromeContentChange = onTopChromeContentChange,
             modifier = Modifier.padding(paddingValues),
         )
     }

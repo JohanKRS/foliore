@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,6 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,15 +65,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -82,6 +89,9 @@ import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiCoverStyleRequest
 import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.metadata.MetadataLookupCandidate
+import com.foliore.android.ui.TopChromeContent
+import com.foliore.android.ui.TopChromeDividerHalfHeight
+import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStatusLine
@@ -90,6 +100,14 @@ import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncProgressPhase
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
+import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.HazeProgressive
+import dev.chrisbanes.haze.blur.blurEffect
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import java.io.File
 
 @Composable
@@ -116,6 +134,11 @@ fun EditMetadataScreen(
     isLoading: Boolean,
     progress: SyncProgress?,
     onBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
+    chromeHazeState: HazeState? = null,
+    topChromeInset: Dp = 0.dp,
+    bottomChromeInset: Dp = 0.dp,
+    showTopChrome: Boolean = true,
+    onTopChromeContentChange: (TopChromeContent?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     if (book == null) {
@@ -250,6 +273,29 @@ fun EditMetadataScreen(
         val tabletWorkspace = maxWidth >= 840.dp
         val compactActions = maxWidth < maxHeight
         val saveEnabled = title.isNotBlank()
+        val localHazeState = rememberHazeState()
+        val hazeState = chromeHazeState ?: localHazeState
+        val currentOnBack by rememberUpdatedState(onBack)
+        val currentOnAutofillClick by rememberUpdatedState {
+            showMetadataAutofillDialog = true
+        }
+        val externalTopChromeContent: TopChromeContent = remember(
+            hazeState,
+            tabletWorkspace,
+            hasOpenAiApiKey,
+        ) {
+            { chromeModifier ->
+                EditMetadataTopChromeOverlay(
+                    hazeState = hazeState,
+                    tabletWorkspace = tabletWorkspace,
+                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    onBack = { currentOnBack() },
+                    onAutofillClick = { currentOnAutofillClick() },
+                    modifier = chromeModifier,
+                    drawBackground = false,
+                )
+            }
+        }
 
         DisposableEffect(tabletWorkspace, compactActions, saveEnabled) {
             onBottomBarActionsChange(
@@ -267,9 +313,30 @@ fun EditMetadataScreen(
             }
         }
 
+        DisposableEffect(showTopChrome, externalTopChromeContent) {
+            if (!showTopChrome) {
+                onTopChromeContentChange(externalTopChromeContent)
+            }
+            onDispose {
+                if (!showTopChrome) {
+                    onTopChromeContentChange(null)
+                }
+            }
+        }
+
+        SideEffect {
+            if (!showTopChrome) {
+                onTopChromeContentChange(externalTopChromeContent)
+            }
+        }
+
         if (tabletWorkspace) {
             TabletEditBookScreen(
                 book = book,
+                hazeState = hazeState,
+                topChromeInset = topChromeInset,
+                bottomChromeInset = bottomChromeInset,
+                showTopChrome = showTopChrome,
                 title = title,
                 onTitleChange = {
                     title = it
@@ -300,6 +367,10 @@ fun EditMetadataScreen(
         } else {
             StackedEditBookScreen(
                 book = book,
+                hazeState = hazeState,
+                topChromeInset = topChromeInset,
+                bottomChromeInset = bottomChromeInset,
+                showTopChrome = showTopChrome,
                 hasOpenAiApiKey = hasOpenAiApiKey,
                 title = title,
                 onTitleChange = {
@@ -443,6 +514,10 @@ fun EditMetadataScreen(
 @Composable
 private fun TabletEditBookScreen(
     book: LibraryBook,
+    hazeState: HazeState,
+    topChromeInset: Dp,
+    bottomChromeInset: Dp,
+    showTopChrome: Boolean,
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
@@ -467,14 +542,22 @@ private fun TabletEditBookScreen(
     hasOpenAiApiKey: Boolean,
     onAutofillClick: () -> Unit,
 ) {
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .hazeSource(state = hazeState),
+    ) {
         Column(
             modifier = Modifier
                 .weight(TabletEditLeftPaneWeight)
                 .fillMaxHeight(),
         ) {
-            TabletLeftTopBar(onBack = onBack)
-            EditorialDivider(modifier = Modifier.fillMaxWidth())
+            if (showTopChrome) {
+                TabletLeftTopBar(onBack = onBack)
+                EditorialDivider(modifier = Modifier.fillMaxWidth())
+            } else {
+                Spacer(modifier = Modifier.height(topChromeInset))
+            }
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -572,6 +655,7 @@ private fun TabletEditBookScreen(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
+                .then(if (showTopChrome) Modifier else Modifier.padding(top = topChromeInset))
                 .width(1.dp)
                 .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
         )
@@ -581,11 +665,15 @@ private fun TabletEditBookScreen(
                 .weight(TabletEditRightPaneWeight)
                 .fillMaxHeight(),
         ) {
-            TabletRightHeader(
-                hasOpenAiApiKey = hasOpenAiApiKey,
-                onAutofillClick = onAutofillClick,
-            )
-            EditorialDivider(modifier = Modifier.fillMaxWidth())
+            if (showTopChrome) {
+                TabletRightHeader(
+                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    onAutofillClick = onAutofillClick,
+                )
+                EditorialDivider(modifier = Modifier.fillMaxWidth())
+            } else {
+                Spacer(modifier = Modifier.height(topChromeInset))
+            }
 
             Column(
                 modifier = Modifier
@@ -702,6 +790,7 @@ private fun TabletEditBookScreen(
 
                 TabletSyncSection(book = book)
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
+                Spacer(modifier = Modifier.height(bottomChromeInset))
             }
         }
     }
@@ -710,6 +799,10 @@ private fun TabletEditBookScreen(
 @Composable
 private fun StackedEditBookScreen(
     book: LibraryBook,
+    hazeState: HazeState,
+    topChromeInset: Dp,
+    bottomChromeInset: Dp,
+    showTopChrome: Boolean,
     hasOpenAiApiKey: Boolean,
     title: String,
     onTitleChange: (String) -> Unit,
@@ -734,14 +827,25 @@ private fun StackedEditBookScreen(
     onReplaceCover: () -> Unit,
     onBack: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        TabletLeftTopBar(onBack = onBack)
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
+    val density = LocalDensity.current
+    var topChromeHeightPx by remember { mutableStateOf(0) }
+    val resolvedTopChromeInset = if (showTopChrome) {
+        with(density) { topChromeHeightPx.toDp() }
+    } else {
+        topChromeInset
+    }
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clipToBounds(),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .hazeSource(state = hazeState)
+                .verticalScroll(rememberScrollState())
+                .padding(top = resolvedTopChromeInset + 16.dp, bottom = bottomChromeInset),
         ) {
             Column(
                 modifier = Modifier
@@ -952,6 +1056,188 @@ private fun StackedEditBookScreen(
             TabletSyncSection(book = book)
             TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
         }
+
+        if (showTopChrome) {
+            EditTopChrome(
+                hazeState = hazeState,
+                onBack = onBack,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .onSizeChanged { topChromeHeightPx = it.height },
+            )
+        }
+    }
+}
+
+@Composable
+fun EditMetadataTopChromeOverlay(
+    hazeState: HazeState,
+    tabletWorkspace: Boolean,
+    hasOpenAiApiKey: Boolean,
+    onBack: () -> Unit,
+    onAutofillClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    drawBackground: Boolean = true,
+) {
+    if (tabletWorkspace) {
+        TabletEditTopChrome(
+            hazeState = hazeState,
+            hasOpenAiApiKey = hasOpenAiApiKey,
+            onBack = onBack,
+            onAutofillClick = onAutofillClick,
+            modifier = modifier,
+            drawBackground = drawBackground,
+        )
+    } else {
+        EditTopChrome(
+            hazeState = hazeState,
+            onBack = onBack,
+            modifier = modifier,
+            drawBackground = drawBackground,
+        )
+    }
+}
+
+@Composable
+private fun TabletEditTopChrome(
+    hazeState: HazeState,
+    hasOpenAiApiKey: Boolean,
+    onBack: () -> Unit,
+    onAutofillClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    drawBackground: Boolean = true,
+) {
+    val chromeTint = MaterialTheme.colorScheme.background
+
+    Box(modifier = modifier.height(TopChromeHeaderHeight)) {
+        if (drawBackground) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clipToBounds()
+                    .hazeEffect(state = hazeState) {
+                        inputScale = HazeInputScale.Fixed(0.5f)
+                        blurEffect {
+                            blurRadius = 40.dp
+                            colorEffects = listOf(
+                                HazeColorEffect.tint(chromeTint.copy(alpha = 0.68f)),
+                            )
+                            progressive = HazeProgressive.verticalGradient(
+                                startIntensity = 1f,
+                                endIntensity = 0f,
+                            )
+                        }
+                    }
+                    .background(
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0f to chromeTint.copy(alpha = 0.98f),
+                                0.56f to chromeTint.copy(alpha = 0.88f),
+                                0.86f to chromeTint.copy(alpha = 0.42f),
+                                1f to Color.Transparent,
+                            ),
+                        ),
+                    ),
+            )
+        }
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(TabletEditLeftPaneWeight)
+                    .fillMaxWidth(),
+            ) {
+                TabletLeftTopBar(onBack = onBack)
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.62f)),
+            )
+            Box(
+                modifier = Modifier
+                    .weight(TabletEditRightPaneWeight)
+                    .fillMaxWidth(),
+            ) {
+                TabletRightHeader(
+                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    onAutofillClick = onAutofillClick,
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = TopChromeDividerHalfHeight)
+                .fillMaxWidth(),
+        ) {
+            EditorialDivider(
+                modifier = Modifier
+                    .weight(TabletEditLeftPaneWeight)
+                    .fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.width(1.dp))
+            EditorialDivider(
+                modifier = Modifier
+                    .weight(TabletEditRightPaneWeight)
+                    .fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun EditTopChrome(
+    hazeState: HazeState,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    drawBackground: Boolean = true,
+) {
+    val chromeTint = MaterialTheme.colorScheme.background
+    val chromeModifier = if (drawBackground) {
+        Modifier
+            .fillMaxWidth()
+            .clipToBounds()
+            .hazeEffect(state = hazeState) {
+                inputScale = HazeInputScale.Fixed(0.5f)
+                blurEffect {
+                    blurRadius = 40.dp
+                    colorEffects = listOf(
+                        HazeColorEffect.tint(chromeTint.copy(alpha = 0.68f)),
+                    )
+                    progressive = HazeProgressive.verticalGradient(
+                        startIntensity = 1f,
+                        endIntensity = 0f,
+                    )
+                }
+            }
+            .background(
+                Brush.verticalGradient(
+                    colorStops = arrayOf(
+                        0f to chromeTint.copy(alpha = 0.98f),
+                        0.56f to chromeTint.copy(alpha = 0.88f),
+                        0.86f to chromeTint.copy(alpha = 0.42f),
+                        1f to Color.Transparent,
+                    ),
+                ),
+            )
+    } else {
+        Modifier.fillMaxWidth()
+    }
+
+    Box(modifier = modifier) {
+        Column(
+            modifier = chromeModifier,
+        ) {
+            TabletLeftTopBar(onBack = onBack)
+        }
+        EditorialDivider(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = TopChromeDividerHalfHeight)
+                .fillMaxWidth(),
+        )
     }
 }
 
@@ -960,7 +1246,7 @@ private fun TabletLeftTopBar(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(74.dp)
+            .height(TopChromeHeaderHeight)
             .padding(start = 18.dp, end = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1005,7 +1291,7 @@ private fun TabletRightHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(74.dp)
+            .height(TopChromeHeaderHeight)
             .padding(start = TabletPaneHorizontalPadding, end = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
