@@ -405,7 +405,7 @@ private fun TopChromeGlassContainer(
                         blurEffect {
                             blurRadius = 40.dp
                             colorEffects = listOf(
-                                HazeColorEffect.tint(chromeTint.copy(alpha = 0.68f)),
+                                HazeColorEffect.tint(chromeTint.copy(alpha = 0.74f)),
                             )
                             progressive = HazeProgressive.verticalGradient(
                                 startIntensity = 1f,
@@ -417,9 +417,10 @@ private fun TopChromeGlassContainer(
                         Brush.verticalGradient(
                             colorStops = arrayOf(
                                 0f to chromeTint.copy(alpha = 0.98f),
-                                0.56f to chromeTint.copy(alpha = 0.88f),
-                                0.86f to chromeTint.copy(alpha = 0.42f),
-                                1f to Color.Transparent,
+                                0.48f to chromeTint.copy(alpha = 0.94f),
+                                0.78f to chromeTint.copy(alpha = 0.82f),
+                                0.93f to chromeTint.copy(alpha = 0.58f),
+                                1f to chromeTint.copy(alpha = 0.34f),
                             ),
                         ),
                     ),

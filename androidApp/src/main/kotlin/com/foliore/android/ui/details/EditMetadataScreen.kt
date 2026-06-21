@@ -845,12 +845,13 @@ private fun StackedEditBookScreen(
                 .fillMaxSize()
                 .hazeSource(state = hazeState)
                 .verticalScroll(rememberScrollState())
-                .padding(top = resolvedTopChromeInset + 16.dp, bottom = bottomChromeInset),
+                .padding(top = resolvedTopChromeInset + 12.dp, bottom = bottomChromeInset),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = TabletLeftContentHorizontalPadding, vertical = 24.dp),
+                    .padding(horizontal = TabletLeftContentHorizontalPadding)
+                    .padding(bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
