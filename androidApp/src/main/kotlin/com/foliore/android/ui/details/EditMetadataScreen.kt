@@ -252,19 +252,15 @@ fun EditMetadataScreen(
         val saveEnabled = title.isNotBlank()
 
         DisposableEffect(tabletWorkspace, compactActions, saveEnabled) {
-            if (tabletWorkspace) {
-                onBottomBarActionsChange(
-                    EditBottomBarActions(
-                        onSave = { latestSaveDraft() },
-                        onShareExport = { latestShareExport() },
-                        onSendToKindle = { latestSendToKindle() },
-                        saveEnabled = saveEnabled,
-                        compact = compactActions,
-                    ),
-                )
-            } else {
-                onBottomBarActionsChange(null)
-            }
+            onBottomBarActionsChange(
+                EditBottomBarActions(
+                    onSave = { latestSaveDraft() },
+                    onShareExport = { latestShareExport() },
+                    onSendToKindle = { latestSendToKindle() },
+                    saveEnabled = saveEnabled,
+                    compact = !tabletWorkspace || compactActions,
+                ),
+            )
 
             onDispose {
                 onBottomBarActionsChange(null)
@@ -336,7 +332,6 @@ fun EditMetadataScreen(
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
                 onReplaceCover = onReplaceCover,
                 onBack = onBack,
-                onSave = saveDraft,
             )
         }
     }
@@ -481,7 +476,7 @@ private fun TabletEditBookScreen(
     Row(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .weight(0.46f)
+                .weight(TabletEditLeftPaneWeight)
                 .fillMaxHeight(),
         ) {
             TabletLeftTopBar(onBack = onBack)
@@ -490,7 +485,7 @@ private fun TabletEditBookScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = 36.dp, vertical = 24.dp),
+                    .padding(horizontal = TabletLeftContentHorizontalPadding, vertical = 24.dp),
                 contentAlignment = Alignment.TopCenter,
             ) {
                 Column(
@@ -589,7 +584,7 @@ private fun TabletEditBookScreen(
 
         Column(
             modifier = Modifier
-                .weight(0.54f)
+                .weight(TabletEditRightPaneWeight)
                 .fillMaxHeight(),
         ) {
             TabletRightHeader(
@@ -607,7 +602,7 @@ private fun TabletEditBookScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 28.dp, vertical = 20.dp),
+                        .padding(horizontal = TabletPaneHorizontalPadding, vertical = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     TabletMetadataField(
@@ -711,19 +706,7 @@ private fun TabletEditBookScreen(
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
-                )
                 TabletSyncSection(book = book)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
-                )
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
             }
         }
@@ -762,7 +745,6 @@ private fun PhoneEditMetadataContent(
     onGenerateCoverClick: () -> Unit,
     onReplaceCover: () -> Unit,
     onBack: () -> Unit,
-    onSave: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         EditTopBar(onBack = onBack)
@@ -899,31 +881,6 @@ private fun PhoneEditMetadataContent(
                 onValueChange = onIsbnChange,
                 label = stringResource(R.string.edit_metadata_field_isbn),
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedButton(
-                    onClick = onBack,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(text = stringResource(R.string.edit_metadata_cancel))
-                }
-                Button(
-                    onClick = onSave,
-                    modifier = Modifier.weight(1f),
-                    enabled = title.isNotBlank(),
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Check,
-                        contentDescription = null,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.edit_metadata_save))
-                }
-            }
         }
     }
 }
@@ -957,7 +914,10 @@ private fun TabletLeftTopBar(onBack: () -> Unit) {
         Text(
             text = stringResource(R.string.edit_metadata_title),
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = CormorantGaramondFamily,
+                fontWeight = FontWeight.SemiBold,
+            ),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
@@ -976,12 +936,15 @@ private fun TabletRightHeader(
         modifier = Modifier
             .fillMaxWidth()
             .height(74.dp)
-            .padding(start = 28.dp, end = 24.dp),
+            .padding(start = TabletPaneHorizontalPadding, end = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = stringResource(R.string.edit_metadata_section),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = CormorantGaramondFamily,
+                fontWeight = FontWeight.SemiBold,
+            ),
             color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.weight(1f))
@@ -1091,15 +1054,21 @@ private fun TabletSyncSection(book: LibraryBook) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp, vertical = 20.dp),
+            .padding(horizontal = TabletPaneHorizontalPadding, vertical = 24.dp),
     ) {
         Text(
             text = stringResource(R.string.edit_metadata_sync_section),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = CormorantGaramondFamily,
+                fontWeight = FontWeight.SemiBold,
+            ),
             color = MaterialTheme.colorScheme.onBackground,
         )
         Spacer(modifier = Modifier.height(14.dp))
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
+        EditorialDivider(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalPadding = 0.dp,
+        )
         Spacer(modifier = Modifier.height(18.dp))
         TabletInfoRow(
             icon = Icons.Outlined.CloudDone,
@@ -1136,11 +1105,19 @@ private fun TabletAboutSection(description: String?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 28.dp, vertical = 24.dp),
+            .padding(horizontal = TabletPaneHorizontalPadding, vertical = 24.dp),
     ) {
+        EditorialDivider(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalPadding = 0.dp,
+        )
+        Spacer(modifier = Modifier.height(18.dp))
         Text(
-            text = stringResource(R.string.details_about_book).uppercase(),
-            style = MaterialTheme.typography.labelSmall,
+            text = stringResource(R.string.details_about_book),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontFamily = CormorantGaramondFamily,
+                fontWeight = FontWeight.SemiBold,
+            ),
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(14.dp))

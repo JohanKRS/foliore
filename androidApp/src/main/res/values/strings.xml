@@ -137,7 +137,7 @@
     <string name="edit_metadata_field_authors_helper">Separe múltiplos autores por vírgula.</string>
     <string name="edit_metadata_field_sort_author">Autor para ordenação</string>
     <string name="edit_metadata_field_series">Série</string>
-    <string name="edit_metadata_field_series_index">Número da série</string>
+    <string name="edit_metadata_field_series_index">Nº da série</string>
     <string name="edit_metadata_field_language">Idioma</string>
     <string name="edit_metadata_field_publisher">Editora</string>
     <string name="edit_metadata_field_published_date">Ano de publicação</string>

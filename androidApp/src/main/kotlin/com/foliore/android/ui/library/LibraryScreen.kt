@@ -240,7 +240,7 @@ fun LibraryScreen(
                             books = visibleBooks,
                             gridColumns = state.gridColumns,
                             displayOptions = state.displayOptions,
-                            topContentPadding = topChromeInset,
+                            topContentPadding = topChromeInset + 12.dp,
                             bottomContentPadding = bottomChromeInset + 8.dp,
                             isBatchMode = state.isBatchMode,
                             selectedBookIds = state.selectedBookIds,
@@ -1243,7 +1243,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         placeholder.typeface = Typeface.DEFAULT_BOLD
         placeholder.gravity = Gravity.CENTER
 
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
         titleView.typeface = context.cormorantGaramondTypeface(weight = 600)
         titleView.ellipsize = TextUtils.TruncateAt.END
 
@@ -2132,9 +2132,12 @@ private fun EmptyLibrary(
 }
 
 @Composable
-fun EditorialDivider(modifier: Modifier = Modifier) {
+fun EditorialDivider(
+    modifier: Modifier = Modifier,
+    horizontalPadding: Dp = 28.dp,
+) {
     Row(
-        modifier = modifier.padding(horizontal = 28.dp),
+        modifier = modifier.padding(horizontal = horizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
