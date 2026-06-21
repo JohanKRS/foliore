@@ -70,7 +70,7 @@ fun EditMetadataRoute(
                 viewModel.saveMetadataAndPrepare(
                     bookId = bookId,
                     draft = draft,
-                    onSaved = onBack,
+                    onSaved = {},
                 )
             },
             onShareExport = {

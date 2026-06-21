@@ -208,9 +208,13 @@ fun EditMetadataScreen(
             seriesIndex = seriesIndex.cleanOptional()?.toDoubleOrNull(),
         )
     }
+    val originalDraft = remember(book.book.id, book.metadata) {
+        book.toMetadataDraft()
+    }
+    val hasPendingSave = title.isNotBlank() && currentDraft() != originalDraft
     val saveDraft = {
         titleTouched = true
-        if (title.isNotBlank()) {
+        if (hasPendingSave) {
             onSave(currentDraft())
         }
     }
@@ -272,7 +276,7 @@ fun EditMetadataScreen(
     ) {
         val tabletWorkspace = maxWidth >= 840.dp
         val compactActions = maxWidth < maxHeight
-        val saveEnabled = title.isNotBlank()
+        val saveEnabled = hasPendingSave
         val localHazeState = rememberHazeState()
         val hazeState = chromeHazeState ?: localHazeState
         val currentOnBack by rememberUpdatedState(onBack)
@@ -304,6 +308,7 @@ fun EditMetadataScreen(
                     onShareExport = { latestShareExport() },
                     onSendToKindle = { latestSendToKindle() },
                     saveEnabled = saveEnabled,
+                    hasPendingSave = hasPendingSave,
                     compact = !tabletWorkspace || compactActions,
                 ),
             )
@@ -845,7 +850,7 @@ private fun StackedEditBookScreen(
                 .fillMaxSize()
                 .hazeSource(state = hazeState)
                 .verticalScroll(rememberScrollState())
-                .padding(top = resolvedTopChromeInset + 12.dp, bottom = bottomChromeInset),
+                .padding(top = resolvedTopChromeInset, bottom = bottomChromeInset),
         ) {
             Column(
                 modifier = Modifier
@@ -2468,6 +2473,24 @@ private fun BookMetadataDraft.toAutofillPreview(): MetadataAutofillPreview {
         isbn = isbn?.cleanOptional(),
         seriesName = seriesName?.cleanOptional(),
         seriesIndex = seriesIndex,
+    )
+}
+
+private fun LibraryBook.toMetadataDraft(): BookMetadataDraft {
+    return BookMetadataDraft(
+        title = metadata.title,
+        subtitle = metadata.subtitle?.cleanOptional(),
+        authors = metadata.authors.mapNotNull { it.cleanOptional() },
+        sortAuthor = metadata.sortAuthor?.cleanOptional(),
+        language = metadata.language?.cleanOptional(),
+        publisher = metadata.publisher?.cleanOptional(),
+        publishedDate = metadata.publishedDate?.cleanOptional(),
+        description = metadata.description?.cleanOptional(),
+        tags = metadata.tags.mapNotNull { it.cleanOptional() },
+        isbn = metadata.isbn?.cleanOptional(),
+        identifiers = metadata.identifiers,
+        seriesName = metadata.seriesName?.cleanOptional(),
+        seriesIndex = metadata.seriesIndex,
     )
 }
 

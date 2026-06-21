@@ -242,7 +242,7 @@ fun LibraryScreen(
                             books = visibleBooks,
                             gridColumns = state.gridColumns,
                             displayOptions = state.displayOptions,
-                            topContentPadding = resolvedTopChromeInset + 12.dp,
+                            topContentPadding = resolvedTopChromeInset,
                             bottomContentPadding = bottomChromeInset + 8.dp,
                             scrollState = gridScrollState,
                             restoreReady = if (showTopChrome) {

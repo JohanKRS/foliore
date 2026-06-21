@@ -5,5 +5,6 @@ data class EditBottomBarActions(
     val onShareExport: () -> Unit,
     val onSendToKindle: () -> Unit,
     val saveEnabled: Boolean,
+    val hasPendingSave: Boolean = saveEnabled,
     val compact: Boolean,
 )

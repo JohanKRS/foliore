@@ -910,10 +910,23 @@ private fun FolioreEditActions(
     val exportLabel = stringResource(R.string.edit_metadata_export_short)
     val actionsEnabled = actions != null && !isLoading
     val saveEnabled = actions?.saveEnabled == true && !isLoading
-    val horizontalPadding = if (compact) 12.dp else 24.dp
-    val buttonSpacing = if (compact) 8.dp else 16.dp
-    val iconSpacing = if (compact) 6.dp else 9.dp
-    val buttonContentPadding = PaddingValues(horizontal = if (compact) 8.dp else 16.dp)
+    val saveHasPendingChanges = actions?.hasPendingSave == true && !isLoading
+    val neutralButtonContainer = MaterialTheme.colorScheme.background
+    val neutralButtonContent = MaterialTheme.colorScheme.primary
+    val neutralButtonBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
+    val disabledButtonContent = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+    val horizontalPadding = if (actionStrip) 36.dp else if (compact) 12.dp else 24.dp
+    val buttonSpacing = if (actionStrip) 8.dp else if (compact) 8.dp else 16.dp
+    val iconSpacing = if (actionStrip) 5.dp else if (compact) 6.dp else 9.dp
+    val iconSize = if (actionStrip) 18.dp else 20.dp
+    val actionTextStyle = if (actionStrip) {
+        MaterialTheme.typography.labelMedium
+    } else {
+        MaterialTheme.typography.labelLarge
+    }
+    val buttonContentPadding = PaddingValues(
+        horizontal = if (actionStrip) 4.dp else if (compact) 8.dp else 16.dp,
+    )
     val containerHeight = if (actionStrip) BottomEditActionStripHeight else BottomBarHeight
     val buttonHeight = if (actionStrip) BottomEditActionStripButtonHeight else BottomBarItemHeight
     val topPadding = if (actionStrip) 6.dp else BottomBarItemTopPadding
@@ -931,52 +944,91 @@ private fun FolioreEditActions(
         horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OutlinedButton(
-            onClick = { actions?.onSave?.invoke() },
-            enabled = saveEnabled,
-            modifier = Modifier
-                .weight(1f)
-                .height(buttonHeight),
-            shape = RoundedCornerShape(5.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary,
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
-            contentPadding = buttonContentPadding,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Save,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(modifier = Modifier.width(iconSpacing))
-            Text(
-                text = stringResource(R.string.edit_metadata_save),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        if (saveHasPendingChanges) {
+            Button(
+                onClick = { actions.onSave.invoke() },
+                enabled = saveEnabled,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(buttonHeight),
+                shape = RoundedCornerShape(5.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = neutralButtonContainer,
+                    disabledContentColor = disabledButtonContent,
+                ),
+                contentPadding = buttonContentPadding,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Save,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                )
+                Spacer(modifier = Modifier.width(iconSpacing))
+                Text(
+                    text = stringResource(R.string.edit_metadata_save),
+                    style = actionTextStyle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        } else {
+            OutlinedButton(
+                onClick = { actions?.onSave?.invoke() },
+                enabled = saveEnabled,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(buttonHeight),
+                shape = RoundedCornerShape(5.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = neutralButtonContainer,
+                    contentColor = neutralButtonContent,
+                    disabledContainerColor = neutralButtonContainer,
+                    disabledContentColor = disabledButtonContent,
+                ),
+                border = BorderStroke(1.dp, neutralButtonBorder),
+                contentPadding = buttonContentPadding,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Save,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize),
+                )
+                Spacer(modifier = Modifier.width(iconSpacing))
+                Text(
+                    text = stringResource(R.string.edit_metadata_save),
+                    style = actionTextStyle,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        Button(
+        OutlinedButton(
             onClick = { actions?.onShareExport?.invoke() },
             enabled = actionsEnabled,
             modifier = Modifier
                 .weight(1f)
                 .height(buttonHeight),
             shape = RoundedCornerShape(5.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = neutralButtonContainer,
+                contentColor = neutralButtonContent,
+                disabledContainerColor = neutralButtonContainer,
+                disabledContentColor = disabledButtonContent,
             ),
+            border = BorderStroke(1.dp, neutralButtonBorder),
             contentPadding = buttonContentPadding,
         ) {
             Icon(
                 imageVector = Icons.Outlined.Share,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(iconSize),
             )
             Spacer(modifier = Modifier.width(iconSpacing))
             Text(
                 text = exportLabel,
+                style = actionTextStyle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -989,19 +1041,23 @@ private fun FolioreEditActions(
                 .height(buttonHeight),
             shape = RoundedCornerShape(5.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.primary,
+                containerColor = neutralButtonContainer,
+                contentColor = neutralButtonContent,
+                disabledContainerColor = neutralButtonContainer,
+                disabledContentColor = disabledButtonContent,
             ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)),
+            border = BorderStroke(1.dp, neutralButtonBorder),
             contentPadding = buttonContentPadding,
         ) {
             Icon(
                 imageVector = Icons.Outlined.Email,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(iconSize),
             )
             Spacer(modifier = Modifier.width(iconSpacing))
             Text(
                 text = stringResource(R.string.edit_metadata_kindle_short),
+                style = actionTextStyle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
