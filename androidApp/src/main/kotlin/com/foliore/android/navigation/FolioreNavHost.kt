@@ -99,6 +99,8 @@ private val BottomBarContentInset = BottomBarHeight + 28.dp
 private val BottomBarItemTopPadding = 8.dp
 private val BottomBarItemHeight = 56.dp
 private val BottomBarItemBottomPadding = 30.dp
+private val BottomEditActionStripHeight = 58.dp
+private val BottomEditActionStripButtonHeight = 44.dp
 private val BottomNavigationMaxWidth = 560.dp
 private val BottomNavigationHorizontalPadding = 28.dp
 private val BottomNavigationTopLevelSpacing = 18.dp
@@ -137,7 +139,7 @@ fun FolioreNavHost(
                         mode = if (showEditNavigation) {
                             BottomBarMode.Edit
                         } else if (showEditActions) {
-                            BottomBarMode.EditActionsOnly
+                            BottomBarMode.EditStacked
                         } else {
                             BottomBarMode.TopLevel
                         },
@@ -169,13 +171,9 @@ fun FolioreNavHost(
                     .fillMaxSize()
                     .padding(contentPadding),
                 navController = navController,
-                openTabletWorkspace = openTabletWorkspace,
                 libraryViewModel = libraryViewModel,
                 themeMode = themeMode,
                 onThemeModeChange = onThemeModeChange,
-                onBookClick = { bookId ->
-                    navController.navigate(Routes.details(bookId))
-                },
                 onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
                 onBack = { navController.popBackStack() },
                 onEditBottomBarActionsChange = { actions ->
@@ -201,11 +199,9 @@ fun FolioreNavHost(
 private fun NavContent(
     modifier: Modifier,
     navController: NavHostController,
-    openTabletWorkspace: Boolean,
     libraryViewModel: LibraryViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
-    onBookClick: (String) -> Unit,
     onEditBook: (String) -> Unit,
     onBack: () -> Unit,
     onEditBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
@@ -224,13 +220,7 @@ private fun NavContent(
         composable(Routes.LIBRARY) {
             LibraryRoute(
                 viewModel = libraryViewModel,
-                onBookClick = { bookId ->
-                    if (openTabletWorkspace) {
-                        navController.navigate(Routes.edit(bookId))
-                    } else {
-                        onBookClick(bookId)
-                    }
-                },
+                onBookClick = { bookId -> navController.navigate(Routes.edit(bookId)) },
                 onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
                 chromeHazeState = chromeHazeState,
                 bottomChromeInset = bottomChromeInset,
@@ -277,7 +267,8 @@ private fun FolioreNavigationBar(
 ) {
     val editMode = mode != BottomBarMode.TopLevel
     val splitEditMode = mode == BottomBarMode.Edit
-    val actionsOnlyMode = mode == BottomBarMode.EditActionsOnly
+    val stackedEditMode = mode == BottomBarMode.EditStacked
+    val navigationSelectedRoute = if (editMode) Routes.LIBRARY else selectedRoute
     val chromeTint = MaterialTheme.colorScheme.background
 
     Column(
@@ -309,8 +300,12 @@ private fun FolioreNavigationBar(
             ),
     ) {
         if (isLoading) {
-            Spacer(modifier = Modifier.height(6.dp))
-            EditorialDivider(modifier = Modifier.fillMaxWidth())
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
+            )
             Spacer(modifier = Modifier.height(6.dp))
             SyncProgressStatusLine(
                 progress = progress,
@@ -325,24 +320,55 @@ private fun FolioreNavigationBar(
             progress = progress,
             modifier = Modifier.fillMaxWidth(),
         )
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(BottomBarHeight)
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
-        ) {
-            BoxWithConstraints(
+
+        if (stackedEditMode) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(BottomBarHeight),
+                    .height(BottomEditActionStripHeight + BottomBarHeight)
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
             ) {
-                val dividerWidth = 1.dp
-                val splitNavigationWidth = (maxWidth - dividerWidth) *
-                    (TabletEditLeftPaneWeight / (TabletEditLeftPaneWeight + TabletEditRightPaneWeight))
+                EditActionsSlot(
+                    editActions = editActions,
+                    isLoading = isLoading,
+                    compact = true,
+                    delayMillis = 90,
+                    actionStrip = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(BottomEditActionStripHeight),
+                )
+                AnimatedNavigationItemsSlot(
+                    selectedRoute = navigationSelectedRoute,
+                    splitEditMode = false,
+                    splitNavigationWidth = BottomNavigationMaxWidth,
+                    isLoading = isLoading,
+                    onLibraryClick = onLibraryClick,
+                    onSyncClick = onSyncClick,
+                    onSettingsClick = onSettingsClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(BottomBarHeight),
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(BottomBarHeight)
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+            ) {
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(BottomBarHeight),
+                ) {
+                    val dividerWidth = 1.dp
+                    val splitNavigationWidth = (maxWidth - dividerWidth) *
+                        (TabletEditLeftPaneWeight / (TabletEditLeftPaneWeight + TabletEditRightPaneWeight))
 
-                if (!actionsOnlyMode) {
                     AnimatedNavigationItemsSlot(
-                        selectedRoute = selectedRoute,
+                        selectedRoute = navigationSelectedRoute,
                         splitEditMode = splitEditMode,
                         splitNavigationWidth = if (splitEditMode) splitNavigationWidth else maxWidth,
                         isLoading = isLoading,
@@ -351,21 +377,8 @@ private fun FolioreNavigationBar(
                         onSettingsClick = onSettingsClick,
                         modifier = Modifier.fillMaxSize(),
                     )
-                }
 
-                when {
-                    actionsOnlyMode -> {
-                        EditActionsSlot(
-                            editActions = editActions,
-                            isLoading = isLoading,
-                            compact = true,
-                            delayMillis = 90,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(),
-                        )
-                    }
-                    splitEditMode -> {
+                    if (splitEditMode) {
                         Row(modifier = Modifier.fillMaxSize()) {
                             Spacer(
                                 modifier = Modifier
@@ -542,6 +555,7 @@ private fun EditActionsSlot(
     isLoading: Boolean,
     compact: Boolean,
     delayMillis: Int,
+    actionStrip: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val visibleState = remember {
@@ -567,6 +581,7 @@ private fun EditActionsSlot(
                 actions = editActions,
                 isLoading = isLoading,
                 compact = compact,
+                actionStrip = actionStrip,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -578,6 +593,7 @@ private fun FolioreEditActions(
     actions: EditBottomBarActions?,
     isLoading: Boolean,
     compact: Boolean,
+    actionStrip: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val exportLabel = stringResource(R.string.edit_metadata_export_short)
@@ -587,15 +603,19 @@ private fun FolioreEditActions(
     val buttonSpacing = if (compact) 8.dp else 16.dp
     val iconSpacing = if (compact) 6.dp else 9.dp
     val buttonContentPadding = PaddingValues(horizontal = if (compact) 8.dp else 16.dp)
+    val containerHeight = if (actionStrip) BottomEditActionStripHeight else BottomBarHeight
+    val buttonHeight = if (actionStrip) BottomEditActionStripButtonHeight else BottomBarItemHeight
+    val topPadding = if (actionStrip) 6.dp else BottomBarItemTopPadding
+    val bottomPadding = if (actionStrip) 8.dp else BottomBarItemBottomPadding
 
     Row(
         modifier = modifier
-            .height(BottomBarHeight)
+            .height(containerHeight)
             .padding(
                 start = horizontalPadding,
-                top = BottomBarItemTopPadding,
+                top = topPadding,
                 end = horizontalPadding,
-                bottom = BottomBarItemBottomPadding,
+                bottom = bottomPadding,
             ),
         horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
         verticalAlignment = Alignment.CenterVertically,
@@ -605,7 +625,7 @@ private fun FolioreEditActions(
             enabled = saveEnabled,
             modifier = Modifier
                 .weight(1f)
-                .height(BottomBarItemHeight),
+                .height(buttonHeight),
             shape = RoundedCornerShape(5.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.primary,
@@ -630,7 +650,7 @@ private fun FolioreEditActions(
             enabled = actionsEnabled,
             modifier = Modifier
                 .weight(1f)
-                .height(BottomBarItemHeight),
+                .height(buttonHeight),
             shape = RoundedCornerShape(5.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -655,7 +675,7 @@ private fun FolioreEditActions(
             enabled = actionsEnabled,
             modifier = Modifier
                 .weight(1f)
-                .height(BottomBarItemHeight),
+                .height(buttonHeight),
             shape = RoundedCornerShape(5.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.primary,
@@ -736,7 +756,7 @@ private fun NavHostController.returnToLibrary() {
 private enum class BottomBarMode {
     TopLevel,
     Edit,
-    EditActionsOnly,
+    EditStacked,
 }
 
 private data class EditBottomBarState(

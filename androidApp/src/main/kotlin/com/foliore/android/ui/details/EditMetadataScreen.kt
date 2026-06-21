@@ -298,7 +298,8 @@ fun EditMetadataScreen(
                 onAutofillClick = { showMetadataAutofillDialog = true },
             )
         } else {
-            PhoneEditMetadataContent(
+            StackedEditBookScreen(
+                book = book,
                 hasOpenAiApiKey = hasOpenAiApiKey,
                 title = title,
                 onTitleChange = {
@@ -306,24 +307,17 @@ fun EditMetadataScreen(
                     titleTouched = true
                 },
                 titleError = titleError,
-                subtitle = subtitle,
-                onSubtitleChange = { subtitle = it },
                 authors = authors,
                 onAuthorsChange = { authors = it },
-                sortAuthor = sortAuthor,
-                onSortAuthorChange = { sortAuthor = it },
                 seriesName = seriesName,
                 onSeriesNameChange = { seriesName = it },
                 seriesIndex = seriesIndex,
                 onSeriesIndexChange = { seriesIndex = it },
                 language = language,
                 onLanguageChange = { language = it },
-                publisher = publisher,
-                onPublisherChange = { publisher = it },
                 publishedDate = publishedDate,
                 onPublishedDateChange = { publishedDate = it },
                 description = description,
-                onDescriptionChange = { description = it },
                 tags = tags,
                 onTagsChange = { tags = it },
                 isbn = isbn,
@@ -714,29 +708,23 @@ private fun TabletEditBookScreen(
 }
 
 @Composable
-private fun PhoneEditMetadataContent(
+private fun StackedEditBookScreen(
+    book: LibraryBook,
     hasOpenAiApiKey: Boolean,
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
-    subtitle: String,
-    onSubtitleChange: (String) -> Unit,
     authors: String,
     onAuthorsChange: (String) -> Unit,
-    sortAuthor: String,
-    onSortAuthorChange: (String) -> Unit,
     seriesName: String,
     onSeriesNameChange: (String) -> Unit,
     seriesIndex: String,
     onSeriesIndexChange: (String) -> Unit,
     language: String,
     onLanguageChange: (String) -> Unit,
-    publisher: String,
-    onPublisherChange: (String) -> Unit,
     publishedDate: String,
     onPublishedDateChange: (String) -> Unit,
     description: String,
-    onDescriptionChange: (String) -> Unit,
     tags: String,
     onTagsChange: (String) -> Unit,
     isbn: String,
@@ -747,140 +735,222 @@ private fun PhoneEditMetadataContent(
     onBack: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        EditTopBar(onBack = onBack)
+        TabletLeftTopBar(onBack = onBack)
         EditorialDivider(modifier = Modifier.fillMaxWidth())
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .verticalScroll(rememberScrollState()),
         ) {
-            Text(
-                text = stringResource(R.string.edit_metadata_section).uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            OutlinedButton(
-                onClick = onAutofillClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = TabletLeftContentHorizontalPadding, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.AutoAwesome,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (hasOpenAiApiKey) {
-                        stringResource(R.string.edit_metadata_autofill)
-                    } else {
-                        stringResource(R.string.metadata_lookup_button)
-                    },
-                )
-            }
-            MetadataTextField(
-                value = title,
-                onValueChange = onTitleChange,
-                label = stringResource(R.string.edit_metadata_field_title),
-                isError = titleError,
-                supportingText = if (titleError) stringResource(R.string.edit_metadata_required) else null,
-            )
-            OutlinedButton(
-                onClick = onReplaceCover,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Image,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(R.string.details_action_replace_cover))
-            }
-            if (hasOpenAiApiKey) {
-                OutlinedButton(
-                    onClick = onGenerateCoverClick,
-                    modifier = Modifier.fillMaxWidth(),
+                Column(
+                    modifier = Modifier.widthIn(max = 340.dp),
+                    horizontalAlignment = Alignment.Start,
                 ) {
-                    Icon(
-                        imageVector = Icons.Outlined.AutoAwesome,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                    EditBookCover(
+                        book = book,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.details_action_generate_cover))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onReplaceCover,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(5.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
+                        ),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Image,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.details_action_replace_cover),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (hasOpenAiApiKey) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = onGenerateCoverClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(44.dp),
+                            shape = RoundedCornerShape(5.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.details_action_generate_cover),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = title.ifBlank { book.metadata.title },
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontFamily = CormorantGaramondFamily,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = authors.splitValues().firstOrNull()
+                            ?: stringResource(R.string.book_unknown_author),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    StatusPill(
+                        status = book.book.status,
+                        syncStatus = book.book.syncStatus,
+                    )
                 }
             }
-            MetadataTextField(
-                value = subtitle,
-                onValueChange = onSubtitleChange,
-                label = stringResource(R.string.edit_metadata_field_subtitle),
+
+            TabletRightHeader(
+                hasOpenAiApiKey = hasOpenAiApiKey,
+                onAutofillClick = onAutofillClick,
             )
-            MetadataTextField(
-                value = authors,
-                onValueChange = onAuthorsChange,
-                label = stringResource(R.string.edit_metadata_field_authors),
-                supportingText = stringResource(R.string.edit_metadata_field_authors_helper),
-            )
-            MetadataTextField(
-                value = sortAuthor,
-                onValueChange = onSortAuthorChange,
-                label = stringResource(R.string.edit_metadata_field_sort_author),
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetadataTextField(
-                    value = seriesName,
-                    onValueChange = onSeriesNameChange,
+            EditorialDivider(modifier = Modifier.fillMaxWidth())
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = TabletPaneHorizontalPadding, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TabletMetadataField(
+                    icon = Icons.AutoMirrored.Outlined.MenuBook,
+                    label = stringResource(R.string.edit_metadata_field_title),
+                ) {
+                    MetadataTextField(
+                        value = title,
+                        onValueChange = onTitleChange,
+                        label = stringResource(R.string.edit_metadata_field_title),
+                        isError = titleError,
+                        supportingText = if (titleError) stringResource(R.string.edit_metadata_required) else null,
+                        showLabel = false,
+                        singleLine = true,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.PersonOutline,
+                    label = stringResource(R.string.edit_metadata_field_authors),
+                ) {
+                    MetadataTextField(
+                        value = authors,
+                        onValueChange = onAuthorsChange,
+                        label = stringResource(R.string.edit_metadata_field_authors),
+                        showLabel = false,
+                        singleLine = true,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.BookmarkBorder,
                     label = stringResource(R.string.edit_metadata_field_series),
-                    modifier = Modifier.weight(1f),
-                )
-                MetadataTextField(
-                    value = seriesIndex,
-                    onValueChange = onSeriesIndexChange,
+                ) {
+                    MetadataTextField(
+                        value = seriesName,
+                        onValueChange = onSeriesNameChange,
+                        label = stringResource(R.string.edit_metadata_field_series),
+                        showLabel = false,
+                        singleLine = true,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.Numbers,
                     label = stringResource(R.string.edit_metadata_field_series_index),
-                    modifier = Modifier.weight(0.72f),
-                    keyboardType = KeyboardType.Decimal,
-                )
+                ) {
+                    MetadataTextField(
+                        value = seriesIndex,
+                        onValueChange = onSeriesIndexChange,
+                        label = stringResource(R.string.edit_metadata_field_series_index),
+                        showLabel = false,
+                        singleLine = true,
+                        keyboardType = KeyboardType.Decimal,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.Language,
+                    label = stringResource(R.string.edit_metadata_field_language),
+                ) {
+                    MetadataTextField(
+                        value = language,
+                        onValueChange = onLanguageChange,
+                        label = stringResource(R.string.edit_metadata_field_language),
+                        showLabel = false,
+                        singleLine = true,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.CalendarToday,
+                    label = stringResource(R.string.details_published_year),
+                ) {
+                    MetadataTextField(
+                        value = publishedDate,
+                        onValueChange = onPublishedDateChange,
+                        label = stringResource(R.string.edit_metadata_field_published_date),
+                        showLabel = false,
+                        singleLine = true,
+                        keyboardType = KeyboardType.Number,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.LocalOffer,
+                    label = stringResource(R.string.edit_metadata_field_tags),
+                ) {
+                    MetadataTextField(
+                        value = tags,
+                        onValueChange = onTagsChange,
+                        label = stringResource(R.string.edit_metadata_field_tags),
+                        showLabel = false,
+                        singleLine = true,
+                    )
+                }
+                TabletMetadataField(
+                    icon = Icons.Outlined.Description,
+                    label = stringResource(R.string.edit_metadata_field_isbn),
+                ) {
+                    MetadataTextField(
+                        value = isbn,
+                        onValueChange = onIsbnChange,
+                        label = stringResource(R.string.edit_metadata_field_isbn),
+                        showLabel = false,
+                        singleLine = true,
+                    )
+                }
             }
-            MetadataTextField(
-                value = language,
-                onValueChange = onLanguageChange,
-                label = stringResource(R.string.edit_metadata_field_language),
-            )
-            MetadataTextField(
-                value = publisher,
-                onValueChange = onPublisherChange,
-                label = stringResource(R.string.edit_metadata_field_publisher),
-            )
-            MetadataTextField(
-                value = publishedDate,
-                onValueChange = onPublishedDateChange,
-                label = stringResource(R.string.edit_metadata_field_published_date),
-                keyboardType = KeyboardType.Number,
-            )
-            MetadataTextField(
-                value = description,
-                onValueChange = onDescriptionChange,
-                label = stringResource(R.string.edit_metadata_field_description),
-                minLines = 4,
-                singleLine = false,
-            )
-            MetadataTextField(
-                value = tags,
-                onValueChange = onTagsChange,
-                label = stringResource(R.string.edit_metadata_field_tags),
-                supportingText = stringResource(R.string.edit_metadata_field_tags_helper),
-            )
-            MetadataTextField(
-                value = isbn,
-                onValueChange = onIsbnChange,
-                label = stringResource(R.string.edit_metadata_field_isbn),
-            )
+
+            TabletSyncSection(book = book)
+            TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
         }
     }
 }
