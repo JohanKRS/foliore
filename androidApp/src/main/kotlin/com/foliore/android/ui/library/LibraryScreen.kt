@@ -81,6 +81,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -192,10 +193,6 @@ fun LibraryScreen(
             )
             EditorialDivider(modifier = Modifier.fillMaxWidth())
 
-            AnimatedVisibility(visible = state.hasActiveLibraryControls()) {
-                LibraryControlsSummary(state = state)
-            }
-
             AnimatedVisibility(visible = state.isBatchMode) {
                 BatchActionBar(
                     selectedCount = state.selectedBookIds.size,
@@ -213,38 +210,46 @@ fun LibraryScreen(
                 )
             }
 
-            when {
-                state.books.isEmpty() -> {
-                    EmptyLibrary(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 28.dp),
-                        onImportClick = onImportClick,
-                        onSettingsClick = onSettingsClick,
-                    )
-                }
-                visibleBooks.isEmpty() -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.search_no_results),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge,
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clipToBounds(),
+            ) {
+                when {
+                    state.books.isEmpty() -> {
+                        EmptyLibrary(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 28.dp),
+                            onImportClick = onImportClick,
+                            onSettingsClick = onSettingsClick,
                         )
                     }
-                }
-                else -> {
-                    BookGrid(
-                        books = visibleBooks,
-                        gridColumns = state.gridColumns,
-                        displayOptions = state.displayOptions,
-                        isBatchMode = state.isBatchMode,
-                        selectedBookIds = state.selectedBookIds,
-                        onBookClick = onBookClick,
-                        onBookSelectionToggle = onBookSelectionToggle,
-                    )
+                    visibleBooks.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.search_no_results),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                    }
+                    else -> {
+                        BookGrid(
+                            modifier = Modifier.fillMaxSize(),
+                            books = visibleBooks,
+                            gridColumns = state.gridColumns,
+                            displayOptions = state.displayOptions,
+                            isBatchMode = state.isBatchMode,
+                            selectedBookIds = state.selectedBookIds,
+                            onBookClick = onBookClick,
+                            onBookSelectionToggle = onBookSelectionToggle,
+                        )
+                    }
                 }
             }
         }
@@ -389,20 +394,6 @@ private fun LibraryHeaderIconButton(
             tint = MaterialTheme.colorScheme.onBackground.copy(alpha = if (enabled) 0.82f else 0.34f),
         )
     }
-}
-
-@Composable
-private fun LibraryControlsSummary(state: LibraryUiState) {
-    Text(
-        text = state.controlsSummary(),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 10.dp),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.86f),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
 }
 
 @Composable
@@ -863,6 +854,7 @@ private fun BatchActionBar(
 
 @Composable
 private fun BookGrid(
+    modifier: Modifier = Modifier,
     books: List<LibraryBook>,
     gridColumns: BookGridColumns,
     displayOptions: LibraryDisplayOptions,
@@ -911,7 +903,7 @@ private fun BookGrid(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.clipToBounds()) {
         val columnCount = gridColumns.columnCount(maxWidth)
         val itemLayout = remember(columnCount) {
             BookGridItemLayout.forColumnCount(columnCount)
@@ -940,7 +932,8 @@ private fun BookGrid(
                     this.adapter = adapter
                     itemAnimator = null
                     setHasFixedSize(true)
-                    clipToPadding = false
+                    clipChildren = true
+                    clipToPadding = true
                     overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
                     setPadding(
                         viewContext.dpToPx(BookGridHorizontalPadding),
@@ -2091,35 +2084,6 @@ private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
                 item.metadata.seriesName?.contains(trimmedQuery, ignoreCase = true) == true
         }
         .sortedBy(sortOrder)
-}
-
-private fun LibraryUiState.hasActiveLibraryControls(): Boolean {
-    return activeFilter != BookFilter.ALL ||
-        sortOrder != BookSortOrder.IMPORTED_NEWEST ||
-        seriesFilter != SeriesFilter.ALL ||
-        gridColumns != BookGridColumns.AUTO ||
-        displayOptions != LibraryDisplayOptions()
-}
-
-@Composable
-private fun LibraryUiState.controlsSummary(): String {
-    val parts = mutableListOf<String>()
-    if (activeFilter != BookFilter.ALL) {
-        parts += stringResource(activeFilter.labelRes())
-    }
-    if (sortOrder != BookSortOrder.IMPORTED_NEWEST) {
-        parts += stringResource(sortOrder.labelRes())
-    }
-    if (seriesFilter != SeriesFilter.ALL) {
-        parts += stringResource(seriesFilter.labelRes())
-    }
-    if (gridColumns != BookGridColumns.AUTO) {
-        parts += stringResource(gridColumns.labelRes())
-    }
-    if (displayOptions != LibraryDisplayOptions()) {
-        parts += stringResource(R.string.library_display_custom)
-    }
-    return parts.joinToString(separator = " · ")
 }
 
 private fun LibraryBook.matchesStatusFilter(filter: BookFilter): Boolean {
