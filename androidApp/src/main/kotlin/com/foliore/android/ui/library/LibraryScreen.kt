@@ -128,6 +128,7 @@ import com.foliore.android.R
 import com.foliore.android.ui.TopChromeDividerHalfHeight
 import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.theme.CormorantGaramondFamily
+import com.foliore.android.ui.tuning.LocalVisualTuning
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.BookGridColumns
 import com.foliore.android.viewmodel.BookSortOrder
@@ -197,6 +198,7 @@ fun LibraryScreen(
     } else {
         topChromeInset
     }
+    val tuning = LocalVisualTuning.current
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -242,8 +244,8 @@ fun LibraryScreen(
                             books = visibleBooks,
                             gridColumns = state.gridColumns,
                             displayOptions = state.displayOptions,
-                            topContentPadding = resolvedTopChromeInset,
-                            bottomContentPadding = bottomChromeInset + 8.dp,
+                            topContentPadding = resolvedTopChromeInset + tuning.libraryGridTopExtra.dp,
+                            bottomContentPadding = bottomChromeInset + tuning.libraryGridBottomExtra.dp,
                             scrollState = gridScrollState,
                             restoreReady = if (showTopChrome) {
                                 topChromeHeightPx > 0
@@ -463,6 +465,7 @@ private fun LibraryTopChromeFrame(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val tuning = LocalVisualTuning.current
     Box(modifier = modifier) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -471,7 +474,7 @@ private fun LibraryTopChromeFrame(
         EditorialDivider(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = TopChromeDividerHalfHeight)
+                .offset(y = tuning.topChromeDividerHalfHeight.dp)
                 .fillMaxWidth(),
         )
     }
@@ -490,14 +493,18 @@ private fun LibraryHeader(
     onBatchModeChange: (Boolean) -> Unit,
     onOrganizeClick: () -> Unit,
 ) {
+    val tuning = LocalVisualTuning.current
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(TopChromeHeaderHeight)
-                .padding(start = 28.dp, end = 20.dp),
+                .height(tuning.topChromeHeaderHeight.dp)
+                .padding(
+                    start = tuning.libraryHeaderStartPadding.dp,
+                    end = tuning.libraryHeaderEndPadding.dp,
+                ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -1068,6 +1075,10 @@ private fun BookGrid(
     val currentOnBookClick by rememberUpdatedState(onBookClick)
     val currentOnBookSelectionToggle by rememberUpdatedState(onBookSelectionToggle)
     val colorScheme = MaterialTheme.colorScheme
+    val tuning = LocalVisualTuning.current
+    val gridHorizontalPadding = tuning.libraryGridHorizontalPadding.dp
+    val gridHorizontalSpacing = tuning.libraryGridHorizontalSpacing.dp
+    val gridVerticalSpacing = tuning.libraryGridVerticalSpacing.dp
     val gridStyle = BookGridNativeStyle(
         titleColor = colorScheme.onBackground.toArgb(),
         authorColor = colorScheme.onSurfaceVariant.toArgb(),
@@ -1094,7 +1105,11 @@ private fun BookGrid(
     }
 
     BoxWithConstraints(modifier = modifier.clipToBounds()) {
-        val columnCount = gridColumns.columnCount(maxWidth)
+        val columnCount = gridColumns.columnCount(
+            availableWidth = maxWidth,
+            horizontalPadding = gridHorizontalPadding,
+            horizontalSpacing = gridHorizontalSpacing,
+        )
         val itemLayout = remember(columnCount) {
             BookGridItemLayout.forColumnCount(columnCount)
         }
@@ -1108,8 +1123,8 @@ private fun BookGrid(
                 val adapter = BookGridRecyclerAdapter()
                 val decoration = BookGridSpacingDecoration(
                     spanCount = columnCount,
-                    horizontalSpacingPx = viewContext.dpToPx(BookGridHorizontalSpacing),
-                    verticalSpacingPx = viewContext.dpToPx(BookGridVerticalSpacing),
+                    horizontalSpacingPx = viewContext.dpToPx(gridHorizontalSpacing),
+                    verticalSpacingPx = viewContext.dpToPx(gridVerticalSpacing),
                 )
 
                 RecyclerView(viewContext).apply {
@@ -1127,9 +1142,9 @@ private fun BookGrid(
                     clipToPadding = false
                     overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
                     setPadding(
-                        viewContext.dpToPx(BookGridHorizontalPadding),
+                        viewContext.dpToPx(gridHorizontalPadding),
                         viewContext.dpToPx(topContentPadding),
-                        viewContext.dpToPx(BookGridHorizontalPadding),
+                        viewContext.dpToPx(gridHorizontalPadding),
                         viewContext.dpToPx(bottomContentPadding),
                     )
                     addItemDecoration(decoration)
@@ -1160,13 +1175,13 @@ private fun BookGrid(
                 internals.layoutManager.spanCount = columnCount
                 internals.decoration.update(
                     spanCount = columnCount,
-                    horizontalSpacingPx = recyclerView.context.dpToPx(BookGridHorizontalSpacing),
-                    verticalSpacingPx = recyclerView.context.dpToPx(BookGridVerticalSpacing),
+                    horizontalSpacingPx = recyclerView.context.dpToPx(gridHorizontalSpacing),
+                    verticalSpacingPx = recyclerView.context.dpToPx(gridVerticalSpacing),
                 )
                 recyclerView.setPadding(
-                    recyclerView.context.dpToPx(BookGridHorizontalPadding),
+                    recyclerView.context.dpToPx(gridHorizontalPadding),
                     recyclerView.context.dpToPx(topContentPadding),
-                    recyclerView.context.dpToPx(BookGridHorizontalPadding),
+                    recyclerView.context.dpToPx(gridHorizontalPadding),
                     recyclerView.context.dpToPx(bottomContentPadding),
                 )
                 recyclerView.invalidateItemDecorations()
@@ -2617,13 +2632,17 @@ private fun BookGridColumns.labelRes(): Int {
     }
 }
 
-private fun BookGridColumns.columnCount(availableWidth: Dp): Int {
+private fun BookGridColumns.columnCount(
+    availableWidth: Dp,
+    horizontalPadding: Dp,
+    horizontalSpacing: Dp,
+): Int {
     fixedCount?.let { return it }
 
-    val contentWidth = (availableWidth - (BookGridHorizontalPadding * 2)).value
+    val contentWidth = (availableWidth - (horizontalPadding * 2)).value
         .coerceAtLeast(BookGridMinCellWidth.value)
-    val columnWidthWithGap = BookGridMinCellWidth.value + BookGridHorizontalSpacing.value
-    return ((contentWidth + BookGridHorizontalSpacing.value) / columnWidthWithGap)
+    val columnWidthWithGap = BookGridMinCellWidth.value + horizontalSpacing.value
+    return ((contentWidth + horizontalSpacing.value) / columnWidthWithGap)
         .toInt()
         .coerceAtLeast(1)
         .coerceAtMost(BookGridAutoMaxColumns)

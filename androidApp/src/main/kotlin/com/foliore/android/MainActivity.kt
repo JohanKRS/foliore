@@ -19,6 +19,7 @@ import com.foliore.android.di.AppContainer
 import com.foliore.android.navigation.FolioreNavHost
 import com.foliore.android.share.IncomingEpubRepository
 import com.foliore.android.ui.theme.FolioreTheme
+import com.foliore.android.ui.tuning.VisualTuningHost
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.LibraryViewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,39 +62,41 @@ class MainActivity : ComponentActivity() {
 
             FolioreTheme(themeMode = themeMode.value) {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    val factory = remember {
-                        LibraryViewModelFactory(
-                            libraryRepository = appContainer.libraryRepository,
-                            epubImporter = appContainer.epubImporter,
-                            bookEditor = appContainer.bookEditor,
-                            bookDeleter = appContainer.bookDeleter,
-                            preparedEpubService = appContainer.preparedEpubService,
-                            syncService = appContainer.syncService,
-                            syncWorkScheduler = appContainer.syncWorkScheduler,
-                            aiPreferenceRepository = appContainer.aiPreferenceRepository,
-                            aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
-                            kindleEmailPreferenceRepository = appContainer.kindleEmailPreferenceRepository,
-                            libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
-                            metadataPreferenceRepository = appContainer.metadataPreferenceRepository,
-                            openAiApiService = appContainer.openAiApiService,
-                            openMetadataLookupService = appContainer.openMetadataLookupService,
+                    VisualTuningHost {
+                        val factory = remember {
+                            LibraryViewModelFactory(
+                                libraryRepository = appContainer.libraryRepository,
+                                epubImporter = appContainer.epubImporter,
+                                bookEditor = appContainer.bookEditor,
+                                bookDeleter = appContainer.bookDeleter,
+                                preparedEpubService = appContainer.preparedEpubService,
+                                syncService = appContainer.syncService,
+                                syncWorkScheduler = appContainer.syncWorkScheduler,
+                                aiPreferenceRepository = appContainer.aiPreferenceRepository,
+                                aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
+                                kindleEmailPreferenceRepository = appContainer.kindleEmailPreferenceRepository,
+                                libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
+                                metadataPreferenceRepository = appContainer.metadataPreferenceRepository,
+                                openAiApiService = appContainer.openAiApiService,
+                                openMetadataLookupService = appContainer.openMetadataLookupService,
+                            )
+                        }
+                        val libraryViewModel: LibraryViewModel = viewModel(factory = factory)
+
+                        LaunchedEffect(incomingImportUris.value) {
+                            val uris = incomingImportUris.value
+                            if (uris.isNotEmpty()) {
+                                libraryViewModel.importUris(uris)
+                                pendingImportUris.value = emptyList()
+                            }
+                        }
+
+                        FolioreNavHost(
+                            libraryViewModel = libraryViewModel,
+                            themeMode = themeMode.value,
+                            onThemeModeChange = appContainer.themePreferenceRepository::setThemeMode,
                         )
                     }
-                    val libraryViewModel: LibraryViewModel = viewModel(factory = factory)
-
-                    LaunchedEffect(incomingImportUris.value) {
-                        val uris = incomingImportUris.value
-                        if (uris.isNotEmpty()) {
-                            libraryViewModel.importUris(uris)
-                            pendingImportUris.value = emptyList()
-                        }
-                    }
-
-                    FolioreNavHost(
-                        libraryViewModel = libraryViewModel,
-                        themeMode = themeMode.value,
-                        onThemeModeChange = appContainer.themePreferenceRepository::setThemeMode,
-                    )
                 }
             }
         }

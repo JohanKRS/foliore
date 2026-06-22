@@ -80,6 +80,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavBackStackEntry
@@ -104,6 +105,7 @@ import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.theme.ThemeMode
+import com.foliore.android.ui.tuning.LocalVisualTuning
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
 import dev.chrisbanes.haze.HazeInputScale
@@ -166,6 +168,12 @@ fun FolioreNavHost(
             Routes.EDIT -> TopChromeMode.Edit
             else -> TopChromeMode.None
         }
+        val tuning = LocalVisualTuning.current
+        val topChromeHeaderHeight = tuning.topChromeHeaderHeight.dp
+        val bottomBarHeight = tuning.bottomBarHeight.dp
+        val bottomBarContentInset = bottomBarHeight + tuning.bottomBarContentExtra.dp
+        val bottomEditActionStripHeight = tuning.bottomEditActionStripHeight.dp
+        val bottomEditContentInset = bottomBarHeight + bottomEditActionStripHeight + tuning.bottomEditContentExtra.dp
         val activeChromeHazeState = when (topChromeMode) {
             TopChromeMode.Edit -> editChromeHazeState
             else -> libraryChromeHazeState
@@ -177,7 +185,7 @@ fun FolioreNavHost(
         } else if (measuredTopChromeInset.value > 0f) {
             measuredTopChromeInset
         } else {
-            TopChromeHeaderHeight
+            topChromeHeaderHeight
         }
 
         Scaffold(
@@ -246,8 +254,8 @@ fun FolioreNavHost(
                     editChromeHazeState = editChromeHazeState,
                     topChromeInset = topChromeInset,
                     bottomChromeInset = when {
-                        showNavigation && currentRoute == Routes.LIBRARY -> BottomBarContentInset
-                        showNavigation && currentRoute == Routes.EDIT -> BottomEditContentInset
+                        showNavigation && currentRoute == Routes.LIBRARY -> bottomBarContentInset
+                        showNavigation && currentRoute == Routes.EDIT -> bottomEditContentInset
                         else -> 0.dp
                     },
                 )
@@ -302,7 +310,7 @@ fun FolioreNavHost(
                                         ?: Spacer(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(TopChromeHeaderHeight),
+                                                .height(topChromeHeaderHeight),
                                         )
                                 }
                                 TopChromeMode.None -> Unit
@@ -449,6 +457,9 @@ private fun FolioreNavigationBar(
     val navigationSelectedRoute = if (editMode) Routes.LIBRARY else selectedRoute
     val chromeTint = MaterialTheme.colorScheme.background
     val mobileChrome = !tabletWorkspace
+    val tuning = LocalVisualTuning.current
+    val bottomBarHeight = tuning.bottomBarHeight.dp
+    val bottomEditActionStripHeight = tuning.bottomEditActionStripHeight.dp
     val chromeModifier = Modifier
         .fillMaxWidth()
         .then(
@@ -555,7 +566,7 @@ private fun FolioreNavigationBar(
                         animated = false,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(BottomEditActionStripHeight),
+                            .height(bottomEditActionStripHeight),
                     )
                 }
                 StaticNavigationItemsSlot(
@@ -566,20 +577,20 @@ private fun FolioreNavigationBar(
                     onSettingsClick = onSettingsClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(BottomBarHeight),
+                        .height(bottomBarHeight),
                 )
             }
         } else {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(BottomBarHeight)
+                    .height(bottomBarHeight)
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
             ) {
                 BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(BottomBarHeight),
+                        .height(bottomBarHeight),
                 ) {
                     val dividerWidth = 1.dp
                     val splitNavigationWidth = (maxWidth - dividerWidth) *
@@ -662,30 +673,35 @@ private fun AnimatedNavigationItemsSlot(
     val libraryDestination = TopLevelDestination.items.first()
     val settingsDestination = TopLevelDestination.items.last()
     val transition = updateTransition(targetState = splitEditMode, label = "bottomNavSplitMode")
+    val tuning = LocalVisualTuning.current
+    val bottomNavigationMaxWidth = tuning.bottomNavigationMaxWidth.dp
+    val bottomNavigationHorizontalPadding = tuning.bottomNavigationHorizontalPadding.dp
+    val bottomNavigationTopLevelSpacing = tuning.bottomNavigationTopLevelSpacing.dp
+    val bottomNavigationEditSpacing = tuning.bottomNavigationEditSpacing.dp
 
     BoxWithConstraints(modifier = modifier) {
-        val topRowWidth = if (maxWidth < BottomNavigationMaxWidth) {
+        val topRowWidth = if (maxWidth < bottomNavigationMaxWidth) {
             maxWidth
         } else {
-            BottomNavigationMaxWidth
+            bottomNavigationMaxWidth
         }
-        val splitRowWidth = if (splitNavigationWidth < BottomNavigationMaxWidth) {
+        val splitRowWidth = if (splitNavigationWidth < bottomNavigationMaxWidth) {
             splitNavigationWidth
         } else {
-            BottomNavigationMaxWidth
+            bottomNavigationMaxWidth
         }
         val topRowStart = (maxWidth - topRowWidth) / 2f
         val splitRowStart = (splitNavigationWidth - splitRowWidth) / 2f
-        val topContentWidth = topRowWidth - (BottomNavigationHorizontalPadding * 2f)
-        val topItemWidth = (topContentWidth - (BottomNavigationTopLevelSpacing * 2f)) / 3f
-        val splitContentWidth = splitRowWidth - (BottomNavigationHorizontalPadding * 2f)
-        val splitItemWidth = (splitContentWidth - (BottomNavigationEditSpacing * 2f)) / 3f
+        val topContentWidth = topRowWidth - (bottomNavigationHorizontalPadding * 2f)
+        val topItemWidth = (topContentWidth - (bottomNavigationTopLevelSpacing * 2f)) / 3f
+        val splitContentWidth = splitRowWidth - (bottomNavigationHorizontalPadding * 2f)
+        val splitItemWidth = (splitContentWidth - (bottomNavigationEditSpacing * 2f)) / 3f
 
         AnimatedNavigationItem(
             index = 0,
             transition = transition,
-            topStart = topRowStart + BottomNavigationHorizontalPadding,
-            splitStart = splitRowStart + BottomNavigationHorizontalPadding,
+            topStart = topRowStart + bottomNavigationHorizontalPadding,
+            splitStart = splitRowStart + bottomNavigationHorizontalPadding,
             topWidth = topItemWidth,
             splitWidth = splitItemWidth,
             icon = libraryDestination.icon,
@@ -697,8 +713,8 @@ private fun AnimatedNavigationItemsSlot(
         AnimatedNavigationItem(
             index = 1,
             transition = transition,
-            topStart = topRowStart + BottomNavigationHorizontalPadding + topItemWidth + BottomNavigationTopLevelSpacing,
-            splitStart = splitRowStart + BottomNavigationHorizontalPadding + splitItemWidth + BottomNavigationEditSpacing,
+            topStart = topRowStart + bottomNavigationHorizontalPadding + topItemWidth + bottomNavigationTopLevelSpacing,
+            splitStart = splitRowStart + bottomNavigationHorizontalPadding + splitItemWidth + bottomNavigationEditSpacing,
             topWidth = topItemWidth,
             splitWidth = splitItemWidth,
             icon = Icons.Outlined.Sync,
@@ -711,10 +727,10 @@ private fun AnimatedNavigationItemsSlot(
         AnimatedNavigationItem(
             index = 2,
             transition = transition,
-            topStart = topRowStart + BottomNavigationHorizontalPadding +
-                ((topItemWidth + BottomNavigationTopLevelSpacing) * 2f),
-            splitStart = splitRowStart + BottomNavigationHorizontalPadding +
-                ((splitItemWidth + BottomNavigationEditSpacing) * 2f),
+            topStart = topRowStart + bottomNavigationHorizontalPadding +
+                ((topItemWidth + bottomNavigationTopLevelSpacing) * 2f),
+            splitStart = splitRowStart + bottomNavigationHorizontalPadding +
+                ((splitItemWidth + bottomNavigationEditSpacing) * 2f),
             topWidth = topItemWidth,
             splitWidth = splitItemWidth,
             icon = settingsDestination.icon,
@@ -737,16 +753,21 @@ private fun StaticNavigationItemsSlot(
 ) {
     val libraryDestination = TopLevelDestination.items.first()
     val settingsDestination = TopLevelDestination.items.last()
+    val tuning = LocalVisualTuning.current
+    val bottomNavigationMaxWidth = tuning.bottomNavigationMaxWidth.dp
+    val bottomNavigationHorizontalPadding = tuning.bottomNavigationHorizontalPadding.dp
+    val bottomNavigationTopLevelSpacing = tuning.bottomNavigationTopLevelSpacing.dp
+    val bottomBarItemTopPadding = tuning.bottomBarItemTopPadding.dp
 
     BoxWithConstraints(modifier = modifier) {
-        val rowWidth = if (maxWidth < BottomNavigationMaxWidth) {
+        val rowWidth = if (maxWidth < bottomNavigationMaxWidth) {
             maxWidth
         } else {
-            BottomNavigationMaxWidth
+            bottomNavigationMaxWidth
         }
         val rowStart = (maxWidth - rowWidth) / 2f
-        val contentWidth = rowWidth - (BottomNavigationHorizontalPadding * 2f)
-        val itemWidth = (contentWidth - (BottomNavigationTopLevelSpacing * 2f)) / 3f
+        val contentWidth = rowWidth - (bottomNavigationHorizontalPadding * 2f)
+        val itemWidth = (contentWidth - (bottomNavigationTopLevelSpacing * 2f)) / 3f
 
         FolioreBottomNavigationItem(
             icon = libraryDestination.icon,
@@ -755,7 +776,7 @@ private fun StaticNavigationItemsSlot(
             selected = selectedRoute == libraryDestination.route,
             onClick = onLibraryClick,
             modifier = Modifier
-                .offset(x = rowStart + BottomNavigationHorizontalPadding, y = BottomBarItemTopPadding)
+                .offset(x = rowStart + bottomNavigationHorizontalPadding, y = bottomBarItemTopPadding)
                 .width(itemWidth),
         )
         FolioreBottomNavigationItem(
@@ -767,8 +788,8 @@ private fun StaticNavigationItemsSlot(
             onClick = onSyncClick,
             modifier = Modifier
                 .offset(
-                    x = rowStart + BottomNavigationHorizontalPadding + itemWidth + BottomNavigationTopLevelSpacing,
-                    y = BottomBarItemTopPadding,
+                    x = rowStart + bottomNavigationHorizontalPadding + itemWidth + bottomNavigationTopLevelSpacing,
+                    y = bottomBarItemTopPadding,
                 )
                 .width(itemWidth),
         )
@@ -780,9 +801,9 @@ private fun StaticNavigationItemsSlot(
             onClick = onSettingsClick,
             modifier = Modifier
                 .offset(
-                    x = rowStart + BottomNavigationHorizontalPadding +
-                        ((itemWidth + BottomNavigationTopLevelSpacing) * 2f),
-                    y = BottomBarItemTopPadding,
+                    x = rowStart + bottomNavigationHorizontalPadding +
+                        ((itemWidth + bottomNavigationTopLevelSpacing) * 2f),
+                    y = bottomBarItemTopPadding,
                 )
                 .width(itemWidth),
         )
@@ -804,6 +825,7 @@ private fun AnimatedNavigationItem(
     enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val bottomBarItemTopPadding = LocalVisualTuning.current.bottomBarItemTopPadding.dp
     val x by transition.animateDp(
         transitionSpec = {
             val itemDelayMillis = if (targetState) {
@@ -847,7 +869,7 @@ private fun AnimatedNavigationItem(
         enabled = enabled,
         onClick = onClick,
         modifier = Modifier
-            .offset(x = x, y = BottomBarItemTopPadding)
+            .offset(x = x, y = bottomBarItemTopPadding)
             .width(width),
     )
 }
@@ -915,22 +937,23 @@ private fun FolioreEditActions(
     val neutralButtonContent = MaterialTheme.colorScheme.primary
     val neutralButtonBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
     val disabledButtonContent = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-    val horizontalPadding = if (actionStrip) 36.dp else if (compact) 12.dp else 24.dp
-    val buttonSpacing = if (actionStrip) 8.dp else if (compact) 8.dp else 16.dp
-    val iconSpacing = if (actionStrip) 5.dp else if (compact) 6.dp else 9.dp
-    val iconSize = if (actionStrip) 18.dp else 20.dp
+    val tuning = LocalVisualTuning.current
+    val horizontalPadding = if (actionStrip) tuning.bottomActionHorizontalPadding.dp else if (compact) 12.dp else 24.dp
+    val buttonSpacing = if (actionStrip) tuning.bottomActionButtonSpacing.dp else if (compact) 8.dp else 16.dp
+    val iconSpacing = if (actionStrip) tuning.bottomActionIconSpacing.dp else if (compact) 6.dp else 9.dp
+    val iconSize = if (actionStrip) tuning.bottomActionIconSize.dp else 20.dp
     val actionTextStyle = if (actionStrip) {
-        MaterialTheme.typography.labelMedium
+        MaterialTheme.typography.labelMedium.copy(fontSize = tuning.bottomActionTextSize.sp)
     } else {
         MaterialTheme.typography.labelLarge
     }
     val buttonContentPadding = PaddingValues(
         horizontal = if (actionStrip) 4.dp else if (compact) 8.dp else 16.dp,
     )
-    val containerHeight = if (actionStrip) BottomEditActionStripHeight else BottomBarHeight
-    val buttonHeight = if (actionStrip) BottomEditActionStripButtonHeight else BottomBarItemHeight
-    val topPadding = if (actionStrip) 6.dp else BottomBarItemTopPadding
-    val bottomPadding = if (actionStrip) 8.dp else BottomBarItemBottomPadding
+    val containerHeight = if (actionStrip) tuning.bottomEditActionStripHeight.dp else tuning.bottomBarHeight.dp
+    val buttonHeight = if (actionStrip) tuning.bottomEditActionStripButtonHeight.dp else tuning.bottomBarItemHeight.dp
+    val topPadding = if (actionStrip) 6.dp else tuning.bottomBarItemTopPadding.dp
+    val bottomPadding = if (actionStrip) 8.dp else tuning.bottomBarItemBottomPadding.dp
 
     Row(
         modifier = modifier
@@ -1075,6 +1098,8 @@ private fun FolioreBottomNavigationItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tuning = LocalVisualTuning.current
+    val bottomBarItemHeight = tuning.bottomBarItemHeight.dp
     val itemColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -1083,7 +1108,7 @@ private fun FolioreBottomNavigationItem(
 
     Column(
         modifier = modifier
-            .height(BottomBarItemHeight)
+            .height(bottomBarItemHeight)
             .clickable(enabled = enabled, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

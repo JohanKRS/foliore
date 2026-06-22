@@ -96,6 +96,7 @@ import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.theme.CormorantGaramondFamily
+import com.foliore.android.ui.tuning.LocalVisualTuning
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncProgressPhase
 import com.foliore.shared.domain.BookMetadataDraft
@@ -547,6 +548,8 @@ private fun TabletEditBookScreen(
     hasOpenAiApiKey: Boolean,
     onAutofillClick: () -> Unit,
 ) {
+    val tuning = LocalVisualTuning.current
+
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -567,7 +570,10 @@ private fun TabletEditBookScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .padding(horizontal = TabletLeftContentHorizontalPadding, vertical = 24.dp),
+                    .padding(
+                        horizontal = tuning.detailsTabletLeftHorizontalPadding.dp,
+                        vertical = tuning.detailsTabletCoverVerticalPadding.dp,
+                    ),
                 contentAlignment = Alignment.TopCenter,
             ) {
                 Column(
@@ -689,7 +695,10 @@ private fun TabletEditBookScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = TabletPaneHorizontalPadding, vertical = 20.dp),
+                        .padding(
+                            horizontal = tuning.detailsPaneHorizontalPadding.dp,
+                            vertical = tuning.detailsPaneVerticalPadding.dp,
+                        ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     TabletMetadataField(
@@ -839,6 +848,7 @@ private fun StackedEditBookScreen(
     } else {
         topChromeInset
     }
+    val tuning = LocalVisualTuning.current
 
     Box(
         modifier = Modifier
@@ -850,13 +860,16 @@ private fun StackedEditBookScreen(
                 .fillMaxSize()
                 .hazeSource(state = hazeState)
                 .verticalScroll(rememberScrollState())
-                .padding(top = resolvedTopChromeInset, bottom = bottomChromeInset),
+                .padding(
+                    top = resolvedTopChromeInset + tuning.detailsMobileTopExtra.dp,
+                    bottom = bottomChromeInset,
+                ),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = TabletLeftContentHorizontalPadding)
-                    .padding(bottom = 24.dp),
+                    .padding(horizontal = tuning.detailsMobileHorizontalPadding.dp)
+                    .padding(bottom = tuning.detailsMobileBottomPadding.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
@@ -954,7 +967,10 @@ private fun StackedEditBookScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = TabletPaneHorizontalPadding, vertical = 20.dp),
+                    .padding(
+                        horizontal = tuning.detailsPaneHorizontalPadding.dp,
+                        vertical = tuning.detailsPaneVerticalPadding.dp,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 TabletMetadataField(
@@ -1115,8 +1131,9 @@ private fun TabletEditTopChrome(
     drawBackground: Boolean = true,
 ) {
     val chromeTint = MaterialTheme.colorScheme.background
+    val tuning = LocalVisualTuning.current
 
-    Box(modifier = modifier.height(TopChromeHeaderHeight)) {
+    Box(modifier = modifier.height(tuning.topChromeHeaderHeight.dp)) {
         if (drawBackground) {
             Box(
                 modifier = Modifier
@@ -1175,7 +1192,7 @@ private fun TabletEditTopChrome(
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = TopChromeDividerHalfHeight)
+                .offset(y = tuning.topChromeDividerHalfHeight.dp)
                 .fillMaxWidth(),
         ) {
             EditorialDivider(
@@ -1201,6 +1218,7 @@ private fun EditTopChrome(
     drawBackground: Boolean = true,
 ) {
     val chromeTint = MaterialTheme.colorScheme.background
+    val tuning = LocalVisualTuning.current
     val chromeModifier = if (drawBackground) {
         Modifier
             .fillMaxWidth()
@@ -1241,7 +1259,7 @@ private fun EditTopChrome(
         EditorialDivider(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = TopChromeDividerHalfHeight)
+                .offset(y = tuning.topChromeDividerHalfHeight.dp)
                 .fillMaxWidth(),
         )
     }
@@ -1249,10 +1267,11 @@ private fun EditTopChrome(
 
 @Composable
 private fun TabletLeftTopBar(onBack: () -> Unit) {
+    val tuning = LocalVisualTuning.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(TopChromeHeaderHeight)
+            .height(tuning.topChromeHeaderHeight.dp)
             .padding(start = 18.dp, end = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -1293,12 +1312,13 @@ private fun TabletRightHeader(
     onAutofillClick: () -> Unit,
 ) {
     val actionColor = MaterialTheme.colorScheme.primary
+    val tuning = LocalVisualTuning.current
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(TopChromeHeaderHeight)
-            .padding(start = TabletPaneHorizontalPadding, end = 24.dp),
+            .height(tuning.topChromeHeaderHeight.dp)
+            .padding(start = tuning.detailsPaneHorizontalPadding.dp, end = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -1413,10 +1433,14 @@ private fun TabletMetadataField(
 
 @Composable
 private fun TabletSyncSection(book: LibraryBook) {
+    val tuning = LocalVisualTuning.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = TabletPaneHorizontalPadding, vertical = 24.dp),
+            .padding(
+                horizontal = tuning.detailsPaneHorizontalPadding.dp,
+                vertical = tuning.detailsPaneVerticalPadding.dp + 4.dp,
+            ),
     ) {
         Text(
             text = stringResource(R.string.edit_metadata_sync_section),
@@ -1463,11 +1487,15 @@ private fun TabletAboutSection(description: String?) {
     val descriptionText = remember(description) {
         description.toDisplayDescription()
     } ?: stringResource(R.string.book_no_description)
+    val tuning = LocalVisualTuning.current
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = TabletPaneHorizontalPadding, vertical = 24.dp),
+            .padding(
+                horizontal = tuning.detailsPaneHorizontalPadding.dp,
+                vertical = tuning.detailsPaneVerticalPadding.dp + 4.dp,
+            ),
     ) {
         EditorialDivider(
             modifier = Modifier.fillMaxWidth(),
