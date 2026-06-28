@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -41,8 +42,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -190,6 +191,7 @@ fun FolioreNavHost(
 
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0.dp),
             bottomBar = {
                 if (showNavigation) {
                     FolioreNavigationBar(
@@ -228,6 +230,7 @@ fun FolioreNavHost(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .consumeWindowInsets(contentPadding)
                     .padding(contentPadding),
             ) {
                 NavContent(
@@ -534,7 +537,7 @@ private fun FolioreNavigationBar(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
             ) {
                 AnimatedVisibility(
                     visible = stackedEditMode,
@@ -585,7 +588,7 @@ private fun FolioreNavigationBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(bottomBarHeight)
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
             ) {
                 BoxWithConstraints(
                     modifier = Modifier

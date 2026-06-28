@@ -2,6 +2,7 @@ package com.foliore.android.viewmodel
 
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
 import com.foliore.shared.domain.LibraryBook
@@ -16,6 +17,8 @@ data class LibraryUiState(
     val syncFolderLabel: String? = null,
     val googleDriveAccountLabel: String? = null,
     val isGoogleDriveConnected: Boolean = false,
+    val googleDriveBackupStats: GoogleDriveBackupStats? = null,
+    val isGoogleDriveBackupStatsLoading: Boolean = false,
     val isAutoSyncEnabled: Boolean = false,
     val isAutoSyncWifiOnly: Boolean = true,
     val lastSyncSummary: SyncSummary? = null,

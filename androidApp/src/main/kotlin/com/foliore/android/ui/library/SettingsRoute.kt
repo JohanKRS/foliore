@@ -3,6 +3,7 @@ package com.foliore.android.ui.library
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
+import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryViewModel
 
@@ -63,9 +65,19 @@ fun SettingsRoute(
         }
     }
 
+    LaunchedEffect(state.syncProvider, state.isGoogleDriveConnected) {
+        if (
+            state.syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA &&
+            state.isGoogleDriveConnected
+        ) {
+            viewModel.refreshGoogleDriveBackupStats(launchGoogleDriveResolution)
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->
         SettingsScreen(
             themeMode = themeMode,
@@ -76,6 +88,8 @@ fun SettingsRoute(
             syncFolderLabel = state.syncFolderLabel,
             googleDriveAccountLabel = state.googleDriveAccountLabel,
             isGoogleDriveConnected = state.isGoogleDriveConnected,
+            googleDriveBackupStats = state.googleDriveBackupStats,
+            isGoogleDriveBackupStatsLoading = state.isGoogleDriveBackupStatsLoading,
             isAutoSyncEnabled = state.isAutoSyncEnabled,
             isAutoSyncWifiOnly = state.isAutoSyncWifiOnly,
             isSyncing = state.isSyncing,
@@ -92,6 +106,9 @@ fun SettingsRoute(
             onChooseSyncFolder = { showSyncFolderGuidance = true },
             onConnectGoogleDrive = {
                 viewModel.connectGoogleDrive(launchGoogleDriveResolution)
+            },
+            onRefreshGoogleDriveBackupStats = {
+                viewModel.refreshGoogleDriveBackupStats(launchGoogleDriveResolution)
             },
             onDeleteGoogleDriveBackup = { showDeleteGoogleDriveBackupConfirmation = true },
             onAutoSyncEnabledChange = viewModel::setAutoSyncEnabled,
@@ -136,7 +153,20 @@ fun SettingsRoute(
                 Text(text = stringResource(R.string.settings_sync_google_drive_delete_backup_title))
             },
             text = {
-                Text(text = stringResource(R.string.settings_sync_google_drive_delete_backup_body))
+                val stats = state.googleDriveBackupStats
+                Text(
+                    text = if (stats != null) {
+                        stringResource(
+                            R.string.settings_sync_google_drive_delete_backup_body_with_stats,
+                            stats.syncedBooks,
+                            stats.remoteFiles,
+                            stats.rootItems,
+                            stats.unknownRootItems,
+                        )
+                    } else {
+                        stringResource(R.string.settings_sync_google_drive_delete_backup_body)
+                    },
+                )
             },
             confirmButton = {
                 TextButton(

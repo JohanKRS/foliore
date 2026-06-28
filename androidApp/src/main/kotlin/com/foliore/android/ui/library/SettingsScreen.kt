@@ -49,10 +49,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
+import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
+import java.util.Locale
 
 @Composable
 fun SettingsScreen(
@@ -64,6 +66,8 @@ fun SettingsScreen(
     syncFolderLabel: String?,
     googleDriveAccountLabel: String?,
     isGoogleDriveConnected: Boolean,
+    googleDriveBackupStats: GoogleDriveBackupStats?,
+    isGoogleDriveBackupStatsLoading: Boolean,
     isAutoSyncEnabled: Boolean,
     isAutoSyncWifiOnly: Boolean,
     isSyncing: Boolean,
@@ -79,6 +83,7 @@ fun SettingsScreen(
     onKindleSmtpClear: () -> Unit,
     onChooseSyncFolder: () -> Unit,
     onConnectGoogleDrive: () -> Unit,
+    onRefreshGoogleDriveBackupStats: () -> Unit,
     onDeleteGoogleDriveBackup: () -> Unit,
     onAutoSyncEnabledChange: (Boolean) -> Unit,
     onAutoSyncWifiOnlyChange: (Boolean) -> Unit,
@@ -653,6 +658,12 @@ fun SettingsScreen(
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
+                    GoogleDriveBackupStatus(
+                        stats = googleDriveBackupStats,
+                        isLoading = isGoogleDriveBackupStatsLoading,
+                        onRefresh = onRefreshGoogleDriveBackupStats,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
                 Button(
                     onClick = onSyncNow,
@@ -693,7 +704,9 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedButton(
                         onClick = onDeleteGoogleDriveBackup,
-                        enabled = !isSyncing,
+                        enabled = !isSyncing &&
+                            !isGoogleDriveBackupStatsLoading &&
+                            googleDriveBackupStats?.hasBackup == true,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
@@ -734,6 +747,88 @@ private fun SectionTitle(text: String) {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.primary,
     )
+}
+
+@Composable
+private fun GoogleDriveBackupStatus(
+    stats: GoogleDriveBackupStats?,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.settings_sync_google_drive_backup_status_title),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = when {
+                isLoading -> stringResource(R.string.settings_sync_google_drive_backup_status_loading)
+                stats == null -> stringResource(R.string.settings_sync_google_drive_backup_status_unknown)
+                !stats.hasBackup -> stringResource(R.string.settings_sync_google_drive_backup_status_empty)
+                else -> stringResource(
+                    R.string.settings_sync_google_drive_backup_status_summary,
+                    stats.syncedBooks,
+                    stats.remoteFiles,
+                    stats.totalBytes.toReadableDriveSize(),
+                    stats.rootItems,
+                )
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (stats?.updatedAt != null) {
+            Text(
+                text = stringResource(
+                    R.string.settings_sync_google_drive_backup_status_updated,
+                    stats.updatedAt,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (stats != null && stats.unknownRootItems > 0) {
+            Text(
+                text = stringResource(
+                    R.string.settings_sync_google_drive_backup_status_unknown_items,
+                    stats.unknownRootItems,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        OutlinedButton(
+            onClick = onRefresh,
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Sync,
+                contentDescription = null,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = stringResource(R.string.settings_sync_google_drive_backup_refresh))
+        }
+    }
+}
+
+private fun Long.toReadableDriveSize(): String {
+    if (this < 1024L) return "$this B"
+    val units = listOf("KB", "MB", "GB", "TB")
+    var value = this.toDouble() / 1024.0
+    var unitIndex = 0
+    while (value >= 1024.0 && unitIndex < units.lastIndex) {
+        value /= 1024.0
+        unitIndex += 1
+    }
+    return if (value >= 10.0) {
+        String.format(Locale.getDefault(), "%.0f %s", value, units[unitIndex])
+    } else {
+        String.format(Locale.getDefault(), "%.1f %s", value, units[unitIndex])
+    }
 }
 
 @Composable

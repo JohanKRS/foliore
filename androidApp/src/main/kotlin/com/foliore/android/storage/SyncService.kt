@@ -113,6 +113,20 @@ class SyncService(
         }
     }
 
+    fun googleDriveBackupStats(): GoogleDriveBackupStatsResult {
+        return when (val authorization = googleDriveAuthService.authorize()) {
+            is GoogleDriveAuthorization.Authorized -> {
+                googleDriveSyncService.backupStats(authorization.accessToken)
+            }
+            is GoogleDriveAuthorization.NeedsResolution -> {
+                GoogleDriveBackupStatsResult.NeedsResolution(authorization.pendingIntent)
+            }
+            GoogleDriveAuthorization.Failed -> {
+                GoogleDriveBackupStatsResult.SyncFailed(ManualSyncResult.GoogleDriveUnavailable)
+            }
+        }
+    }
+
     fun hasConfiguredManualFolder(): Boolean {
         return manualSyncService.hasConfiguredFolder()
     }

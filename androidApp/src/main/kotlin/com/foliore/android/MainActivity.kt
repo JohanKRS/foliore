@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        allowDisplayCutout()
         if (savedInstanceState == null) {
             enqueueIncomingEpubs(intent)
         }
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
                     statusBarStyle = systemBarStyle,
                     navigationBarStyle = systemBarStyle,
                 )
+                allowDisplayCutout()
             }
 
             FolioreTheme(themeMode = themeMode.value) {

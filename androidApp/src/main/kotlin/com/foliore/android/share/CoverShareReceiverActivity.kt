@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,6 +58,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.foliore.android.R
+import com.foliore.android.allowDisplayCutout
 import com.foliore.android.di.AppContainer
 import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.noticeMessage
@@ -72,6 +74,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        allowDisplayCutout()
 
         val incomingCoverUri = IncomingCoverRepository(this).copyFromIntent(intent)
 
@@ -96,6 +99,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
                     statusBarStyle = systemBarStyle,
                     navigationBarStyle = systemBarStyle,
                 )
+                allowDisplayCutout()
             }
 
             FolioreTheme(themeMode = themeMode.value) {
@@ -149,6 +153,7 @@ private fun CoverShareRoute(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0.dp),
     ) { paddingValues ->
         CoverShareScreen(
             books = state.books,
