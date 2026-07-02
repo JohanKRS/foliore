@@ -203,7 +203,12 @@ fun LibraryScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = bottomChromeInset),
+            )
+        },
         contentWindowInsets = WindowInsets(0.dp),
     ) { paddingValues ->
         Box(
@@ -478,6 +483,7 @@ private fun LibraryTopChromeFrame(
                 .align(Alignment.BottomCenter)
                 .offset(y = tuning.topChromeDividerHalfHeight.dp)
                 .fillMaxWidth(),
+            horizontalPadding = 0.dp,
         )
     }
 }

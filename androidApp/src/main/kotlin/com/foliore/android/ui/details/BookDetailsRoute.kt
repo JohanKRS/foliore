@@ -21,6 +21,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.ui.library.noticeMessage
@@ -32,6 +34,7 @@ fun BookDetailsRoute(
     bookId: String,
     onEditMetadata: () -> Unit,
     onBack: () -> Unit,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -58,7 +61,12 @@ fun BookDetailsRoute(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = bottomChromeInset),
+            )
+        },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->
         BookDetailsScreen(

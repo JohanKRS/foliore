@@ -21,6 +21,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
 import com.foliore.android.storage.SyncProvider
@@ -32,6 +34,7 @@ fun SettingsRoute(
     viewModel: LibraryViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    bottomChromeInset: Dp = 0.dp,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -75,7 +78,12 @@ fun SettingsRoute(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = bottomChromeInset),
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->

@@ -180,13 +180,15 @@ fun FolioreNavHost(
             else -> libraryChromeHazeState
         }
         val density = LocalDensity.current
+        val topSystemBarInset = with(density) { WindowInsets.systemBars.getTop(this).toDp() }
+        val bottomSystemBarInset = with(density) { WindowInsets.systemBars.getBottom(this).toDp() }
         val measuredTopChromeInset = with(density) { topChromeHeightPx.toDp() }
         val topChromeInset = if (topChromeMode == TopChromeMode.None) {
             0.dp
         } else if (measuredTopChromeInset.value > 0f) {
             measuredTopChromeInset
         } else {
-            topChromeHeaderHeight
+            topSystemBarInset + topChromeHeaderHeight
         }
 
         Scaffold(
@@ -257,8 +259,8 @@ fun FolioreNavHost(
                     editChromeHazeState = editChromeHazeState,
                     topChromeInset = topChromeInset,
                     bottomChromeInset = when {
-                        showNavigation && currentRoute == Routes.LIBRARY -> bottomBarContentInset
-                        showNavigation && currentRoute == Routes.EDIT -> bottomEditContentInset
+                        showNavigation && currentRoute == Routes.LIBRARY -> bottomBarContentInset + bottomSystemBarInset
+                        showNavigation && currentRoute == Routes.EDIT -> bottomEditContentInset + bottomSystemBarInset
                         else -> 0.dp
                     },
                 )
@@ -369,6 +371,7 @@ private fun NavContent(
                 viewModel = libraryViewModel,
                 themeMode = themeMode,
                 onThemeModeChange = onThemeModeChange,
+                bottomChromeInset = bottomChromeInset,
             )
         }
         composable(Routes.DETAILS) { backStackEntry ->
@@ -378,6 +381,7 @@ private fun NavContent(
                 bookId = bookId,
                 onEditMetadata = { onEditBook(bookId) },
                 onBack = onBack,
+                bottomChromeInset = bottomChromeInset,
             )
         }
         composable(Routes.EDIT) { backStackEntry ->
@@ -437,7 +441,13 @@ private fun TopChromeGlassContainer(
                     ),
             )
         }
-        content()
+        Box(
+            modifier = Modifier.windowInsetsPadding(
+                WindowInsets.systemBars.only(WindowInsetsSides.Top),
+            ),
+        ) {
+            content()
+        }
     }
 }
 
@@ -537,7 +547,8 @@ private fun FolioreNavigationBar(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
             ) {
                 AnimatedVisibility(
                     visible = stackedEditMode,
@@ -584,54 +595,58 @@ private fun FolioreNavigationBar(
                 )
             }
         } else {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(bottomBarHeight)
-                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
+                    .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Bottom)),
             ) {
-                BoxWithConstraints(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(bottomBarHeight),
                 ) {
-                    val dividerWidth = 1.dp
-                    val splitNavigationWidth = (maxWidth - dividerWidth) *
-                        (TabletEditLeftPaneWeight / (TabletEditLeftPaneWeight + TabletEditRightPaneWeight))
-
-                    AnimatedNavigationItemsSlot(
-                        selectedRoute = navigationSelectedRoute,
-                        splitEditMode = splitEditMode,
-                        splitNavigationWidth = if (splitEditMode) splitNavigationWidth else maxWidth,
-                        isLoading = isLoading,
-                        onLibraryClick = onLibraryClick,
-                        onSyncClick = onSyncClick,
-                        onSettingsClick = onSettingsClick,
+                    BoxWithConstraints(
                         modifier = Modifier.fillMaxSize(),
-                    )
+                    ) {
+                        val dividerWidth = 1.dp
+                        val splitNavigationWidth = (maxWidth - dividerWidth) *
+                            (TabletEditLeftPaneWeight / (TabletEditLeftPaneWeight + TabletEditRightPaneWeight))
 
-                    if (splitEditMode) {
-                        Row(modifier = Modifier.fillMaxSize()) {
-                            Spacer(
-                                modifier = Modifier
-                                    .weight(TabletEditLeftPaneWeight)
-                                    .fillMaxHeight(),
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(dividerWidth)
-                                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
-                            )
-                            EditActionsSlot(
-                                editActions = editActions,
-                                isLoading = isLoading,
-                                compact = editActions?.compact == true,
-                                delayMillis = 220,
-                                modifier = Modifier
-                                    .weight(TabletEditRightPaneWeight)
-                                    .fillMaxHeight(),
-                            )
+                        AnimatedNavigationItemsSlot(
+                            selectedRoute = navigationSelectedRoute,
+                            splitEditMode = splitEditMode,
+                            splitNavigationWidth = if (splitEditMode) splitNavigationWidth else maxWidth,
+                            isLoading = isLoading,
+                            onLibraryClick = onLibraryClick,
+                            onSyncClick = onSyncClick,
+                            onSettingsClick = onSettingsClick,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        if (splitEditMode) {
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                Spacer(
+                                    modifier = Modifier
+                                        .weight(TabletEditLeftPaneWeight)
+                                        .fillMaxHeight(),
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .width(dividerWidth)
+                                        .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f)),
+                                )
+                                EditActionsSlot(
+                                    editActions = editActions,
+                                    isLoading = isLoading,
+                                    compact = editActions?.compact == true,
+                                    delayMillis = 220,
+                                    modifier = Modifier
+                                        .weight(TabletEditRightPaneWeight)
+                                        .fillMaxHeight(),
+                                )
+                            }
                         }
                     }
                 }
@@ -677,10 +692,14 @@ private fun AnimatedNavigationItemsSlot(
     val settingsDestination = TopLevelDestination.items.last()
     val transition = updateTransition(targetState = splitEditMode, label = "bottomNavSplitMode")
     val tuning = LocalVisualTuning.current
-    val bottomNavigationMaxWidth = tuning.bottomNavigationMaxWidth.dp
-    val bottomNavigationHorizontalPadding = tuning.bottomNavigationHorizontalPadding.dp
-    val bottomNavigationTopLevelSpacing = tuning.bottomNavigationTopLevelSpacing.dp
-    val bottomNavigationEditSpacing = tuning.bottomNavigationEditSpacing.dp
+    val bottomNavigationMaxWidth = tuning.bottomTabletNavigationMaxWidth.dp
+    val bottomNavigationHorizontalPadding = tuning.bottomTabletNavigationHorizontalPadding.dp
+    val bottomNavigationTopLevelSpacing = tuning.bottomTabletNavigationTopLevelSpacing.dp
+    val bottomNavigationEditSpacing = tuning.bottomTabletNavigationEditSpacing.dp
+    val itemTopPadding = tuning.bottomTabletBarItemTopPadding.dp
+    val itemHeight = tuning.bottomTabletBarItemHeight.dp
+    val iconSize = tuning.bottomTabletNavigationIconSize.dp
+    val labelSpacing = tuning.bottomTabletNavigationLabelSpacing.dp
 
     BoxWithConstraints(modifier = modifier) {
         val topRowWidth = if (maxWidth < bottomNavigationMaxWidth) {
@@ -711,6 +730,10 @@ private fun AnimatedNavigationItemsSlot(
             label = stringResource(libraryDestination.labelRes),
             contentDescription = stringResource(libraryDestination.labelRes),
             selected = selectedRoute == libraryDestination.route || splitEditMode,
+            itemTopPadding = itemTopPadding,
+            itemHeight = itemHeight,
+            iconSize = iconSize,
+            labelSpacing = labelSpacing,
             onClick = onLibraryClick,
         )
         AnimatedNavigationItem(
@@ -725,6 +748,10 @@ private fun AnimatedNavigationItemsSlot(
             contentDescription = stringResource(R.string.action_sync_now),
             selected = false,
             enabled = !isLoading,
+            itemTopPadding = itemTopPadding,
+            itemHeight = itemHeight,
+            iconSize = iconSize,
+            labelSpacing = labelSpacing,
             onClick = onSyncClick,
         )
         AnimatedNavigationItem(
@@ -740,6 +767,10 @@ private fun AnimatedNavigationItemsSlot(
             label = stringResource(settingsDestination.labelRes),
             contentDescription = stringResource(settingsDestination.labelRes),
             selected = selectedRoute == settingsDestination.route,
+            itemTopPadding = itemTopPadding,
+            itemHeight = itemHeight,
+            iconSize = iconSize,
+            labelSpacing = labelSpacing,
             onClick = onSettingsClick,
         )
     }
@@ -761,6 +792,9 @@ private fun StaticNavigationItemsSlot(
     val bottomNavigationHorizontalPadding = tuning.bottomNavigationHorizontalPadding.dp
     val bottomNavigationTopLevelSpacing = tuning.bottomNavigationTopLevelSpacing.dp
     val bottomBarItemTopPadding = tuning.bottomBarItemTopPadding.dp
+    val bottomBarItemHeight = tuning.bottomBarItemHeight.dp
+    val iconSize = tuning.bottomNavigationIconSize.dp
+    val labelSpacing = tuning.bottomNavigationLabelSpacing.dp
 
     BoxWithConstraints(modifier = modifier) {
         val rowWidth = if (maxWidth < bottomNavigationMaxWidth) {
@@ -777,6 +811,9 @@ private fun StaticNavigationItemsSlot(
             label = stringResource(libraryDestination.labelRes),
             contentDescription = stringResource(libraryDestination.labelRes),
             selected = selectedRoute == libraryDestination.route,
+            itemHeight = bottomBarItemHeight,
+            iconSize = iconSize,
+            labelSpacing = labelSpacing,
             onClick = onLibraryClick,
             modifier = Modifier
                 .offset(x = rowStart + bottomNavigationHorizontalPadding, y = bottomBarItemTopPadding)
@@ -788,6 +825,9 @@ private fun StaticNavigationItemsSlot(
             contentDescription = stringResource(R.string.action_sync_now),
             selected = false,
             enabled = !isLoading,
+            itemHeight = bottomBarItemHeight,
+            iconSize = iconSize,
+            labelSpacing = labelSpacing,
             onClick = onSyncClick,
             modifier = Modifier
                 .offset(
@@ -801,6 +841,9 @@ private fun StaticNavigationItemsSlot(
             label = stringResource(settingsDestination.labelRes),
             contentDescription = stringResource(settingsDestination.labelRes),
             selected = selectedRoute == settingsDestination.route,
+            itemHeight = bottomBarItemHeight,
+            iconSize = iconSize,
+            labelSpacing = labelSpacing,
             onClick = onSettingsClick,
             modifier = Modifier
                 .offset(
@@ -826,9 +869,12 @@ private fun AnimatedNavigationItem(
     contentDescription: String,
     selected: Boolean,
     enabled: Boolean = true,
+    itemTopPadding: Dp,
+    itemHeight: Dp,
+    iconSize: Dp,
+    labelSpacing: Dp,
     onClick: () -> Unit,
 ) {
-    val bottomBarItemTopPadding = LocalVisualTuning.current.bottomBarItemTopPadding.dp
     val x by transition.animateDp(
         transitionSpec = {
             val itemDelayMillis = if (targetState) {
@@ -872,8 +918,11 @@ private fun AnimatedNavigationItem(
         enabled = enabled,
         onClick = onClick,
         modifier = Modifier
-            .offset(x = x, y = bottomBarItemTopPadding)
+            .offset(x = x, y = itemTopPadding)
             .width(width),
+        itemHeight = itemHeight,
+        iconSize = iconSize,
+        labelSpacing = labelSpacing,
     )
 }
 
@@ -941,22 +990,62 @@ private fun FolioreEditActions(
     val neutralButtonBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
     val disabledButtonContent = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
     val tuning = LocalVisualTuning.current
-    val horizontalPadding = if (actionStrip) tuning.bottomActionHorizontalPadding.dp else if (compact) 12.dp else 24.dp
-    val buttonSpacing = if (actionStrip) tuning.bottomActionButtonSpacing.dp else if (compact) 8.dp else 16.dp
-    val iconSpacing = if (actionStrip) tuning.bottomActionIconSpacing.dp else if (compact) 6.dp else 9.dp
-    val iconSize = if (actionStrip) tuning.bottomActionIconSize.dp else 20.dp
+    val horizontalPadding = if (actionStrip) {
+        tuning.bottomActionHorizontalPadding.dp
+    } else if (compact) {
+        tuning.bottomTabletCompactActionHorizontalPadding.dp
+    } else {
+        tuning.bottomTabletActionHorizontalPadding.dp
+    }
+    val buttonSpacing = if (actionStrip) {
+        tuning.bottomActionButtonSpacing.dp
+    } else if (compact) {
+        tuning.bottomTabletCompactActionButtonSpacing.dp
+    } else {
+        tuning.bottomTabletActionButtonSpacing.dp
+    }
+    val iconSpacing = if (actionStrip) {
+        tuning.bottomActionIconSpacing.dp
+    } else if (compact) {
+        tuning.bottomTabletCompactActionIconSpacing.dp
+    } else {
+        tuning.bottomTabletActionIconSpacing.dp
+    }
+    val iconSize = if (actionStrip) {
+        tuning.bottomActionIconSize.dp
+    } else {
+        tuning.bottomTabletActionIconSize.dp
+    }
     val actionTextStyle = if (actionStrip) {
         MaterialTheme.typography.labelMedium.copy(fontSize = tuning.bottomActionTextSize.sp)
     } else {
         MaterialTheme.typography.labelLarge
     }
     val buttonContentPadding = PaddingValues(
-        horizontal = if (actionStrip) 4.dp else if (compact) 8.dp else 16.dp,
+        horizontal = if (actionStrip) {
+            tuning.bottomActionButtonContentHorizontalPadding.dp
+        } else if (compact) {
+            tuning.bottomTabletCompactActionButtonContentHorizontalPadding.dp
+        } else {
+            tuning.bottomTabletActionButtonContentHorizontalPadding.dp
+        },
     )
     val containerHeight = if (actionStrip) tuning.bottomEditActionStripHeight.dp else tuning.bottomBarHeight.dp
-    val buttonHeight = if (actionStrip) tuning.bottomEditActionStripButtonHeight.dp else tuning.bottomBarItemHeight.dp
-    val topPadding = if (actionStrip) 6.dp else tuning.bottomBarItemTopPadding.dp
-    val bottomPadding = if (actionStrip) 8.dp else tuning.bottomBarItemBottomPadding.dp
+    val buttonHeight = if (actionStrip) {
+        tuning.bottomEditActionStripButtonHeight.dp
+    } else {
+        tuning.bottomTabletActionButtonHeight.dp
+    }
+    val topPadding = if (actionStrip) {
+        tuning.bottomActionTopPadding.dp
+    } else {
+        tuning.bottomTabletActionTopPadding.dp
+    }
+    val bottomPadding = if (actionStrip) {
+        tuning.bottomActionBottomPadding.dp
+    } else {
+        tuning.bottomTabletActionBottomPadding.dp
+    }
 
     Row(
         modifier = modifier
@@ -1098,11 +1187,12 @@ private fun FolioreBottomNavigationItem(
     contentDescription: String,
     selected: Boolean,
     enabled: Boolean = true,
+    itemHeight: Dp,
+    iconSize: Dp,
+    labelSpacing: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tuning = LocalVisualTuning.current
-    val bottomBarItemHeight = tuning.bottomBarItemHeight.dp
     val itemColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -1111,7 +1201,7 @@ private fun FolioreBottomNavigationItem(
 
     Column(
         modifier = modifier
-            .height(bottomBarItemHeight)
+            .height(itemHeight)
             .clickable(enabled = enabled, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -1119,10 +1209,10 @@ private fun FolioreBottomNavigationItem(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(21.dp),
+            modifier = Modifier.size(iconSize),
             tint = itemColor,
         )
-        Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(labelSpacing))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,

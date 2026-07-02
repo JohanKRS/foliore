@@ -577,19 +577,21 @@ private fun TabletEditBookScreen(
                 contentAlignment = Alignment.TopCenter,
             ) {
                 Column(
-                    modifier = Modifier.widthIn(max = 340.dp),
+                    modifier = Modifier
+                        .widthIn(max = tuning.detailsTabletCoverMaxWidth.dp)
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.Start,
                 ) {
                     EditBookCover(
                         book = book,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
                     OutlinedButton(
                         onClick = onReplaceCover,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp),
+                            .height(tuning.detailsTabletCoverButtonHeight.dp),
                         shape = RoundedCornerShape(5.dp),
                         border = BorderStroke(
                             1.dp,
@@ -609,12 +611,12 @@ private fun TabletEditBookScreen(
                         )
                     }
                     if (hasOpenAiApiKey) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonSpacing.dp))
                         OutlinedButton(
                             onClick = onGenerateCoverClick,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(44.dp),
+                                .height(tuning.detailsTabletCoverButtonHeight.dp),
                             shape = RoundedCornerShape(5.dp),
                             border = BorderStroke(
                                 1.dp,
@@ -634,7 +636,7 @@ private fun TabletEditBookScreen(
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
                         style = MaterialTheme.typography.titleLarge.copy(
@@ -645,7 +647,7 @@ private fun TabletEditBookScreen(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverAuthorSpacing.dp))
                     Text(
                         text = authors.splitValues().firstOrNull()
                             ?: stringResource(R.string.book_unknown_author),
@@ -654,7 +656,7 @@ private fun TabletEditBookScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverStatusSpacing.dp))
                     StatusPill(
                         status = book.book.status,
                         syncStatus = book.book.syncStatus,
@@ -873,19 +875,21 @@ private fun StackedEditBookScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
-                    modifier = Modifier.widthIn(max = 340.dp),
+                    modifier = Modifier
+                        .widthIn(max = tuning.detailsTabletCoverMaxWidth.dp)
+                        .fillMaxWidth(),
                     horizontalAlignment = Alignment.Start,
                 ) {
                     EditBookCover(
                         book = book,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
                     OutlinedButton(
                         onClick = onReplaceCover,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp),
+                            .height(tuning.detailsTabletCoverButtonHeight.dp),
                         shape = RoundedCornerShape(5.dp),
                         border = BorderStroke(
                             1.dp,
@@ -905,12 +909,12 @@ private fun StackedEditBookScreen(
                         )
                     }
                     if (hasOpenAiApiKey) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonSpacing.dp))
                         OutlinedButton(
                             onClick = onGenerateCoverClick,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(44.dp),
+                                .height(tuning.detailsTabletCoverButtonHeight.dp),
                             shape = RoundedCornerShape(5.dp),
                             border = BorderStroke(
                                 1.dp,
@@ -930,7 +934,7 @@ private fun StackedEditBookScreen(
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
                         style = MaterialTheme.typography.titleLarge.copy(
@@ -941,7 +945,7 @@ private fun StackedEditBookScreen(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverAuthorSpacing.dp))
                     Text(
                         text = authors.splitValues().firstOrNull()
                             ?: stringResource(R.string.book_unknown_author),
@@ -950,7 +954,7 @@ private fun StackedEditBookScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverStatusSpacing.dp))
                     StatusPill(
                         status = book.book.status,
                         syncStatus = book.book.syncStatus,

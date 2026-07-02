@@ -60,7 +60,12 @@ fun EditMetadataRoute(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = bottomChromeInset),
+            )
+        },
         contentWindowInsets = WindowInsets(0.dp),
     ) { paddingValues ->
         EditMetadataScreen(
