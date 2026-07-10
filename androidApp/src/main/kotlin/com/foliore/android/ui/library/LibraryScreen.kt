@@ -126,6 +126,7 @@ import coil.compose.AsyncImage
 import coil.request.Disposable
 import coil.request.ImageRequest
 import com.foliore.android.R
+import com.foliore.android.ui.FolioreTopLevelHeader
 import com.foliore.android.ui.TopChromeDividerHalfHeight
 import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.theme.CormorantGaramondFamily
@@ -505,27 +506,9 @@ private fun LibraryHeader(
     Column(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(tuning.topChromeHeaderHeight.dp)
-                .padding(
-                    start = tuning.libraryHeaderStartPadding.dp,
-                    end = tuning.libraryHeaderEndPadding.dp,
-                ),
-            verticalAlignment = Alignment.CenterVertically,
+        FolioreTopLevelHeader(
+            title = stringResource(R.string.library_title),
         ) {
-            Text(
-                text = stringResource(R.string.library_title),
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontFamily = CormorantGaramondFamily,
-                    fontWeight = FontWeight.Light,
-                    fontSize = 38.sp,
-                    lineHeight = 42.sp,
-                ),
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(modifier = Modifier.weight(1f))
             if (hasBooks && isBatchMode) {
                 LibraryHeaderIconButton(
                     imageVector = Icons.Outlined.Close,

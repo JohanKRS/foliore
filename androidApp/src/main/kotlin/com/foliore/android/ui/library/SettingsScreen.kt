@@ -6,13 +6,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -52,6 +57,7 @@ import com.foliore.android.R
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
+import com.foliore.android.ui.FolioreTopLevelHeader
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 import java.util.Locale
@@ -118,18 +124,22 @@ fun SettingsScreen(
                 .align(Alignment.TopCenter)
                 .widthIn(max = 920.dp)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp, vertical = 24.dp),
+                .verticalScroll(rememberScrollState()),
         ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.onBackground,
+        Box(
+            modifier = Modifier.windowInsetsPadding(
+                WindowInsets.systemBars.only(WindowInsetsSides.Top),
+            ),
+        ) {
+            FolioreTopLevelHeader(title = stringResource(R.string.settings_title))
+        }
+        EditorialDivider(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalPadding = 0.dp,
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(28.dp))
 
+        Column(modifier = Modifier.padding(horizontal = 28.dp)) {
         SectionTitle(text = stringResource(R.string.settings_appearance))
         Spacer(modifier = Modifier.height(8.dp))
         SelectableOptionRow(
@@ -736,6 +746,7 @@ fun SettingsScreen(
             }
         }
         Spacer(modifier = Modifier.height(48.dp))
+        }
         }
     }
 }

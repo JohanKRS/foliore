@@ -45,10 +45,8 @@ kotlin {
             }
         }
         if (isMacOs) {
-            val iosMain by getting {
-                dependencies {
-                    implementation(libs.sqldelight.native.driver)
-                }
+            iosMain.dependencies {
+                implementation(libs.sqldelight.native.driver)
             }
         }
     }

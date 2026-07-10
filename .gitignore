@@ -3,6 +3,8 @@
 .kotlin/
 build/
 local.properties
+keystore.properties
+*.jks
 captures/
 .codex-artifacts/
 qa/

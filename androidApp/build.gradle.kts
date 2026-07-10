@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+val hasReleaseSigningConfig = keystorePropertiesFile.exists()
+
+if (hasReleaseSigningConfig) {
+    keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+    listOf("storeFile", "storePassword", "keyAlias", "keyPassword").forEach { propertyName ->
+        check(!keystoreProperties.getProperty(propertyName).isNullOrBlank()) {
+            "Missing $propertyName in ${keystorePropertiesFile.name}"
+        }
+    }
 }
 
 android {
@@ -25,6 +40,25 @@ android {
         compose = true
     }
 
+    signingConfigs {
+        if (hasReleaseSigningConfig) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            if (hasReleaseSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+
 }
 
 dependencies {
@@ -46,7 +80,7 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.haze.blur)
 
-    testImplementation(kotlin("test"))
+    testImplementation(kotlin("test-junit"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
