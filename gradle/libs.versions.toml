@@ -13,6 +13,7 @@ serialization = "1.6.3"
 datetime = "0.6.0"
 sqldelight = "2.0.2"
 coil = "2.6.0"
+androidSvg = "1.4"
 playServicesAuth = "21.6.0"
 workManager = "2.10.5"
 haze = "2.0.0-alpha03"
@@ -33,6 +34,7 @@ androidx-compose-foundation = { module = "androidx.compose.foundation:foundation
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+android-svg = { module = "com.caverock:androidsvg-aar", version.ref = "androidSvg" }
 google-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }

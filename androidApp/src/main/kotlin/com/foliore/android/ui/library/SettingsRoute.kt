@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
+import com.foliore.android.storage.AppLanguage
 import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryNoticeType
@@ -35,6 +36,8 @@ fun SettingsRoute(
     viewModel: LibraryViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    appLanguage: AppLanguage,
+    onAppLanguageChange: (AppLanguage) -> Unit,
     bottomChromeInset: Dp = 0.dp,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -43,6 +46,7 @@ fun SettingsRoute(
     var showSyncFolderGuidance by rememberSaveable { mutableStateOf(false) }
     var showGoogleDriveLibraryChoice by rememberSaveable { mutableStateOf(false) }
     var showDeleteGoogleDriveBackupConfirmation by rememberSaveable { mutableStateOf(false) }
+    var showLanguagePicker by rememberSaveable { mutableStateOf(false) }
     val folderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
@@ -111,6 +115,7 @@ fun SettingsRoute(
     ) { paddingValues ->
         SettingsScreen(
             themeMode = themeMode,
+            appLanguage = appLanguage,
             hasOpenAiApiKey = state.hasOpenAiApiKey,
             hasGoogleBooksApiKey = state.hasGoogleBooksApiKey,
             kindleEmailSettings = state.kindleEmailSettings,
@@ -125,6 +130,7 @@ fun SettingsRoute(
             isSyncing = state.isSyncing,
             lastSyncSummary = state.lastSyncSummary,
             onThemeModeChange = onThemeModeChange,
+            onChooseAppLanguage = { showLanguagePicker = true },
             onOpenAiApiKeySave = viewModel::saveOpenAiApiKey,
             onOpenAiApiKeyClear = viewModel::clearOpenAiApiKey,
             onGoogleBooksApiKeySave = viewModel::saveGoogleBooksApiKey,
@@ -147,6 +153,32 @@ fun SettingsRoute(
             onDisconnectSync = viewModel::disconnectSync,
             modifier = Modifier.padding(paddingValues),
         )
+    }
+
+    if (showLanguagePicker) {
+        FolioreOptionsDialog(
+            title = stringResource(R.string.settings_language_dialog_title),
+            doneLabel = stringResource(R.string.action_done),
+            onDismiss = { showLanguagePicker = false },
+        ) {
+            FolioreDialogSectionCard(
+                label = stringResource(R.string.settings_language),
+            ) {
+                FolioreDialogOptionGrid(
+                    columns = if (maxWidth >= 420.dp) 2 else 1,
+                    options = AppLanguage.entries.map { language ->
+                        FolioreDialogOption(
+                            label = stringResource(language.labelResource()),
+                            selected = appLanguage == language,
+                            onClick = {
+                                showLanguagePicker = false
+                                onAppLanguageChange(language)
+                            },
+                        )
+                    },
+                )
+            }
+        }
     }
 
     if (showSyncFolderGuidance) {
@@ -252,5 +284,19 @@ fun SettingsRoute(
                 }
             },
         )
+    }
+}
+
+private fun AppLanguage.labelResource(): Int {
+    return when (this) {
+        AppLanguage.SYSTEM -> R.string.settings_language_system
+        AppLanguage.PORTUGUESE_BRAZIL -> R.string.settings_language_portuguese_brazil
+        AppLanguage.ENGLISH -> R.string.settings_language_english
+        AppLanguage.SPANISH -> R.string.settings_language_spanish
+        AppLanguage.JAPANESE -> R.string.settings_language_japanese
+        AppLanguage.FRENCH -> R.string.settings_language_french
+        AppLanguage.ITALIAN -> R.string.settings_language_italian
+        AppLanguage.GERMAN -> R.string.settings_language_german
+        AppLanguage.CHINESE_SIMPLIFIED -> R.string.settings_language_chinese_simplified
     }
 }

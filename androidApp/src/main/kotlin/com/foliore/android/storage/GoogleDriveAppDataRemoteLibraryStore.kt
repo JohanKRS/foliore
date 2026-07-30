@@ -27,15 +27,14 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
         mimeType: String,
     ) {
         val parentId = ensureParentFolder(path)
-        if (!path.parentRemotePath().wasRecentlyCleared()) {
-            deleteExistingFile(path)
-        }
-        drive.uploadText(
+        val existingFiles = existingFiles(path)
+        val uploaded = drive.uploadText(
             parentId = parentId,
             name = path.remoteName(),
             mimeType = mimeType,
             text = text,
         )
+        deleteReplacedFiles(existingFiles, uploaded)
         invalidateChildren(parentId)
     }
 
@@ -46,15 +45,14 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
     ) {
         if (!source.exists()) return
         val parentId = ensureParentFolder(path)
-        if (!path.parentRemotePath().wasRecentlyCleared()) {
-            deleteExistingFile(path)
-        }
-        drive.uploadFile(
+        val existingFiles = existingFiles(path)
+        val uploaded = drive.uploadFile(
             parentId = parentId,
             name = path.remoteName(),
             mimeType = mimeType,
             source = source,
         )
+        deleteReplacedFiles(existingFiles, uploaded)
         invalidateChildren(parentId)
     }
 
@@ -181,15 +179,22 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
         return findChild(parentId, normalized.remoteName(), folder = false)
     }
 
-    private fun deleteExistingFile(path: String) {
-        val parentId = findFolderId(path.parentRemotePath()) ?: return
-        childrenOf(parentId)
-            .filter { child ->
-                child.name == path.remoteName() &&
-                    child.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE
-            }
+    private fun existingFiles(path: String): List<DriveFileMetadata> {
+        if (path.parentRemotePath().wasRecentlyCleared()) return emptyList()
+        val parentId = findFolderId(path.parentRemotePath()) ?: return emptyList()
+        return childrenOf(parentId).filter { child ->
+            child.name == path.remoteName() &&
+                child.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE
+        }
+    }
+
+    private fun deleteReplacedFiles(
+        existingFiles: List<DriveFileMetadata>,
+        uploaded: DriveFileMetadata,
+    ) {
+        existingFiles
+            .filterNot { existing -> existing.id == uploaded.id }
             .forEach { existing -> drive.deleteFile(existing.id) }
-        invalidateChildren(parentId)
     }
 
     private fun deleteFolderChildren(folderId: String) {

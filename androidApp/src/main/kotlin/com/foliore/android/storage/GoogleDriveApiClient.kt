@@ -372,5 +372,17 @@ internal class GoogleDriveHttpException(
         get() = statusCode == 403 && message?.contains("storageQuotaExceeded", ignoreCase = true) == true
 
     val isRetryable: Boolean
-        get() = statusCode == 429 || statusCode in 500..599
+        get() = statusCode == 429 ||
+            statusCode in 500..599 ||
+            statusCode == 403 && RETRYABLE_403_REASONS.any { reason ->
+                message?.contains(reason, ignoreCase = true) == true
+            }
+
+    private companion object {
+        val RETRYABLE_403_REASONS = listOf(
+            "rateLimitExceeded",
+            "userRateLimitExceeded",
+            "backendError",
+        )
+    }
 }

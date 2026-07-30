@@ -158,6 +158,115 @@ class EpubParserTest {
         assertEquals("978-0-306-40615-7", result.metadata.identifiers["isbn"])
     }
 
+    @Test
+    fun resolvesEpub2GuideCoverPageImage() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="OEBPS/content.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "OEBPS/content.opf" to """
+                    <package version="2.0">
+                      <metadata>
+                        <dc:title>Guide Cover Test</dc:title>
+                      </metadata>
+                      <manifest>
+                        <item id="titlepage" href="Text/titlepage.xhtml" media-type="application/xhtml+xml"/>
+                        <item id="image001" href="Images/9780000000000.jpg" media-type="image/jpeg"/>
+                      </manifest>
+                      <guide>
+                        <reference type="cover" title="Cover" href="Text/titlepage.xhtml"/>
+                      </guide>
+                    </package>
+                """.trimIndent(),
+                "OEBPS/Text/titlepage.xhtml" to """
+                    <html>
+                      <body>
+                        <img alt="Cover" src="../Images/9780000000000.jpg"/>
+                      </body>
+                    </html>
+                """.trimIndent(),
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals("OEBPS/Images/9780000000000.jpg", result.coverPath)
+        assertEquals("OEBPS/Images/9780000000000.jpg", result.technicalInfo.coverHref)
+    }
+
+    @Test
+    fun resolvesEpub2GuideSvgImageReference() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="OPS/package.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "OPS/package.opf" to """
+                    <package version="2.0">
+                      <metadata><dc:title>SVG Guide Test</dc:title></metadata>
+                      <manifest>
+                        <item id="coverpage" href="cover.xhtml" media-type="application/xhtml+xml"/>
+                        <item id="art" href="art/front.svg" media-type="image/svg+xml"/>
+                      </manifest>
+                      <guide>
+                        <reference type="cover" href="cover.xhtml"/>
+                      </guide>
+                    </package>
+                """.trimIndent(),
+                "OPS/cover.xhtml" to """
+                    <html>
+                      <body>
+                        <svg><image xlink:href="art/front.svg"/></svg>
+                      </body>
+                    </html>
+                """.trimIndent(),
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals("OPS/art/front.svg", result.coverPath)
+    }
+
+    @Test
+    fun findsUndeclaredCoverFileInMalformedEpub() {
+        val archive = FakeArchive(
+            mapOf(
+                "META-INF/container.xml" to """
+                    <container>
+                      <rootfiles>
+                        <rootfile full-path="OEBPS/content.opf"/>
+                      </rootfiles>
+                    </container>
+                """.trimIndent(),
+                "OEBPS/content.opf" to """
+                    <package version="2.0">
+                      <metadata><dc:title>Malformed Cover Test</dc:title></metadata>
+                      <manifest>
+                        <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/>
+                      </manifest>
+                    </package>
+                """.trimIndent(),
+                "OEBPS/cover.jpg" to "fake image bytes",
+                "OEBPS/logo.jpg" to "fake logo bytes",
+            ),
+        )
+
+        val result = EpubParser().parse(archive)
+
+        assertEquals("OEBPS/cover.jpg", result.coverPath)
+        assertEquals("OEBPS/cover.jpg", result.technicalInfo.coverHref)
+    }
+
     private class FakeArchive(private val entries: Map<String, String>) : EpubArchive {
         override fun listEntries(): List<String> = entries.keys.toList()
 

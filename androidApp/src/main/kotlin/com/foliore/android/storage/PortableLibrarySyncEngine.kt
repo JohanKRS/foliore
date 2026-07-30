@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.shared.data.MetadataSnapshot
+import com.foliore.shared.data.PortableSnapshots
 import com.foliore.shared.data.TechnicalSnapshot
 import com.foliore.shared.domain.Book
 import com.foliore.shared.domain.BookMetadata
@@ -14,8 +15,12 @@ import com.foliore.shared.domain.ImportedBookRecord
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.domain.MetadataSource
 import com.foliore.shared.domain.SyncStatus
+import com.foliore.shared.epub.EpubParseResult
+import com.foliore.shared.epub.EpubParser
 import com.foliore.shared.library.LibraryRepository
 import java.io.File
+import java.io.IOException
+import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorCompletionService
 import java.util.concurrent.Executors
@@ -38,6 +43,8 @@ internal class PortableLibrarySyncEngine(
     private val preferences = appContext.getSharedPreferences(SyncPreferenceKeys.PREFERENCES_NAME, Context.MODE_PRIVATE)
     private val pendingRemoteDeletionStore = PendingRemoteDeletionStore(appContext)
     private val repositoryLock = Any()
+    private val epubParser = EpubParser()
+    private val coverImageWriter = CoverImageWriter()
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -125,12 +132,35 @@ internal class PortableLibrarySyncEngine(
             store = store,
             actions = remoteDownloadActions,
             syncedAt = syncedAt,
-            onDownloaded = { action ->
+            onFinished = { action, result, error ->
                 downloadProgress += 1
-                counters.downloadedBooks += 1
-                action.duplicateBookToRemove?.let { duplicateBook ->
-                    removeLocalDuplicateBook(duplicateBook)
-                    pendingStatusUpdates.syncedBookIds += action.remoteBook.bookId
+                if (error == null) {
+                    counters.downloadedBooks += 1
+                    if (result?.recoveredStateBundle == true) {
+                        missingRemoteBookIds += action.remoteBook.bookId
+                    }
+                    action.duplicateBookToRemove?.let { duplicateBook ->
+                        removeLocalDuplicateBook(duplicateBook)
+                        pendingStatusUpdates.syncedBookIds += action.remoteBook.bookId
+                    }
+                } else if (
+                    action.currentBook == null &&
+                    error.missingRemoteBookFileOrNull()?.remotePath == action.remoteBook.originalFile
+                ) {
+                    removedRemoteBookIds += action.remoteBook.bookId
+                    Log.w(
+                        TAG,
+                        "Removing unrecoverable manifest entry id=${action.remoteBook.bookId}; " +
+                            "the remote EPUB no longer exists",
+                    )
+                } else {
+                    counters.conflictedBooks += 1
+                    action.currentBook?.book?.id?.let(pendingStatusUpdates.conflictedBookIds::add)
+                    Log.e(
+                        TAG,
+                        "Skipping remote book id=${action.remoteBook.bookId} after download failure",
+                        error,
+                    )
                 }
                 onProgress(
                     ManualSyncProgress(
@@ -216,7 +246,7 @@ internal class PortableLibrarySyncEngine(
             store = store,
             books = uploadCandidates,
             remoteLayoutsByBookId = remoteLayoutsByBookId,
-            remoteBooks = remoteBooks,
+            remoteBooks = remoteBooks - missingRemoteBookIds,
             onUploaded = { bookId ->
                 uploadProgress += 1
                 counters.uploadedBooks += 1
@@ -480,92 +510,269 @@ internal class PortableLibrarySyncEngine(
         remoteBook: ManifestBookSnapshot,
         syncedAt: String,
         currentBook: LibraryBook?,
-    ) {
+    ): RemoteDownloadResult {
         val startedAtElapsedMillis = SystemClock.elapsedRealtime()
         Log.d(TAG, "downloadBook start id=${remoteBook.bookId}")
-        val bookDir = File(appContext.filesDir, "books/${remoteBook.bookId}")
+        val destinationDir = File(appContext.filesDir, "books/${remoteBook.bookId}")
+        val stagingDir = File(
+            appContext.cacheDir,
+            "sync-download/${remoteBook.bookId}-${UUID.randomUUID()}",
+        ).apply { mkdirs() }
 
-        if (bookDir.exists()) {
-            bookDir.deleteRecursively()
-        }
-        bookDir.mkdirs()
+        return try {
+            val hasStateBundle = remoteBook.stateBundleFile?.let { stateBundlePath ->
+                store.copyToLocal(
+                    stateBundlePath,
+                    File(stagingDir, STATE_BUNDLE_FILE_NAME),
+                )
+                    ?.applyManifestModifiedTime(remoteBook, stateBundlePath)
+                    ?.also { bundleFile ->
+                        extractStateBundle(bundleFile, stagingDir)
+                        bundleFile.delete()
+                    } != null
+            } == true
 
-        val stateBundlePath = remoteBook.stateBundleFile
-            ?: error("Missing remote state bundle for ${remoteBook.bookId}")
-        store.copyToLocal(stateBundlePath, File(bookDir, STATE_BUNDLE_FILE_NAME))
-            ?.applyManifestModifiedTime(remoteBook, stateBundlePath)
-            ?.also { bundleFile ->
-                extractStateBundle(bundleFile, bookDir)
-                bundleFile.delete()
+            val stagedOriginalFile = File(stagingDir, "original.epub")
+            store.copyToLocal(remoteBook.originalFile, stagedOriginalFile)
+                ?.applyManifestModifiedTime(remoteBook, remoteBook.originalFile)
+                ?: throw MissingRemoteBookFileException(
+                    bookId = remoteBook.bookId,
+                    remotePath = remoteBook.originalFile,
+                )
+            val stagedPreparedFile = remoteBook.preparedFile?.let { path ->
+                store.copyToLocal(path, File(stagingDir, "prepared.epub"))
+                    ?.applyManifestModifiedTime(remoteBook, path)
             }
-            ?: error("Missing remote state bundle for ${remoteBook.bookId}")
 
-        val localMetadataFile = File(bookDir, "metadata.json")
-        val metadataText = localMetadataFile
-            .takeIf { file -> file.exists() }
-            ?.readText(Charsets.UTF_8)
-            ?: error("Missing bundled metadata for ${remoteBook.bookId}")
+            val downloadedState = if (hasStateBundle) {
+                readBundledBookState(stagingDir, remoteBook)
+            } else {
+                Log.w(
+                    TAG,
+                    "Missing remote state bundle id=${remoteBook.bookId}; recovering metadata from EPUB",
+                )
+                recoverBookStateFromEpub(
+                    bookDir = stagingDir,
+                    originalFile = stagedOriginalFile,
+                    remoteBook = remoteBook,
+                )
+            }
 
-        val localTechnicalFile = File(bookDir, "technical.json")
-        val technicalText = localTechnicalFile
-            .takeIf { file -> file.exists() }
-            ?.readText(Charsets.UTF_8)
-            ?: error("Missing bundled technical snapshot for ${remoteBook.bookId}")
+            val destinationOriginalFile = File(destinationDir, "original.epub")
+            val destinationPreparedFile = stagedPreparedFile?.let { File(destinationDir, "prepared.epub") }
+            val destinationCoverFile = File(destinationDir, "cover_original.jpg")
+                .takeIf { File(stagingDir, "cover_original.jpg").exists() }
+            val destinationCoverThumbFile = File(destinationDir, "cover_thumb.jpg")
+                .takeIf { File(stagingDir, "cover_thumb.jpg").exists() }
+            val book = Book(
+                id = remoteBook.bookId,
+                originalFilePath = destinationOriginalFile.absolutePath,
+                preparedFilePath = destinationPreparedFile?.absolutePath,
+                coverImagePath = destinationCoverFile?.absolutePath,
+                coverThumbPath = destinationCoverThumbFile?.absolutePath,
+                originalHashSha256 = remoteBook.originalHashSha256,
+                fileSizeBytes = stagedOriginalFile.length(),
+                importedAt = currentBook?.book?.importedAt ?: syncedAt,
+                updatedAt = remoteBook.updatedAt,
+                lastPreparedAt = currentBook?.book?.lastPreparedAt
+                    ?: destinationPreparedFile?.let { remoteBook.updatedAt },
+                lastExportedAt = currentBook?.book?.lastExportedAt,
+                lastSyncedAt = syncedAt,
+                status = downloadedState.status,
+                syncStatus = SyncStatus.SYNCED,
+                revision = remoteBook.revision,
+                updatedByDeviceId = remoteBook.updatedByDeviceId,
+                technicalStatus = downloadedState.technicalInfo.errors
+                    .takeIf { it.isNotEmpty() }
+                    ?.joinToString("; "),
+            )
+            val metadata = downloadedState.metadata.copy(bookId = remoteBook.bookId)
+            val technicalInfo = downloadedState.technicalInfo.copy(bookId = remoteBook.bookId)
 
-        val metadataSnapshot = json.decodeFromString<MetadataSnapshot>(metadataText)
-        val technicalSnapshot = json.decodeFromString<TechnicalSnapshot>(technicalText)
-
-        val localOriginalFile = File(bookDir, "original.epub")
-        store.copyToLocal(remoteBook.originalFile, localOriginalFile)
-            ?.applyManifestModifiedTime(remoteBook, remoteBook.originalFile)
-            ?: error("Missing remote original EPUB for ${remoteBook.bookId}")
-        val localPreparedFile = remoteBook.preparedFile?.let { path ->
-            store.copyToLocal(path, File(bookDir, "prepared.epub"))
-                ?.applyManifestModifiedTime(remoteBook, path)
-        }
-        val localCoverFile = File(bookDir, "cover_original.jpg")
-            .takeIf { file -> file.exists() }
-        val localCoverThumbFile = File(bookDir, "cover_thumb.jpg")
-            .takeIf { file -> file.exists() }
-
-        val bookStatus = metadataSnapshot.status.toBookStatus()
-        val technicalInfo = technicalSnapshot.toDomain()
-        val book = Book(
-            id = remoteBook.bookId,
-            originalFilePath = localOriginalFile.absolutePath,
-            preparedFilePath = localPreparedFile?.absolutePath,
-            coverImagePath = localCoverFile?.absolutePath,
-            coverThumbPath = localCoverThumbFile?.absolutePath,
-            originalHashSha256 = metadataSnapshot.originalHashSha256,
-            fileSizeBytes = localOriginalFile.length(),
-            importedAt = currentBook?.book?.importedAt ?: syncedAt,
-            updatedAt = metadataSnapshot.updatedAt,
-            lastPreparedAt = currentBook?.book?.lastPreparedAt
-                ?: localPreparedFile?.let { metadataSnapshot.updatedAt },
-            lastExportedAt = currentBook?.book?.lastExportedAt,
-            lastSyncedAt = syncedAt,
-            status = bookStatus,
-            syncStatus = SyncStatus.SYNCED,
-            revision = metadataSnapshot.revision,
-            updatedByDeviceId = metadataSnapshot.updatedByDeviceId,
-            technicalStatus = technicalInfo.errors.takeIf { it.isNotEmpty() }?.joinToString("; "),
-        )
-        val metadata = metadataSnapshot.toDomain()
-
-        synchronized(repositoryLock) {
-            libraryRepository.insertImportedBook(
-                ImportedBookRecord(
+            if (!hasStateBundle) {
+                writeRecoveredPortableSnapshots(
+                    bookDir = stagingDir,
+                    book = book,
+                    metadata = metadata,
+                    technicalInfo = technicalInfo,
+                )
+            }
+            commitDownloadedBook(
+                stagingDir = stagingDir,
+                destinationDir = destinationDir,
+                record = ImportedBookRecord(
                     book = book,
                     metadata = metadata,
                     technicalInfo = technicalInfo,
                 ),
             )
+            Log.d(
+                TAG,
+                "downloadBook end id=${remoteBook.bookId} recovered=${!hasStateBundle} " +
+                    "durationMs=${SystemClock.elapsedRealtime() - startedAtElapsedMillis}",
+            )
+            RemoteDownloadResult(recoveredStateBundle = !hasStateBundle)
+        } finally {
+            if (stagingDir.exists()) {
+                stagingDir.deleteRecursively()
+            }
         }
-        Log.d(
-            TAG,
-            "downloadBook end id=${remoteBook.bookId} " +
-                "durationMs=${SystemClock.elapsedRealtime() - startedAtElapsedMillis}",
+    }
+
+    private fun readBundledBookState(
+        bookDir: File,
+        remoteBook: ManifestBookSnapshot,
+    ): DownloadedBookState {
+        val metadataText = File(bookDir, "metadata.json")
+            .takeIf { file -> file.exists() }
+            ?.readText(Charsets.UTF_8)
+            ?: error("Missing bundled metadata for ${remoteBook.bookId}")
+        val technicalText = File(bookDir, "technical.json")
+            .takeIf { file -> file.exists() }
+            ?.readText(Charsets.UTF_8)
+            ?: error("Missing bundled technical snapshot for ${remoteBook.bookId}")
+        val metadataSnapshot = json.decodeFromString<MetadataSnapshot>(metadataText)
+        val technicalSnapshot = json.decodeFromString<TechnicalSnapshot>(technicalText)
+        return DownloadedBookState(
+            metadata = metadataSnapshot.toDomain(),
+            technicalInfo = technicalSnapshot.toDomain(),
+            status = metadataSnapshot.status.toBookStatus(),
         )
+    }
+
+    private fun recoverBookStateFromEpub(
+        bookDir: File,
+        originalFile: File,
+        remoteBook: ManifestBookSnapshot,
+    ): DownloadedBookState {
+        val parsedWithCover = AndroidZipEpubArchive(originalFile).use { archive ->
+            val parsed = epubParser.parse(archive)
+            val coverBytes = parsed.coverPath?.let(archive::readBytes)
+            val coverPaths = coverBytes?.let { bytes -> coverImageWriter.writeCover(bookDir, bytes) }
+            ParsedRemoteEpub(parsed = parsed, hasCover = coverPaths != null)
+        }
+        val parsedMetadata = parsedWithCover.parsed.metadata
+        val parsedTechnical = parsedWithCover.parsed.technicalInfo
+        val title = parsedMetadata.title
+            ?.takeIf { it.isNotBlank() }
+            ?: remoteBook.originalFile
+                .substringAfterLast('/')
+                .substringBeforeLast(".epub")
+                .ifBlank { "EPUB" }
+        val authors = parsedMetadata.authors.filter { author -> author.isNotBlank() }
+        val status = when {
+            parsedTechnical.errors.isNotEmpty() -> BookStatus.ERROR
+            !parsedWithCover.hasCover -> BookStatus.NEEDS_REVIEW
+            else -> BookStatus.IMPORTED
+        }
+        return DownloadedBookState(
+            metadata = BookMetadata(
+                bookId = remoteBook.bookId,
+                title = title,
+                subtitle = null,
+                authors = authors,
+                sortAuthor = authors.firstOrNull(),
+                language = parsedMetadata.language,
+                publisher = parsedMetadata.publisher,
+                publishedDate = parsedMetadata.publishedDate,
+                description = parsedMetadata.description,
+                tags = emptyList(),
+                isbn = parsedMetadata.isbn,
+                identifiers = parsedMetadata.identifiers.ifEmpty {
+                    parsedMetadata.identifier?.let { identifier ->
+                        mapOf("package" to identifier)
+                    }.orEmpty()
+                },
+                seriesName = null,
+                seriesIndex = null,
+                source = MetadataSource.EPUB,
+            ),
+            technicalInfo = EpubTechnicalInfo(
+                bookId = remoteBook.bookId,
+                epubVersion = parsedTechnical.epubVersion,
+                opfPath = parsedTechnical.opfPath,
+                navPath = parsedTechnical.navPath,
+                ncxPath = parsedTechnical.ncxPath,
+                coverHref = parsedTechnical.coverHref,
+                packageIdentifier = parsedTechnical.packageIdentifier,
+                hasNav = parsedTechnical.hasNav,
+                hasNcx = parsedTechnical.hasNcx,
+                manifestItemCount = parsedTechnical.manifestItemCount,
+                spineItemCount = parsedTechnical.spineItemCount,
+                warnings = parsedTechnical.warnings,
+                errors = parsedTechnical.errors,
+            ),
+            status = status,
+        )
+    }
+
+    private fun writeRecoveredPortableSnapshots(
+        bookDir: File,
+        book: Book,
+        metadata: BookMetadata,
+        technicalInfo: EpubTechnicalInfo,
+    ) {
+        File(bookDir, "metadata.json").writeText(
+            json.encodeToString(PortableSnapshots.metadata(book, metadata)),
+            Charsets.UTF_8,
+        )
+        File(bookDir, "technical.json").writeText(
+            json.encodeToString(PortableSnapshots.technical(technicalInfo)),
+            Charsets.UTF_8,
+        )
+        File(bookDir, "changes.jsonl").writeText(
+            """{"type":"recovered-from-remote-epub","at":"${book.lastSyncedAt}","bookId":"${book.id}"}""" +
+                "\n",
+            Charsets.UTF_8,
+        )
+    }
+
+    private fun commitDownloadedBook(
+        stagingDir: File,
+        destinationDir: File,
+        record: ImportedBookRecord,
+    ) {
+        val backupDir = File(
+            appContext.cacheDir,
+            "sync-backup/${record.book.id}-${UUID.randomUUID()}",
+        )
+        backupDir.parentFile?.mkdirs()
+
+        synchronized(repositoryLock) {
+            var hasBackup = false
+            if (destinationDir.exists()) {
+                hasBackup = destinationDir.renameTo(backupDir)
+                if (!hasBackup) {
+                    check(destinationDir.copyRecursively(backupDir, overwrite = true)) {
+                        "Could not back up local book ${record.book.id}"
+                    }
+                    check(destinationDir.deleteRecursively()) {
+                        "Could not replace local book ${record.book.id}"
+                    }
+                    hasBackup = true
+                }
+            }
+
+            try {
+                if (!stagingDir.renameTo(destinationDir)) {
+                    check(stagingDir.copyRecursively(destinationDir, overwrite = true)) {
+                        "Could not store downloaded book ${record.book.id}"
+                    }
+                }
+                libraryRepository.insertImportedBook(record)
+                if (hasBackup) {
+                    backupDir.deleteRecursively()
+                }
+            } catch (error: Throwable) {
+                destinationDir.deleteRecursively()
+                if (hasBackup) {
+                    check(backupDir.renameTo(destinationDir)) {
+                        "Could not restore local book ${record.book.id}"
+                    }
+                }
+                throw error
+            }
+        }
     }
 
     private fun extractStateBundle(
@@ -666,43 +873,56 @@ internal class PortableLibrarySyncEngine(
         store: RemoteLibraryStore,
         actions: List<RemoteDownloadAction>,
         syncedAt: String,
-        onDownloaded: (RemoteDownloadAction) -> Unit,
+        onFinished: (RemoteDownloadAction, RemoteDownloadResult?, Throwable?) -> Unit,
     ) {
         if (actions.isEmpty()) return
 
         val parallelism = store.maxConcurrentDownloads.coerceAtLeast(1).coerceAtMost(actions.size)
         if (parallelism == 1) {
             actions.forEach { action ->
-                downloadRemoteBook(
-                    store = store,
-                    remoteBook = action.remoteBook,
-                    syncedAt = syncedAt,
-                    currentBook = action.currentBook,
-                )
-                onDownloaded(action)
-            }
-            return
-        }
-
-        val executor = Executors.newFixedThreadPool(parallelism)
-        val completionService = ExecutorCompletionService<RemoteDownloadAction>(executor)
-        try {
-            actions.forEach { action ->
-                completionService.submit(
-                    Callable {
+                val attempt = runCatching {
+                    retryRemoteBookOperation("download", action.remoteBook.bookId) {
                         downloadRemoteBook(
                             store = store,
                             remoteBook = action.remoteBook,
                             syncedAt = syncedAt,
                             currentBook = action.currentBook,
                         )
-                        action
+                    }
+                }
+                onFinished(action, attempt.getOrNull(), attempt.exceptionOrNull())
+            }
+            return
+        }
+
+        val executor = Executors.newFixedThreadPool(parallelism)
+        val completionService = ExecutorCompletionService<RemoteDownloadOutcome>(executor)
+        try {
+            actions.forEach { action ->
+                completionService.submit(
+                    Callable {
+                        val attempt = runCatching {
+                            retryRemoteBookOperation("download", action.remoteBook.bookId) {
+                                downloadRemoteBook(
+                                    store = store,
+                                    remoteBook = action.remoteBook,
+                                    syncedAt = syncedAt,
+                                    currentBook = action.currentBook,
+                                )
+                            }
+                        }
+                        RemoteDownloadOutcome(
+                            action = action,
+                            result = attempt.getOrNull(),
+                            error = attempt.exceptionOrNull(),
+                        )
                     },
                 )
             }
 
             repeat(actions.size) {
-                onDownloaded(completionService.take().get())
+                val outcome = completionService.take().get()
+                onFinished(outcome.action, outcome.result, outcome.error)
             }
         } finally {
             executor.shutdownNow()
@@ -721,12 +941,14 @@ internal class PortableLibrarySyncEngine(
         val parallelism = store.maxConcurrentUploads.coerceAtLeast(1).coerceAtMost(books.size)
         if (parallelism == 1) {
             books.forEach { book ->
-                uploadBook(
-                    store = store,
-                    libraryBook = book,
-                    layout = remoteLayoutsByBookId.getValue(book.book.id),
-                    previousRemoteBook = remoteBooks[book.book.id],
-                )
+                retryRemoteBookOperation("upload", book.book.id) {
+                    uploadBook(
+                        store = store,
+                        libraryBook = book,
+                        layout = remoteLayoutsByBookId.getValue(book.book.id),
+                        previousRemoteBook = remoteBooks[book.book.id],
+                    )
+                }
                 onUploaded(book.book.id)
             }
             return
@@ -738,12 +960,14 @@ internal class PortableLibrarySyncEngine(
             books.forEach { book ->
                 completionService.submit(
                     Callable {
-                        uploadBook(
-                            store = store,
-                            libraryBook = book,
-                            layout = remoteLayoutsByBookId.getValue(book.book.id),
-                            previousRemoteBook = remoteBooks[book.book.id],
-                        )
+                        retryRemoteBookOperation("upload", book.book.id) {
+                            uploadBook(
+                                store = store,
+                                libraryBook = book,
+                                layout = remoteLayoutsByBookId.getValue(book.book.id),
+                                previousRemoteBook = remoteBooks[book.book.id],
+                            )
+                        }
                         book.book.id
                     },
                 )
@@ -755,6 +979,46 @@ internal class PortableLibrarySyncEngine(
         } finally {
             executor.shutdownNow()
         }
+    }
+
+    private fun <T> retryRemoteBookOperation(
+        operation: String,
+        bookId: String,
+        block: () -> T,
+    ): T {
+        var lastError: Throwable? = null
+        repeat(REMOTE_OPERATION_MAX_ATTEMPTS) { attempt ->
+            try {
+                return block()
+            } catch (error: Throwable) {
+                lastError = error
+                val shouldRetry = error.isRetryableRemoteFailure() &&
+                    attempt < REMOTE_OPERATION_MAX_ATTEMPTS - 1
+                if (!shouldRetry) throw error
+                val delayMillis = REMOTE_RETRY_DELAYS_MS[attempt]
+                Log.w(
+                    TAG,
+                    "$operation retry id=$bookId attempt=${attempt + 2}/$REMOTE_OPERATION_MAX_ATTEMPTS " +
+                        "delayMs=$delayMillis type=${error::class.java.simpleName}",
+                )
+                Thread.sleep(delayMillis)
+            }
+        }
+        throw checkNotNull(lastError)
+    }
+
+    private fun Throwable.isRetryableRemoteFailure(): Boolean {
+        return generateSequence(this) { error -> error.cause }
+            .any { error ->
+                error is IOException ||
+                    error is GoogleDriveHttpException && error.isRetryable
+            }
+    }
+
+    private fun Throwable.missingRemoteBookFileOrNull(): MissingRemoteBookFileException? {
+        return generateSequence(this) { error -> error.cause }
+            .filterIsInstance<MissingRemoteBookFileException>()
+            .firstOrNull()
     }
 
     private fun RemoteLibraryStore.readManifest(): LibraryManifestSnapshot? {
@@ -1326,6 +1590,32 @@ internal class PortableLibrarySyncEngine(
         val duplicateBookToRemove: LibraryBook? = null,
     )
 
+    private data class RemoteDownloadOutcome(
+        val action: RemoteDownloadAction,
+        val result: RemoteDownloadResult?,
+        val error: Throwable?,
+    )
+
+    private data class RemoteDownloadResult(
+        val recoveredStateBundle: Boolean,
+    )
+
+    private class MissingRemoteBookFileException(
+        val bookId: String,
+        val remotePath: String,
+    ) : IllegalStateException("Missing remote file $remotePath for $bookId")
+
+    private data class DownloadedBookState(
+        val metadata: BookMetadata,
+        val technicalInfo: EpubTechnicalInfo,
+        val status: BookStatus,
+    )
+
+    private data class ParsedRemoteEpub(
+        val parsed: EpubParseResult,
+        val hasCover: Boolean,
+    )
+
     @Serializable
     private data class AiCoverPromptLibrarySnapshot(
         val schemaVersion: Int,
@@ -1389,6 +1679,7 @@ internal class PortableLibrarySyncEngine(
         const val CURRENT_SYNC_UPLOAD_STRATEGY_VERSION = 3
         const val CURRENT_MANIFEST_SCHEMA_VERSION = 3
         const val CURRENT_LOCAL_MANIFEST_CACHE_SCHEMA_VERSION = 1
+        const val REMOTE_OPERATION_MAX_ATTEMPTS = 5
         const val AI_COVER_PROMPTS_FILE = "ai-cover-prompts.json"
         const val STATE_BUNDLE_FILE_NAME = "book-state.zip"
         const val STATE_BUNDLE_MIME_TYPE = "application/zip"
@@ -1399,6 +1690,7 @@ internal class PortableLibrarySyncEngine(
             "cover_original.jpg",
             "cover_thumb.jpg",
         )
+        val REMOTE_RETRY_DELAYS_MS = longArrayOf(1_000L, 3_000L, 7_000L, 15_000L)
         const val TAG = "FolioreSync"
     }
 }

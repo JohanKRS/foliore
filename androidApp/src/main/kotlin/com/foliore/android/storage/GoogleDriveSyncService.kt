@@ -3,6 +3,7 @@ package com.foliore.android.storage
 import android.content.Context
 import android.util.Log
 import com.foliore.shared.library.LibraryRepository
+import java.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
@@ -48,7 +49,7 @@ class GoogleDriveSyncService(
                 error.toGoogleDriveSyncResult()
             }
             is GoogleDriveAuthorization.NeedsResolution -> ManualSyncResult.GoogleDriveAuthorizationRequired
-            GoogleDriveAuthorization.Failed -> ManualSyncResult.GoogleDriveUnavailable
+            is GoogleDriveAuthorization.Failed -> authorization.reason.toManualSyncResult()
         }
     }
 
@@ -144,12 +145,29 @@ class GoogleDriveSyncService(
     )
 
     private fun Throwable.toGoogleDriveSyncResult(): ManualSyncResult {
-        val driveError = this as? GoogleDriveHttpException
+        val causes = generateSequence(this) { error -> error.cause }.toList()
+        val driveError = causes.filterIsInstance<GoogleDriveHttpException>().firstOrNull()
         return when {
             driveError?.isAuthorizationError == true -> ManualSyncResult.GoogleDriveAuthorizationRequired
             driveError?.isQuotaExceeded == true -> ManualSyncResult.GoogleDriveQuotaExceeded
-            driveError?.isRetryable == true -> ManualSyncResult.GoogleDriveUnavailable
+            driveError?.isRetryable == true || causes.any { error -> error is IOException } -> {
+                ManualSyncResult.GoogleDriveUnavailable
+            }
             else -> ManualSyncResult.Failed
+        }
+    }
+
+    private fun GoogleDriveAuthorizationFailure.toManualSyncResult(): ManualSyncResult {
+        return when (this) {
+            GoogleDriveAuthorizationFailure.CONFIGURATION_REQUIRED -> {
+                ManualSyncResult.GoogleDriveConfigurationRequired
+            }
+            GoogleDriveAuthorizationFailure.CANCELLED -> {
+                ManualSyncResult.GoogleDriveAuthorizationRequired
+            }
+            GoogleDriveAuthorizationFailure.UNAVAILABLE -> {
+                ManualSyncResult.GoogleDriveUnavailable
+            }
         }
     }
 

@@ -40,6 +40,9 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.SYNC_GOOGLE_DRIVE_AUTH_REQUIRED -> {
             stringResource(R.string.sync_notice_google_drive_auth_required)
         }
+        LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONFIGURATION_REQUIRED -> {
+            stringResource(R.string.sync_notice_google_drive_configuration_required)
+        }
         LibraryNoticeType.SYNC_GOOGLE_DRIVE_QUOTA_EXCEEDED -> {
             stringResource(R.string.sync_notice_google_drive_quota_exceeded)
         }

@@ -33,7 +33,12 @@ class EpubParser {
         val packageAttrs = firstTagAttributes(opfXml, "package")
         val manifestItems = parseManifestItems(opfXml, opfPath)
         val spineIds = parseSpineIds(opfXml)
-        val coverItem = findCoverItem(opfXml, manifestItems)
+        val coverItem = findCoverItem(
+            opfXml = opfXml,
+            manifestItems = manifestItems,
+            opfPath = opfPath,
+            archive = archive,
+        )
         val navItem = manifestItems.firstOrNull { it.properties.containsToken("nav") }
         val ncxItem = manifestItems.firstOrNull {
             it.mediaType == "application/x-dtbncx+xml" || it.href.endsWith(".ncx", ignoreCase = true)
@@ -140,7 +145,12 @@ class EpubParser {
             .toList()
     }
 
-    private fun findCoverItem(opfXml: String, manifestItems: List<ManifestItem>): ManifestItem? {
+    private fun findCoverItem(
+        opfXml: String,
+        manifestItems: List<ManifestItem>,
+        opfPath: String,
+        archive: EpubArchive,
+    ): ManifestItem? {
         manifestItems.firstOrNull { it.properties.containsToken("cover-image") }?.let { return it }
 
         val metaRegex = Regex("<meta\\b([^>]*)/?>", RegexOption.IGNORE_CASE)
@@ -154,9 +164,64 @@ class EpubParser {
             manifestItems.firstOrNull { it.id == legacyCoverId }?.let { return it }
         }
 
-        return manifestItems.firstOrNull {
+        findGuideCoverItem(
+            opfXml = opfXml,
+            manifestItems = manifestItems,
+            opfPath = opfPath,
+            archive = archive,
+        )?.let { return it }
+
+        manifestItems.firstOrNull {
             it.mediaType?.startsWith("image/") == true &&
                 it.href.contains("cover", ignoreCase = true)
+        }?.let { return it }
+
+        val undeclaredCoverPath = archive.listEntries()
+            .firstOrNull { entry ->
+                entry.substringAfterLast('/').substringBeforeLast('.').equals("cover", ignoreCase = true) &&
+                    entry.substringAfterLast('.', missingDelimiterValue = "").lowercase() in COVER_IMAGE_EXTENSIONS
+            }
+            ?: return null
+        return ManifestItem(
+            id = "foliore-undeclared-cover",
+            href = undeclaredCoverPath,
+            resolvedHref = undeclaredCoverPath,
+            mediaType = undeclaredCoverPath.coverMediaType(),
+            properties = "",
+        )
+    }
+
+    private fun findGuideCoverItem(
+        opfXml: String,
+        manifestItems: List<ManifestItem>,
+        opfPath: String,
+        archive: EpubArchive,
+    ): ManifestItem? {
+        val referenceRegex = Regex("<reference\\b([^>]*)/?>", RegexOption.IGNORE_CASE)
+        val guideHref = referenceRegex.findAll(opfXml)
+            .firstOrNull { match ->
+                attr(match.groupValues[1], "type").equals("cover", ignoreCase = true)
+            }
+            ?.let { match -> attr(match.groupValues[1], "href") }
+            ?: return null
+        val guidePath = resolveRelative(opfPath, guideHref)
+
+        manifestItems.firstOrNull { item ->
+            item.resolvedHref == guidePath && item.mediaType?.startsWith("image/") == true
+        }?.let { return it }
+
+        val coverDocument = archive.readText(guidePath) ?: return null
+        val imageRegex = Regex("<(?:img|image)\\b([^>]*)/?>", RegexOption.IGNORE_CASE)
+        val imageHref = imageRegex.findAll(coverDocument)
+            .mapNotNull { match ->
+                val attrs = match.groupValues[1]
+                attr(attrs, "src") ?: attr(attrs, "xlink:href") ?: attr(attrs, "href")
+            }
+            .firstOrNull()
+            ?: return null
+        val imagePath = resolveRelative(guidePath, imageHref)
+        return manifestItems.firstOrNull { item ->
+            item.resolvedHref == imagePath && item.mediaType?.startsWith("image/") == true
         }
     }
 
@@ -334,6 +399,19 @@ class EpubParser {
         return null
     }
 
+    private fun String.coverMediaType(): String {
+        return when (substringAfterLast('.').lowercase()) {
+            "jpg", "jpeg" -> "image/jpeg"
+            "png" -> "image/png"
+            "gif" -> "image/gif"
+            "webp" -> "image/webp"
+            "svg" -> "image/svg+xml"
+            "avif" -> "image/avif"
+            "heif", "heic" -> "image/heif"
+            else -> "application/octet-stream"
+        }
+    }
+
     private fun String.isValidIsbn13(): Boolean {
         if (length != 13 || any { !it.isDigit() }) return false
         val sum = take(12).mapIndexed { index, char ->
@@ -390,5 +468,16 @@ class EpubParser {
     private companion object {
         const val EPUB_MIME_TYPE = "application/epub+zip"
         const val CONTAINER_PATH = "META-INF/container.xml"
+        val COVER_IMAGE_EXTENSIONS = setOf(
+            "jpg",
+            "jpeg",
+            "png",
+            "gif",
+            "webp",
+            "svg",
+            "avif",
+            "heif",
+            "heic",
+        )
     }
 }

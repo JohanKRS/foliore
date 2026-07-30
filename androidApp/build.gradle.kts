@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.datetime)
     implementation(libs.coil.compose)
+    implementation(libs.android.svg)
     implementation(libs.google.play.services.auth)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.haze)

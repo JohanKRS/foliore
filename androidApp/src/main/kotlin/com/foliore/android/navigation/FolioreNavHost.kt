@@ -91,6 +91,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.foliore.android.R
+import com.foliore.android.storage.AppLanguage
 import com.foliore.android.ui.details.BookDetailsRoute
 import com.foliore.android.ui.details.EditBottomBarActions
 import com.foliore.android.ui.details.EditMetadataRoute
@@ -135,6 +136,8 @@ fun FolioreNavHost(
     libraryViewModel: LibraryViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    appLanguage: AppLanguage,
+    onAppLanguageChange: (AppLanguage) -> Unit,
 ) {
     val navController = rememberNavController()
     val libraryState by libraryViewModel.state.collectAsStateWithLifecycle()
@@ -241,6 +244,8 @@ fun FolioreNavHost(
                     libraryViewModel = libraryViewModel,
                     themeMode = themeMode,
                     onThemeModeChange = onThemeModeChange,
+                    appLanguage = appLanguage,
+                    onAppLanguageChange = onAppLanguageChange,
                     onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
                     onBack = { navController.popBackStack() },
                     onEditBottomBarActionsChange = { actions ->
@@ -335,6 +340,8 @@ private fun NavContent(
     libraryViewModel: LibraryViewModel,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    appLanguage: AppLanguage,
+    onAppLanguageChange: (AppLanguage) -> Unit,
     onEditBook: (String) -> Unit,
     onBack: () -> Unit,
     onEditBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
@@ -371,6 +378,8 @@ private fun NavContent(
                 viewModel = libraryViewModel,
                 themeMode = themeMode,
                 onThemeModeChange = onThemeModeChange,
+                appLanguage = appLanguage,
+                onAppLanguageChange = onAppLanguageChange,
                 bottomChromeInset = bottomChromeInset,
             )
         }

@@ -34,6 +34,7 @@ import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.GoogleDriveBackupStatsResult
+import com.foliore.android.storage.GoogleDriveAuthorizationFailure
 import com.foliore.android.storage.GoogleDriveConnectionResult
 import com.foliore.android.storage.SyncProvider
 import com.foliore.android.storage.SyncService
@@ -98,6 +99,7 @@ class LibraryViewModel(
     private val _notice = MutableStateFlow<LibraryNotice?>(null)
     val notice: StateFlow<LibraryNotice?> = _notice.asStateFlow()
     private var pendingGoogleDriveOperation: GoogleDriveOperation = GoogleDriveOperation.Connect
+    private val attemptedCoverRecoveries = mutableSetOf<String>()
 
     init {
         refresh()
@@ -107,10 +109,9 @@ class LibraryViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            val books = withContext(Dispatchers.IO) {
-                libraryRepository.getBooks()
-            }
+            val (books, recoveredCover) = loadBooksAndRecoverMissingCovers()
             _state.update { it.withBooks(books) }
+            if (recoveredCover) enqueueAutoSync()
         }
     }
 
@@ -922,8 +923,20 @@ class LibraryViewModel(
                             GoogleDriveConnectionResult.DeletedBackup -> {
                                 GoogleDriveBackupStatsResult.Loaded(GoogleDriveBackupStats.Empty)
                             }
-                            GoogleDriveConnectionResult.Failed -> {
-                                GoogleDriveBackupStatsResult.SyncFailed(ManualSyncResult.GoogleDriveUnavailable)
+                            is GoogleDriveConnectionResult.Failed -> {
+                                GoogleDriveBackupStatsResult.SyncFailed(
+                                    when (completed.reason) {
+                                        GoogleDriveAuthorizationFailure.CONFIGURATION_REQUIRED -> {
+                                            ManualSyncResult.GoogleDriveConfigurationRequired
+                                        }
+                                        GoogleDriveAuthorizationFailure.CANCELLED -> {
+                                            ManualSyncResult.GoogleDriveAuthorizationRequired
+                                        }
+                                        GoogleDriveAuthorizationFailure.UNAVAILABLE -> {
+                                            ManualSyncResult.GoogleDriveUnavailable
+                                        }
+                                    },
+                                )
                             }
                             is GoogleDriveConnectionResult.NeedsResolution -> {
                                 GoogleDriveBackupStatsResult.NeedsResolution(completed.pendingIntent)
@@ -1010,9 +1023,21 @@ class LibraryViewModel(
                 }
                 _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_BACKUP_DELETED)
             }
-            GoogleDriveConnectionResult.Failed -> {
+            is GoogleDriveConnectionResult.Failed -> {
                 _state.update { it.copy(isGoogleDriveBackupStatsLoading = false) }
-                _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE)
+                _notice.value = LibraryNotice(
+                    when (result.reason) {
+                        GoogleDriveAuthorizationFailure.CONFIGURATION_REQUIRED -> {
+                            LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONFIGURATION_REQUIRED
+                        }
+                        GoogleDriveAuthorizationFailure.CANCELLED -> {
+                            LibraryNoticeType.SYNC_GOOGLE_DRIVE_AUTH_REQUIRED
+                        }
+                        GoogleDriveAuthorizationFailure.UNAVAILABLE -> {
+                            LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE
+                        }
+                    },
+                )
             }
             is GoogleDriveConnectionResult.NeedsResolution -> {
                 _state.update { it.copy(isGoogleDriveBackupStatsLoading = false) }
@@ -1075,9 +1100,7 @@ class LibraryViewModel(
     }
 
     private suspend fun refreshBooks(clearBatchSelection: Boolean = false) {
-        val books = withContext(Dispatchers.IO) {
-            libraryRepository.getBooks()
-        }
+        val (books, recoveredCover) = loadBooksAndRecoverMissingCovers()
         _state.update { current ->
             if (clearBatchSelection) {
                 current.copy(
@@ -1091,6 +1114,30 @@ class LibraryViewModel(
                 current.withBooks(books).copy(isImporting = false, importProgress = null)
             }
         }
+        if (recoveredCover) enqueueAutoSync()
+    }
+
+    private suspend fun loadBooksAndRecoverMissingCovers(): Pair<List<LibraryBook>, Boolean> {
+        var books = withContext(Dispatchers.IO) {
+            libraryRepository.getBooks()
+        }
+        val candidates = books.filter { libraryBook ->
+            !bookEditor.hasCompleteReadableCover(libraryBook) &&
+                attemptedCoverRecoveries.add(libraryBook.book.id)
+        }
+        if (candidates.isEmpty()) return books to false
+
+        val recovered = withContext(Dispatchers.IO) {
+            candidates.count { candidate ->
+                bookEditor.recoverMissingCover(candidate.book.id) is BookEditResult.Success
+            }
+        }
+        if (recovered > 0) {
+            books = withContext(Dispatchers.IO) {
+                libraryRepository.getBooks()
+            }
+        }
+        return books to (recovered > 0)
     }
 
     private fun refreshSyncState() {
@@ -1159,6 +1206,9 @@ class LibraryViewModel(
             ManualSyncResult.FolderUnavailable -> LibraryNoticeType.SYNC_FOLDER_UNAVAILABLE
             ManualSyncResult.FolderLooksLikeLibrarySubfolder -> LibraryNoticeType.SYNC_FOLDER_LOOKS_LIKE_SUBFOLDER
             ManualSyncResult.GoogleDriveAuthorizationRequired -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_AUTH_REQUIRED
+            ManualSyncResult.GoogleDriveConfigurationRequired -> {
+                LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONFIGURATION_REQUIRED
+            }
             ManualSyncResult.GoogleDriveQuotaExceeded -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_QUOTA_EXCEEDED
             ManualSyncResult.GoogleDriveUnavailable -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE
             ManualSyncResult.Failed -> LibraryNoticeType.SYNC_FAILED

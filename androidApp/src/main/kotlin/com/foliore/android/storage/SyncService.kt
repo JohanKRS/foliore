@@ -86,7 +86,9 @@ class SyncService(
             is GoogleDriveAuthorization.NeedsResolution -> {
                 GoogleDriveConnectionResult.NeedsResolution(authorization.pendingIntent)
             }
-            GoogleDriveAuthorization.Failed -> GoogleDriveConnectionResult.Failed
+            is GoogleDriveAuthorization.Failed -> {
+                GoogleDriveConnectionResult.Failed(authorization.reason)
+            }
         }
     }
 
@@ -102,7 +104,9 @@ class SyncService(
             is GoogleDriveAuthorization.NeedsResolution -> {
                 GoogleDriveConnectionResult.NeedsResolution(authorization.pendingIntent)
             }
-            GoogleDriveAuthorization.Failed -> GoogleDriveConnectionResult.Failed
+            is GoogleDriveAuthorization.Failed -> {
+                GoogleDriveConnectionResult.Failed(authorization.reason)
+            }
         }
     }
 
@@ -120,7 +124,9 @@ class SyncService(
             is GoogleDriveAuthorization.NeedsResolution -> {
                 GoogleDriveConnectionResult.NeedsResolution(authorization.pendingIntent)
             }
-            GoogleDriveAuthorization.Failed -> GoogleDriveConnectionResult.Failed
+            is GoogleDriveAuthorization.Failed -> {
+                GoogleDriveConnectionResult.Failed(authorization.reason)
+            }
         }
     }
 
@@ -132,8 +138,20 @@ class SyncService(
             is GoogleDriveAuthorization.NeedsResolution -> {
                 GoogleDriveBackupStatsResult.NeedsResolution(authorization.pendingIntent)
             }
-            GoogleDriveAuthorization.Failed -> {
-                GoogleDriveBackupStatsResult.SyncFailed(ManualSyncResult.GoogleDriveUnavailable)
+            is GoogleDriveAuthorization.Failed -> {
+                GoogleDriveBackupStatsResult.SyncFailed(
+                    when (authorization.reason) {
+                        GoogleDriveAuthorizationFailure.CONFIGURATION_REQUIRED -> {
+                            ManualSyncResult.GoogleDriveConfigurationRequired
+                        }
+                        GoogleDriveAuthorizationFailure.CANCELLED -> {
+                            ManualSyncResult.GoogleDriveAuthorizationRequired
+                        }
+                        GoogleDriveAuthorizationFailure.UNAVAILABLE -> {
+                            ManualSyncResult.GoogleDriveUnavailable
+                        }
+                    },
+                )
             }
         }
         if (result is GoogleDriveBackupStatsResult.Loaded) {
@@ -150,7 +168,9 @@ class SyncService(
 sealed interface GoogleDriveConnectionResult {
     data object Connected : GoogleDriveConnectionResult
     data object DeletedBackup : GoogleDriveConnectionResult
-    data object Failed : GoogleDriveConnectionResult
+    data class Failed(
+        val reason: GoogleDriveAuthorizationFailure,
+    ) : GoogleDriveConnectionResult
     data class SyncFailed(val result: ManualSyncResult) : GoogleDriveConnectionResult
     data class NeedsResolution(val pendingIntent: PendingIntent) : GoogleDriveConnectionResult
 }

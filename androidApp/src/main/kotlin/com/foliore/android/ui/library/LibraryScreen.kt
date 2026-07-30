@@ -116,8 +116,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -596,152 +594,69 @@ private fun LibraryControlsDialog(
     onShowBookSeriesChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+    FolioreOptionsDialog(
+        title = stringResource(R.string.organization_dialog_title),
+        doneLabel = stringResource(R.string.action_done),
+        onDismiss = onDismiss,
     ) {
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            val horizontalMargin = if (maxWidth < 480.dp) 10.dp else 24.dp
-            val verticalMargin = if (maxHeight < 720.dp) 12.dp else 24.dp
-            val dialogMaxHeight = (maxHeight - verticalMargin * 2).coerceAtLeast(280.dp)
-            val optionsMaxHeight = (dialogMaxHeight - 118.dp).coerceAtLeast(180.dp)
-            val contentHorizontalPadding = if (maxWidth < 480.dp) 20.dp else 26.dp
-
-            Surface(
-                modifier = Modifier
-                    .padding(horizontal = horizontalMargin, vertical = verticalMargin)
-                    .widthIn(max = 780.dp)
-                    .fillMaxWidth()
-                    .heightIn(max = dialogMaxHeight),
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.background,
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.52f),
-                ),
-                tonalElevation = 0.dp,
-                shadowElevation = 10.dp,
+        if (maxWidth >= 420.dp) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = contentHorizontalPadding, vertical = 22.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.organization_dialog_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
+                Column(modifier = Modifier.weight(1f)) {
+                    StatusControlSection(
+                        selectedFilter = selectedFilter,
+                        onFilterChange = onFilterChange,
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    DialogDivider()
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    BoxWithConstraints(
-                        modifier = Modifier
-                            .heightIn(max = optionsMaxHeight)
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        if (maxWidth >= 420.dp) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    StatusControlSection(
-                                        selectedFilter = selectedFilter,
-                                        onFilterChange = onFilterChange,
-                                    )
-                                    SeriesControlSection(
-                                        selectedSeriesFilter = selectedSeriesFilter,
-                                        onSeriesFilterChange = onSeriesFilterChange,
-                                    )
-                                    GridControlSection(
-                                        selectedGridColumns = selectedGridColumns,
-                                        onGridColumnsChange = onGridColumnsChange,
-                                    )
-                                }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    SortControlSection(
-                                        selectedSortOrder = selectedSortOrder,
-                                        onSortOrderChange = onSortOrderChange,
-                                    )
-                                    DisplayControlSection(
-                                        selectedDisplayOptions = selectedDisplayOptions,
-                                        onShowBookTitleChange = onShowBookTitleChange,
-                                        onShowBookAuthorChange = onShowBookAuthorChange,
-                                        onShowBookSeriesChange = onShowBookSeriesChange,
-                                    )
-                                }
-                            }
-                        } else {
-                            Column {
-                                StatusControlSection(
-                                    selectedFilter = selectedFilter,
-                                    onFilterChange = onFilterChange,
-                                )
-                                SortControlSection(
-                                    selectedSortOrder = selectedSortOrder,
-                                    onSortOrderChange = onSortOrderChange,
-                                )
-                                SeriesControlSection(
-                                    selectedSeriesFilter = selectedSeriesFilter,
-                                    onSeriesFilterChange = onSeriesFilterChange,
-                                )
-                                GridControlSection(
-                                    selectedGridColumns = selectedGridColumns,
-                                    onGridColumnsChange = onGridColumnsChange,
-                                )
-                                DisplayControlSection(
-                                    selectedDisplayOptions = selectedDisplayOptions,
-                                    onShowBookTitleChange = onShowBookTitleChange,
-                                    onShowBookAuthorChange = onShowBookAuthorChange,
-                                    onShowBookSeriesChange = onShowBookSeriesChange,
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(text = stringResource(R.string.action_done))
-                        }
-                    }
+                    SeriesControlSection(
+                        selectedSeriesFilter = selectedSeriesFilter,
+                        onSeriesFilterChange = onSeriesFilterChange,
+                    )
+                    GridControlSection(
+                        selectedGridColumns = selectedGridColumns,
+                        onGridColumnsChange = onGridColumnsChange,
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    SortControlSection(
+                        selectedSortOrder = selectedSortOrder,
+                        onSortOrderChange = onSortOrderChange,
+                    )
+                    DisplayControlSection(
+                        selectedDisplayOptions = selectedDisplayOptions,
+                        onShowBookTitleChange = onShowBookTitleChange,
+                        onShowBookAuthorChange = onShowBookAuthorChange,
+                        onShowBookSeriesChange = onShowBookSeriesChange,
+                    )
                 }
             }
+        } else {
+            Column {
+                StatusControlSection(
+                    selectedFilter = selectedFilter,
+                    onFilterChange = onFilterChange,
+                )
+                SortControlSection(
+                    selectedSortOrder = selectedSortOrder,
+                    onSortOrderChange = onSortOrderChange,
+                )
+                SeriesControlSection(
+                    selectedSeriesFilter = selectedSeriesFilter,
+                    onSeriesFilterChange = onSeriesFilterChange,
+                )
+                GridControlSection(
+                    selectedGridColumns = selectedGridColumns,
+                    onGridColumnsChange = onGridColumnsChange,
+                )
+                DisplayControlSection(
+                    selectedDisplayOptions = selectedDisplayOptions,
+                    onShowBookTitleChange = onShowBookTitleChange,
+                    onShowBookAuthorChange = onShowBookAuthorChange,
+                    onShowBookSeriesChange = onShowBookSeriesChange,
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun DialogDivider() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
-        )
-        Box(
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .size(6.dp)
-                .rotate(45f)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
-        )
     }
 }
 
@@ -750,11 +665,11 @@ private fun StatusControlSection(
     selectedFilter: BookFilter,
     onFilterChange: (BookFilter) -> Unit,
 ) {
-    LibraryControlSectionCard(label = stringResource(R.string.organization_status_label)) {
-        LibraryControlOptionGrid(
+    FolioreDialogSectionCard(label = stringResource(R.string.organization_status_label)) {
+        FolioreDialogOptionGrid(
             columns = 2,
             options = BookFilter.values().map { filter ->
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(filter.labelRes()),
                     selected = selectedFilter == filter,
                     onClick = { onFilterChange(filter) },
@@ -769,11 +684,11 @@ private fun SortControlSection(
     selectedSortOrder: BookSortOrder,
     onSortOrderChange: (BookSortOrder) -> Unit,
 ) {
-    LibraryControlSectionCard(label = stringResource(R.string.organization_sort_label)) {
-        LibraryControlOptionGrid(
+    FolioreDialogSectionCard(label = stringResource(R.string.organization_sort_label)) {
+        FolioreDialogOptionGrid(
             columns = 1,
             options = BookSortOrder.values().map { sortOrder ->
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(sortOrder.labelRes()),
                     selected = selectedSortOrder == sortOrder,
                     onClick = { onSortOrderChange(sortOrder) },
@@ -788,11 +703,11 @@ private fun SeriesControlSection(
     selectedSeriesFilter: SeriesFilter,
     onSeriesFilterChange: (SeriesFilter) -> Unit,
 ) {
-    LibraryControlSectionCard(label = stringResource(R.string.organization_series_label)) {
-        LibraryControlOptionGrid(
+    FolioreDialogSectionCard(label = stringResource(R.string.organization_series_label)) {
+        FolioreDialogOptionGrid(
             columns = 1,
             options = SeriesFilter.values().map { filter ->
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(filter.labelRes()),
                     selected = selectedSeriesFilter == filter,
                     onClick = { onSeriesFilterChange(filter) },
@@ -807,11 +722,11 @@ private fun GridControlSection(
     selectedGridColumns: BookGridColumns,
     onGridColumnsChange: (BookGridColumns) -> Unit,
 ) {
-    LibraryControlSectionCard(label = stringResource(R.string.organization_grid_label)) {
-        LibraryControlOptionGrid(
+    FolioreDialogSectionCard(label = stringResource(R.string.organization_grid_label)) {
+        FolioreDialogOptionGrid(
             columns = 3,
             options = BookGridColumns.values().map { columns ->
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(columns.labelRes()),
                     selected = selectedGridColumns == columns,
                     onClick = { onGridColumnsChange(columns) },
@@ -828,21 +743,21 @@ private fun DisplayControlSection(
     onShowBookAuthorChange: (Boolean) -> Unit,
     onShowBookSeriesChange: (Boolean) -> Unit,
 ) {
-    LibraryControlSectionCard(label = stringResource(R.string.organization_display_label)) {
-        LibraryControlOptionGrid(
+    FolioreDialogSectionCard(label = stringResource(R.string.organization_display_label)) {
+        FolioreDialogOptionGrid(
             columns = 3,
             options = listOf(
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(R.string.library_display_title),
                     selected = selectedDisplayOptions.showTitle,
                     onClick = { onShowBookTitleChange(!selectedDisplayOptions.showTitle) },
                 ),
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(R.string.library_display_author),
                     selected = selectedDisplayOptions.showAuthor,
                     onClick = { onShowBookAuthorChange(!selectedDisplayOptions.showAuthor) },
                 ),
-                LibraryControlItem(
+                FolioreDialogOption(
                     label = stringResource(R.string.library_display_series),
                     selected = selectedDisplayOptions.showSeries,
                     onClick = { onShowBookSeriesChange(!selectedDisplayOptions.showSeries) },
@@ -851,121 +766,6 @@ private fun DisplayControlSection(
         )
     }
 }
-
-@Composable
-private fun LibraryControlSectionCard(
-    label: String,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.42f),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.32f),
-        ),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = label.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                maxLines = 1,
-            )
-            Spacer(modifier = Modifier.height(9.dp))
-            content()
-        }
-    }
-}
-
-@Composable
-private fun LibraryControlOptionGrid(
-    options: List<LibraryControlItem>,
-    columns: Int,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.chunked(columns).forEach { rowItems ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(columns) { index ->
-                    val item = rowItems.getOrNull(index)
-                    if (item != null) {
-                        LibraryControlTile(
-                            item = item,
-                            modifier = Modifier.weight(1f),
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryControlTile(
-    item: LibraryControlItem,
-    modifier: Modifier = Modifier,
-) {
-    val selectedColor = MaterialTheme.colorScheme.primary
-    Surface(
-        modifier = modifier
-            .heightIn(min = 40.dp)
-            .clickable(onClick = item.onClick),
-        shape = RoundedCornerShape(6.dp),
-        color = if (item.selected) {
-            selectedColor.copy(alpha = 0.1f)
-        } else {
-            Color.Transparent
-        },
-        border = BorderStroke(
-            width = 1.dp,
-            color = if (item.selected) {
-                selectedColor.copy(alpha = 0.45f)
-            } else {
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)
-            },
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = item.label,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 11.sp,
-                    lineHeight = 14.sp,
-                ),
-                color = if (item.selected) {
-                    selectedColor
-                } else {
-                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.84f)
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (item.selected) {
-                Icon(
-                    imageVector = Icons.Outlined.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(13.dp),
-                    tint = selectedColor,
-                )
-            }
-        }
-    }
-}
-
-private data class LibraryControlItem(
-    val label: String,
-    val selected: Boolean,
-    val onClick: () -> Unit,
-)
 
 @Composable
 private fun BatchActionBar(

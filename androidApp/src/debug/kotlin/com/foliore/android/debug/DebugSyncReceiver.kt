@@ -50,6 +50,7 @@ class DebugSyncReceiver : BroadcastReceiver() {
             ManualSyncResult.FolderUnavailable -> "FolderUnavailable"
             ManualSyncResult.FolderLooksLikeLibrarySubfolder -> "FolderLooksLikeLibrarySubfolder"
             ManualSyncResult.GoogleDriveAuthorizationRequired -> "GoogleDriveAuthorizationRequired"
+            ManualSyncResult.GoogleDriveConfigurationRequired -> "GoogleDriveConfigurationRequired"
             ManualSyncResult.GoogleDriveQuotaExceeded -> "GoogleDriveQuotaExceeded"
             ManualSyncResult.GoogleDriveUnavailable -> "GoogleDriveUnavailable"
             ManualSyncResult.Failed -> "Failed"

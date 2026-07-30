@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.LightMode
+import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Sync
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
+import com.foliore.android.storage.AppLanguage
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
@@ -65,6 +67,7 @@ import java.util.Locale
 @Composable
 fun SettingsScreen(
     themeMode: ThemeMode,
+    appLanguage: AppLanguage,
     hasOpenAiApiKey: Boolean,
     hasGoogleBooksApiKey: Boolean,
     kindleEmailSettings: KindleEmailSettings,
@@ -79,6 +82,7 @@ fun SettingsScreen(
     isSyncing: Boolean,
     lastSyncSummary: SyncSummary?,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onChooseAppLanguage: () -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
     onGoogleBooksApiKeySave: (String) -> Unit,
@@ -162,6 +166,12 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_theme_dark),
             description = stringResource(R.string.settings_theme_dark_description),
             onClick = { onThemeModeChange(ThemeMode.DARK) },
+        )
+        CompactSettingsRow(
+            icon = Icons.Outlined.Language,
+            title = stringResource(R.string.settings_language),
+            description = stringResource(appLanguage.labelResource()),
+            onClick = onChooseAppLanguage,
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -940,5 +950,54 @@ private fun SelectableOptionRow(
             selected = selected,
             onClick = onClick,
         )
+    }
+}
+
+@Composable
+private fun CompactSettingsRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+private fun AppLanguage.labelResource(): Int {
+    return when (this) {
+        AppLanguage.SYSTEM -> R.string.settings_language_system
+        AppLanguage.PORTUGUESE_BRAZIL -> R.string.settings_language_portuguese_brazil
+        AppLanguage.ENGLISH -> R.string.settings_language_english
+        AppLanguage.SPANISH -> R.string.settings_language_spanish
+        AppLanguage.JAPANESE -> R.string.settings_language_japanese
+        AppLanguage.FRENCH -> R.string.settings_language_french
+        AppLanguage.ITALIAN -> R.string.settings_language_italian
+        AppLanguage.GERMAN -> R.string.settings_language_german
+        AppLanguage.CHINESE_SIMPLIFIED -> R.string.settings_language_chinese_simplified
     }
 }

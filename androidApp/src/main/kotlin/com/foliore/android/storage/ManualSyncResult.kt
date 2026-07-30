@@ -15,6 +15,7 @@ sealed interface ManualSyncResult {
     data object FolderUnavailable : ManualSyncResult
     data object FolderLooksLikeLibrarySubfolder : ManualSyncResult
     data object GoogleDriveAuthorizationRequired : ManualSyncResult
+    data object GoogleDriveConfigurationRequired : ManualSyncResult
     data object GoogleDriveQuotaExceeded : ManualSyncResult
     data object GoogleDriveUnavailable : ManualSyncResult
     data object Failed : ManualSyncResult

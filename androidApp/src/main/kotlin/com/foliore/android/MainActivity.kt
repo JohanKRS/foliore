@@ -1,5 +1,6 @@
 package com.foliore.android
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -18,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.foliore.android.di.AppContainer
 import com.foliore.android.navigation.FolioreNavHost
 import com.foliore.android.share.IncomingEpubRepository
+import com.foliore.android.storage.AppLanguagePreferenceRepository
 import com.foliore.android.ui.theme.FolioreTheme
 import com.foliore.android.ui.tuning.VisualTuningHost
 import com.foliore.android.viewmodel.LibraryViewModel
@@ -26,8 +28,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
     private val appContainer by lazy { AppContainer(this) }
+    private val appLanguagePreferenceRepository by lazy {
+        AppLanguagePreferenceRepository(this)
+    }
     private val incomingEpubRepository by lazy { IncomingEpubRepository(this) }
     private val pendingImportUris = MutableStateFlow<List<Uri>>(emptyList())
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguagePreferenceRepository.localizedContext(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +48,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themeMode = appContainer.themePreferenceRepository.themeMode.collectAsStateWithLifecycle()
+            val appLanguage =
+                appLanguagePreferenceRepository.appLanguage.collectAsStateWithLifecycle()
             val incomingImportUris = pendingImportUris.collectAsStateWithLifecycle()
             val systemDarkTheme = isSystemInDarkTheme()
             val darkTheme = when (themeMode.value) {
@@ -97,6 +108,13 @@ class MainActivity : ComponentActivity() {
                             libraryViewModel = libraryViewModel,
                             themeMode = themeMode.value,
                             onThemeModeChange = appContainer.themePreferenceRepository::setThemeMode,
+                            appLanguage = appLanguage.value,
+                            onAppLanguageChange = { selectedLanguage ->
+                                if (selectedLanguage != appLanguage.value) {
+                                    appLanguagePreferenceRepository.setAppLanguage(selectedLanguage)
+                                    recreate()
+                                }
+                            },
                         )
                     }
                 }
