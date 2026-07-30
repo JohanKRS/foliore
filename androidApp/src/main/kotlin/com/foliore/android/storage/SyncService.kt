@@ -34,6 +34,10 @@ class SyncService(
         return syncSettingsRepository.googleDriveAccountLabel()
     }
 
+    fun cachedGoogleDriveBackupStats(): GoogleDriveBackupStats? {
+        return syncSettingsRepository.cachedGoogleDriveBackupStats()
+    }
+
     fun autoSyncEnabled(): Boolean {
         return syncSettingsRepository.isAutoSyncEnabled()
     }
@@ -71,9 +75,12 @@ class SyncService(
     }
 
     fun beginGoogleDriveConnection(): GoogleDriveConnectionResult {
-        return when (val authorization = googleDriveAuthService.authorize()) {
+        return when (val authorization = googleDriveAuthService.authorizeForConnection()) {
             is GoogleDriveAuthorization.Authorized -> {
-                syncSettingsRepository.setGoogleDriveConnected(accountLabel = null)
+                syncSettingsRepository.setGoogleDriveConnected(
+                    accountLabel = authorization.accountLabel,
+                    accountName = authorization.accountName,
+                )
                 GoogleDriveConnectionResult.Connected
             }
             is GoogleDriveAuthorization.NeedsResolution -> {
@@ -86,7 +93,10 @@ class SyncService(
     fun completeGoogleDriveConnection(data: Intent?): GoogleDriveConnectionResult {
         return when (val authorization = googleDriveAuthService.authorizationFromIntent(data)) {
             is GoogleDriveAuthorization.Authorized -> {
-                syncSettingsRepository.setGoogleDriveConnected(accountLabel = null)
+                syncSettingsRepository.setGoogleDriveConnected(
+                    accountLabel = authorization.accountLabel,
+                    accountName = authorization.accountName,
+                )
                 GoogleDriveConnectionResult.Connected
             }
             is GoogleDriveAuthorization.NeedsResolution -> {
@@ -101,6 +111,7 @@ class SyncService(
             is GoogleDriveAuthorization.Authorized -> {
                 val result = googleDriveSyncService.deleteBackup(authorization.accessToken)
                 if (result is ManualSyncResult.Synced) {
+                    syncSettingsRepository.setCachedGoogleDriveBackupStats(GoogleDriveBackupStats.Empty)
                     GoogleDriveConnectionResult.DeletedBackup
                 } else {
                     GoogleDriveConnectionResult.SyncFailed(result)
@@ -114,7 +125,7 @@ class SyncService(
     }
 
     fun googleDriveBackupStats(): GoogleDriveBackupStatsResult {
-        return when (val authorization = googleDriveAuthService.authorize()) {
+        val result = when (val authorization = googleDriveAuthService.authorize()) {
             is GoogleDriveAuthorization.Authorized -> {
                 googleDriveSyncService.backupStats(authorization.accessToken)
             }
@@ -125,6 +136,10 @@ class SyncService(
                 GoogleDriveBackupStatsResult.SyncFailed(ManualSyncResult.GoogleDriveUnavailable)
             }
         }
+        if (result is GoogleDriveBackupStatsResult.Loaded) {
+            syncSettingsRepository.setCachedGoogleDriveBackupStats(result.stats)
+        }
+        return result
     }
 
     fun hasConfiguredManualFolder(): Boolean {

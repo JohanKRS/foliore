@@ -84,16 +84,15 @@ class GoogleDriveSyncService(
             val manifestInfo = manifest?.let { file ->
                 runCatching { parseManifestInfo(drive.readText(file.id)) }.getOrNull()
             }
-            val fileStats = rootChildren.fold(RemoteFileStats()) { acc, child ->
-                acc + drive.collectFileStats(child)
-            }
+            val appDataFiles = drive.listAppDataFiles()
+                .filter { file -> file.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE }
 
             GoogleDriveBackupStatsResult.Loaded(
                 GoogleDriveBackupStats(
                     hasBackup = rootChildren.isNotEmpty(),
                     syncedBooks = manifestInfo?.bookCount ?: 0,
-                    remoteFiles = fileStats.fileCount,
-                    totalBytes = fileStats.totalBytes,
+                    remoteFiles = appDataFiles.size,
+                    totalBytes = appDataFiles.sumOf { file -> file.sizeText?.toLongOrNull() ?: 0L },
                     rootItems = rootChildren.size,
                     recognizedRootItems = knownRootChildren.size,
                     unknownRootItems = unknownRootChildren.size,
@@ -113,18 +112,6 @@ class GoogleDriveSyncService(
             child.name in FOLIORE_ROOT_FOLDERS
         } else {
             child.name in FOLIORE_ROOT_FILES
-        }
-    }
-
-    private fun GoogleDriveApiClient.collectFileStats(file: DriveFileMetadata): RemoteFileStats {
-        return if (file.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE) {
-            listChildren(file.id)
-                .fold(RemoteFileStats()) { acc, child -> acc + collectFileStats(child) }
-        } else {
-            RemoteFileStats(
-                fileCount = 1,
-                totalBytes = file.sizeText?.toLongOrNull() ?: 0L,
-            )
         }
     }
 
@@ -155,18 +142,6 @@ class GoogleDriveSyncService(
         val bookCount: Int,
         val updatedAt: String?,
     )
-
-    private data class RemoteFileStats(
-        val fileCount: Int = 0,
-        val totalBytes: Long = 0L,
-    ) {
-        operator fun plus(other: RemoteFileStats): RemoteFileStats {
-            return RemoteFileStats(
-                fileCount = fileCount + other.fileCount,
-                totalBytes = totalBytes + other.totalBytes,
-            )
-        }
-    }
 
     private fun Throwable.toGoogleDriveSyncResult(): ManualSyncResult {
         val driveError = this as? GoogleDriveHttpException

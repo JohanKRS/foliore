@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
 import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.theme.ThemeMode
+import com.foliore.android.viewmodel.LibraryNoticeType
 import com.foliore.android.viewmodel.LibraryViewModel
 
 @Composable
@@ -40,6 +41,7 @@ fun SettingsRoute(
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showSyncFolderGuidance by rememberSaveable { mutableStateOf(false) }
+    var showGoogleDriveLibraryChoice by rememberSaveable { mutableStateOf(false) }
     var showDeleteGoogleDriveBackupConfirmation by rememberSaveable { mutableStateOf(false) }
     val folderLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
@@ -68,12 +70,32 @@ fun SettingsRoute(
         }
     }
 
+    LaunchedEffect(notice?.type) {
+        if (notice?.type == LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONNECTED) {
+            showGoogleDriveLibraryChoice = true
+        }
+    }
+
+    LaunchedEffect(
+        showGoogleDriveLibraryChoice,
+        state.googleDriveBackupStats,
+        state.isGoogleDriveBackupStatsLoading,
+    ) {
+        if (
+            showGoogleDriveLibraryChoice &&
+            !state.isGoogleDriveBackupStatsLoading &&
+            state.googleDriveBackupStats?.hasBackup == false
+        ) {
+            showGoogleDriveLibraryChoice = false
+        }
+    }
+
     LaunchedEffect(state.syncProvider, state.isGoogleDriveConnected) {
         if (
             state.syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA &&
             state.isGoogleDriveConnected
         ) {
-            viewModel.refreshGoogleDriveBackupStats(launchGoogleDriveResolution)
+            viewModel.refreshGoogleDriveBackupStatsSilently()
         }
     }
 
@@ -154,6 +176,47 @@ fun SettingsRoute(
         )
     }
 
+    if (
+        showGoogleDriveLibraryChoice &&
+        !state.isGoogleDriveBackupStatsLoading &&
+        state.googleDriveBackupStats?.hasBackup == true
+    ) {
+        AlertDialog(
+            onDismissRequest = { showGoogleDriveLibraryChoice = false },
+            title = {
+                Text(text = stringResource(R.string.settings_sync_google_drive_existing_title))
+            },
+            text = {
+                Text(
+                    text = stringResource(
+                        R.string.settings_sync_google_drive_existing_body,
+                        state.googleDriveBackupStats?.syncedBooks ?: 0,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showGoogleDriveLibraryChoice = false
+                        viewModel.syncNow()
+                    },
+                ) {
+                    Text(text = stringResource(R.string.settings_sync_google_drive_existing_use))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showGoogleDriveLibraryChoice = false
+                        showDeleteGoogleDriveBackupConfirmation = true
+                    },
+                ) {
+                    Text(text = stringResource(R.string.settings_sync_google_drive_existing_replace))
+                }
+            },
+        )
+    }
+
     if (showDeleteGoogleDriveBackupConfirmation) {
         AlertDialog(
             onDismissRequest = { showDeleteGoogleDriveBackupConfirmation = false },
@@ -167,9 +230,6 @@ fun SettingsRoute(
                         stringResource(
                             R.string.settings_sync_google_drive_delete_backup_body_with_stats,
                             stats.syncedBooks,
-                            stats.remoteFiles,
-                            stats.rootItems,
-                            stats.unknownRootItems,
                         )
                     } else {
                         stringResource(R.string.settings_sync_google_drive_delete_backup_body)

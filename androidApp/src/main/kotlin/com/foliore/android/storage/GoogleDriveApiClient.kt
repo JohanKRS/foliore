@@ -24,6 +24,10 @@ internal class GoogleDriveApiClient(
         return listFiles(query)
     }
 
+    fun listAppDataFiles(): List<DriveFileMetadata> {
+        return listFiles("trashed = false")
+    }
+
     fun findChild(
         parentId: String,
         name: String,

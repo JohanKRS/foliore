@@ -39,7 +39,10 @@ class AppContainer(context: Context) {
     val libraryDisplayPreferenceRepository = LibraryDisplayPreferenceRepository(appContext)
     val metadataPreferenceRepository = MetadataPreferenceRepository(appContext)
     val syncSettingsRepository = SyncSettingsRepository(appContext)
-    val googleDriveAuthService = GoogleDriveAuthService(appContext)
+    val googleDriveAuthService = GoogleDriveAuthService(
+        context = appContext,
+        syncSettingsRepository = syncSettingsRepository,
+    )
     val openAiApiService = OpenAiApiService(
         context = appContext,
         aiPreferenceRepository = aiPreferenceRepository,

@@ -67,8 +67,19 @@ class LibraryViewModel(
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
 ) : ViewModel() {
+    private val initialSyncProvider = syncService.activeProvider()
     private val _state = MutableStateFlow(
         LibraryUiState(
+            syncProvider = initialSyncProvider,
+            googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
+            isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
+            googleDriveBackupStats = if (initialSyncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
+                syncService.cachedGoogleDriveBackupStats()
+            } else {
+                null
+            },
+            isAutoSyncEnabled = syncService.autoSyncEnabled(),
+            isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
             aiProviderMode = aiPreferenceRepository.providerMode.value,
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
             hasGoogleBooksApiKey = metadataPreferenceRepository.hasGoogleBooksApiKey.value,
@@ -829,14 +840,7 @@ class LibraryViewModel(
                     googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
                     isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
                     aiCoverPromptRecords = aiCoverPromptRecords,
-                    googleDriveBackupStats = if (
-                        syncService.activeProvider() == SyncProvider.GOOGLE_DRIVE_APPDATA &&
-                        result is ManualSyncResult.Synced
-                    ) {
-                        null
-                    } else {
-                        it.googleDriveBackupStats
-                    },
+                    googleDriveBackupStats = it.googleDriveBackupStats,
                     lastSyncSummary = if (result is ManualSyncResult.Synced) {
                         SyncSummary(
                             uploadedBooks = result.uploadedBooks,
@@ -849,6 +853,12 @@ class LibraryViewModel(
                 )
             }
             _notice.value = LibraryNotice(result.toNoticeType())
+            if (
+                result is ManualSyncResult.Synced &&
+                syncService.activeProvider() == SyncProvider.GOOGLE_DRIVE_APPDATA
+            ) {
+                refreshGoogleDriveBackupStatsSilently()
+            }
         }
     }
 
@@ -932,9 +942,9 @@ class LibraryViewModel(
     fun deleteGoogleDriveBackup(onResolutionRequired: (PendingIntent) -> Unit) {
         if (_state.value.isGoogleDriveBackupStatsLoading) return
 
+        pendingGoogleDriveOperation = GoogleDriveOperation.DeleteBackup
+        _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
         viewModelScope.launch {
-            pendingGoogleDriveOperation = GoogleDriveOperation.DeleteBackup
-            _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
             val result = withContext(Dispatchers.IO) {
                 syncService.deleteGoogleDriveBackup()
             }
@@ -945,9 +955,9 @@ class LibraryViewModel(
     fun refreshGoogleDriveBackupStats(onResolutionRequired: (PendingIntent) -> Unit) {
         if (_state.value.isGoogleDriveBackupStatsLoading) return
 
+        pendingGoogleDriveOperation = GoogleDriveOperation.LoadBackupStats
+        _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
         viewModelScope.launch {
-            pendingGoogleDriveOperation = GoogleDriveOperation.LoadBackupStats
-            _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
             val result = withContext(Dispatchers.IO) {
                 syncService.googleDriveBackupStats()
             }
@@ -981,12 +991,14 @@ class LibraryViewModel(
             GoogleDriveConnectionResult.Connected -> {
                 _state.update {
                     it.copy(
-                        googleDriveBackupStats = null,
+                        googleDriveBackupStats = syncService.cachedGoogleDriveBackupStats()
+                            ?: it.googleDriveBackupStats,
                         isGoogleDriveBackupStatsLoading = false,
                     )
                 }
                 refreshSyncState()
                 _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_CONNECTED)
+                refreshGoogleDriveBackupStatsSilently()
             }
             GoogleDriveConnectionResult.DeletedBackup -> {
                 _state.update {
@@ -1037,6 +1049,31 @@ class LibraryViewModel(
         }
     }
 
+    fun refreshGoogleDriveBackupStatsSilently() {
+        if (_state.value.isGoogleDriveBackupStatsLoading) return
+
+        _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                syncService.googleDriveBackupStats()
+            }
+            when (result) {
+                is GoogleDriveBackupStatsResult.Loaded -> {
+                    _state.update {
+                        it.copy(
+                            googleDriveBackupStats = result.stats,
+                            isGoogleDriveBackupStatsLoading = false,
+                        )
+                    }
+                }
+                is GoogleDriveBackupStatsResult.NeedsResolution,
+                is GoogleDriveBackupStatsResult.SyncFailed -> {
+                    _state.update { it.copy(isGoogleDriveBackupStatsLoading = false) }
+                }
+            }
+        }
+    }
+
     private suspend fun refreshBooks(clearBatchSelection: Boolean = false) {
         val books = withContext(Dispatchers.IO) {
             libraryRepository.getBooks()
@@ -1058,19 +1095,32 @@ class LibraryViewModel(
 
     private fun refreshSyncState() {
         viewModelScope.launch {
-            val folderLabel = withContext(Dispatchers.IO) {
-                syncService.syncLabel()
-            }
-            _state.update {
-                it.copy(
-                    syncProvider = syncService.activeProvider(),
-                    syncFolderLabel = folderLabel,
+            val snapshot = withContext(Dispatchers.IO) {
+                val provider = syncService.activeProvider()
+                SyncStateSnapshot(
+                    provider = provider,
+                    label = syncService.syncLabel(),
                     googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
                     isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
                     isAutoSyncEnabled = syncService.autoSyncEnabled(),
                     isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
-                    googleDriveBackupStats = if (syncService.activeProvider() == SyncProvider.GOOGLE_DRIVE_APPDATA) {
-                        it.googleDriveBackupStats
+                    googleDriveBackupStats = if (provider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
+                        syncService.cachedGoogleDriveBackupStats()
+                    } else {
+                        null
+                    },
+                )
+            }
+            _state.update {
+                it.copy(
+                    syncProvider = snapshot.provider,
+                    syncFolderLabel = snapshot.label,
+                    googleDriveAccountLabel = snapshot.googleDriveAccountLabel,
+                    isGoogleDriveConnected = snapshot.isGoogleDriveConnected,
+                    isAutoSyncEnabled = snapshot.isAutoSyncEnabled,
+                    isAutoSyncWifiOnly = snapshot.isAutoSyncWifiOnly,
+                    googleDriveBackupStats = if (snapshot.provider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
+                        snapshot.googleDriveBackupStats ?: it.googleDriveBackupStats
                     } else {
                         null
                     },
@@ -1167,3 +1217,13 @@ private enum class GoogleDriveOperation {
     DeleteBackup,
     LoadBackupStats,
 }
+
+private data class SyncStateSnapshot(
+    val provider: SyncProvider,
+    val label: String?,
+    val googleDriveAccountLabel: String?,
+    val isGoogleDriveConnected: Boolean,
+    val isAutoSyncEnabled: Boolean,
+    val isAutoSyncWifiOnly: Boolean,
+    val googleDriveBackupStats: GoogleDriveBackupStats?,
+)

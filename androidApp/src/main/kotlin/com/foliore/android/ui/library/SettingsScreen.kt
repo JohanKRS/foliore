@@ -576,7 +576,14 @@ fun SettingsScreen(
                 description = googleDriveAccountLabel?.let {
                     stringResource(R.string.settings_sync_google_drive_configured, it)
                 } ?: stringResource(R.string.settings_sync_google_drive_description),
-                onClick = onConnectGoogleDrive,
+                onClick = if (
+                    syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA &&
+                    isGoogleDriveConnected
+                ) {
+                    null
+                } else {
+                    onConnectGoogleDrive
+                },
             )
         }
         Spacer(modifier = Modifier.height(14.dp))
@@ -593,6 +600,11 @@ fun SettingsScreen(
             Column(modifier = Modifier.weight(1f)) {
                 val hasActiveProvider = syncProvider != SyncProvider.NONE &&
                     (syncProvider != SyncProvider.GOOGLE_DRIVE_APPDATA || isGoogleDriveConnected)
+                val hasKnownSync = lastSyncSummary != null ||
+                    (
+                        syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA &&
+                            googleDriveBackupStats?.hasBackup == true
+                    )
                 Text(
                     text = when (syncProvider) {
                         SyncProvider.MANUAL_FOLDER -> stringResource(R.string.settings_sync_folder)
@@ -611,7 +623,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (hasActiveProvider && lastSyncSummary == null) {
+                if (hasActiveProvider && !hasKnownSync) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.settings_sync_first_run_hint),
@@ -649,25 +661,21 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                 }
                 if (syncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
-                    OutlinedButton(
-                        onClick = onConnectGoogleDrive,
-                        enabled = !isSyncing,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CloudSync,
-                            contentDescription = null,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isGoogleDriveConnected) {
-                                stringResource(R.string.settings_sync_google_drive_reconnect)
-                            } else {
-                                stringResource(R.string.settings_sync_google_drive_connect)
-                            },
-                        )
+                    if (!isGoogleDriveConnected) {
+                        OutlinedButton(
+                            onClick = onConnectGoogleDrive,
+                            enabled = !isSyncing,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CloudSync,
+                                contentDescription = null,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_sync_google_drive_connect))
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
                     GoogleDriveBackupStatus(
                         stats = googleDriveBackupStats,
                         isLoading = isGoogleDriveBackupStatsLoading,
@@ -688,7 +696,7 @@ fun SettingsScreen(
                     Text(
                         text = if (isSyncing) {
                             stringResource(R.string.settings_sync_running)
-                        } else if (hasActiveProvider && lastSyncSummary == null) {
+                        } else if (hasActiveProvider && !hasKnownSync) {
                             stringResource(R.string.settings_sync_now_first_run)
                         } else {
                             stringResource(R.string.settings_sync_now)
@@ -777,7 +785,9 @@ private fun GoogleDriveBackupStatus(
         )
         Text(
             text = when {
-                isLoading -> stringResource(R.string.settings_sync_google_drive_backup_status_loading)
+                stats == null && isLoading -> {
+                    stringResource(R.string.settings_sync_google_drive_backup_status_loading)
+                }
                 stats == null -> stringResource(R.string.settings_sync_google_drive_backup_status_unknown)
                 !stats.hasBackup -> stringResource(R.string.settings_sync_google_drive_backup_status_empty)
                 else -> stringResource(
@@ -785,12 +795,18 @@ private fun GoogleDriveBackupStatus(
                     stats.syncedBooks,
                     stats.remoteFiles,
                     stats.totalBytes.toReadableDriveSize(),
-                    stats.rootItems,
                 )
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (isLoading && stats != null) {
+            Text(
+                text = stringResource(R.string.settings_sync_google_drive_backup_status_refreshing),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (stats?.updatedAt != null) {
             Text(
                 text = stringResource(
@@ -887,12 +903,18 @@ private fun SelectableOptionRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     description: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
             .padding(vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,

@@ -1,7 +1,12 @@
 package com.foliore.android.storage
 
 import android.app.PendingIntent
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
+@Serializable
 data class GoogleDriveBackupStats(
     val hasBackup: Boolean,
     val syncedBooks: Int,
@@ -23,6 +28,23 @@ data class GoogleDriveBackupStats(
             unknownRootItems = 0,
             updatedAt = null,
         )
+    }
+}
+
+internal object GoogleDriveBackupStatsCacheCodec {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
+    fun encode(stats: GoogleDriveBackupStats): String {
+        return json.encodeToString(stats)
+    }
+
+    fun decode(encoded: String): GoogleDriveBackupStats? {
+        return runCatching {
+            json.decodeFromString<GoogleDriveBackupStats>(encoded)
+        }.getOrNull()
     }
 }
 
