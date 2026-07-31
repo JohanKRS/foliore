@@ -25,6 +25,7 @@
     <string name="search_no_results">Keine Bücher gefunden.</string>
     <string name="importing_epubs">EPUBs werden importiert…</string>
     <string name="action_done">Fertig</string>
+    <string name="action_close">Schließen</string>
     <string name="action_organize_library">Bibliothek organisieren</string>
 
     <string name="filter_all">Alle</string>
@@ -163,6 +164,7 @@
 
     <string name="settings_appearance">Darstellung</string>
     <string name="settings_theme">Design</string>
+    <string name="settings_theme_dialog_title">Design auswählen</string>
     <string name="settings_theme_system">Systemeinstellung</string>
     <string name="settings_theme_light">Hell</string>
     <string name="settings_theme_dark">Dunkel</string>
@@ -184,6 +186,7 @@
     <string name="settings_preserve_original">Original behalten</string>
     <string name="settings_preserve_original_description">Immer aktiv: Importierte EPUBs werden nie direkt verändert.</string>
     <string name="settings_kindle">Kindle</string>
+    <string name="settings_kindle_dialog_title">Kindle einrichten</string>
     <string name="settings_kindle_email">Per E-Mail an Kindle senden</string>
     <string name="settings_kindle_email_description">Speichere die @kindle.com-Adresse und einen von Amazon zugelassenen SMTP-Absender für den Versand mit einem Tippen.</string>
     <string name="settings_kindle_email_configured">Aktuelle Adresse: %1$s</string>
@@ -205,6 +208,9 @@
     <string name="settings_kindle_smtp_password_keep_label">Neues Passwort oder leer lassen</string>
     <string name="settings_kindle_smtp_save">Absender speichern</string>
     <string name="settings_kindle_smtp_clear">Absender löschen</string>
+    <string name="settings_experimental">Experimentelle Funktionen</string>
+    <string name="settings_experimental_description">Google Books und OpenAI. Optionale Funktionen, die noch getestet werden.</string>
+    <string name="settings_experimental_dialog_title">Experimentelle Funktionen</string>
     <string name="settings_metadata_sources">Offene Quellen</string>
     <string name="settings_metadata_google_books">Google Books</string>
     <string name="settings_metadata_google_books_description">Optional: Verwende einen API-Schlüssel, um das Google-Books-Kontingent zu erhöhen und Cover mit höherer Auflösung abzurufen. Open Library funktioniert weiterhin ohne Schlüssel.</string>
@@ -218,6 +224,8 @@
     <string name="settings_ai_openai_api">OpenAI API</string>
     <string name="settings_ai_openai_api_description">Wird zum automatischen Ausfüllen mit KI und zum Erstellen von Covern verwendet. Die offene Suche funktioniert auch ohne Schlüssel.</string>
     <string name="settings_sync">Synchronisierung</string>
+    <string name="settings_sync_method">Synchronisierungsmethode</string>
+    <string name="settings_sync_method_dialog_title">Synchronisierungsmethode auswählen</string>
     <string name="settings_sync_no_provider">Keine Synchronisierung aktiv</string>
     <string name="settings_sync_provider_hint">Wähle einen sichtbaren Ordner oder verbinde den privaten Foliore-Bereich in Google Drive.</string>
     <string name="settings_sync_manual_folder">Ausgewählter Ordner</string>

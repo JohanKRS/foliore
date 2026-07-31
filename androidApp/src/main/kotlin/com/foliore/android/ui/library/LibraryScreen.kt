@@ -596,7 +596,6 @@ private fun LibraryControlsDialog(
 ) {
     FolioreOptionsDialog(
         title = stringResource(R.string.organization_dialog_title),
-        doneLabel = stringResource(R.string.action_done),
         onDismiss = onDismiss,
     ) {
         if (maxWidth >= 420.dp) {

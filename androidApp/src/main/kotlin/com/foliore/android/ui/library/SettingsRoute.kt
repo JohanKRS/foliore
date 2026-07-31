@@ -158,7 +158,6 @@ fun SettingsRoute(
     if (showLanguagePicker) {
         FolioreOptionsDialog(
             title = stringResource(R.string.settings_language_dialog_title),
-            doneLabel = stringResource(R.string.action_done),
             onDismiss = { showLanguagePicker = false },
         ) {
             FolioreDialogSectionCard(

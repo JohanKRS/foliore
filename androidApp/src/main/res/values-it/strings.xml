@@ -25,6 +25,7 @@
     <string name="search_no_results">Nessun libro trovato.</string>
     <string name="importing_epubs">Importazione EPUB…</string>
     <string name="action_done">Fine</string>
+    <string name="action_close">Chiudi</string>
     <string name="action_organize_library">Organizza libreria</string>
 
     <string name="filter_all">Tutti</string>
@@ -163,6 +164,7 @@
 
     <string name="settings_appearance">Aspetto</string>
     <string name="settings_theme">Tema</string>
+    <string name="settings_theme_dialog_title">Scegli il tema</string>
     <string name="settings_theme_system">Segui il sistema</string>
     <string name="settings_theme_light">Chiaro</string>
     <string name="settings_theme_dark">Scuro</string>
@@ -184,6 +186,7 @@
     <string name="settings_preserve_original">Conserva originale</string>
     <string name="settings_preserve_original_description">Sempre attivo: gli EPUB importati non vengono mai modificati direttamente.</string>
     <string name="settings_kindle">Kindle</string>
+    <string name="settings_kindle_dialog_title">Configura Kindle</string>
     <string name="settings_kindle_email">Invia a Kindle via e-mail</string>
     <string name="settings_kindle_email_description">Salva l’indirizzo @kindle.com e un mittente SMTP approvato da Amazon per inviare con un solo tocco.</string>
     <string name="settings_kindle_email_configured">Indirizzo attuale: %1$s</string>
@@ -205,6 +208,9 @@
     <string name="settings_kindle_smtp_password_keep_label">Nuova password, oppure lascia vuoto</string>
     <string name="settings_kindle_smtp_save">Salva mittente</string>
     <string name="settings_kindle_smtp_clear">Cancella mittente</string>
+    <string name="settings_experimental">Funzioni sperimentali</string>
+    <string name="settings_experimental_description">Google Books e OpenAI. Funzioni facoltative ancora in fase di test.</string>
+    <string name="settings_experimental_dialog_title">Funzioni sperimentali</string>
     <string name="settings_metadata_sources">Fonti aperte</string>
     <string name="settings_metadata_google_books">Google Books</string>
     <string name="settings_metadata_google_books_description">Facoltativo: usa una chiave API per aumentare la quota di Google Books e provare a ottenere copertine a risoluzione maggiore. Open Library continua a funzionare senza chiave.</string>
@@ -218,6 +224,8 @@
     <string name="settings_ai_openai_api">API OpenAI</string>
     <string name="settings_ai_openai_api_description">Usata per la compilazione automatica con IA e la generazione delle copertine. La ricerca aperta funziona anche senza chiave.</string>
     <string name="settings_sync">Sincronizzazione</string>
+    <string name="settings_sync_method">Metodo di sincronizzazione</string>
+    <string name="settings_sync_method_dialog_title">Scegli il metodo di sincronizzazione</string>
     <string name="settings_sync_no_provider">Nessuna sincronizzazione attiva</string>
     <string name="settings_sync_provider_hint">Scegli una cartella visibile oppure collega lo spazio privato di Foliore su Google Drive.</string>
     <string name="settings_sync_manual_folder">Cartella scelta</string>

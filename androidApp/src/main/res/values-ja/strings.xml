@@ -25,6 +25,7 @@
     <string name="search_no_results">本が見つかりませんでした。</string>
     <string name="importing_epubs">EPUBを読み込み中…</string>
     <string name="action_done">完了</string>
+    <string name="action_close">閉じる</string>
     <string name="action_organize_library">ライブラリを整理</string>
 
     <string name="filter_all">すべて</string>
@@ -163,6 +164,7 @@
 
     <string name="settings_appearance">外観</string>
     <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_dialog_title">テーマを選択</string>
     <string name="settings_theme_system">システムに合わせる</string>
     <string name="settings_theme_light">ライト</string>
     <string name="settings_theme_dark">ダーク</string>
@@ -184,6 +186,7 @@
     <string name="settings_preserve_original">元ファイルを保持</string>
     <string name="settings_preserve_original_description">常に有効：読み込んだEPUBを直接変更することはありません。</string>
     <string name="settings_kindle">Kindle</string>
+    <string name="settings_kindle_dialog_title">Kindleを設定</string>
     <string name="settings_kindle_email">メールでKindleへ送信</string>
     <string name="settings_kindle_email_description">@kindle.comアドレスとAmazonで承認済みのSMTP送信元を保存すると、ワンタップで送信できます。</string>
     <string name="settings_kindle_email_configured">現在のアドレス：%1$s</string>
@@ -205,6 +208,9 @@
     <string name="settings_kindle_smtp_password_keep_label">新しいパスワード（変更しない場合は空欄）</string>
     <string name="settings_kindle_smtp_save">送信元を保存</string>
     <string name="settings_kindle_smtp_clear">送信元を消去</string>
+    <string name="settings_experimental">試験的な機能</string>
+    <string name="settings_experimental_description">Google BooksとOpenAI。現在テスト中の任意機能です。</string>
+    <string name="settings_experimental_dialog_title">試験的な機能</string>
     <string name="settings_metadata_sources">公開データソース</string>
     <string name="settings_metadata_google_books">Google Books</string>
     <string name="settings_metadata_google_books_description">任意：APIキーを使うとGoogle Booksの割り当てが増え、より高解像度の表紙を取得できる場合があります。Open Libraryはキーなしでも引き続き利用できます。</string>
@@ -218,6 +224,8 @@
     <string name="settings_ai_openai_api">OpenAI API</string>
     <string name="settings_ai_openai_api_description">AIによる自動入力と表紙生成に使用します。公開検索はキーなしでも利用できます。</string>
     <string name="settings_sync">同期</string>
+    <string name="settings_sync_method">同期方法</string>
+    <string name="settings_sync_method_dialog_title">同期方法を選択</string>
     <string name="settings_sync_no_provider">有効な同期はありません</string>
     <string name="settings_sync_provider_hint">表示可能なフォルダを選ぶか、Google Drive内のFoliore専用領域に接続してください。</string>
     <string name="settings_sync_manual_folder">選択したフォルダ</string>

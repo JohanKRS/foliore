@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -23,26 +24,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.foliore.android.R
 
 @Composable
 internal fun FolioreOptionsDialog(
     title: String,
-    doneLabel: String,
     onDismiss: () -> Unit,
     content: @Composable BoxWithConstraintsScope.() -> Unit,
 ) {
@@ -51,13 +54,15 @@ internal fun FolioreOptionsDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(),
             contentAlignment = Alignment.Center,
         ) {
             val horizontalMargin = if (maxWidth < 480.dp) 10.dp else 24.dp
             val verticalMargin = if (maxHeight < 720.dp) 12.dp else 24.dp
             val dialogMaxHeight = (maxHeight - verticalMargin * 2).coerceAtLeast(280.dp)
-            val optionsMaxHeight = (dialogMaxHeight - 118.dp).coerceAtLeast(180.dp)
+            val optionsMaxHeight = (dialogMaxHeight - 82.dp).coerceAtLeast(180.dp)
             val contentHorizontalPadding = if (maxWidth < 480.dp) 20.dp else 26.dp
 
             Surface(
@@ -81,11 +86,29 @@ internal fun FolioreOptionsDialog(
                         vertical = 22.dp,
                     ),
                 ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = title,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = stringResource(R.string.action_close),
+                                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.82f),
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
                     FolioreDialogDivider()
                     Spacer(modifier = Modifier.height(10.dp))
@@ -97,15 +120,6 @@ internal fun FolioreOptionsDialog(
                         content = content,
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismiss) {
-                            Text(text = doneLabel)
-                        }
-                    }
                 }
             }
         }
