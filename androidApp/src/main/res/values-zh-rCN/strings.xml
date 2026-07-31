@@ -83,6 +83,19 @@
     <string name="import_notice_duplicates">此 EPUB 已在书库中。</string>
     <string name="import_notice_failed">无法导入 EPUB。</string>
     <string name="import_notice_mixed">导入完成，但有部分提示。</string>
+    <string name="import_duplicates_dialog_title">检查重复图书</string>
+    <plurals name="import_duplicates_dialog_description">
+        <item quantity="one">%1$d 本图书与书库中已有图书的内容相同。请比较信息并选择要保留的副本。</item>
+        <item quantity="other">%1$d 本图书与书库中已有图书的内容相同。请比较信息并选择要保留的副本。</item>
+    </plurals>
+    <string name="import_duplicates_same_content">图书内容相同，但元数据或封面不同。</string>
+    <string name="import_duplicates_library_copy">书库中的版本</string>
+    <string name="import_duplicates_imported_copy">导入的文件</string>
+    <string name="import_duplicates_keep_library">保留书库版本</string>
+    <string name="import_duplicates_use_imported">使用导入版本</string>
+    <string name="import_duplicates_all_library">全部保留书库版本</string>
+    <string name="import_duplicates_all_imported">全部使用导入版本</string>
+    <string name="import_duplicates_apply">应用选择</string>
     <string name="edit_notice_metadata_saved">元数据已保存，EPUB 已准备。</string>
     <string name="edit_notice_cover_updated">封面已更新，EPUB 已准备。</string>
     <string name="edit_notice_update_failed">无法保存更改。</string>

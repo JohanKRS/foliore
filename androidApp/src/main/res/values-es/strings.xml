@@ -83,6 +83,19 @@
     <string name="import_notice_duplicates">Este EPUB ya está en la biblioteca.</string>
     <string name="import_notice_failed">No se pudo importar el EPUB.</string>
     <string name="import_notice_mixed">La importación terminó con avisos.</string>
+    <string name="import_duplicates_dialog_title">Revisar libros duplicados</string>
+    <plurals name="import_duplicates_dialog_description">
+        <item quantity="one">%1$d libro tiene el mismo contenido que un ejemplar ya presente en la biblioteca. Compara los datos y elige qué copia conservar.</item>
+        <item quantity="other">%1$d libros tienen el mismo contenido que ejemplares ya presentes en la biblioteca. Compara los datos y elige qué copia conservar.</item>
+    </plurals>
+    <string name="import_duplicates_same_content">Contenido idéntico; metadatos o portada diferentes.</string>
+    <string name="import_duplicates_library_copy">En la biblioteca</string>
+    <string name="import_duplicates_imported_copy">Archivo importado</string>
+    <string name="import_duplicates_keep_library">Conservar el de la biblioteca</string>
+    <string name="import_duplicates_use_imported">Usar el importado</string>
+    <string name="import_duplicates_all_library">Conservar todos los de la biblioteca</string>
+    <string name="import_duplicates_all_imported">Usar todos los importados</string>
+    <string name="import_duplicates_apply">Aplicar elecciones</string>
     <string name="edit_notice_metadata_saved">Metadatos guardados y EPUB preparado.</string>
     <string name="edit_notice_cover_updated">Portada actualizada y EPUB preparado.</string>
     <string name="edit_notice_update_failed">No se pudo guardar el cambio.</string>

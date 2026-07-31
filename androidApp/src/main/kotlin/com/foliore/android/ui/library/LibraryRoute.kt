@@ -70,4 +70,12 @@ fun LibraryRoute(
         bottomChromeInset = bottomChromeInset,
         showTopChrome = showTopChrome,
     )
+
+    if (state.pendingImportConflicts.isNotEmpty()) {
+        ImportDuplicatesDialog(
+            conflicts = state.pendingImportConflicts,
+            onApply = viewModel::resolveImportConflicts,
+            onDismiss = viewModel::dismissImportConflicts,
+        )
+    }
 }

@@ -28,9 +28,13 @@ class DebugImportReceiver : BroadcastReceiver() {
 
                 runBlocking {
                     files.forEach { file ->
-                        when (importer.importFile(file)) {
+                        when (val result = importer.importFile(file)) {
                             is EpubImportResult.Imported -> imported += 1
                             is EpubImportResult.Duplicate -> duplicates += 1
+                            is EpubImportResult.NeedsReview -> {
+                                importer.discard(result.pendingImport)
+                                duplicates += 1
+                            }
                             is EpubImportResult.Failed -> failed += 1
                         }
                     }

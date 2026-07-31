@@ -11,6 +11,7 @@ data class LibraryUiState(
     val books: List<LibraryBook> = emptyList(),
     val isImporting: Boolean = false,
     val importProgress: SyncProgress? = null,
+    val pendingImportConflicts: List<ImportDuplicateConflict> = emptyList(),
     val isSyncing: Boolean = false,
     val syncProgress: SyncProgress? = null,
     val syncProvider: SyncProvider = SyncProvider.NONE,
@@ -49,6 +50,19 @@ data class LibraryUiState(
 
     val hasActiveProgress: Boolean
         get() = isSyncing || isImporting || syncProgress != null || importProgress != null
+}
+
+data class ImportDuplicateConflict(
+    val token: String,
+    val existingTitle: String,
+    val existingAuthors: List<String>,
+    val incomingTitle: String,
+    val incomingAuthors: List<String>,
+)
+
+enum class ImportDuplicateChoice {
+    KEEP_LIBRARY,
+    USE_IMPORTED,
 }
 
 enum class BookFilter {

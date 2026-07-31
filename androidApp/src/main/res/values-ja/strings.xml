@@ -83,6 +83,19 @@
     <string name="import_notice_duplicates">このEPUBはすでにライブラリにあります。</string>
     <string name="import_notice_failed">EPUBを読み込めませんでした。</string>
     <string name="import_notice_mixed">警告がありますが、読み込みは完了しました。</string>
+    <string name="import_duplicates_dialog_title">重複する本を確認</string>
+    <plurals name="import_duplicates_dialog_description">
+        <item quantity="one">%1$d冊は、ライブラリにある本と内容が同じです。情報を比較して、残す方を選んでください。</item>
+        <item quantity="other">%1$d冊は、ライブラリにある本と内容が同じです。情報を比較して、残す方を選んでください。</item>
+    </plurals>
+    <string name="import_duplicates_same_content">本文は同一で、メタデータまたは表紙が異なります。</string>
+    <string name="import_duplicates_library_copy">ライブラリ内</string>
+    <string name="import_duplicates_imported_copy">読み込んだファイル</string>
+    <string name="import_duplicates_keep_library">ライブラリ版を残す</string>
+    <string name="import_duplicates_use_imported">読み込んだ版を使う</string>
+    <string name="import_duplicates_all_library">すべてライブラリ版を残す</string>
+    <string name="import_duplicates_all_imported">すべて読み込んだ版を使う</string>
+    <string name="import_duplicates_apply">選択を適用</string>
     <string name="edit_notice_metadata_saved">メタデータを保存し、EPUBを準備しました。</string>
     <string name="edit_notice_cover_updated">表紙を更新し、EPUBを準備しました。</string>
     <string name="edit_notice_update_failed">変更を保存できませんでした。</string>

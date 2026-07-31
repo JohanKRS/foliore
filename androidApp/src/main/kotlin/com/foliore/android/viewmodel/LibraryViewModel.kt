@@ -31,6 +31,7 @@ import com.foliore.android.storage.ManualSyncPhase
 import com.foliore.android.storage.ManualSyncProgress
 import com.foliore.android.storage.ManualSyncResult
 import com.foliore.android.storage.MetadataPreferenceRepository
+import com.foliore.android.storage.PendingEpubImport
 import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.GoogleDriveBackupStatsResult
@@ -98,6 +99,9 @@ class LibraryViewModel(
 
     private val _notice = MutableStateFlow<LibraryNotice?>(null)
     val notice: StateFlow<LibraryNotice?> = _notice.asStateFlow()
+    private val pendingEpubImports = linkedMapOf<String, PendingEpubImport>()
+    private var pendingImportCounts = ImportCounts()
+    private var isResolvingImportConflicts = false
     private var pendingGoogleDriveOperation: GoogleDriveOperation = GoogleDriveOperation.Connect
     private val attemptedCoverRecoveries = mutableSetOf<String>()
 
@@ -116,7 +120,7 @@ class LibraryViewModel(
     }
 
     fun importUris(uris: List<Uri>) {
-        if (uris.isEmpty()) return
+        if (uris.isEmpty() || pendingEpubImports.isNotEmpty() || _state.value.isImporting) return
 
         viewModelScope.launch {
             _state.update {
@@ -130,16 +134,26 @@ class LibraryViewModel(
                 )
             }
 
-            var imported = 0
-            var duplicates = 0
-            var failed = 0
+            var counts = ImportCounts()
 
             withContext(Dispatchers.IO) {
                 uris.forEachIndexed { index, uri ->
-                    when (epubImporter.import(uri)) {
-                        is EpubImportResult.Imported -> imported += 1
-                        is EpubImportResult.Duplicate -> duplicates += 1
-                        is EpubImportResult.Failed -> failed += 1
+                    when (val importResult = epubImporter.import(uri)) {
+                        is EpubImportResult.Imported -> counts = counts.copy(imported = counts.imported + 1)
+                        is EpubImportResult.Duplicate -> counts = counts.copy(duplicates = counts.duplicates + 1)
+                        is EpubImportResult.Failed -> counts = counts.copy(failed = counts.failed + 1)
+                        is EpubImportResult.NeedsReview -> {
+                            val pendingImport = importResult.pendingImport
+                            val duplicatePending = pendingEpubImports.values.any {
+                                it.contentFingerprint == pendingImport.contentFingerprint
+                            }
+                            if (duplicatePending) {
+                                epubImporter.discard(pendingImport)
+                                counts = counts.copy(duplicates = counts.duplicates + 1)
+                            } else {
+                                pendingEpubImports[pendingImport.token] = pendingImport
+                            }
+                        }
                     }
                     _state.update {
                         it.copy(
@@ -156,19 +170,101 @@ class LibraryViewModel(
             val books = withContext(Dispatchers.IO) {
                 libraryRepository.getBooks()
             }
-            _state.update { it.withBooks(books).copy(isImporting = false, importProgress = null) }
-            if (imported > 0) {
+            pendingImportCounts = counts
+            _state.update {
+                it.withBooks(books).copy(
+                    isImporting = false,
+                    importProgress = null,
+                    pendingImportConflicts = pendingEpubImports.values.map { pending ->
+                        pending.toUiModel()
+                    },
+                )
+            }
+            if (counts.imported > 0) {
                 enqueueAutoSync()
             }
-            _notice.value = LibraryNotice(
-                type = when {
-                    imported > 0 && duplicates == 0 && failed == 0 -> LibraryNoticeType.IMPORTED
-                    imported == 0 && duplicates > 0 && failed == 0 -> LibraryNoticeType.DUPLICATE
-                    imported == 0 && failed > 0 -> LibraryNoticeType.FAILED
-                    else -> LibraryNoticeType.MIXED
-                },
-            )
+            if (pendingEpubImports.isEmpty()) publishImportNotice(counts)
         }
+    }
+
+    fun resolveImportConflicts(choices: Map<String, ImportDuplicateChoice>) {
+        if (
+            pendingEpubImports.isEmpty() ||
+            _state.value.isImporting ||
+            isResolvingImportConflicts
+        ) {
+            return
+        }
+
+        isResolvingImportConflicts = true
+        val importsToResolve = pendingEpubImports.values.toList()
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    isImporting = true,
+                    pendingImportConflicts = emptyList(),
+                    importProgress = SyncProgress(
+                        phase = SyncProgressPhase.IMPORTING,
+                        current = 0,
+                        total = importsToResolve.size,
+                    ),
+                )
+            }
+
+            var counts = pendingImportCounts
+            withContext(Dispatchers.IO) {
+                importsToResolve.forEachIndexed { index, pendingImport ->
+                    when (choices[pendingImport.token] ?: ImportDuplicateChoice.KEEP_LIBRARY) {
+                        ImportDuplicateChoice.KEEP_LIBRARY -> {
+                            epubImporter.discard(pendingImport)
+                            counts = counts.copy(duplicates = counts.duplicates + 1)
+                        }
+                        ImportDuplicateChoice.USE_IMPORTED -> {
+                            when (epubImporter.commit(pendingImport)) {
+                                is EpubImportResult.Imported -> {
+                                    bookDeleter.delete(pendingImport.existingBookId)
+                                    counts = counts.copy(imported = counts.imported + 1)
+                                }
+                                is EpubImportResult.Duplicate -> {
+                                    counts = counts.copy(duplicates = counts.duplicates + 1)
+                                }
+                                is EpubImportResult.Failed,
+                                is EpubImportResult.NeedsReview -> {
+                                    counts = counts.copy(failed = counts.failed + 1)
+                                }
+                            }
+                        }
+                    }
+                    _state.update {
+                        it.copy(
+                            importProgress = SyncProgress(
+                                phase = SyncProgressPhase.IMPORTING,
+                                current = index + 1,
+                                total = importsToResolve.size,
+                            ),
+                        )
+                    }
+                }
+            }
+
+            pendingImportCounts = ImportCounts()
+            pendingEpubImports.clear()
+            isResolvingImportConflicts = false
+            val books = withContext(Dispatchers.IO) { libraryRepository.getBooks() }
+            _state.update {
+                it.withBooks(books).copy(
+                    isImporting = false,
+                    importProgress = null,
+                    pendingImportConflicts = emptyList(),
+                )
+            }
+            if (counts.imported > 0) enqueueAutoSync()
+            publishImportNotice(counts)
+        }
+    }
+
+    fun dismissImportConflicts() {
+        resolveImportConflicts(emptyMap())
     }
 
     fun setSearchOpen(isOpen: Boolean) {
@@ -1180,6 +1276,40 @@ class LibraryViewModel(
         syncWorkScheduler.enqueueAutoSync()
     }
 
+    private fun PendingEpubImport.toUiModel(): ImportDuplicateConflict {
+        return ImportDuplicateConflict(
+            token = token,
+            existingTitle = existingTitle,
+            existingAuthors = existingAuthors,
+            incomingTitle = incomingTitle,
+            incomingAuthors = incomingAuthors,
+        )
+    }
+
+    private fun publishImportNotice(counts: ImportCounts) {
+        _notice.value = LibraryNotice(
+            type = when {
+                counts.imported > 0 && counts.duplicates == 0 && counts.failed == 0 -> {
+                    LibraryNoticeType.IMPORTED
+                }
+                counts.imported == 0 && counts.duplicates > 0 && counts.failed == 0 -> {
+                    LibraryNoticeType.DUPLICATE
+                }
+                counts.imported == 0 && counts.failed > 0 && counts.duplicates == 0 -> {
+                    LibraryNoticeType.FAILED
+                }
+                else -> LibraryNoticeType.MIXED
+            },
+        )
+    }
+
+    override fun onCleared() {
+        pendingEpubImports.values.forEach(epubImporter::discard)
+        pendingEpubImports.clear()
+        isResolvingImportConflicts = false
+        super.onCleared()
+    }
+
     private fun hasUsableOpenAiApiProvider(): Boolean {
         val current = _state.value
         return current.aiProviderMode == AiProviderMode.OPENAI_API && current.hasOpenAiApiKey
@@ -1267,6 +1397,12 @@ private enum class GoogleDriveOperation {
     DeleteBackup,
     LoadBackupStats,
 }
+
+private data class ImportCounts(
+    val imported: Int = 0,
+    val duplicates: Int = 0,
+    val failed: Int = 0,
+)
 
 private data class SyncStateSnapshot(
     val provider: SyncProvider,
