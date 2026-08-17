@@ -134,13 +134,17 @@ internal class PortableLibrarySyncEngine(
             syncedAt = syncedAt,
             onFinished = { action, result, error ->
                 downloadProgress += 1
+                var committedBookId: String? = null
+                var removedLocalBookId: String? = null
                 if (error == null) {
                     counters.downloadedBooks += 1
+                    committedBookId = action.remoteBook.bookId
                     if (result?.recoveredStateBundle == true) {
                         missingRemoteBookIds += action.remoteBook.bookId
                     }
                     action.duplicateBookToRemove?.let { duplicateBook ->
                         removeLocalDuplicateBook(duplicateBook)
+                        removedLocalBookId = duplicateBook.book.id
                         pendingStatusUpdates.syncedBookIds += action.remoteBook.bookId
                     }
                 } else if (
@@ -167,6 +171,8 @@ internal class PortableLibrarySyncEngine(
                         phase = ManualSyncPhase.DOWNLOADING,
                         current = downloadProgress,
                         total = remoteDownloadActions.size,
+                        committedBookId = committedBookId,
+                        removedLocalBookId = removedLocalBookId,
                     ),
                 )
             },

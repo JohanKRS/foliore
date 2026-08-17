@@ -38,6 +38,10 @@ class SyncService(
         return syncSettingsRepository.cachedGoogleDriveBackupStats()
     }
 
+    fun pendingGoogleDriveRemoteLibraryRecovery(): GoogleDriveRemoteLibraryRecovery? {
+        return syncSettingsRepository.pendingGoogleDriveRemoteLibraryRecovery()
+    }
+
     fun autoSyncEnabled(): Boolean {
         return syncSettingsRepository.isAutoSyncEnabled()
     }
@@ -54,10 +58,16 @@ class SyncService(
         syncSettingsRepository.setAutoSyncWifiOnly(enabled)
     }
 
-    fun syncNow(onProgress: (ManualSyncProgress) -> Unit = {}): ManualSyncResult {
+    fun syncNow(
+        allowGoogleDriveLibraryRecreation: Boolean = false,
+        onProgress: (ManualSyncProgress) -> Unit = {},
+    ): ManualSyncResult {
         return when (syncSettingsRepository.activeProvider()) {
             SyncProvider.MANUAL_FOLDER -> manualSyncService.syncNow(onProgress)
-            SyncProvider.GOOGLE_DRIVE_APPDATA -> googleDriveSyncService.syncNow(onProgress)
+            SyncProvider.GOOGLE_DRIVE_APPDATA -> googleDriveSyncService.syncNow(
+                onProgress = onProgress,
+                allowRemoteLibraryRecreation = allowGoogleDriveLibraryRecreation,
+            )
             SyncProvider.NONE -> ManualSyncResult.NotConfigured
         }
     }
@@ -110,12 +120,17 @@ class SyncService(
         }
     }
 
-    fun deleteGoogleDriveBackup(): GoogleDriveConnectionResult {
+    fun deleteGoogleDriveBackup(
+        onProgress: (ManualSyncProgress) -> Unit = {},
+    ): GoogleDriveConnectionResult {
         return when (val authorization = googleDriveAuthService.authorize()) {
             is GoogleDriveAuthorization.Authorized -> {
-                val result = googleDriveSyncService.deleteBackup(authorization.accessToken)
+                val result = googleDriveSyncService.deleteBackup(
+                    accessToken = authorization.accessToken,
+                    onProgress = onProgress,
+                )
                 if (result is ManualSyncResult.Synced) {
-                    syncSettingsRepository.setCachedGoogleDriveBackupStats(GoogleDriveBackupStats.Empty)
+                    syncSettingsRepository.setCachedGoogleDriveBackupStats(GoogleDriveBackupStats.Deleted)
                     GoogleDriveConnectionResult.DeletedBackup
                 } else {
                     GoogleDriveConnectionResult.SyncFailed(result)

@@ -19,6 +19,7 @@ import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -101,6 +102,7 @@ import com.foliore.android.ui.library.EditorialDivider
 import com.foliore.android.ui.library.BookGridScrollState
 import com.foliore.android.ui.library.LibraryTopChromeOverlay
 import com.foliore.android.ui.library.LibraryRoute
+import com.foliore.android.ui.library.GoogleDriveRemoteLibraryDialog
 import com.foliore.android.ui.library.SettingsRoute
 import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.library.SyncProgressStatusLine
@@ -157,6 +159,20 @@ fun FolioreNavHost(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
         onResult = libraryViewModel::importUris,
     )
+    var launchGoogleDriveResolution: (android.app.PendingIntent) -> Unit = {}
+    val googleDriveAuthorizationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        libraryViewModel.completeGoogleDriveAuthorization(
+            result.data,
+            launchGoogleDriveResolution,
+        )
+    }
+    launchGoogleDriveResolution = { pendingIntent ->
+        googleDriveAuthorizationLauncher.launch(
+            IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+        )
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val openTabletWorkspace = maxWidth >= 840.dp
@@ -330,6 +346,19 @@ fun FolioreNavHost(
                 }
             }
         }
+    }
+
+    libraryState.googleDriveRemoteLibraryRecovery?.let { recovery ->
+        GoogleDriveRemoteLibraryDialog(
+            recovery = recovery,
+            isWorking = libraryState.isSyncing || libraryState.isGoogleDriveBackupStatsLoading,
+            progress = libraryState.syncProgress,
+            onRecreateOnDrive = libraryViewModel::recreateGoogleDriveLibrary,
+            onKeepOnlyOnDevice = {
+                libraryViewModel.clearGoogleDriveAndDisconnect(launchGoogleDriveResolution)
+            },
+            onDismiss = libraryViewModel::dismissGoogleDriveRemoteLibraryRecovery,
+        )
     }
 }
 

@@ -16,7 +16,15 @@ data class GoogleDriveBackupStats(
     val recognizedRootItems: Int,
     val unknownRootItems: Int,
     val updatedAt: String?,
+    val remoteItems: Int = 0,
+    val deletionMarkerPresent: Boolean = false,
 ) {
+    val hasStoredLibraryData: Boolean
+        get() = remoteItems > 0 || remoteFiles > 0 || rootItems > 0
+
+    val hasOrphanedFiles: Boolean
+        get() = !hasBackup && hasStoredLibraryData
+
     companion object {
         val Empty = GoogleDriveBackupStats(
             hasBackup = false,
@@ -28,8 +36,15 @@ data class GoogleDriveBackupStats(
             unknownRootItems = 0,
             updatedAt = null,
         )
+
+        val Deleted = Empty.copy(deletionMarkerPresent = true)
     }
 }
+
+data class GoogleDriveRemoteLibraryRecovery(
+    val remainingFiles: Int,
+    val remainingBytes: Long,
+)
 
 internal object GoogleDriveBackupStatsCacheCodec {
     private val json = Json {

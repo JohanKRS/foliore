@@ -20,6 +20,7 @@ class FolioreSyncWorker(
             ManualSyncResult.NotConfigured,
             ManualSyncResult.GoogleDriveAuthorizationRequired,
             ManualSyncResult.GoogleDriveConfigurationRequired,
+            is ManualSyncResult.GoogleDriveRemoteLibraryRemoved,
             ManualSyncResult.FolderLooksLikeLibrarySubfolder,
             ManualSyncResult.FolderUnavailable -> Result.success()
 

@@ -17,7 +17,7 @@ class DebugSyncReceiver : BroadcastReceiver() {
         Thread {
             try {
                 Log.d(TAG, "debug sync start")
-                val result = AppContainer(context).syncService.syncNow(::logProgress)
+                val result = AppContainer(context).syncService.syncNow(onProgress = ::logProgress)
                 Log.d(TAG, "debug sync result=${result.toDebugString()}")
             } catch (error: Exception) {
                 Log.e(TAG, "debug sync failed", error)
@@ -53,6 +53,10 @@ class DebugSyncReceiver : BroadcastReceiver() {
             ManualSyncResult.GoogleDriveConfigurationRequired -> "GoogleDriveConfigurationRequired"
             ManualSyncResult.GoogleDriveQuotaExceeded -> "GoogleDriveQuotaExceeded"
             ManualSyncResult.GoogleDriveUnavailable -> "GoogleDriveUnavailable"
+            is ManualSyncResult.GoogleDriveRemoteLibraryRemoved -> {
+                "GoogleDriveRemoteLibraryRemoved remainingFiles=$remainingFiles " +
+                    "remainingBytes=$remainingBytes"
+            }
             ManualSyncResult.Failed -> "Failed"
         }
     }

@@ -257,6 +257,7 @@
     <string name="settings_sync_google_drive_backup_status_refreshing">Updating information in the background…</string>
     <string name="settings_sync_google_drive_backup_status_unknown">This account could not be checked yet.</string>
     <string name="settings_sync_google_drive_backup_status_empty">No Foliore library was found in this account.</string>
+    <string name="settings_sync_google_drive_backup_status_orphaned">Library missing. %1$d Foliore files remain (%2$s).</string>
     <string name="settings_sync_google_drive_backup_status_summary">%1$d books • %2$d files • %3$s</string>
     <string name="settings_sync_google_drive_backup_status_updated">Last updated: %1$s</string>
     <string name="settings_sync_google_drive_backup_status_unknown_items">%1$d old or unknown items will also be removed when the library is deleted.</string>
@@ -266,10 +267,17 @@
     <string name="settings_sync_google_drive_existing_use">Use the Drive library</string>
     <string name="settings_sync_google_drive_existing_replace">Use this device’s library</string>
     <string name="settings_sync_google_drive_delete_backup">Delete Drive library</string>
-    <string name="settings_sync_google_drive_delete_backup_title">Use this device’s library?</string>
-    <string name="settings_sync_google_drive_delete_backup_body">This account’s library will be deleted from Google Drive. Regular Drive files and books on this device will not be deleted. On the next sync, books from this device will create a new library on Drive.</string>
-    <string name="settings_sync_google_drive_delete_backup_body_with_stats">The library with %1$d books will be deleted from Google Drive. Regular Drive files and books on this device will not be deleted. On the next sync, books from this device will create a new library on Drive.</string>
-    <string name="settings_sync_google_drive_delete_backup_confirm">Use this device’s library</string>
+    <string name="settings_sync_google_drive_delete_backup_title">Delete the Drive library?</string>
+    <string name="settings_sync_google_drive_delete_backup_body">The Foliore library will be removed from this Google Drive account. Regular Drive files and books on this device will not be deleted. Sync will pause until you choose what to do.</string>
+    <string name="settings_sync_google_drive_delete_backup_body_with_stats">The library with %1$d books will be removed from Google Drive. Regular Drive files and books on this device will not be deleted. Sync will pause until you choose what to do.</string>
+    <string name="settings_sync_google_drive_delete_backup_confirm">Delete from Drive</string>
+    <string name="sync_google_drive_remote_removed_title">The Drive library changed</string>
+    <string name="sync_google_drive_remote_removed_body">The synced library was removed or is now empty in Google Drive. Sync has been paused so this device does not upload all its books without your confirmation.</string>
+    <string name="sync_google_drive_remote_removed_leftovers">%1$d Foliore files still remain on Drive (%2$s). They will be cleared if you recreate the library.</string>
+    <string name="sync_google_drive_remote_removed_recreate">Recreate on Drive from this device</string>
+    <string name="sync_google_drive_remote_removed_recreate_hint">Clears the remaining sync files and uploads this device’s library.</string>
+    <string name="sync_google_drive_remote_removed_keep_local">Keep only on this device</string>
+    <string name="sync_google_drive_remote_removed_keep_local_hint">Clears the remaining sync files and disconnects Google Drive. Books on this device will not be deleted.</string>
     <string name="settings_sync_auto">Automatic sync</string>
     <string name="settings_sync_auto_description">Syncs local changes in the background.</string>
     <string name="settings_sync_wifi_only">Wi-Fi only</string>
@@ -286,6 +294,7 @@
     <string name="settings_sync_disconnect">Disconnect sync</string>
     <string name="settings_sync_last_result">Last result: %1$d sent, %2$d received, %3$d conflicts.</string>
     <string name="sync_progress_preparing">Preparing sync…</string>
+    <string name="sync_progress_deleting_remote">Deleting Drive library…</string>
     <string name="sync_progress_checking_remote">Checking remote library…</string>
     <string name="sync_progress_downloading">Downloading changes…</string>
     <string name="sync_progress_uploading">Uploading changes…</string>

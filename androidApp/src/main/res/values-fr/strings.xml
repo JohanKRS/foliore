@@ -257,6 +257,7 @@
     <string name="settings_sync_google_drive_backup_status_refreshing">Mise à jour des informations en arrière-plan…</string>
     <string name="settings_sync_google_drive_backup_status_unknown">Ce compte n’a pas encore pu être vérifié.</string>
     <string name="settings_sync_google_drive_backup_status_empty">Aucune bibliothèque Foliore trouvée sur ce compte.</string>
+    <string name="settings_sync_google_drive_backup_status_orphaned">Bibliothèque absente. Il reste %1$d fichiers Foliore (%2$s).</string>
     <string name="settings_sync_google_drive_backup_status_summary">%1$d livres • %2$d fichiers • %3$s</string>
     <string name="settings_sync_google_drive_backup_status_updated">Dernière mise à jour : %1$s</string>
     <string name="settings_sync_google_drive_backup_status_unknown_items">%1$d éléments anciens ou inconnus seront également supprimés avec la bibliothèque.</string>
@@ -266,10 +267,17 @@
     <string name="settings_sync_google_drive_existing_use">Utiliser celle de Drive</string>
     <string name="settings_sync_google_drive_existing_replace">Utiliser celle de cet appareil</string>
     <string name="settings_sync_google_drive_delete_backup">Supprimer la bibliothèque Drive</string>
-    <string name="settings_sync_google_drive_delete_backup_title">Utiliser la bibliothèque de cet appareil ?</string>
-    <string name="settings_sync_google_drive_delete_backup_body">La bibliothèque de ce compte sera supprimée de Google Drive. Les fichiers ordinaires de Drive et les livres de cet appareil ne seront pas supprimés. À la prochaine synchronisation, les livres de cet appareil créeront une nouvelle bibliothèque sur Drive.</string>
-    <string name="settings_sync_google_drive_delete_backup_body_with_stats">La bibliothèque de %1$d livres sera supprimée de Google Drive. Les fichiers ordinaires de Drive et les livres de cet appareil ne seront pas supprimés. À la prochaine synchronisation, les livres de cet appareil créeront une nouvelle bibliothèque sur Drive.</string>
-    <string name="settings_sync_google_drive_delete_backup_confirm">Utiliser celle de cet appareil</string>
+    <string name="settings_sync_google_drive_delete_backup_title">Supprimer la bibliothèque Drive ?</string>
+    <string name="settings_sync_google_drive_delete_backup_body">La bibliothèque Foliore sera supprimée de ce compte Google Drive. Les fichiers ordinaires de Drive et les livres de cet appareil ne seront pas supprimés. La synchronisation restera en pause jusqu’à ce que vous choisissiez quoi faire.</string>
+    <string name="settings_sync_google_drive_delete_backup_body_with_stats">La bibliothèque de %1$d livres sera supprimée de Google Drive. Les fichiers ordinaires de Drive et les livres de cet appareil ne seront pas supprimés. La synchronisation restera en pause jusqu’à ce que vous choisissiez quoi faire.</string>
+    <string name="settings_sync_google_drive_delete_backup_confirm">Supprimer de Drive</string>
+    <string name="sync_google_drive_remote_removed_title">La bibliothèque Drive a changé</string>
+    <string name="sync_google_drive_remote_removed_body">La bibliothèque synchronisée a été supprimée ou est maintenant vide dans Google Drive. La synchronisation a été mise en pause pour éviter d’envoyer tous les livres de cet appareil sans votre accord.</string>
+    <string name="sync_google_drive_remote_removed_leftovers">Il reste %1$d fichiers Foliore sur Drive (%2$s). Ils seront effacés si vous recréez la bibliothèque.</string>
+    <string name="sync_google_drive_remote_removed_recreate">Recréer sur Drive depuis cet appareil</string>
+    <string name="sync_google_drive_remote_removed_recreate_hint">Efface les fichiers de synchronisation restants et envoie la bibliothèque de cet appareil.</string>
+    <string name="sync_google_drive_remote_removed_keep_local">Conserver uniquement sur cet appareil</string>
+    <string name="sync_google_drive_remote_removed_keep_local_hint">Efface les fichiers de synchronisation restants et déconnecte Google Drive. Aucun livre de cet appareil ne sera supprimé.</string>
     <string name="settings_sync_auto">Synchronisation automatique</string>
     <string name="settings_sync_auto_description">Synchronise les modifications locales en arrière-plan.</string>
     <string name="settings_sync_wifi_only">Wi-Fi uniquement</string>
@@ -286,6 +294,7 @@
     <string name="settings_sync_disconnect">Déconnecter la synchronisation</string>
     <string name="settings_sync_last_result">Dernier résultat : %1$d envoyés, %2$d reçus, %3$d conflits.</string>
     <string name="sync_progress_preparing">Préparation de la synchronisation…</string>
+    <string name="sync_progress_deleting_remote">Suppression de la bibliothèque Drive…</string>
     <string name="sync_progress_checking_remote">Vérification de la bibliothèque distante…</string>
     <string name="sync_progress_downloading">Téléchargement des modifications…</string>
     <string name="sync_progress_uploading">Envoi des modifications…</string>

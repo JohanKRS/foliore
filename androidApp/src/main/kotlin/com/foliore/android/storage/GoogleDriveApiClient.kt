@@ -223,7 +223,7 @@ internal class GoogleDriveApiClient(
                 ?.let { token -> "&pageToken=${token.urlEncoded()}" }
                 .orEmpty()
             val url = "$FILES_ENDPOINT?spaces=appDataFolder&pageSize=1000" +
-                "&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size)" +
+                "&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)" +
                 "&q=${query.urlEncoded()}$pageTokenParameter"
             val page = getJson<DriveFileList>(url)
             files += page.files
@@ -359,6 +359,7 @@ internal data class DriveFileMetadata(
     val mimeType: String,
     val modifiedTime: String? = null,
     @SerialName("size") val sizeText: String? = null,
+    val parents: List<String> = emptyList(),
 )
 
 internal class GoogleDriveHttpException(

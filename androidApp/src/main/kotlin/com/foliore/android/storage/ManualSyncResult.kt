@@ -18,6 +18,10 @@ sealed interface ManualSyncResult {
     data object GoogleDriveConfigurationRequired : ManualSyncResult
     data object GoogleDriveQuotaExceeded : ManualSyncResult
     data object GoogleDriveUnavailable : ManualSyncResult
+    data class GoogleDriveRemoteLibraryRemoved(
+        val remainingFiles: Int,
+        val remainingBytes: Long,
+    ) : ManualSyncResult
     data object Failed : ManualSyncResult
 }
 
@@ -25,10 +29,13 @@ data class ManualSyncProgress(
     val phase: ManualSyncPhase,
     val current: Int = 0,
     val total: Int = 0,
+    val committedBookId: String? = null,
+    val removedLocalBookId: String? = null,
 )
 
 enum class ManualSyncPhase {
     PREPARING,
+    DELETING_REMOTE,
     CHECKING_REMOTE,
     DOWNLOADING,
     UPLOADING,

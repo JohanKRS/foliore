@@ -257,6 +257,7 @@
     <string name="settings_sync_google_drive_backup_status_refreshing">正在后台更新信息…</string>
     <string name="settings_sync_google_drive_backup_status_unknown">暂时无法检查此账号。</string>
     <string name="settings_sync_google_drive_backup_status_empty">此账号中未找到 Foliore 书库。</string>
+    <string name="settings_sync_google_drive_backup_status_orphaned">书库不存在，但仍有 %1$d 个 Foliore 文件（%2$s）。</string>
     <string name="settings_sync_google_drive_backup_status_summary">%1$d 本书 • %2$d 个文件 • %3$s</string>
     <string name="settings_sync_google_drive_backup_status_updated">上次更新：%1$s</string>
     <string name="settings_sync_google_drive_backup_status_unknown_items">删除书库时，还会移除 %1$d 个旧项目或未知项目。</string>
@@ -266,10 +267,17 @@
     <string name="settings_sync_google_drive_existing_use">使用 Drive 中的书库</string>
     <string name="settings_sync_google_drive_existing_replace">使用此设备上的书库</string>
     <string name="settings_sync_google_drive_delete_backup">删除 Drive 书库</string>
-    <string name="settings_sync_google_drive_delete_backup_title">使用此设备上的书库？</string>
-    <string name="settings_sync_google_drive_delete_backup_body">此账号的书库将从 Google Drive 中删除。Drive 中的普通文件和此设备上的图书不会被删除。下次同步时，此设备上的图书会在 Drive 中创建一个新书库。</string>
-    <string name="settings_sync_google_drive_delete_backup_body_with_stats">包含 %1$d 本书的书库将从 Google Drive 中删除。Drive 中的普通文件和此设备上的图书不会被删除。下次同步时，此设备上的图书会在 Drive 中创建一个新书库。</string>
-    <string name="settings_sync_google_drive_delete_backup_confirm">使用此设备上的书库</string>
+    <string name="settings_sync_google_drive_delete_backup_title">删除 Drive 中的书库？</string>
+    <string name="settings_sync_google_drive_delete_backup_body">Foliore 书库将从此 Google Drive 账号中删除。Drive 中的普通文件和此设备上的图书不会被删除。在你选择下一步操作前，同步将保持暂停。</string>
+    <string name="settings_sync_google_drive_delete_backup_body_with_stats">包含 %1$d 本书的书库将从 Google Drive 中删除。Drive 中的普通文件和此设备上的图书不会被删除。在你选择下一步操作前，同步将保持暂停。</string>
+    <string name="settings_sync_google_drive_delete_backup_confirm">从 Drive 中删除</string>
+    <string name="sync_google_drive_remote_removed_title">Drive 书库已发生变化</string>
+    <string name="sync_google_drive_remote_removed_body">已同步的书库已从 Google Drive 中删除或变为空书库。同步已暂停，以免未经确认就上传此设备上的所有图书。</string>
+    <string name="sync_google_drive_remote_removed_leftovers">Drive 中仍有 %1$d 个 Foliore 文件（%2$s）。重新创建书库时会将它们清除。</string>
+    <string name="sync_google_drive_remote_removed_recreate">用此设备在 Drive 中重新创建</string>
+    <string name="sync_google_drive_remote_removed_recreate_hint">清除剩余的同步文件，并上传此设备上的书库。</string>
+    <string name="sync_google_drive_remote_removed_keep_local">仅保留在此设备上</string>
+    <string name="sync_google_drive_remote_removed_keep_local_hint">清除剩余的同步文件并断开 Google Drive。不会删除此设备上的任何图书。</string>
     <string name="settings_sync_auto">自动同步</string>
     <string name="settings_sync_auto_description">在后台同步本地更改。</string>
     <string name="settings_sync_wifi_only">仅限 Wi-Fi</string>
@@ -286,6 +294,7 @@
     <string name="settings_sync_disconnect">断开同步</string>
     <string name="settings_sync_last_result">上次结果：已发送 %1$d 项，已接收 %2$d 项，%3$d 个冲突。</string>
     <string name="sync_progress_preparing">正在准备同步…</string>
+    <string name="sync_progress_deleting_remote">正在删除 Drive 书库…</string>
     <string name="sync_progress_checking_remote">正在检查远程书库…</string>
     <string name="sync_progress_downloading">正在下载更改…</string>
     <string name="sync_progress_uploading">正在上传更改…</string>

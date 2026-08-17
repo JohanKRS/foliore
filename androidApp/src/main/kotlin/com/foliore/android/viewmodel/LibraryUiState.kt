@@ -3,6 +3,7 @@ package com.foliore.android.viewmodel
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiProviderMode
 import com.foliore.android.storage.GoogleDriveBackupStats
+import com.foliore.android.storage.GoogleDriveRemoteLibraryRecovery
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
 import com.foliore.shared.domain.LibraryBook
@@ -19,6 +20,7 @@ data class LibraryUiState(
     val googleDriveAccountLabel: String? = null,
     val isGoogleDriveConnected: Boolean = false,
     val googleDriveBackupStats: GoogleDriveBackupStats? = null,
+    val googleDriveRemoteLibraryRecovery: GoogleDriveRemoteLibraryRecovery? = null,
     val isGoogleDriveBackupStatsLoading: Boolean = false,
     val isAutoSyncEnabled: Boolean = false,
     val isAutoSyncWifiOnly: Boolean = true,
@@ -126,6 +128,7 @@ data class SyncProgress(
 enum class SyncProgressPhase {
     IMPORTING,
     PREPARING,
+    DELETING_REMOTE,
     CHECKING_REMOTE,
     DOWNLOADING,
     UPLOADING,

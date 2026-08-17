@@ -257,6 +257,7 @@
     <string name="settings_sync_google_drive_backup_status_refreshing">バックグラウンドで情報を更新中…</string>
     <string name="settings_sync_google_drive_backup_status_unknown">このアカウントはまだ確認できていません。</string>
     <string name="settings_sync_google_drive_backup_status_empty">このアカウントにFolioreライブラリは見つかりませんでした。</string>
+    <string name="settings_sync_google_drive_backup_status_orphaned">ライブラリがありません。Folioreのファイルが%1$d個残っています（%2$s）。</string>
     <string name="settings_sync_google_drive_backup_status_summary">%1$d冊 • %2$dファイル • %3$s</string>
     <string name="settings_sync_google_drive_backup_status_updated">最終更新：%1$s</string>
     <string name="settings_sync_google_drive_backup_status_unknown_items">ライブラリを削除すると、古い項目または不明な項目%1$d件も削除されます。</string>
@@ -266,10 +267,17 @@
     <string name="settings_sync_google_drive_existing_use">Driveのライブラリを使用</string>
     <string name="settings_sync_google_drive_existing_replace">この端末のライブラリを使用</string>
     <string name="settings_sync_google_drive_delete_backup">Driveのライブラリを削除</string>
-    <string name="settings_sync_google_drive_delete_backup_title">この端末のライブラリを使用しますか？</string>
-    <string name="settings_sync_google_drive_delete_backup_body">このアカウントのライブラリをGoogle Driveから削除します。通常のDriveファイルと、この端末の本は削除されません。次回の同期時に、この端末の本からDriveに新しいライブラリが作成されます。</string>
-    <string name="settings_sync_google_drive_delete_backup_body_with_stats">%1$d冊のライブラリをGoogle Driveから削除します。通常のDriveファイルと、この端末の本は削除されません。次回の同期時に、この端末の本からDriveに新しいライブラリが作成されます。</string>
-    <string name="settings_sync_google_drive_delete_backup_confirm">この端末のライブラリを使用</string>
+    <string name="settings_sync_google_drive_delete_backup_title">Driveのライブラリを削除しますか？</string>
+    <string name="settings_sync_google_drive_delete_backup_body">FolioreライブラリをこのGoogle Driveアカウントから削除します。通常のDriveファイルと、この端末の本は削除されません。次の操作を選ぶまで同期は一時停止します。</string>
+    <string name="settings_sync_google_drive_delete_backup_body_with_stats">%1$d冊のライブラリをGoogle Driveから削除します。通常のDriveファイルと、この端末の本は削除されません。次の操作を選ぶまで同期は一時停止します。</string>
+    <string name="settings_sync_google_drive_delete_backup_confirm">Driveから削除</string>
+    <string name="sync_google_drive_remote_removed_title">Driveのライブラリが変更されました</string>
+    <string name="sync_google_drive_remote_removed_body">同期していたライブラリがGoogle Driveから削除されたか、空になっています。確認なしにこの端末の本をすべてアップロードしないよう、同期を一時停止しました。</string>
+    <string name="sync_google_drive_remote_removed_leftovers">DriveにFolioreのファイルが%1$d個残っています（%2$s）。ライブラリを再作成すると削除されます。</string>
+    <string name="sync_google_drive_remote_removed_recreate">この端末からDriveに再作成</string>
+    <string name="sync_google_drive_remote_removed_recreate_hint">残っている同期ファイルを削除し、この端末のライブラリをアップロードします。</string>
+    <string name="sync_google_drive_remote_removed_keep_local">この端末だけに残す</string>
+    <string name="sync_google_drive_remote_removed_keep_local_hint">残っている同期ファイルを削除してGoogle Driveとの接続を解除します。この端末の本は削除されません。</string>
     <string name="settings_sync_auto">自動同期</string>
     <string name="settings_sync_auto_description">ローカルの変更をバックグラウンドで同期します。</string>
     <string name="settings_sync_wifi_only">Wi-Fi接続時のみ</string>
@@ -286,6 +294,7 @@
     <string name="settings_sync_disconnect">同期を解除</string>
     <string name="settings_sync_last_result">前回の結果：送信%1$d件、受信%2$d件、競合%3$d件。</string>
     <string name="sync_progress_preparing">同期を準備中…</string>
+    <string name="sync_progress_deleting_remote">Driveのライブラリを削除中…</string>
     <string name="sync_progress_checking_remote">リモートライブラリを確認中…</string>
     <string name="sync_progress_downloading">変更をダウンロード中…</string>
     <string name="sync_progress_uploading">変更をアップロード中…</string>

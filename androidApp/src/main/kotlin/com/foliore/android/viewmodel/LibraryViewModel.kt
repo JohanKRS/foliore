@@ -37,6 +37,7 @@ import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.GoogleDriveBackupStatsResult
 import com.foliore.android.storage.GoogleDriveAuthorizationFailure
 import com.foliore.android.storage.GoogleDriveConnectionResult
+import com.foliore.android.storage.GoogleDriveRemoteLibraryRecovery
 import com.foliore.android.storage.SyncProvider
 import com.foliore.android.storage.SyncService
 import com.foliore.android.storage.SyncWorkScheduler
@@ -80,6 +81,12 @@ class LibraryViewModel(
             } else {
                 null
             },
+            googleDriveRemoteLibraryRecovery =
+                if (initialSyncProvider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
+                    syncService.pendingGoogleDriveRemoteLibraryRecovery()
+                } else {
+                    null
+                },
             isAutoSyncEnabled = syncService.autoSyncEnabled(),
             isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
             aiProviderMode = aiPreferenceRepository.providerMode.value,
@@ -902,7 +909,19 @@ class LibraryViewModel(
     }
 
     fun syncNow() {
-        if (_state.value.hasActiveProgress) return
+        performSync(allowGoogleDriveLibraryRecreation = false)
+    }
+
+    fun recreateGoogleDriveLibrary() {
+        performSync(allowGoogleDriveLibraryRecreation = true)
+    }
+
+    fun dismissGoogleDriveRemoteLibraryRecovery() {
+        _state.update { it.copy(googleDriveRemoteLibraryRecovery = null) }
+    }
+
+    private fun performSync(allowGoogleDriveLibraryRecreation: Boolean) {
+        if (_state.value.hasActiveProgress || _state.value.isGoogleDriveBackupStatsLoading) return
 
         viewModelScope.launch {
             _state.update {
@@ -912,9 +931,25 @@ class LibraryViewModel(
                 )
             }
             val result = withContext(Dispatchers.IO) {
-                syncService.syncNow { progress ->
+                syncService.syncNow(
+                    allowGoogleDriveLibraryRecreation = allowGoogleDriveLibraryRecreation,
+                ) { progress ->
+                    val committedBook = progress.committedBookId?.let { bookId ->
+                        libraryRepository.getBook(bookId)
+                    }
+                    val refreshedBooks = if (
+                        progress.committedBookId != null && committedBook == null
+                    ) {
+                        libraryRepository.getBooks()
+                    } else {
+                        null
+                    }
                     _state.update { current ->
-                        current.copy(syncProgress = progress.toUiProgress())
+                        val books = refreshedBooks ?: current.books.withCommittedSyncBook(
+                            committedBook = committedBook,
+                            removedLocalBookId = progress.removedLocalBookId,
+                        )
+                        current.withBooks(books).copy(syncProgress = progress.toUiProgress())
                     }
                 }
             }
@@ -936,6 +971,13 @@ class LibraryViewModel(
                     syncFolderLabel = folderLabel,
                     googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
                     isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
+                    googleDriveRemoteLibraryRecovery = when (result) {
+                        is ManualSyncResult.GoogleDriveRemoteLibraryRemoved -> {
+                            syncService.pendingGoogleDriveRemoteLibraryRecovery()
+                        }
+                        is ManualSyncResult.Synced -> null
+                        else -> it.googleDriveRemoteLibraryRecovery
+                    },
                     aiCoverPromptRecords = aiCoverPromptRecords,
                     googleDriveBackupStats = it.googleDriveBackupStats,
                     lastSyncSummary = if (result is ManualSyncResult.Synced) {
@@ -949,7 +991,9 @@ class LibraryViewModel(
                     },
                 )
             }
-            _notice.value = LibraryNotice(result.toNoticeType())
+            if (result !is ManualSyncResult.GoogleDriveRemoteLibraryRemoved) {
+                _notice.value = LibraryNotice(result.toNoticeType())
+            }
             if (
                 result is ManualSyncResult.Synced &&
                 syncService.activeProvider() == SyncProvider.GOOGLE_DRIVE_APPDATA
@@ -973,6 +1017,7 @@ class LibraryViewModel(
                     isSyncing = false,
                     syncProgress = null,
                     googleDriveBackupStats = null,
+                    googleDriveRemoteLibraryRecovery = null,
                     isGoogleDriveBackupStatsLoading = false,
                 )
             }
@@ -1003,13 +1048,28 @@ class LibraryViewModel(
                     handleGoogleDriveConnectionResult(result, onResolutionRequired)
                 }
                 GoogleDriveOperation.DeleteBackup -> {
+                    beginGoogleDriveDeletionProgress()
                     val result = withContext(Dispatchers.IO) {
                         when (val completed = syncService.completeGoogleDriveConnection(data)) {
-                            GoogleDriveConnectionResult.Connected -> syncService.deleteGoogleDriveBackup()
+                            GoogleDriveConnectionResult.Connected -> {
+                                syncService.deleteGoogleDriveBackup(::updateGoogleDriveDeletionProgress)
+                            }
                             else -> completed
                         }
                     }
                     handleGoogleDriveConnectionResult(result, onResolutionRequired)
+                }
+                GoogleDriveOperation.DeleteBackupAndDisconnect -> {
+                    beginGoogleDriveDeletionProgress()
+                    val result = withContext(Dispatchers.IO) {
+                        when (val completed = syncService.completeGoogleDriveConnection(data)) {
+                            GoogleDriveConnectionResult.Connected -> {
+                                syncService.deleteGoogleDriveBackup(::updateGoogleDriveDeletionProgress)
+                            }
+                            else -> completed
+                        }
+                    }
+                    handleGoogleDriveCleanupAndDisconnectResult(result, onResolutionRequired)
                 }
                 GoogleDriveOperation.LoadBackupStats -> {
                     _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
@@ -1017,7 +1077,7 @@ class LibraryViewModel(
                         when (val completed = syncService.completeGoogleDriveConnection(data)) {
                             GoogleDriveConnectionResult.Connected -> syncService.googleDriveBackupStats()
                             GoogleDriveConnectionResult.DeletedBackup -> {
-                                GoogleDriveBackupStatsResult.Loaded(GoogleDriveBackupStats.Empty)
+                                GoogleDriveBackupStatsResult.Loaded(GoogleDriveBackupStats.Deleted)
                             }
                             is GoogleDriveConnectionResult.Failed -> {
                                 GoogleDriveBackupStatsResult.SyncFailed(
@@ -1049,15 +1109,28 @@ class LibraryViewModel(
     }
 
     fun deleteGoogleDriveBackup(onResolutionRequired: (PendingIntent) -> Unit) {
-        if (_state.value.isGoogleDriveBackupStatsLoading) return
+        if (_state.value.isGoogleDriveBackupStatsLoading || _state.value.hasActiveProgress) return
 
         pendingGoogleDriveOperation = GoogleDriveOperation.DeleteBackup
-        _state.update { it.copy(isGoogleDriveBackupStatsLoading = true) }
+        beginGoogleDriveDeletionProgress()
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                syncService.deleteGoogleDriveBackup()
+                syncService.deleteGoogleDriveBackup(::updateGoogleDriveDeletionProgress)
             }
             handleGoogleDriveConnectionResult(result, onResolutionRequired)
+        }
+    }
+
+    fun clearGoogleDriveAndDisconnect(onResolutionRequired: (PendingIntent) -> Unit) {
+        if (_state.value.isGoogleDriveBackupStatsLoading || _state.value.hasActiveProgress) return
+
+        pendingGoogleDriveOperation = GoogleDriveOperation.DeleteBackupAndDisconnect
+        beginGoogleDriveDeletionProgress()
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                syncService.deleteGoogleDriveBackup(::updateGoogleDriveDeletionProgress)
+            }
+            handleGoogleDriveCleanupAndDisconnectResult(result, onResolutionRequired)
         }
     }
 
@@ -1092,6 +1165,26 @@ class LibraryViewModel(
         _notice.value = null
     }
 
+    private fun beginGoogleDriveDeletionProgress() {
+        _state.update {
+            it.copy(
+                isSyncing = true,
+                syncProgress = SyncProgress(SyncProgressPhase.DELETING_REMOTE),
+                isGoogleDriveBackupStatsLoading = true,
+            )
+        }
+    }
+
+    private fun updateGoogleDriveDeletionProgress(progress: ManualSyncProgress) {
+        _state.update {
+            it.copy(
+                isSyncing = true,
+                syncProgress = progress.toUiProgress(),
+                isGoogleDriveBackupStatsLoading = true,
+            )
+        }
+    }
+
     private fun handleGoogleDriveConnectionResult(
         result: GoogleDriveConnectionResult,
         onResolutionRequired: (PendingIntent) -> Unit,
@@ -1102,7 +1195,11 @@ class LibraryViewModel(
                     it.copy(
                         googleDriveBackupStats = syncService.cachedGoogleDriveBackupStats()
                             ?: it.googleDriveBackupStats,
+                        googleDriveRemoteLibraryRecovery =
+                            syncService.pendingGoogleDriveRemoteLibraryRecovery(),
                         isGoogleDriveBackupStatsLoading = false,
+                        isSyncing = false,
+                        syncProgress = null,
                     )
                 }
                 refreshSyncState()
@@ -1112,15 +1209,25 @@ class LibraryViewModel(
             GoogleDriveConnectionResult.DeletedBackup -> {
                 _state.update {
                     it.copy(
-                        googleDriveBackupStats = GoogleDriveBackupStats.Empty,
+                        googleDriveBackupStats = GoogleDriveBackupStats.Deleted,
+                        googleDriveRemoteLibraryRecovery =
+                            syncService.pendingGoogleDriveRemoteLibraryRecovery(),
                         isGoogleDriveBackupStatsLoading = false,
+                        isSyncing = false,
+                        syncProgress = null,
                         lastSyncSummary = null,
                     )
                 }
                 _notice.value = LibraryNotice(LibraryNoticeType.SYNC_GOOGLE_DRIVE_BACKUP_DELETED)
             }
             is GoogleDriveConnectionResult.Failed -> {
-                _state.update { it.copy(isGoogleDriveBackupStatsLoading = false) }
+                _state.update {
+                    it.copy(
+                        isGoogleDriveBackupStatsLoading = false,
+                        isSyncing = false,
+                        syncProgress = null,
+                    )
+                }
                 _notice.value = LibraryNotice(
                     when (result.reason) {
                         GoogleDriveAuthorizationFailure.CONFIGURATION_REQUIRED -> {
@@ -1136,14 +1243,55 @@ class LibraryViewModel(
                 )
             }
             is GoogleDriveConnectionResult.NeedsResolution -> {
-                _state.update { it.copy(isGoogleDriveBackupStatsLoading = false) }
+                _state.update {
+                    it.copy(
+                        isGoogleDriveBackupStatsLoading = false,
+                        isSyncing = false,
+                        syncProgress = null,
+                    )
+                }
                 onResolutionRequired(result.pendingIntent)
             }
             is GoogleDriveConnectionResult.SyncFailed -> {
-                _state.update { it.copy(isGoogleDriveBackupStatsLoading = false) }
+                _state.update {
+                    it.copy(
+                        isGoogleDriveBackupStatsLoading = false,
+                        isSyncing = false,
+                        syncProgress = null,
+                    )
+                }
                 _notice.value = LibraryNotice(result.result.toNoticeType())
             }
         }
+    }
+
+    private suspend fun handleGoogleDriveCleanupAndDisconnectResult(
+        result: GoogleDriveConnectionResult,
+        onResolutionRequired: (PendingIntent) -> Unit,
+    ) {
+        if (result != GoogleDriveConnectionResult.DeletedBackup) {
+            handleGoogleDriveConnectionResult(result, onResolutionRequired)
+            return
+        }
+
+        withContext(Dispatchers.IO) {
+            syncService.disconnectActiveProvider()
+        }
+        _state.update {
+            it.copy(
+                syncProvider = syncService.activeProvider(),
+                syncFolderLabel = syncService.syncLabel(),
+                googleDriveAccountLabel = syncService.googleDriveAccountLabel(),
+                isGoogleDriveConnected = syncService.isGoogleDriveConnected(),
+                isSyncing = false,
+                syncProgress = null,
+                googleDriveBackupStats = null,
+                googleDriveRemoteLibraryRecovery = null,
+                isGoogleDriveBackupStatsLoading = false,
+                lastSyncSummary = null,
+            )
+        }
+        _notice.value = LibraryNotice(LibraryNoticeType.SYNC_DISCONNECTED)
     }
 
     private fun handleGoogleDriveBackupStatsResult(
@@ -1155,6 +1303,8 @@ class LibraryViewModel(
                 _state.update {
                     it.copy(
                         googleDriveBackupStats = result.stats,
+                        googleDriveRemoteLibraryRecovery =
+                            syncService.pendingGoogleDriveRemoteLibraryRecovery(),
                         isGoogleDriveBackupStatsLoading = false,
                     )
                 }
@@ -1183,6 +1333,8 @@ class LibraryViewModel(
                     _state.update {
                         it.copy(
                             googleDriveBackupStats = result.stats,
+                            googleDriveRemoteLibraryRecovery =
+                                syncService.pendingGoogleDriveRemoteLibraryRecovery(),
                             isGoogleDriveBackupStatsLoading = false,
                         )
                     }
@@ -1252,6 +1404,12 @@ class LibraryViewModel(
                     } else {
                         null
                     },
+                    googleDriveRemoteLibraryRecovery =
+                        if (provider == SyncProvider.GOOGLE_DRIVE_APPDATA) {
+                            syncService.pendingGoogleDriveRemoteLibraryRecovery()
+                        } else {
+                            null
+                        },
                 )
             }
             _state.update {
@@ -1267,6 +1425,7 @@ class LibraryViewModel(
                     } else {
                         null
                     },
+                    googleDriveRemoteLibraryRecovery = snapshot.googleDriveRemoteLibraryRecovery,
                 )
             }
         }
@@ -1341,6 +1500,7 @@ class LibraryViewModel(
             }
             ManualSyncResult.GoogleDriveQuotaExceeded -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_QUOTA_EXCEEDED
             ManualSyncResult.GoogleDriveUnavailable -> LibraryNoticeType.SYNC_GOOGLE_DRIVE_UNAVAILABLE
+            is ManualSyncResult.GoogleDriveRemoteLibraryRemoved -> LibraryNoticeType.SYNC_FAILED
             ManualSyncResult.Failed -> LibraryNoticeType.SYNC_FAILED
             is ManualSyncResult.Configured -> {
                 if (hasExistingLibrary) {
@@ -1363,6 +1523,7 @@ class LibraryViewModel(
         return SyncProgress(
             phase = when (phase) {
                 ManualSyncPhase.PREPARING -> SyncProgressPhase.PREPARING
+                ManualSyncPhase.DELETING_REMOTE -> SyncProgressPhase.DELETING_REMOTE
                 ManualSyncPhase.CHECKING_REMOTE -> SyncProgressPhase.CHECKING_REMOTE
                 ManualSyncPhase.DOWNLOADING -> SyncProgressPhase.DOWNLOADING
                 ManualSyncPhase.UPLOADING -> SyncProgressPhase.UPLOADING
@@ -1384,6 +1545,23 @@ class LibraryViewModel(
         )
     }
 
+    private fun List<LibraryBook>.withCommittedSyncBook(
+        committedBook: LibraryBook?,
+        removedLocalBookId: String?,
+    ): List<LibraryBook> {
+        if (committedBook == null && removedLocalBookId == null) return this
+
+        val retainedBooks = filterNot { currentBook ->
+            currentBook.book.id == removedLocalBookId ||
+                currentBook.book.id == committedBook?.book?.id
+        }
+        return if (committedBook != null) {
+            listOf(committedBook) + retainedBooks
+        } else {
+            retainedBooks
+        }
+    }
+
 }
 
 private fun String?.toBookGridColumns(): BookGridColumns {
@@ -1395,6 +1573,7 @@ private fun String?.toBookGridColumns(): BookGridColumns {
 private enum class GoogleDriveOperation {
     Connect,
     DeleteBackup,
+    DeleteBackupAndDisconnect,
     LoadBackupStats,
 }
 
@@ -1412,4 +1591,5 @@ private data class SyncStateSnapshot(
     val isAutoSyncEnabled: Boolean,
     val isAutoSyncWifiOnly: Boolean,
     val googleDriveBackupStats: GoogleDriveBackupStats?,
+    val googleDriveRemoteLibraryRecovery: GoogleDriveRemoteLibraryRecovery?,
 )

@@ -43,6 +43,7 @@ class GoogleDriveBackupStatsCacheCodecTest {
         """.trimIndent()
 
         assertEquals(7, GoogleDriveBackupStatsCacheCodec.decode(encoded)?.syncedBooks)
+        assertEquals(0, GoogleDriveBackupStatsCacheCodec.decode(encoded)?.remoteItems)
     }
 
     @Test

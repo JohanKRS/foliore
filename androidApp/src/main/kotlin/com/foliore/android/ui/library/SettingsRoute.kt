@@ -88,7 +88,7 @@ fun SettingsRoute(
         if (
             showGoogleDriveLibraryChoice &&
             !state.isGoogleDriveBackupStatsLoading &&
-            state.googleDriveBackupStats?.hasBackup == false
+            (state.googleDriveBackupStats?.syncedBooks ?: 0) == 0
         ) {
             showGoogleDriveLibraryChoice = false
         }
@@ -210,7 +210,7 @@ fun SettingsRoute(
     if (
         showGoogleDriveLibraryChoice &&
         !state.isGoogleDriveBackupStatsLoading &&
-        state.googleDriveBackupStats?.hasBackup == true
+        (state.googleDriveBackupStats?.syncedBooks ?: 0) > 0
     ) {
         AlertDialog(
             onDismissRequest = { showGoogleDriveLibraryChoice = false },

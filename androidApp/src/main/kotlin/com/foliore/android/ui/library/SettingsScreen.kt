@@ -361,7 +361,7 @@ fun SettingsScreen(
                         onClick = onDeleteGoogleDriveBackup,
                         enabled = !isSyncing &&
                             !isGoogleDriveBackupStatsLoading &&
-                            googleDriveBackupStats?.hasBackup == true,
+                            googleDriveBackupStats?.hasStoredLibraryData == true,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(
@@ -466,6 +466,11 @@ private fun GoogleDriveBackupStatus(
                     stringResource(R.string.settings_sync_google_drive_backup_status_loading)
                 }
                 stats == null -> stringResource(R.string.settings_sync_google_drive_backup_status_unknown)
+                stats.hasOrphanedFiles -> stringResource(
+                    R.string.settings_sync_google_drive_backup_status_orphaned,
+                    stats.remoteFiles,
+                    stats.totalBytes.toReadableDriveSize(),
+                )
                 !stats.hasBackup -> stringResource(R.string.settings_sync_google_drive_backup_status_empty)
                 else -> stringResource(
                     R.string.settings_sync_google_drive_backup_status_summary,
@@ -519,7 +524,7 @@ private fun GoogleDriveBackupStatus(
     }
 }
 
-private fun Long.toReadableDriveSize(): String {
+internal fun Long.toReadableDriveSize(): String {
     if (this < 1024L) return "$this B"
     val units = listOf("KB", "MB", "GB", "TB")
     var value = this.toDouble() / 1024.0

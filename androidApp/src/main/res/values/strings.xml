@@ -257,6 +257,7 @@
     <string name="settings_sync_google_drive_backup_status_refreshing">Atualizando as informações em segundo plano...</string>
     <string name="settings_sync_google_drive_backup_status_unknown">Ainda não foi possível verificar esta conta.</string>
     <string name="settings_sync_google_drive_backup_status_empty">Nenhuma biblioteca do Foliore encontrada nesta conta.</string>
+    <string name="settings_sync_google_drive_backup_status_orphaned">Biblioteca ausente. Restaram %1$d arquivos do Foliore (%2$s).</string>
     <string name="settings_sync_google_drive_backup_status_summary">%1$d livros • %2$d arquivos • %3$s</string>
     <string name="settings_sync_google_drive_backup_status_updated">Última atualização: %1$s</string>
     <string name="settings_sync_google_drive_backup_status_unknown_items">%1$d itens antigos ou desconhecidos também serão apagados ao excluir a biblioteca.</string>
@@ -266,10 +267,17 @@
     <string name="settings_sync_google_drive_existing_use">Usar a do Drive</string>
     <string name="settings_sync_google_drive_existing_replace">Usar a deste aparelho</string>
     <string name="settings_sync_google_drive_delete_backup">Apagar biblioteca do Drive</string>
-    <string name="settings_sync_google_drive_delete_backup_title">Usar a biblioteca deste aparelho?</string>
-    <string name="settings_sync_google_drive_delete_backup_body">A biblioteca desta conta será apagada do Google Drive. Os arquivos comuns do Drive e os livros deste aparelho não serão apagados. No próximo Sync, os livros deste aparelho criarão uma nova biblioteca no Drive.</string>
-    <string name="settings_sync_google_drive_delete_backup_body_with_stats">A biblioteca com %1$d livros será apagada do Google Drive. Os arquivos comuns do Drive e os livros deste aparelho não serão apagados. No próximo Sync, os livros deste aparelho criarão uma nova biblioteca no Drive.</string>
-    <string name="settings_sync_google_drive_delete_backup_confirm">Usar a deste aparelho</string>
+    <string name="settings_sync_google_drive_delete_backup_title">Apagar a biblioteca do Drive?</string>
+    <string name="settings_sync_google_drive_delete_backup_body">A biblioteca do Foliore será removida desta conta do Google Drive. Os arquivos comuns do Drive e os livros deste aparelho não serão apagados. O Sync ficará pausado até você escolher o que fazer.</string>
+    <string name="settings_sync_google_drive_delete_backup_body_with_stats">A biblioteca com %1$d livros será removida do Google Drive. Os arquivos comuns do Drive e os livros deste aparelho não serão apagados. O Sync ficará pausado até você escolher o que fazer.</string>
+    <string name="settings_sync_google_drive_delete_backup_confirm">Apagar do Drive</string>
+    <string name="sync_google_drive_remote_removed_title">A biblioteca do Drive mudou</string>
+    <string name="sync_google_drive_remote_removed_body">A biblioteca sincronizada foi removida ou ficou vazia no Google Drive. O Sync foi pausado para não enviar todos os livros deste aparelho sem sua confirmação.</string>
+    <string name="sync_google_drive_remote_removed_leftovers">Ainda restam %1$d arquivos do Foliore no Drive (%2$s). Eles serão limpos se você recriar a biblioteca.</string>
+    <string name="sync_google_drive_remote_removed_recreate">Recriar no Drive com este aparelho</string>
+    <string name="sync_google_drive_remote_removed_recreate_hint">Limpa os arquivos restantes do Sync e envia a biblioteca deste aparelho.</string>
+    <string name="sync_google_drive_remote_removed_keep_local">Manter só neste aparelho</string>
+    <string name="sync_google_drive_remote_removed_keep_local_hint">Limpa os arquivos restantes do Sync e desconecta o Google Drive. Nenhum livro deste aparelho será apagado.</string>
     <string name="settings_sync_auto">Sincronização automática</string>
     <string name="settings_sync_auto_description">Sincroniza alterações locais em segundo plano.</string>
     <string name="settings_sync_wifi_only">Somente no Wi-Fi</string>
@@ -286,6 +294,7 @@
     <string name="settings_sync_disconnect">Desconectar sincronização</string>
     <string name="settings_sync_last_result">Último resultado: %1$d enviados, %2$d recebidos, %3$d conflitos.</string>
     <string name="sync_progress_preparing">Preparando sincronização...</string>
+    <string name="sync_progress_deleting_remote">Apagando biblioteca do Drive...</string>
     <string name="sync_progress_checking_remote">Conferindo biblioteca remota...</string>
     <string name="sync_progress_downloading">Baixando alterações...</string>
     <string name="sync_progress_uploading">Enviando alterações...</string>
