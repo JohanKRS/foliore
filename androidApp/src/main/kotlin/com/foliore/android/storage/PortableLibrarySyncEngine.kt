@@ -624,9 +624,11 @@ internal class PortableLibrarySyncEngine(
                 lastPreparedAt = currentBook?.book?.lastPreparedAt
                     ?: destinationPreparedFile?.let { remoteBook.updatedAt },
                 lastExportedAt = currentBook?.book?.lastExportedAt,
-                lastSyncedAt = syncedAt,
+                lastSyncedAt = if (remoteBook.autoMerged) currentBook?.book?.lastSyncedAt else syncedAt,
                 status = if (remoteBook.autoMerged) BookStatus.OUTDATED_PREPARED else downloadedState.status,
-                syncStatus = SyncStatus.SYNCED,
+                // Merged metadata still needs its own commit. A failed upload must
+                // leave it pending so the next sync cannot replace it with the old remote branch.
+                syncStatus = if (remoteBook.autoMerged) SyncStatus.PENDING_UPLOAD else SyncStatus.SYNCED,
                 revision = remoteBook.revision,
                 updatedByDeviceId = remoteBook.updatedByDeviceId,
                 technicalStatus = downloadedState.technicalInfo.errors

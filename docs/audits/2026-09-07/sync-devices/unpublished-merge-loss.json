@@ -1,0 +1,17 @@
+{
+  "trigger": "network loss after local merge before publication",
+  "beforeRetry": {
+    "description": "Network interruption recovery",
+    "syncStatus": "SYNCED",
+    "revision": 8,
+    "actualHash": "f697c1a02f8bbf090c5fc258c9811cf9718cf33e44fc6482f88a3b38d1a78b0d"
+  },
+  "afterRetry": {
+    "description": "Uncommitted metadata must stay invisible",
+    "syncStatus": "SYNCED",
+    "revision": 7,
+    "actualHash": "f697c1a02f8bbf090c5fc258c9811cf9718cf33e44fc6482f88a3b38d1a78b0d"
+  },
+  "metadataEditLost": true,
+  "epubIntact": true
+}

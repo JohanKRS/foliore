@@ -55,6 +55,7 @@ class AppContainer(context: Context) {
     val openMetadataLookupService = OpenMetadataLookupService(
         openLibraryMetadataService = openLibraryMetadataService,
         googleBooksMetadataService = googleBooksMetadataService,
+        cacheDir = appContext.cacheDir,
     )
     val epubImporter = AndroidEpubImporter(
         context = appContext,

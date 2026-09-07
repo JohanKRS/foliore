@@ -50,3 +50,8 @@ Para `foliore.johankrs.com`: revisar o texto público e a identidade do desenvol
 ## Ajuste de alinhamento autorizado posteriormente
 
 A pedido do usuário, metadados, descrição e informações de sincronização agora herdam o espaçamento horizontal da própria coluna. No celular, compartilham as bordas da capa (42–1038 px no teste); no tablet, acompanham a coluna direita e seu cabeçalho (926–1878 px). Removidos os recuos próprios das seções e do divisor. A capa mantém seu tamanho. APK compilado e instalado; verificação visual e de limites na árvore Android em celular e tablet, com a resolução do emulador restaurada após o teste. Evidências: `screenshots/align-*` e `verification/alignment.json`.
+
+
+## Busca de metadados
+
+Corrigidos tratamento de falhas, consultas alternativas, escolha e classificação de edições, obtenção de capas originais e separação dos downloads opcionais. Validação: 56 testes Android aprovados, build e lint concluídos, três livros consultados em fontes reais e fluxo de busca verificado no emulador. Nenhum resultado foi aplicado aos livros de QA. [Detalhes e limitações](metadata-lookup/README.md).

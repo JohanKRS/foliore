@@ -10,9 +10,15 @@ data class MetadataLookupCandidate(
     val coverPixelWidth: Int? = null,
     val coverPixelHeight: Int? = null,
     val sourceUrl: String?,
+    val matchedIsbns: Set<String> = emptySet(),
+    val coverUrls: List<String> = emptyList(),
+    val editionKey: String? = null,
+    val workKey: String? = null,
+    val editionResolved: Boolean = false,
+    val sourceLanguage: String? = null,
 )
 
 sealed class MetadataLookupResult {
     data class Success(val candidates: List<MetadataLookupCandidate>) : MetadataLookupResult()
-    data class Failure(val message: String? = null) : MetadataLookupResult()
+    data class Failure(val message: String? = null, val notConfigured: Boolean = false) : MetadataLookupResult()
 }

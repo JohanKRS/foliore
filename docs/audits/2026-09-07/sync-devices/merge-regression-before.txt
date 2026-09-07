@@ -1,0 +1,6 @@
+         1788817908.065  1416  1440 E FolioreDebugSync: debug sync failed
+         1788817908.065  1416  1440 E FolioreDebugSync: java.lang.IllegalStateException: Unpublished merge marked synced after partial-upload
+         1788817908.065  1416  1440 E FolioreDebugSync: 	at com.foliore.android.debug.SyncSafetyHarness.run(SyncSafetyHarness.kt:75)
+         1788817908.065  1416  1440 E FolioreDebugSync: 	at com.foliore.android.debug.DebugSyncReceiver.onReceive$lambda$2(DebugSyncReceiver.kt:32)
+         1788817908.065  1416  1440 E FolioreDebugSync: 	at com.foliore.android.debug.DebugSyncReceiver$$ExternalSyntheticLambda1.run(D8$$SyntheticClass:0)
+         1788817908.065  1416  1440 E FolioreDebugSync: 	at java.lang.Thread.run(Thread.java:1564)

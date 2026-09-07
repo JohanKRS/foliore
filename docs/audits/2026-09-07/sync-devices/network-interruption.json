@@ -1,0 +1,12 @@
+{
+  "run": "phone-network-interruption",
+  "action": "sync",
+  "status": "PASS",
+  "elapsedMs": 76200,
+  "appRxBytes": 467340,
+  "appTxBytes": 51067,
+  "pssKb": 219258,
+  "result": {
+    "type": "GoogleDriveUnavailable"
+  }
+}

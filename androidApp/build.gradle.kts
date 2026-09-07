@@ -59,6 +59,15 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+        create("qa") {
+            initWith(getByName("release"))
+            isDebuggable = true
+            matchingFallbacks += "release"
+        }
+    }
+    sourceSets.getByName("qa") {
+        kotlin.srcDir("src/debug/kotlin")
+        manifest.srcFile("src/debug/AndroidManifest.xml")
     }
 
 }

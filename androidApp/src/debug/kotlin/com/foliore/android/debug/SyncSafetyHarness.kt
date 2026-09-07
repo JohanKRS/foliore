@@ -53,6 +53,38 @@ internal object SyncSafetyHarness {
             put("OPS/page.xhtml", """<html xmlns="http://www.w3.org/1999/xhtml"><head><title>QA</title></head><body><p>Preserve this original.</p></body></html>""")
         }
         val imported = runBlocking { a.epubImporter.importFile(epub) } as EpubImportResult.Imported
+        // A locally merged version is not backed up until its own publication commits.
+        val (mergeContextA, mergeA) = device("merge-retry-a")
+        val (mergeContextB, mergeB) = device("merge-retry-b")
+        val mergeRemote = LocalStore(File(root, "merge-retry-remote").apply { mkdirs() })
+        val mergeId = (runBlocking { mergeA.epubImporter.importFile(epub) } as EpubImportResult.Imported).bookId
+        engine(mergeContextA, mergeA).sync(mergeRemote)
+        engine(mergeContextB, mergeB).sync(mergeRemote)
+        for (stage in listOf("partial-upload", "record", "commit")) {
+            fun mergeDraft(app: AppContainer) = app.libraryRepository.getBook(mergeId)!!.metadata.let { m ->
+                BookMetadataDraft(m.title, m.subtitle, m.authors, m.sortAuthor, m.language, m.publisher,
+                    m.publishedDate, m.description, m.tags, m.isbn, m.identifiers, m.seriesName, m.seriesIndex)
+            }
+            check(mergeA.bookEditor.updateMetadata(mergeId, mergeDraft(mergeA).copy(title = "Remote $stage")) is BookEditResult.Success)
+            check(mergeB.bookEditor.updateMetadata(mergeId, mergeDraft(mergeB).copy(authors = listOf("Local $stage"))) is BookEditResult.Success)
+            engine(mergeContextA, mergeA).sync(mergeRemote)
+            mergeRemote.fault = stage
+            check(runCatching { engine(mergeContextB, mergeB).sync(mergeRemote) }.isFailure)
+            val interrupted = mergeB.libraryRepository.getBook(mergeId)!!
+            check(interrupted.metadata.title == "Remote $stage" && interrupted.metadata.authors == listOf("Local $stage"))
+            check(interrupted.book.syncStatus == com.foliore.shared.domain.SyncStatus.PENDING_UPLOAD) {
+                "Unpublished merge marked synced after $stage"
+            }
+            engine(mergeContextB, mergeB).sync(mergeRemote)
+            engine(mergeContextA, mergeA).sync(mergeRemote)
+            for (app in listOf(mergeA, mergeB)) {
+                val recovered = app.libraryRepository.getBook(mergeId)!!
+                check(recovered.metadata.title == "Remote $stage" && recovered.metadata.authors == listOf("Local $stage")) {
+                    "Interrupted merge lost metadata after $stage"
+                }
+                check(File(recovered.book.originalFilePath).sha256() == epub.sha256())
+            }
+        }
         val id = imported.bookId
         check(engineA.sync(remote).uploadedBooks == 1)
         check(engineB.sync(remote).downloadedBooks == 1)
@@ -126,24 +158,87 @@ internal object SyncSafetyHarness {
         check(deletionA.matchesDeletedVersion("scope-test", 1, "now"))
         check(!deletionA.matchesDeletedVersion("scope-test", 2, "later"))
         check(remote.bytes().any { it.key.endsWith("original.epub") }) { "Deleted book must retain its recovery copy" }
-        File(context.cacheDir, "sync-safety-result.txt").writeText("PASS: import, upload, restore, injected failure, retry, exact original, prepared copy, no-op sync, offline field merge, conflicting edits preserved on both devices, simultaneous publication converges, deletion preserves offline edit, account-scoped deletion, retention\n")
+        val faultBookId = a.libraryRepository.getBooks().first().book.id
+        fun currentDraft() = a.libraryRepository.getBook(faultBookId)!!.metadata.let { m ->
+            BookMetadataDraft(m.title, m.subtitle, m.authors, m.sortAuthor, m.language, m.publisher, m.publishedDate,
+                m.description, m.tags, m.isbn, m.identifiers, m.seriesName, m.seriesIndex)
+        }
+        for (stage in listOf("partial-upload", "record", "commit")) {
+            val previous = RemoteManifestJournal(remote).read()
+            val previousB = b.libraryRepository.getBook(faultBookId)!!.metadata.title
+            val edit = currentDraft().copy(title = "Fault recovery $stage")
+            check(a.bookEditor.updateMetadata(faultBookId, edit) is BookEditResult.Success)
+            remote.fault = stage
+            check(runCatching { engineA.sync(remote) }.isFailure) { "Fault not exercised: $stage" }
+            check(remote.fault == null)
+            check(RemoteManifestJournal(remote).read() == previous) { "Incomplete $stage changed published state" }
+            check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == previousB)
+            engineA.sync(remote)
+            engineB.sync(remote)
+            check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == edit.title)
+        }
+        val beforeDownload = b.libraryRepository.getBook(faultBookId)!!
+        val originalBeforeDownload = File(beforeDownload.book.originalFilePath).sha256()
+        check(a.bookEditor.updateMetadata(faultBookId, currentDraft().copy(title = "After corrupt download")) is BookEditResult.Success)
+        engineA.sync(remote)
+        remote.fault = "download"
+        val failedDownload = engineB.sync(remote)
+        check(failedDownload.conflictedBooks > 0 && failedDownload.downloadedBooks == 0) { "Corrupt download was not rejected per book" }
+        check(remote.fault == null)
+        check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == beforeDownload.metadata.title)
+        check(File(beforeDownload.book.originalFilePath).sha256() == originalBeforeDownload)
+        engineB.sync(remote)
+        check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == "After corrupt download")
+        val original = File(a.libraryRepository.getBook(faultBookId)!!.book.originalFilePath)
+        val originalBytes = original.readBytes()
+        try {
+            original.appendText("Injected corruption")
+            val attempt = runCatching { engineA.sync(remote) }
+            val current = a.libraryRepository.getBook(faultBookId)!!.book
+            check(attempt.isFailure || File(current.originalFilePath).sha256() == current.originalHashSha256) { "Corrupt local bytes were accepted without repair" }
+        } finally { original.writeBytes(originalBytes) }
+        check(a.bookEditor.updateMetadata(faultBookId, currentDraft().copy(title = "Snapshot before in-flight edit")) is BookEditResult.Success)
+        remote.onNextFileWrite = {
+            check(a.bookEditor.updateMetadata(faultBookId, currentDraft().copy(title = "New local edit during upload")) is BookEditResult.Success)
+        }
+        engineA.sync(remote)
+        val inFlight = a.libraryRepository.getBook(faultBookId)!!
+        check(inFlight.metadata.title == "New local edit during upload")
+        check(inFlight.book.syncStatus != com.foliore.shared.domain.SyncStatus.SYNCED) { "In-flight local edit marked synced" }
+        engineA.sync(remote)
+        engineB.sync(remote)
+        check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == "New local edit during upload")
+        File(context.cacheDir, "sync-safety-result.txt").writeText("PASS: import, upload, restore, injected failure, retry, exact original, prepared copy, no-op sync, offline field merge, conflicting edits preserved on both devices, simultaneous publication converges, deletion preserves offline edit, account-scoped deletion, retention, partial upload, partial record, partial commit, corrupt download rollback, local corruption rejected or recovered, in-flight local edit preserved\n")
     }
 
     private class LocalStore(private val root: File) : RemoteLibraryStore {
         override val label = "Isolated QA"
         var failNextFileWrite = false
+        var fault: String? = null
+        var onNextFileWrite: (() -> Unit)? = null
+        @Synchronized private fun consume(mode: String): Boolean = (fault == mode).also { if (it) fault = null }
         @Volatile var publicationBarrier: java.util.concurrent.CyclicBarrier? = null
         override fun listRootEntries() = root.listFiles().orEmpty().map { RemoteRootEntry(it.name, it.isDirectory, it.lastModified()) }
         override fun readText(path: String) = File(root, path).takeIf { it.isFile }?.readText()
         override fun writeText(path: String, text: String, mimeType: String) {
-            File(root, path).apply { parentFile!!.mkdirs(); writeText(text) }
+            val inject = path.startsWith(RemoteManifestJournal.RECORD_PREFIX) && consume("record") || path.startsWith("foliore-v4-commit-") && consume("commit")
+            File(root, path).apply { parentFile!!.mkdirs(); writeText(if (inject) "{" else text) }
+            if (inject) error("Injected incomplete publication")
             if (path.startsWith(RemoteManifestJournal.RECORD_PREFIX)) publicationBarrier?.await(20, java.util.concurrent.TimeUnit.SECONDS)
         }
         override fun replaceFile(path: String, source: File, mimeType: String) {
             if (failNextFileWrite) { failNextFileWrite = false; error("Injected upload failure") }
-            File(root, path).apply { parentFile!!.mkdirs(); source.copyTo(this, true) }
+            onNextFileWrite?.also { onNextFileWrite = null }?.invoke()
+            File(root, path).apply {
+                parentFile!!.mkdirs()
+                if (consume("partial-upload")) { writeBytes(source.readBytes().take(32).toByteArray()); error("Injected partial payload") }
+                source.copyTo(this, true)
+            }
         }
-        override fun copyToLocal(path: String, destination: File): File? = File(root, path).takeIf { it.isFile }?.let { destination.parentFile!!.mkdirs(); it.copyTo(destination, true) }
+        override fun copyToLocal(path: String, destination: File): File? = File(root, path).takeIf { it.isFile }?.let {
+            destination.parentFile!!.mkdirs()
+            it.copyTo(destination, true).also { if (consume("download")) it.writeText("Injected corrupt download") }
+        }
         override fun hasDirectory(path: String) = File(root, path).isDirectory
         override fun ensureDirectory(path: String) { File(root, path).mkdirs() }
         override fun deleteTree(path: String) { File(root, path).deleteRecursively() }

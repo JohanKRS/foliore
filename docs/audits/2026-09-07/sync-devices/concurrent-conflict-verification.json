@@ -1,0 +1,11 @@
+{
+  "count": 164,
+  "sameIds": true,
+  "sameTitlesAndAuthors": true,
+  "sameOriginalHashes": true,
+  "qaTitles": [
+    "[QA Sync] Tablet conflict (recovered conflict)",
+    "[QA Sync] Phone conflict"
+  ],
+  "dnsFailuresBeforeRecovery": 2
+}

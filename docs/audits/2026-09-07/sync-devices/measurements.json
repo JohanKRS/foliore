@@ -1,0 +1,185 @@
+[
+  {
+    "run": "phone-resumed-upload",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 578832,
+    "appRxBytes": 531298707,
+    "appTxBytes": 528704126,
+    "pssKb": 200438,
+    "result": {
+      "type": "Synced",
+      "uploaded": 162,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "tablet-first-restore",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 184411,
+    "appRxBytes": 517480386,
+    "appTxBytes": 11745237,
+    "pssKb": 242395,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 162,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-noop-1",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 22383,
+    "appRxBytes": 602101,
+    "appTxBytes": 29007,
+    "pssKb": 203900,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-noop-2",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 22079,
+    "appRxBytes": 600794,
+    "appTxBytes": 25447,
+    "pssKb": 223532,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-noop-3",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 19719,
+    "appRxBytes": 601905,
+    "appTxBytes": 25139,
+    "pssKb": 217055,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-partial-upload",
+    "action": "fault",
+    "status": "PASS",
+    "elapsedMs": 54061,
+    "appRxBytes": 495930,
+    "appTxBytes": 57852,
+    "pssKb": 213894,
+    "result": {
+      "type": "Synced",
+      "uploaded": 1,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-partial-commit",
+    "action": "fault",
+    "status": "ERROR",
+    "elapsedMs": 34317,
+    "appRxBytes": 272974,
+    "appTxBytes": 36853,
+    "pssKb": 222002,
+    "errorType": "IOException",
+    "error": "Injected interrupted commit marker"
+  },
+  {
+    "run": "tablet-corrupt-download",
+    "action": "fault",
+    "status": "PASS",
+    "elapsedMs": 40563,
+    "appRxBytes": 410012,
+    "appTxBytes": 39304,
+    "pssKb": 321556,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 1
+    }
+  },
+  {
+    "run": "tablet-retry-corrupt-download",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 76916,
+    "appRxBytes": 755357,
+    "appTxBytes": 79880,
+    "pssKb": 305075,
+    "result": {
+      "type": "Synced",
+      "uploaded": 1,
+      "downloaded": 1,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-concurrent-publish",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 49128,
+    "appRxBytes": 719259,
+    "appTxBytes": 53822,
+    "pssKb": 227979,
+    "result": {
+      "type": "Synced",
+      "uploaded": 1,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "tablet-concurrent-publish",
+    "action": "sync",
+    "status": "PASS",
+    "elapsedMs": 51259,
+    "appRxBytes": 720191,
+    "appTxBytes": 61075,
+    "pssKb": 224221,
+    "result": {
+      "type": "Synced",
+      "uploaded": 1,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-quota-injected",
+    "action": "fault",
+    "status": "ERROR",
+    "elapsedMs": 83,
+    "appRxBytes": 0,
+    "appTxBytes": 0,
+    "pssKb": 215002,
+    "errorType": "GoogleDriveHttpException",
+    "error": "storageQuotaExceeded (injected)"
+  },
+  {
+    "run": "phone-provider-outage-injected",
+    "action": "fault",
+    "status": "ERROR",
+    "elapsedMs": 88,
+    "appRxBytes": 0,
+    "appTxBytes": 0,
+    "pssKb": 203855,
+    "errorType": "GoogleDriveHttpException",
+    "error": "Injected provider outage"
+  }
+]

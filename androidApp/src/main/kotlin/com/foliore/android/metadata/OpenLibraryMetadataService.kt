@@ -1,380 +1,97 @@
 package com.foliore.android.metadata
 
 import android.content.Context
-import androidx.core.text.HtmlCompat
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
-import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 
-class OpenLibraryMetadataService(context: Context) {
-    private val appContext = context.applicationContext
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = false
+class OpenLibraryMetadataService(@Suppress("UNUSED_PARAMETER") context: Context) {
+    fun search(book: LibraryBook, draft: BookMetadataDraft, limit: Int = 8): MetadataLookupResult {
+        val http = MetadataHttpClient()
+        return searchOpenLibrary(draft, limit, http::getText)
     }
+}
 
-    fun search(
-        book: LibraryBook,
-        draft: BookMetadataDraft,
-        limit: Int = 5,
-    ): MetadataLookupResult {
-        val executor = Executors.newSingleThreadExecutor()
-        val future = executor.submit<MetadataLookupResult> {
-            searchBlocking(book = book, draft = draft, limit = limit)
-        }
-
-        return try {
-            future.get(LOOKUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } catch (_: TimeoutException) {
-            future.cancel(true)
-            MetadataLookupResult.Failure("Open Library lookup timed out")
+internal fun searchOpenLibrary(draft: BookMetadataDraft, limit: Int, getText: (String) -> String): MetadataLookupResult {
+    var successfulResponse = false
+    var failure: Exception? = null
+    MetadataSearchRules.bestIsbn(draft)?.let { isbn ->
+        try {
+            val edition = Json.parseToJsonElement(getText("https://openlibrary.org/isbn/$isbn.json")).jsonObject
+            openLibraryEdition(edition, draft, requestedIsbn = isbn)?.let { return MetadataLookupResult.Success(listOf(it)) }
         } catch (error: Exception) {
-            MetadataLookupResult.Failure(error.message)
-        } finally {
-            executor.shutdownNow()
+            if (error !is MetadataHttpException || error.status != 404) failure = error
+            if (error is MetadataHttpException && error.status == 429) return MetadataLookupResult.Failure(error.message)
         }
     }
-
-    private fun searchBlocking(
-        book: LibraryBook,
-        draft: BookMetadataDraft,
-        limit: Int,
-    ): MetadataLookupResult {
-        return runCatching {
-            val docs = searchDocuments(draft, limit)
-            val candidates = docs
-                .distinctBy { it.key ?: it.title.orEmpty() + it.authorName.joinToString() }
-                .take(limit)
-                .mapIndexedNotNull { index, doc ->
-                    doc.toCandidate(
-                        book = book,
-                        current = draft,
-                        index = index,
-                        includeDescription = index == 0,
-                        includeCover = false,
-                    )
-                }
-            MetadataLookupResult.Success(candidates)
-        }.getOrElse {
-            MetadataLookupResult.Failure(it.message)
-        }
-    }
-
-    private fun searchDocuments(
-        draft: BookMetadataDraft,
-        limit: Int,
-    ): List<OpenLibrarySearchDoc> {
-        val isbn = draft.bestIsbn()
-        val queries = buildList {
-            if (isbn != null) {
-                add(openLibrarySearchUrl("isbn=$isbn", limit))
+    val author = draft.authors.firstOrNull().orEmpty()
+    val titles = MetadataSearchRules.titleVariants(draft.title).take(2)
+    val queries = (titles.map { "title=${it.urlEncoded()}" + if (author.isBlank()) "" else "&author=${author.urlEncoded()}" } +
+        titles.lastOrNull()?.let { listOf("title=${it.urlEncoded()}") }.orEmpty()).distinct().take(3)
+    val found = mutableListOf<MetadataLookupCandidate>()
+    for (query in queries) {
+        try {
+            val lang = MetadataSearchRules.language(draft.language)?.let { "&lang=${it.urlEncoded()}" }.orEmpty()
+            val root = Json.parseToJsonElement(getText("https://openlibrary.org/search.json?$query&limit=12&fields=key,title,author_name,subject,cover_i,editions,editions.key,editions.title,editions.language,editions.isbn,editions.cover_i$lang")).jsonObject
+            successfulResponse = true
+            found += root.items("docs").mapNotNull { item ->
+                val doc = item as? JsonObject ?: return@mapNotNull null
+                val title = doc.text("title") ?: return@mapNotNull null
+                val workKey = doc.text("key")?.safeWorkKey() ?: return@mapNotNull null
+                val selected = doc.obj("editions")?.items("docs")?.firstOrNull() as? JsonObject
+                val editionKey = selected?.text("key")?.safeEditionKey()
+                val isbns = selected?.strings("isbn").orEmpty().mapNotNull(MetadataSearchRules::isbn).toSet()
+                val authors = doc.strings("author_name")
+                val cover = selected?.text("cover_i") ?: doc.text("cover_i")
+                MetadataLookupCandidate(
+                    id = "openlibrary:${editionKey ?: workKey}", sourceName = "Open Library", coverImagePath = null,
+                    sourceUrl = "https://openlibrary.org${editionKey ?: workKey}", editionKey = editionKey, workKey = workKey,
+                    coverUrls = cover?.takeIf { it.toLongOrNull()?.let { n -> n > 0 } == true }?.let { listOf("https://covers.openlibrary.org/b/id/$it.jpg?default=false") }.orEmpty(),
+                    matchedIsbns = isbns, sourceLanguage = selected?.strings("language")?.firstOrNull()?.let(MetadataSearchRules::language),
+                    metadata = draft.copy(
+                        title = selected?.text("title") ?: title, authors = authors.ifEmpty { draft.authors },
+                        sortAuthor = if (authors.isEmpty() || authors == draft.authors) draft.sortAuthor else authors.first().sortAuthor(),
+                        // Work-level ISBN/language/publisher arrays mix different editions.
+                        language = selected?.strings("language")?.firstOrNull()?.let(MetadataSearchRules::language) ?: draft.language,
+                        isbn = isbns.sorted().firstOrNull() ?: draft.isbn,
+                        tags = doc.strings("subject").filter { it.length <= 42 && !it.startsWith("series:", true) }.distinct().take(8).ifEmpty { draft.tags },
+                        identifiers = draft.identifiers + mapOf("openlibrary_work" to workKey) + (editionKey?.let { mapOf("openlibrary_edition" to it) } ?: emptyMap()),
+                    ),
+                )
             }
-            add(
-                openLibrarySearchUrl(
-                    buildList {
-                        add("title=${draft.title.urlEncoded()}")
-                        draft.authors.firstOrNull()?.takeIf { it.isNotBlank() }?.let {
-                            add("author=${it.urlEncoded()}")
-                        }
-                    }.joinToString("&"),
-                    limit,
-                ),
-            )
-        }
-
-        queries.forEach { url ->
-            val response = getText(url)
-            val docs = json.decodeFromString(OpenLibrarySearchResponse.serializer(), response).docs
-            if (docs.isNotEmpty()) return docs
-        }
-
-        return emptyList()
-    }
-
-    private fun OpenLibrarySearchDoc.toCandidate(
-        book: LibraryBook,
-        current: BookMetadataDraft,
-        index: Int,
-        includeDescription: Boolean,
-        includeCover: Boolean,
-    ): MetadataLookupCandidate? {
-        val cleanTitle = title?.cleanOptional() ?: return null
-        val workDescription = if (includeDescription) key?.let(::fetchWorkDescription) else null
-        val cleanAuthors = authorName.mapNotNull { it.cleanOptional() }
-        val cleanSeriesName = seriesName.firstCleanOptional()
-        val cleanSeriesIndex = seriesPosition
-            .asSequence()
-            .mapNotNull { it.toSeriesIndexOrNull() }
-            .firstOrNull()
-        val resolvedSeriesName = cleanSeriesName ?: current.seriesName?.cleanOptional()
-        val cleanTags = subject
-            .asSequence()
-            .mapNotNull { it.cleanOptional() }
-            .filterNot { it.isOpenLibrarySeriesSubject() }
-            .filterNot { tag -> resolvedSeriesName != null && tag.isSeriesTagFor(resolvedSeriesName) }
-            .filterNot { it.length > 42 }
-            .distinctBy { it.lowercase() }
-            .take(8)
-            .toList()
-        val coverPath = if (includeCover) {
-            downloadCover(
-                bookId = book.book.id,
-                candidateId = key?.substringAfterLast('/') ?: "open-library-$index",
-                coverId = coverId,
-                isbn = isbn.bestIsbn(),
-            )
-        } else {
-            null
-        }
-        val identifiers = current.identifiers +
-            listOfNotNull(
-                key?.let { "openlibrary_work" to it },
-                editionKeys.firstOrNull()?.let { "openlibrary_edition" to it },
-                seriesKeys.firstOrNull()?.let { "openlibrary_series" to it },
-            )
-
-        return MetadataLookupCandidate(
-            id = key ?: "open-library-$index",
-            sourceName = "Open Library",
-            metadata = BookMetadataDraft(
-                title = cleanTitle,
-                subtitle = current.subtitle,
-                authors = cleanAuthors.ifEmpty { current.authors },
-                sortAuthor = current.sortAuthor ?: cleanAuthors.firstOrNull()?.toSortAuthor(),
-                language = language.firstOrNull()?.toIso639Code() ?: current.language,
-                publisher = publisher.firstOrNull()?.cleanOptional() ?: current.publisher,
-                publishedDate = firstPublishYear?.toString() ?: current.publishedDate,
-                description = workDescription ?: current.description,
-                tags = cleanTags.ifEmpty { current.tags },
-                isbn = isbn.bestIsbn() ?: current.bestIsbn(),
-                identifiers = identifiers,
-                seriesName = resolvedSeriesName,
-                seriesIndex = cleanSeriesIndex ?: current.seriesIndex,
-            ),
-            coverImagePath = coverPath,
-            sourceUrl = key?.let { "https://openlibrary.org$it" },
-        )
-    }
-
-    private fun fetchWorkDescription(workKey: String): String? {
-        return runCatching {
-            val response = getText("https://openlibrary.org$workKey.json")
-            json.decodeFromString(OpenLibraryWorkResponse.serializer(), response)
-                .description
-                .descriptionText()
-                ?.toDisplayText()
-        }.getOrNull()
-    }
-
-    private fun downloadCover(
-        bookId: String,
-        candidateId: String,
-        coverId: Long?,
-        isbn: String?,
-    ): String? {
-        val coverUrl = when {
-            coverId != null -> "https://covers.openlibrary.org/b/id/$coverId-L.jpg?default=false"
-            isbn != null -> "https://covers.openlibrary.org/b/isbn/$isbn-L.jpg?default=false"
-            else -> return null
-        }
-        return runCatching {
-            val outputDir = File(appContext.cacheDir, "metadata-covers/$bookId").apply { mkdirs() }
-            val outputFile = File(outputDir, "${candidateId.sanitizeFileName()}.jpg")
-            val connection = (URL(coverUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = SECONDARY_CONNECT_TIMEOUT_MS
-                readTimeout = SECONDARY_READ_TIMEOUT_MS
-                setRequestProperty("User-Agent", USER_AGENT)
-            }
-            if (connection.responseCode !in 200..299) {
-                connection.disconnect()
-                return@runCatching null
-            }
-            connection.inputStream.use { input ->
-                outputFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-            connection.disconnect()
-            outputFile.takeIf { it.length() > 0L }?.absolutePath
-        }.getOrNull()
-    }
-
-    private fun getText(url: String): String {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = SEARCH_CONNECT_TIMEOUT_MS
-            readTimeout = SEARCH_READ_TIMEOUT_MS
-            setRequestProperty("Accept", "application/json")
-            setRequestProperty("User-Agent", USER_AGENT)
-        }
-        val responseCode = connection.responseCode
-        val responseText = if (responseCode in 200..299) {
-            connection.inputStream.bufferedReader().use { it.readText() }
-        } else {
-            connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-        }
-        connection.disconnect()
-        if (responseCode !in 200..299) {
-            error("Open Library request failed: HTTP $responseCode")
-        }
-        return responseText
-    }
-
-    private fun openLibrarySearchUrl(query: String, limit: Int): String {
-        return "https://openlibrary.org/search.json?$query&limit=$limit&fields=$SEARCH_FIELDS"
-    }
-
-    private fun JsonElement?.descriptionText(): String? {
-        return when (this) {
-            is JsonPrimitive -> contentOrNull
-            is JsonObject -> get("value")?.jsonPrimitive?.contentOrNull
-            else -> null
-        }?.cleanOptional()
-    }
-
-    private fun String.toDisplayText(): String {
-        val plain = HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_LEGACY)
-            .toString()
-            .replace('\u00A0', ' ')
-        return plain.lines()
-            .joinToString("\n") { it.trim() }
-            .replace(Regex("\\n{3,}"), "\n\n")
-            .trim()
-    }
-
-    private fun String.cleanOptional(): String? = trim().takeIf { it.isNotEmpty() }
-
-    private fun List<String>.firstCleanOptional(): String? {
-        return asSequence()
-            .mapNotNull { it.cleanOptional() }
-            .firstOrNull()
-    }
-
-    private fun String.toSeriesIndexOrNull(): Double? {
-        val normalized = trim().replace(',', '.')
-        return normalized.toDoubleOrNull()
-            ?: Regex("""(?i)(?:book|volume|vol\.?|#)?\s*(\d+(?:[.]\d+)?)""")
-                .find(normalized)
-                ?.groupValues
-                ?.getOrNull(1)
-                ?.toDoubleOrNull()
-    }
-
-    private fun String.isOpenLibrarySeriesSubject(): Boolean {
-        return startsWith("series:", ignoreCase = true)
-    }
-
-    private fun String.isSeriesTagFor(seriesName: String): Boolean {
-        val tag = normalizeSeriesToken()
-        val series = seriesName.normalizeSeriesToken()
-        return tag == series ||
-            tag == "$series series" ||
-            (tag.startsWith("$series ") && tag.contains("series"))
-    }
-
-    private fun String.normalizeSeriesToken(): String {
-        return lowercase()
-            .replace(Regex("[^a-z0-9]+"), " ")
-            .trim()
-            .replace(Regex("\\s+"), " ")
-    }
-
-    private fun String.urlEncoded(): String = URLEncoder.encode(this, Charsets.UTF_8.name())
-
-    private fun String.sanitizeFileName(): String {
-        return replace(Regex("[^A-Za-z0-9._-]+"), "-").trim('-').ifBlank { "cover" }
-    }
-
-    private fun String.toSortAuthor(): String {
-        val parts = trim().split(Regex("\\s+")).filter { it.isNotBlank() }
-        return if (parts.size <= 1) this else "${parts.last()}, ${parts.dropLast(1).joinToString(" ")}"
-    }
-
-    private fun String.toIso639Code(): String {
-        return when (lowercase()) {
-            "eng" -> "en"
-            "por" -> "pt"
-            "spa" -> "es"
-            "fre", "fra" -> "fr"
-            "ger", "deu" -> "de"
-            "ita" -> "it"
-            "jpn" -> "ja"
-            "chi", "zho" -> "zh"
-            "rus" -> "ru"
-            else -> lowercase()
+            val ranked = MetadataSearchRules.rank(found, draft, limit)
+            if (ranked.isNotEmpty()) return MetadataLookupResult.Success(ranked)
+        } catch (error: Exception) {
+            failure = error
+            if (error is MetadataHttpException && error.status in setOf(400, 401, 403, 429)) break
+            if (Thread.currentThread().isInterrupted) break
         }
     }
+    return if (successfulResponse && failure == null) MetadataLookupResult.Success(MetadataSearchRules.rank(found, draft, limit))
+    else MetadataLookupResult.Failure(failure?.message)
+}
 
-    private fun List<String>.bestIsbn(): String? {
-        return asSequence()
-            .mapNotNull { it.extractIsbn() }
-            .sortedByDescending { it.length }
-            .firstOrNull()
-    }
-
-    private fun BookMetadataDraft.bestIsbn(): String? {
-        return isbn?.extractIsbn()
-            ?: identifiers.values.asSequence().mapNotNull { it.extractIsbn() }.firstOrNull()
-    }
-
-    private fun String.extractIsbn(): String? {
-        val compact = filter { it.isDigit() || it == 'X' || it == 'x' }.uppercase()
-        return when (compact.length) {
-            10, 13 -> compact
-            else -> null
-        }
-    }
-
-    @Serializable
-    private data class OpenLibrarySearchResponse(
-        val docs: List<OpenLibrarySearchDoc> = emptyList(),
+internal fun openLibraryEdition(edition: JsonObject, current: BookMetadataDraft, requestedIsbn: String? = null): MetadataLookupCandidate? {
+    val key = edition.text("key")?.safeEditionKey() ?: return null
+    val title = edition.text("title") ?: return null
+    val isbns = (edition.strings("isbn_13") + edition.strings("isbn_10")).mapNotNull(MetadataSearchRules::isbn).toSet()
+    if (requestedIsbn != null && isbns.isNotEmpty() && requestedIsbn !in isbns) return null
+    val isbn = requestedIsbn ?: isbns.sorted().firstOrNull()
+    val work = edition.items("works").mapNotNull { (it as? JsonObject)?.text("key")?.safeWorkKey() }.firstOrNull()
+    val lang = edition.items("languages").mapNotNull { (it as? JsonObject)?.text("key")?.let(MetadataSearchRules::language) }.firstOrNull()
+    val cover = edition.items("covers").mapNotNull { (it as? JsonPrimitive)?.longOrNull }.firstOrNull { it > 0 }
+    return MetadataLookupCandidate(
+        id = "openlibrary:$key", sourceName = "Open Library", coverImagePath = null, sourceUrl = "https://openlibrary.org$key",
+        matchedIsbns = isbns + listOfNotNull(requestedIsbn), editionKey = key, workKey = work, editionResolved = true, sourceLanguage = lang,
+        coverUrls = cover?.let { listOf("https://covers.openlibrary.org/b/id/$it.jpg?default=false") }.orEmpty(),
+        metadata = current.copy(
+            title = title, subtitle = edition.text("subtitle") ?: current.subtitle,
+            language = lang ?: current.language, publisher = edition.strings("publishers").firstOrNull() ?: current.publisher,
+            publishedDate = edition.text("publish_date") ?: current.publishedDate,
+            description = edition.description() ?: current.description,
+            isbn = isbn ?: current.isbn,
+            seriesName = edition.strings("series").firstOrNull() ?: current.seriesName,
+            identifiers = current.identifiers + mapOf("openlibrary_edition" to key) + (work?.let { mapOf("openlibrary_work" to it) } ?: emptyMap()),
+        ),
     )
-
-    @Serializable
-    private data class OpenLibrarySearchDoc(
-        val key: String? = null,
-        val title: String? = null,
-        @SerialName("author_name") val authorName: List<String> = emptyList(),
-        @SerialName("first_publish_year") val firstPublishYear: Int? = null,
-        val publisher: List<String> = emptyList(),
-        val language: List<String> = emptyList(),
-        val isbn: List<String> = emptyList(),
-        val subject: List<String> = emptyList(),
-        @SerialName("series_name") val seriesName: List<String> = emptyList(),
-        @SerialName("series_position") val seriesPosition: List<String> = emptyList(),
-        @SerialName("series_key") val seriesKeys: List<String> = emptyList(),
-        @SerialName("cover_i") val coverId: Long? = null,
-        @SerialName("edition_key") val editionKeys: List<String> = emptyList(),
-    )
-
-    @Serializable
-    private data class OpenLibraryWorkResponse(
-        val description: JsonElement? = null,
-    )
-
-    private companion object {
-        const val USER_AGENT = "Foliore/0.1 metadata lookup"
-        const val SEARCH_CONNECT_TIMEOUT_MS = 10_000
-        const val SEARCH_READ_TIMEOUT_MS = 12_000
-        const val SECONDARY_CONNECT_TIMEOUT_MS = 4_000
-        const val SECONDARY_READ_TIMEOUT_MS = 6_000
-        const val LOOKUP_TIMEOUT_MS = 18_000L
-        const val SEARCH_FIELDS =
-            "key,title,author_name,first_publish_year,publisher,language,isbn,subject,series_name,series_position,series_key,cover_i,edition_key"
-    }
 }

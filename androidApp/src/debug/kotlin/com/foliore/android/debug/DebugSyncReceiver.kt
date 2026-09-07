@@ -13,9 +13,21 @@ class DebugSyncReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
+        if (intent.hasExtra("qaAction")) {
+            Thread {
+                runCatching { DeviceSyncQaHarness.run(context.applicationContext, intent) }
+                    .onFailure { Log.e(TAG, "Device QA command failed", it) }
+            }.apply { name = "FolioreDeviceQA"; start() }
+            return
+        }
         val pendingResult = goAsync()
         Thread {
             try {
+                intent.getStringExtra("metadataLookupBookId")?.let { bookId ->
+                    MetadataLookupHarness.run(context, bookId)
+                    Log.d(TAG, "Read-only metadata lookup QA complete")
+                    return@Thread
+                }
                 if (intent.getBooleanExtra("isolatedSafetyTest", false)) {
                     SyncSafetyHarness.run(context)
                     Log.d(TAG, "isolated safety PASS")

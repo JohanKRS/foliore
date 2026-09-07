@@ -459,20 +459,19 @@ class LibraryViewModel(
             _state.update {
                 it.copy(importProgress = SyncProgress(SyncProgressPhase.LOOKING_UP_METADATA))
             }
-            val book = withContext(Dispatchers.IO) {
-                libraryRepository.getBook(bookId)
-            }
-            val result = if (book == null) {
-                MetadataLookupResult.Failure("Book not found")
-            } else {
+            val result = try {
                 withContext(Dispatchers.IO) {
-                    openMetadataLookupService.search(
-                        book = book,
-                        draft = draft,
-                    )
+                    val book = libraryRepository.getBook(bookId)
+                    if (book == null) MetadataLookupResult.Failure("Book not found")
+                    else openMetadataLookupService.search(book, draft)
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                MetadataLookupResult.Failure("Metadata provider unavailable")
+            } finally {
+                _state.update { it.copy(importProgress = null) }
             }
-            _state.update { it.copy(importProgress = null) }
             when (result) {
                 is MetadataLookupResult.Success -> {
                     onCandidatesReady(result.candidates)
