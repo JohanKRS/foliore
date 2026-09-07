@@ -140,7 +140,6 @@ class OpenAiApiService(
             appendLine("ISBN candidates from identifiers: ${draft.isbnCandidates().joinToString(", ")}")
             appendLine("Tags: ${draft.tags.joinToString(", ")}")
             appendLine("About: ${draft.description.orEmpty()}")
-            appendLine("Original file path: ${book.book.originalFilePath}")
             appendLine("Identifiers: ${draft.identifiers.entries.joinToString { "${it.key}=${it.value}" }}")
         }
 

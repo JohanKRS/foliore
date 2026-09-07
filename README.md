@@ -1,19 +1,19 @@
 # Foliore
 
-Foliore is an Android-first, local-first EPUB library manager. It is not an ebook reader: it imports EPUB files, keeps the original intact, extracts metadata and cover information, and prepares the foundation for editing/exporting clean copies later.
+Foliore is an Android-first, local-first EPUB library manager. It is not an ebook reader: it imports EPUB files, keeps the original intact, extracts metadata and cover information, edits metadata and covers, and exports prepared copies.
 
 ## Current Delivery
 
-This repository contains the first implementation slice from `plan.md`:
+The Android app currently includes:
 
-- Kotlin Multiplatform `shared` core.
-- Android app with Jetpack Compose and Material 3.
-- SQLDelight schema for the local library.
-- Android Storage Access Framework EPUB import.
-- SHA-256 duplicate detection.
-- Minimal EPUB parser for `META-INF/container.xml`, OPF path, title, author, language, metadata, and cover lookup.
-- Editorial library UI inspired by the provided concept images.
-- Persisted appearance setting with system, light, and dark themes.
+- Kotlin Multiplatform core, SQLDelight storage, and Compose UI.
+- Bounded EPUB import, original-file preservation, metadata/cover editing and export.
+- Optional metadata lookup, AI cover generation, and TLS-only SMTP delivery.
+- Offline synchronization through hidden Google Drive app data or a selected SAF folder.
+- Immutable remote revisions, causal merging, conflict copies and bounded retention.
+- Light/dark glass surfaces, localization and in-app privacy/reporting entries.
+
+See [sync protocol](docs/SYNC_SPEC.md), [pre-publication audit](docs/audits/2026-09-07/README.md), and [reporting service setup](support/README.md). The public privacy site, reporting endpoint, developer identity, support mailbox, OAuth configuration and release signing must be verified before distribution; `publication.properties.example` records the release confirmations.
 
 ## Open In Android Studio
 

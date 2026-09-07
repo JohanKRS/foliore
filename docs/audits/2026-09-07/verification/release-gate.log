@@ -1,0 +1,46 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/home/johan/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/lib/native-platform-0.22-milestone-29.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Calculating task graph as no cached configuration is available for tasks: :androidApp:bundleRelease
+> Task :shared:androidPreBuild UP-TO-DATE
+> Task :androidApp:preBuild UP-TO-DATE
+> Task :androidApp:generateReleaseAssets UP-TO-DATE
+> Task :shared:preAndroidMainBuild UP-TO-DATE
+> Task :androidApp:preReleaseBuild UP-TO-DATE
+> Task :androidApp:validatePlayRelease FAILED
+> Task :shared:kmpPartiallyResolvedDependenciesChecker
+> Task :shared:prepareLintJarForPublish UP-TO-DATE
+> Task :shared:generateCommonMainFolioreDatabaseInterface UP-TO-DATE
+> Task :androidApp:extractProguardFiles UP-TO-DATE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :androidApp:mergeReleaseStartupProfile UP-TO-DATE
+> Task :androidApp:desugarReleaseFileDependencies UP-TO-DATE
+> Task :androidApp:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :androidApp:generateReleaseResources UP-TO-DATE
+> Task :androidApp:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :shared:generateAndroidMainEmptyResourceFiles UP-TO-DATE
+> Task :androidApp:extractDeepLinksRelease UP-TO-DATE
+> Task :androidApp:extractReleaseVersionControlInfo UP-TO-DATE
+> Task :androidApp:javaPreCompileRelease UP-TO-DATE
+> Task :shared:writeAndroidMainAarMetadata UP-TO-DATE
+> Task :shared:processAndroidMainManifest UP-TO-DATE
+> Task :androidApp:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :androidApp:mergeReleaseAssets UP-TO-DATE
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':androidApp:validatePlayRelease'.
+> Finish publication.properties checks: public privacy policy, developer identity, support mailbox and working in-app reports.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+18 actionable tasks: 2 executed, 16 up-to-date
+Configuration cache entry stored.

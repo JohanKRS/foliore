@@ -1,0 +1,50 @@
+{
+  "final-editor-light-noprogress": {
+    "progressVisible": false,
+    "buttons": {
+      "Save": "false",
+      "Export": "true",
+      "Kindle": "true"
+    }
+  },
+  "final-editor-dark-noprogress": {
+    "progressVisible": false,
+    "buttons": {
+      "Save": "false",
+      "Export": "true",
+      "Kindle": "true"
+    }
+  },
+  "final-editor-light-progress": {
+    "progressVisible": true,
+    "buttons": {
+      "Save": "false",
+      "Export": "false",
+      "Kindle": "false"
+    }
+  },
+  "final-editor-dark-progress": {
+    "progressVisible": true,
+    "buttons": {
+      "Save": "false",
+      "Export": "false",
+      "Kindle": "false"
+    }
+  },
+  "final-library-light-noprogress": {
+    "progressVisible": false,
+    "buttons": {}
+  },
+  "final-library-dark-noprogress": {
+    "progressVisible": false,
+    "buttons": {}
+  },
+  "final-library-light-progress": {
+    "progressVisible": true,
+    "buttons": {}
+  },
+  "final-library-dark-progress": {
+    "progressVisible": true,
+    "buttons": {}
+  }
+}

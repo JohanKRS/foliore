@@ -402,4 +402,16 @@
     <string name="share_cover_invalid_image">无法打开分享的图像。</string>
     <string name="share_cover_empty_library">请先导入 EPUB，再应用分享的封面。</string>
     <string name="share_cover_search">搜索图书</string>
+    <string name="unsaved_changes_title">未保存的更改</string>
+    <string name="unsaved_changes_message">离开此书前保存更改吗？</string>
+    <string name="discard_changes">放弃</string>
+    <string name="privacy_title">隐私</string>
+    <string name="privacy_description">数据、集成、保留期限和删除</string>
+    <string name="report_ai_content">支持与举报AI内容</string>
+    <string name="ai_data_disclosure">生成时，提示词和图书元数据将使用你的密钥发送给OpenAI。可能产生API费用。应用前请检查结果。</string>
+    <string name="report_content_description">请描述问题。仅此文字会发送给Foliore，不会附加图书或图片。请勿包含个人信息。</string>
+    <string name="report_content_message">描述</string>
+    <string name="report_content_success">已收到举报，谢谢。</string>
+    <string name="report_content_failure">无法发送。文字已保留，可重试。</string>
+    <string name="report_content_send">发送举报</string>
 </resources>

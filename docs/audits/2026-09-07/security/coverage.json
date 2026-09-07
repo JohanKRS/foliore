@@ -1,0 +1,118 @@
+{
+  "completeness": "partial",
+  "deferred": [
+    {
+      "candidate": {
+        "attacker": "A writer of the user-selected SAF library directory, including a malicious document provider or another party able to modify a shared synchronization folder.",
+        "concrete_condition": "With the normal files/books parent already present, bookId '../../shared_prefs' resolves the destination to the application's data/shared_prefs directory. Staging and backup resolve to separate data/shared_prefs-<UUID> directories. Supply a unique hash, a different device ID, valid bundled snapshots and a reachable original file. Successful database insertion commits the replacement and deletes the old preferences directory.",
+        "confidence": "high, source-validated; not runtime-tested",
+        "counterevidence": [
+          "State ZIP extraction strips paths to basenames and permits only five filenames at PortableLibrarySyncEngine.kt:784-803 and :1692-1698. This blocks entry-name Zip Slip but does not constrain destinationDir.",
+          "SAF remote lookup walks child names beneath the selected root; Drive lookup walks child names under appDataFolder. A '..' remote file-path segment does not itself become native filesystem traversal in either store.",
+          "repositoryLock protects a commit from other commits on the same engine instance but performs no containment check.",
+          "Failure rollback at :772-779 does not protect a successful malicious import."
+        ],
+        "cwe": "CWE-22",
+        "entry_and_path": [
+          "ManualSyncService.kt:93-114 opens the persisted writable SAF tree and invokes PortableLibrarySyncEngine.sync.",
+          "PortableLibrarySyncEngine.kt:61-65 reads manifest books; :1030-1033 deserializes them without validation. ManifestBookSnapshot.bookId is an unrestricted String at :1455-1467.",
+          ":88-106 accepts a nondeleted schema-3 entry with nonempty files and a stateBundleFile. A new book with updatedByDeviceId different from the current device avoids remote deletion.",
+          ":434-458 schedules a new download when the attacker supplies a hash absent from the local database.",
+          ":522 uses bookId in filesDir/books/<bookId>; :523-526 also uses it in the staging path.",
+          ":529-565 reads remotely supplied state and EPUB. A valid existing state ZIP avoids EPUB parsing; bundled snapshots are decoded at :632-645 and their book IDs are replaced at :595-596.",
+          ":741-770 uses the same unrestricted ID in the backup path, renames or copies the existing destination, replaces it with the downloaded directory, inserts the record, then deletes the backup.",
+          "LibraryRepository.kt:124-181 inserts the supplied ID without validation; Library.sq:2 declares an unrestricted TEXT primary key."
+        ],
+        "id": "SYNC-SEC-01",
+        "impact": "An external folder writer can destroy or replace app-private directories outside books, including persisted preferences. This exceeds the attacker's existing authority over the external library. The demonstrated write contents use fixed EPUB/state filenames; arbitrary chosen-file content placement, credential extraction, code execution and escape from the Android application sandbox are not established.",
+        "invariant": "Remote synchronization content must only modify the intended local book directory and designated staging directories.",
+        "priority": "P1",
+        "remediation": "Validate every manifest book ID as the canonical UUID format before planning any operation. Derive staging/backup names exclusively from locally generated IDs. Independently verify canonical destination containment under filesDir/books before every rename, recursive copy and recursive delete. Reject the manifest entry before any writes when validation fails.",
+        "severity": "high",
+        "title": "Remote manifest book IDs can replace private directories outside the library"
+      },
+      "candidateId": "sync-0",
+      "id": "sync-0",
+      "reason": "Pending independent parent validation"
+    },
+    {
+      "candidate": {
+        "counterevidence": "Default certificate trust chain retained",
+        "evidence": "SSLSocketFactory.getDefault createSocket followed by startHandshake and AUTH LOGIN",
+        "location": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt:144-159",
+        "title": "SMTP sockets without endpoint identification"
+      },
+      "candidateId": "smtp-tls-identity",
+      "id": "smtp-tls-identity",
+      "reason": "Awaiting parent validation"
+    },
+    {
+      "candidate": {
+        "counterevidence": "Bundle entry basenames allowlisted",
+        "evidence": "Remote bookId used in filesDir/books/${remoteBook.bookId}; commit replaces destination recursively",
+        "location": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt:522",
+        "title": "Remote bookId flows unchecked into local destination"
+      },
+      "candidateId": "sync-bookid-traversal",
+      "id": "sync-bookid-traversal",
+      "reason": "Awaiting parent validation"
+    }
+  ],
+  "documentType": "codex-security.coverage",
+  "excludePaths": [],
+  "explicitExclusions": [
+    {
+      "pattern": "**/build/**, **/.gradle/**, **/.idea/**, **/*.jar, **/*.{ttf,png,webp}, **/values*/strings.xml",
+      "reason": "Generated/local environment files and bundled binary assets excluded; strings structurally parsed only."
+    }
+  ],
+  "includePaths": [
+    "."
+  ],
+  "inventoryStrategy": "repository",
+  "mode": "repository",
+  "openQuestions": [
+    {
+      "question": "No runtime attack simulation; security conclusions are source validated."
+    }
+  ],
+  "scanId": "d90d5b51-370c-4f35-81c2-6a907808de47",
+  "schemaVersion": "1.0",
+  "surfaces": [
+    {
+      "disposition": "reported",
+      "id": "sync-paths",
+      "label": "Remote manifest to private filesystem",
+      "notes": "State ZIP extraction strips paths to basenames and permits only five filenames at PortableLibrarySyncEngine.kt:784-803 and :1692-1698. This blocks entry-name Zip Slip but does not constrain destinationDir.\nSAF remote lookup walks child names beneath the selected root; Drive lookup walks child names under appDataFolder. A '..' remote file-path segment does not itself become native filesystem traversal in either store.\nrepositoryLock protects a commit from other commits on the same engine instance but performs no containment check.\nFailure rollback at :772-779 does not protect a successful malicious import.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "reported",
+      "id": "smtp-transport",
+      "label": "SMTP authentication and TLS",
+      "notes": "Both TLS modes retain trust-chain validation but omit hostname verification. Port 587 fails closed when STARTTLS absent; arbitrary custom ports do not.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "reported",
+      "id": "import-resources",
+      "label": "EPUB and cover parsing resource budgets",
+      "notes": "No bounded expanded-entry reads or raster preallocation sampling; SVG internal entities disabled.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "credentials-sql-sharing",
+      "label": "Credential storage, SQL and share permissions",
+      "notes": "The supplied root resolver result was empty. Resolver calls for androidApp and shared also returned no policy.\nNo. The reviewed repositories use randomized AES-256-GCM with keys generated in Android Keystore. This does not establish backup/restore correctness; encrypted preferences can be restored without their Keystore keys.\nThe shared EPUB parser uses regular expressions rather than an entity-resolving XML parser. CoverImageWriter explicitly disables AndroidSVG internal entities.\nNo ordinary entry-path filesystem extraction exists in AndroidZipEpubArchive. Sync state extraction uses allowed basenames. The confirmed traversal occurs in remote book IDs used as directory names.\nThe reviewed SQLDelight schema and repository use parameterized statements. No SQL injection was identified.\nThe FileProvider is non-exported and exposes scoped books, exports, and incoming-covers directories. Prepared exports grant read access for the selected URI.\nGoogle Drive requests the drive.appdata scope and uses fixed HTTPS API endpoints. OpenAI requests also use fixed HTTPS endpoints. No hardcoded API credential was identified in the reviewed implementation.\nNo. This audit was restricted to static analysis; no application execution or network access was performed.\nParent was informed of potential remote-folder deletion after failed downloads, duplicate library-root deletion without merging, JPEG bytes replacing non-JPEG EPUB cover entries without updating media-type, and unescaped regex replacement strings during metadata preparation. These require parent validation and are not counted as separate security findings here.",
+      "receiptRefs": []
+    },
+    {
+      "disposition": "no_issue_found",
+      "id": "remaining-source",
+      "label": "Remaining UI, viewmodels, workers, tests and configuration",
+      "notes": "Independent supplemental full-file review completed; combined inventories cover all 103 Kotlin source files. Additional functional issues are tracked separately in the publication audit. No further independent security findings.",
+      "receiptRefs": []
+    }
+  ]
+}

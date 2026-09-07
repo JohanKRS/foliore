@@ -40,6 +40,8 @@ android {
         compose = true
     }
 
+    bundle { language { enableSplit = false } }
+
     signingConfigs {
         if (hasReleaseSigningConfig) {
             create("release") {
@@ -92,3 +94,25 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+// Do not silently produce an unsigned upload artifact.
+tasks.matching { it.name == "bundleRelease" }.configureEach {
+    inputs.property("releaseSigningConfigured", hasReleaseSigningConfig)
+    doFirst {
+        check(inputs.properties["releaseSigningConfigured"] == true) { "Configure keystore.properties with the upload key before building the Play Store bundle." }
+    }
+}
+
+val publicationPropertiesFile = rootProject.file("publication.properties")
+val publicationProperties = Properties().apply {
+    if (publicationPropertiesFile.exists()) publicationPropertiesFile.inputStream().use(::load)
+}
+val publicationReady = listOf("privacyPublished", "reportingEndpointVerified", "developerIdentityConfirmed", "supportMailboxVerified")
+    .all { publicationProperties.getProperty(it) == "true" }
+val validatePlayRelease by tasks.registering {
+    inputs.property("publicationReady", publicationReady)
+    doLast {
+        check(inputs.properties["publicationReady"] == true) { "Finish publication.properties checks: public privacy policy, developer identity, support mailbox and working in-app reports." }
+    }
+}
+tasks.matching { it.name == "bundleRelease" }.configureEach { dependsOn(validatePlayRelease) }

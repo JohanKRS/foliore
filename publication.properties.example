@@ -1,0 +1,5 @@
+# Copy to publication.properties only when preparing distribution. Confirm each item in production.
+privacyPublished=false
+reportingEndpointVerified=false
+developerIdentityConfirmed=false
+supportMailboxVerified=false

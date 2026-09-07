@@ -11,12 +11,13 @@ class AndroidBookDeleter(
     private val appContext = context.applicationContext
     private val pendingRemoteDeletionStore = PendingRemoteDeletionStore(appContext)
 
-    fun delete(bookId: String): BookDeleteResult {
-        val deleted = libraryRepository.deleteBook(bookId) ?: return BookDeleteResult.NotFound
-        val bookDir = File(appContext.filesDir, "books/$bookId")
-        pendingRemoteDeletionStore.markDeleted(bookId)
-
+    fun delete(bookId: String): BookDeleteResult = synchronized(SyncOperationCoordinator.localDataLock) {
         return runCatching {
+            requireSafeBookId(bookId)
+            val existing = libraryRepository.getBook(bookId) ?: return BookDeleteResult.NotFound
+            pendingRemoteDeletionStore.markDeleted(bookId, existing.book.revision, existing.book.updatedAt)
+            val deleted = libraryRepository.deleteBook(bookId) ?: return BookDeleteResult.NotFound
+            val bookDir = safeChildDirectory(File(appContext.filesDir, "books"), bookId)
             if (bookDir.isSafeBookDirectory(bookId) && bookDir.exists()) {
                 check(bookDir.deleteRecursively()) { "Cannot delete local book files" }
             }

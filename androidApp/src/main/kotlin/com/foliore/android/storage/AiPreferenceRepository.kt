@@ -69,8 +69,7 @@ class AiPreferenceRepository(context: Context) {
     }
 
     private fun loadHasOpenAiApiKey(): Boolean {
-        return preferences.contains(KEY_OPENAI_API_KEY_IV) &&
-            preferences.contains(KEY_OPENAI_API_KEY_CIPHERTEXT)
+        return !openAiApiKey().isNullOrBlank()
     }
 
     private fun saveEncryptedSecret(

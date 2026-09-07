@@ -16,6 +16,11 @@ class DebugSyncReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         Thread {
             try {
+                if (intent.getBooleanExtra("isolatedSafetyTest", false)) {
+                    SyncSafetyHarness.run(context)
+                    Log.d(TAG, "isolated safety PASS")
+                    return@Thread
+                }
                 Log.d(TAG, "debug sync start")
                 val result = AppContainer(context).syncService.syncNow(onProgress = ::logProgress)
                 Log.d(TAG, "debug sync result=${result.toDebugString()}")

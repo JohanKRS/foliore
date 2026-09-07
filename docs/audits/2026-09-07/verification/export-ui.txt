@@ -1,0 +1,4 @@
+PASS: exported OPF title equals unsaved editor draft: Death's End_QA
+PASS: original title restored: Death's End
+PASS: library retained 15 books
+No external share or email was sent. QA export removed from app cache after verification.

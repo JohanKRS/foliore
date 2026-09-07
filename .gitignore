@@ -13,3 +13,6 @@ qa/
 *.aab
 *.keystore
 tablet-*.png
+
+publication.properties
+support/private-reports/

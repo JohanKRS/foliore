@@ -44,8 +44,7 @@ class MetadataPreferenceRepository(context: Context) {
     }
 
     private fun loadHasGoogleBooksApiKey(): Boolean {
-        return preferences.contains(KEY_GOOGLE_BOOKS_API_KEY_IV) &&
-            preferences.contains(KEY_GOOGLE_BOOKS_API_KEY_CIPHERTEXT)
+        return !googleBooksApiKey().isNullOrBlank()
     }
 
     private fun saveEncryptedSecret(value: String): Boolean {

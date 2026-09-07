@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,8 @@ fun SyncProgressDivider(
 fun SyncProgressStatusLine(
     progress: SyncProgress?,
     modifier: Modifier = Modifier,
+    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    countColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     Row(
         modifier = modifier,
@@ -78,7 +81,7 @@ fun SyncProgressStatusLine(
             text = progress?.message() ?: stringResource(R.string.sync_progress_preparing),
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = textColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -87,7 +90,7 @@ fun SyncProgressStatusLine(
             Text(
                 text = countText,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = countColor,
                 maxLines = 1,
             )
         }

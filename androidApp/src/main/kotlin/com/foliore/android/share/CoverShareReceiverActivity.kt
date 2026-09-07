@@ -76,9 +76,20 @@ class CoverShareReceiverActivity : ComponentActivity() {
         enableEdgeToEdge()
         allowDisplayCutout()
 
-        val incomingCoverUri = IncomingCoverRepository(this).copyFromIntent(intent)
 
         setContent {
+            var incomingCoverUri by remember { mutableStateOf<Uri?>(null) }
+            var receivingCover by remember { mutableStateOf(true) }
+            LaunchedEffect(Unit) {
+                incomingCoverUri = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    IncomingCoverRepository(this@CoverShareReceiverActivity).copyFromIntent(intent)
+                }
+                receivingCover = false
+            }
+            if (receivingCover) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { androidx.compose.material3.CircularProgressIndicator() }
+                return@setContent
+            }
             val themeMode = appContainer.themePreferenceRepository.themeMode.collectAsStateWithLifecycle()
             val systemDarkTheme = isSystemInDarkTheme()
             val darkTheme = when (themeMode.value) {

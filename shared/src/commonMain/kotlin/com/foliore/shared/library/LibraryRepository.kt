@@ -311,29 +311,23 @@ class LibraryRepository(
     fun markSynced(
         bookId: String,
         syncedAt: String,
-    ): LibraryBook? {
-        val current = getBook(bookId) ?: return null
-        val nextBook = current.book.copy(
-            lastSyncedAt = syncedAt,
-            syncStatus = SyncStatus.SYNCED,
-        )
-
-        database.transaction {
-            upsertBook(nextBook)
-        }
-
-        return LibraryBook(nextBook, current.metadata)
+        expectedRevision: Long? = null,
+        expectedUpdatedAt: String? = null,
+    ): LibraryBook? = database.transactionWithResult {
+        val current = getBook(bookId) ?: return@transactionWithResult null
+        if ((expectedRevision != null && current.book.revision != expectedRevision) ||
+            (expectedUpdatedAt != null && current.book.updatedAt != expectedUpdatedAt)
+        ) return@transactionWithResult current
+        val nextBook = current.book.copy(lastSyncedAt = syncedAt, syncStatus = SyncStatus.SYNCED)
+        upsertBook(nextBook)
+        LibraryBook(nextBook, current.metadata)
     }
 
-    fun markSyncConflict(bookId: String): LibraryBook? {
-        val current = getBook(bookId) ?: return null
+    fun markSyncConflict(bookId: String): LibraryBook? = database.transactionWithResult {
+        val current = getBook(bookId) ?: return@transactionWithResult null
         val nextBook = current.book.copy(syncStatus = SyncStatus.CONFLICT)
-
-        database.transaction {
-            upsertBook(nextBook)
-        }
-
-        return LibraryBook(nextBook, current.metadata)
+        upsertBook(nextBook)
+        LibraryBook(nextBook, current.metadata)
     }
 
     private fun upsertBook(book: Book) {

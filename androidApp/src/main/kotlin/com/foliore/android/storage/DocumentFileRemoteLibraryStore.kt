@@ -7,10 +7,18 @@ import java.io.File
 internal class DocumentFileRemoteLibraryStore(
     private val context: Context,
     private val root: DocumentFile,
+    override val deletionScope: String? = null,
     override val label: String,
 ) : RemoteLibraryStore {
     private val appContext = context.applicationContext
     private val documentCache = DocumentFileCache()
+
+    override fun listRootEntries(): List<RemoteRootEntry> {
+        documentCache.invalidate(root)
+        val entries = documentCache.childrenOf(root)
+        check(entries.groupBy { it.name?.lowercase() }.none { it.value.size > 1 }) { "Ambiguous sync objects" }
+        return entries.map { RemoteRootEntry(checkNotNull(it.name), it.isDirectory, it.lastModified()) }
+    }
 
     override fun readText(path: String): String? {
         return root.findRelativeFile(path, documentCache)?.readText()
@@ -34,13 +42,13 @@ internal class DocumentFileRemoteLibraryStore(
         source: File,
         mimeType: String,
     ) {
-        if (!source.exists()) return
+        check(source.isFile) { "Missing upload source" }
         val destination = root.replaceRelativeFile(path, mimeType, documentCache)
         val outputStream = appContext.contentResolver.openOutputStream(destination.uri, "wt")
             ?: error("Cannot open $path for writing")
         outputStream.use { output ->
             source.inputStream().use { input ->
-                input.copyTo(output)
+                input.copyBounded(output, StorageLimits.EPUB_BYTES)
             }
         }
     }
@@ -169,7 +177,7 @@ internal class DocumentFileRemoteLibraryStore(
             ?: error("Cannot open ${name ?: uri} for reading")
         inputStream.use { input ->
             destination.outputStream().use { output ->
-                input.copyTo(output)
+                input.copyBounded(output, StorageLimits.EPUB_BYTES)
             }
         }
     }
@@ -177,7 +185,7 @@ internal class DocumentFileRemoteLibraryStore(
     private fun DocumentFile.readText(): String {
         val inputStream = appContext.contentResolver.openInputStream(uri)
             ?: error("Cannot open ${name ?: uri} for reading")
-        return inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        return inputStream.use { it.readBounded(StorageLimits.ENTRY_BYTES).toString(Charsets.UTF_8) }
     }
 
     private fun DocumentFile.findUniqueFile(
@@ -186,14 +194,7 @@ internal class DocumentFileRemoteLibraryStore(
     ): DocumentFile? {
         val matches = documentCache.filesNamed(this, name)
         val canonical = documentCache.bestFile(matches) ?: return null
-        if (matches.size > 1) {
-            matches
-                .filterNot { it.uri == canonical.uri }
-                .forEach { duplicate ->
-                    if (!duplicate.delete()) error("Cannot delete duplicate file $name")
-                }
-            documentCache.invalidate(this)
-        }
+        check(matches.size == 1) { "Ambiguous remote name: $name" }
         return canonical
     }
 
@@ -203,15 +204,7 @@ internal class DocumentFileRemoteLibraryStore(
     ): DocumentFile? {
         val matches = documentCache.directoriesNamed(this, name)
         val canonical = documentCache.bestDirectory(matches) ?: return null
-        if (matches.size > 1) {
-            matches
-                .filterNot { it.uri == canonical.uri }
-                .forEach { duplicate ->
-                    duplicate.deleteTree(documentCache)
-                }
-            documentCache.invalidate(this)
-            documentCache.invalidate(canonical)
-        }
+        check(matches.size == 1) { "Ambiguous remote name: $name" }
         return canonical
     }
 

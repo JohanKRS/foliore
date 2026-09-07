@@ -1,0 +1,12 @@
+{
+  "phone": {
+    "left": 42,
+    "right": 1038
+  },
+  "tabletRightColumn": {
+    "left": 926,
+    "right": 1878
+  },
+  "build": "assembleDebug passed",
+  "visualInspection": "phone and tablet fields/description passed"
+}

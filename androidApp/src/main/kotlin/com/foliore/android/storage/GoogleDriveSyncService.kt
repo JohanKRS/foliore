@@ -40,7 +40,8 @@ class GoogleDriveSyncService(
     fun syncNow(
         onProgress: (ManualSyncProgress) -> Unit = {},
         allowRemoteLibraryRecreation: Boolean = false,
-    ): ManualSyncResult {
+    ): ManualSyncResult = synchronized(SyncOperationCoordinator.remoteLock) {
+        val destinationScope = "drive:" + syncSettingsRepository.googleDriveAccountName().orEmpty()
         return when (val authorization = googleDriveAuthService.authorize()) {
             is GoogleDriveAuthorization.Authorized -> runCatching {
                 val drive = GoogleDriveApiClient(authorization.accessToken)
@@ -64,20 +65,8 @@ class GoogleDriveSyncService(
                     )
                 }
 
-                if (allowRemoteLibraryRecreation && stats.syncedBooks == 0) {
-                    deleteAllAppDataFiles(
-                        drive = drive,
-                        onProgress = { current, total ->
-                            onProgress(
-                                ManualSyncProgress(
-                                    phase = ManualSyncPhase.DELETING_REMOTE,
-                                    current = current,
-                                    total = total,
-                                ),
-                            )
-                        },
-                    )
-                } else if (!hasLocalBooks && stats.syncedBooks == 0 && !stats.hasBackup) {
+                // Recreating the index must never erase recoverable remote files.
+                if (!hasLocalBooks && stats.syncedBooks == 0 && !stats.hasBackup) {
                     return@runCatching ManualSyncResult.Synced(
                         uploadedBooks = 0,
                         downloadedBooks = 0,
@@ -89,6 +78,7 @@ class GoogleDriveSyncService(
 
                 val store = GoogleDriveAppDataRemoteLibraryStore(
                     drive = drive,
+                    deletionScope = destinationScope,
                     label = syncSettingsRepository.googleDriveAccountLabel()
                         ?: SyncSettingsRepository.GOOGLE_DRIVE_DEFAULT_LABEL,
                 )
@@ -115,7 +105,7 @@ class GoogleDriveSyncService(
     fun deleteBackup(
         accessToken: String,
         onProgress: (ManualSyncProgress) -> Unit = {},
-    ): ManualSyncResult {
+    ): ManualSyncResult = synchronized(SyncOperationCoordinator.remoteLock) {
         return runCatching {
             onProgress(ManualSyncProgress(ManualSyncPhase.DELETING_REMOTE))
             val drive = GoogleDriveApiClient(accessToken)
@@ -194,22 +184,11 @@ class GoogleDriveSyncService(
         val rootChildren = allRootChildren.filterNot { item -> item.id in deletionMarkerIds }
         val knownRootChildren = rootChildren.filter(::isKnownFolioreRootChild)
         val unknownRootChildren = rootChildren.filterNot(::isKnownFolioreRootChild)
-        val manifestInfo = rootChildren
-            .filter { child ->
-                child.name == MANIFEST_FILE_NAME &&
-                    child.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE
-            }
-            .sortedWith(
-                compareByDescending<DriveFileMetadata> { it.modifiedTime.orEmpty() }
-                    .thenBy { it.id },
-            )
-            .firstNotNullOfOrNull { file ->
-                runCatching { parseManifestInfo(drive.readText(file.id)) }.getOrNull()
-            }
+        val manifestInfo = RemoteManifestJournal(GoogleDriveAppDataRemoteLibraryStore(drive)).read()?.let(::parseManifestInfo)
         val remoteFiles = appDataItems.filter { item ->
             item.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE
         }
-        val deletionMarkerPresent = deletionMarkers.isNotEmpty()
+        val deletionMarkerPresent = deletionMarkers.isNotEmpty() && manifestInfo == null
 
         return GoogleDriveBackupStats(
             hasBackup = !deletionMarkerPresent && manifestInfo != null,
@@ -331,9 +310,10 @@ class GoogleDriveSyncService(
 
     private fun isKnownFolioreRootChild(child: DriveFileMetadata): Boolean {
         return if (child.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE) {
-            child.name in FOLIORE_ROOT_FOLDERS
+            child.name.startsWith(RemoteManifestJournal.DATA_PREFIX)
         } else {
-            child.name in FOLIORE_ROOT_FILES
+            child.name.startsWith(RemoteManifestJournal.RECORD_PREFIX) ||
+                child.name.startsWith(RemoteManifestJournal.COMMIT_PREFIX)
         }
     }
 
@@ -391,15 +371,11 @@ class GoogleDriveSyncService(
 
     private companion object {
         const val TAG = "GoogleDriveSyncService"
-        const val MANIFEST_FILE_NAME = "library.manifest.json"
         const val DELETION_MARKER_FILE_NAME = "library.deleted.json"
-        const val AI_COVER_PROMPTS_FILE_NAME = "ai-cover-prompts.json"
         const val MAX_CONCURRENT_DELETES = 4
         const val MAX_DELETE_PASSES = 4
         const val DELETE_MAX_ATTEMPTS = 3
         val DELETE_RETRY_DELAYS_MS = longArrayOf(750L, 2_000L)
-        val FOLIORE_ROOT_FOLDERS = setOf("books", "devices", "snapshots")
-        val FOLIORE_ROOT_FILES = setOf(MANIFEST_FILE_NAME, AI_COVER_PROMPTS_FILE_NAME)
     }
 }
 

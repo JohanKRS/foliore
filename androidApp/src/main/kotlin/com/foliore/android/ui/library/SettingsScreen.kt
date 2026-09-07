@@ -95,6 +95,21 @@ fun SettingsScreen(
     onDisconnectSync: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showReport by rememberSaveable { mutableStateOf(false) }
+    if (showReport) ContentReportDialog { showReport = false }
+    var showPrivacy by rememberSaveable { mutableStateOf(false) }
+    if (showPrivacy) {
+        val policy = androidx.compose.runtime.remember { context.assets.open("privacy.txt").bufferedReader().use { it.readText() } }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showPrivacy = false },
+            title = { Text(stringResource(R.string.privacy_title)) },
+            text = { androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(policy, modifier = Modifier.verticalScroll(rememberScrollState()))
+            } },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { showPrivacy = false }) { Text(stringResource(R.string.action_close)) } },
+        )
+    }
     var showThemePicker by rememberSaveable { mutableStateOf(false) }
     var showKindleSettings by rememberSaveable { mutableStateOf(false) }
     var showExperimentalSettings by rememberSaveable { mutableStateOf(false) }
@@ -145,6 +160,19 @@ fun SettingsScreen(
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(28.dp))
 
+        CompactSettingsRow(
+            icon = Icons.Outlined.TaskAlt,
+            title = stringResource(R.string.privacy_title),
+            description = stringResource(R.string.privacy_description),
+            onClick = { showPrivacy = true },
+        )
+        CompactSettingsRow(
+            icon = Icons.Outlined.Email,
+            title = stringResource(R.string.report_ai_content),
+            description = "foliore@johankrs.com",
+            onClick = { showReport = true },
+        )
+        Spacer(modifier = Modifier.height(20.dp))
         SectionTitle(text = stringResource(R.string.settings_library))
         Spacer(modifier = Modifier.height(12.dp))
         Row(

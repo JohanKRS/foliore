@@ -4,7 +4,7 @@ CREATE TABLE book (
   prepared_file_path TEXT,
   cover_image_path TEXT,
   cover_thumb_path TEXT,
-  original_hash_sha256 TEXT NOT NULL UNIQUE,
+  original_hash_sha256 TEXT NOT NULL,
   file_size_bytes INTEGER NOT NULL,
   imported_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,

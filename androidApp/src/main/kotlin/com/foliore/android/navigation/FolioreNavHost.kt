@@ -23,6 +23,8 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -75,11 +77,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -109,6 +114,8 @@ import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.theme.ThemeMode
+import com.foliore.android.ui.theme.FolioreBrassInk
+import com.foliore.android.ui.theme.FolioreDarkBrassHighlight
 import com.foliore.android.ui.tuning.LocalVisualTuning
 import com.foliore.android.viewmodel.LibraryViewModel
 import com.foliore.android.viewmodel.SyncProgress
@@ -229,9 +236,15 @@ fun FolioreNavHost(
                         progress = libraryState.activeProgress,
                         tabletWorkspace = openTabletWorkspace,
                         hazeState = activeChromeHazeState,
-                        onLibraryClick = { navController.returnToLibrary() },
+                        onLibraryClick = {
+                            val navigate = { navController.returnToLibrary() }
+                            if (editActions != null) editActions.onRequestNavigate(navigate) else navigate()
+                        },
                         onSyncClick = libraryViewModel::syncNow,
-                        onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
+                        onSettingsClick = {
+                            val navigate = { navController.navigateTopLevel(Routes.SETTINGS) }
+                            if (editActions != null) editActions.onRequestNavigate(navigate) else navigate()
+                        },
                     )
                 }
             },
@@ -264,12 +277,12 @@ fun FolioreNavHost(
                     onAppLanguageChange = onAppLanguageChange,
                     onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
                     onBack = { navController.popBackStack() },
-                    onEditBottomBarActionsChange = { actions ->
-                        editBottomBarState = actions?.let {
-                            EditBottomBarState(
-                                bookId = currentBookId.orEmpty(),
-                                actions = it,
-                            )
+                    onEditBottomBarActionsChange = { bookId, actions ->
+                        // A restored route can publish actions before currentBookId updates.
+                        if (actions != null) {
+                            editBottomBarState = EditBottomBarState(bookId = bookId, actions = actions)
+                        } else if (editBottomBarState?.bookId == bookId) {
+                            editBottomBarState = null
                         }
                     },
                     onEditTopChromeContentChange = { content ->
@@ -373,7 +386,7 @@ private fun NavContent(
     onAppLanguageChange: (AppLanguage) -> Unit,
     onEditBook: (String) -> Unit,
     onBack: () -> Unit,
-    onEditBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
+    onEditBottomBarActionsChange: (String, EditBottomBarActions?) -> Unit,
     onEditTopChromeContentChange: (TopChromeContent?) -> Unit,
     libraryGridScrollState: BookGridScrollState,
     libraryChromeHazeState: HazeState,
@@ -423,11 +436,12 @@ private fun NavContent(
             )
         }
         composable(Routes.EDIT) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty()
             EditMetadataRoute(
                 viewModel = libraryViewModel,
-                bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty(),
+                bookId = bookId,
                 onBack = onBack,
-                onBottomBarActionsChange = onEditBottomBarActionsChange,
+                onBottomBarActionsChange = { actions -> onEditBottomBarActionsChange(bookId, actions) },
                 chromeHazeState = editChromeHazeState,
                 topChromeInset = topChromeInset,
                 bottomChromeInset = bottomChromeInset,
@@ -456,27 +470,12 @@ private fun TopChromeGlassContainer(
                     .hazeEffect(state = hazeState) {
                         inputScale = HazeInputScale.Fixed(0.5f)
                         blurEffect {
-                            blurRadius = 40.dp
-                            colorEffects = listOf(
-                                HazeColorEffect.tint(chromeTint.copy(alpha = 0.74f)),
-                            )
-                            progressive = HazeProgressive.verticalGradient(
-                                startIntensity = 1f,
-                                endIntensity = 0f,
-                            )
+                            blurRadius = 28.dp
+                            backgroundColor = chromeTint
+                            colorEffects = emptyList()
                         }
                     }
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0f to chromeTint.copy(alpha = 0.98f),
-                                0.48f to chromeTint.copy(alpha = 0.94f),
-                                0.78f to chromeTint.copy(alpha = 0.82f),
-                                0.93f to chromeTint.copy(alpha = 0.58f),
-                                1f to chromeTint.copy(alpha = 0.34f),
-                            ),
-                        ),
-                    ),
+                    .background(chromeTint.copy(alpha = 0.80f)),
             )
         }
         Box(
@@ -526,26 +525,15 @@ private fun FolioreNavigationBar(
             .hazeEffect(state = hazeState) {
                 inputScale = HazeInputScale.Fixed(0.5f)
                 blurEffect {
-                    blurRadius = 40.dp
-                    colorEffects = listOf(
-                        HazeColorEffect.tint(chromeTint.copy(alpha = 0.7f)),
-                    )
-                    progressive = HazeProgressive.verticalGradient(
-                        startIntensity = 0f,
-                        endIntensity = 1f,
-                    )
+                    blurRadius = 28.dp
+                    // Transparent source pixels must not reveal the original sharp text.
+                    backgroundColor = chromeTint
+                    colorEffects = emptyList()
                 }
             }
-            .background(
-                Brush.verticalGradient(
-                    colorStops = arrayOf(
-                        0f to chromeTint.copy(alpha = 0.38f),
-                        0.22f to chromeTint.copy(alpha = 0.68f),
-                        0.58f to chromeTint.copy(alpha = 0.92f),
-                        1f to chromeTint.copy(alpha = 0.98f),
-                    ),
-                ),
-            ),
+            // Keep the same contrast floor under every control, including while the
+            // progress/action rows animate. The scrim also protects the blur fallback.
+            .background(chromeTint.copy(alpha = 0.80f)),
     ) {
         if (mobileChrome) {
             AnimatedVisibility(
@@ -707,6 +695,8 @@ private fun SyncStatusBlock(
         Spacer(modifier = Modifier.height(6.dp))
         SyncProgressStatusLine(
             progress = progress,
+            textColor = bottomBarSecondaryColor(),
+            countColor = bottomBarAccentColor(),
             modifier = Modifier
                 .widthIn(max = 560.dp)
                 .fillMaxWidth()
@@ -1024,9 +1014,10 @@ private fun FolioreEditActions(
     val saveEnabled = actions?.saveEnabled == true && !isLoading
     val saveHasPendingChanges = actions?.hasPendingSave == true && !isLoading
     val neutralButtonContainer = MaterialTheme.colorScheme.background
-    val neutralButtonContent = MaterialTheme.colorScheme.primary
+    val neutralButtonContent = bottomBarAccentColor()
     val neutralButtonBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
-    val disabledButtonContent = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
+    val disabledButtonContent = MaterialTheme.colorScheme.onSurfaceVariant
+    val disabledButtonBorder = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
     val tuning = LocalVisualTuning.current
     val horizontalPadding = if (actionStrip) {
         tuning.bottomActionHorizontalPadding.dp
@@ -1106,7 +1097,7 @@ private fun FolioreEditActions(
                     .height(buttonHeight),
                 shape = RoundedCornerShape(5.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    containerColor = neutralButtonContent,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     disabledContainerColor = neutralButtonContainer,
                     disabledContentColor = disabledButtonContent,
@@ -1140,7 +1131,7 @@ private fun FolioreEditActions(
                     disabledContainerColor = neutralButtonContainer,
                     disabledContentColor = disabledButtonContent,
                 ),
-                border = BorderStroke(1.dp, neutralButtonBorder),
+                border = BorderStroke(1.dp, if (saveEnabled) neutralButtonBorder else disabledButtonBorder),
                 contentPadding = buttonContentPadding,
             ) {
                 Icon(
@@ -1170,7 +1161,7 @@ private fun FolioreEditActions(
                 disabledContainerColor = neutralButtonContainer,
                 disabledContentColor = disabledButtonContent,
             ),
-            border = BorderStroke(1.dp, neutralButtonBorder),
+            border = BorderStroke(1.dp, if (actionsEnabled) neutralButtonBorder else disabledButtonBorder),
             contentPadding = buttonContentPadding,
         ) {
             Icon(
@@ -1199,7 +1190,7 @@ private fun FolioreEditActions(
                 disabledContainerColor = neutralButtonContainer,
                 disabledContentColor = disabledButtonContent,
             ),
-            border = BorderStroke(1.dp, neutralButtonBorder),
+            border = BorderStroke(1.dp, if (actionsEnabled) neutralButtonBorder else disabledButtonBorder),
             contentPadding = buttonContentPadding,
         ) {
             Icon(
@@ -1231,16 +1222,16 @@ private fun FolioreBottomNavigationItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val itemColor = if (selected) {
-        MaterialTheme.colorScheme.primary
+    val itemColor = if (selected && enabled) {
+        bottomBarAccentColor()
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }.copy(alpha = if (enabled) 1f else 0.42f)
+        bottomBarSecondaryColor()
+    }
 
     Column(
         modifier = modifier
             .height(itemHeight)
-            .clickable(enabled = enabled, onClick = onClick),
+            .selectable(selected = selected, enabled = enabled, role = Role.Tab, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -1254,11 +1245,27 @@ private fun FolioreBottomNavigationItem(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             color = itemColor,
             maxLines = 1,
         )
     }
 }
+
+@Composable
+private fun bottomBarAccentColor(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) {
+        FolioreBrassInk
+    } else {
+        FolioreDarkBrassHighlight
+    }
+
+@Composable
+private fun bottomBarSecondaryColor(): Color = lerp(
+    MaterialTheme.colorScheme.onSurfaceVariant,
+    MaterialTheme.colorScheme.onBackground,
+    0.5f,
+)
 
 private fun androidx.navigation.NavController.navigateTopLevel(route: String) {
     navigate(route) {

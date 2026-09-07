@@ -402,4 +402,16 @@
     <string name="share_cover_invalid_image">Impossible d’ouvrir l’image partagée.</string>
     <string name="share_cover_empty_library">Importez un EPUB avant d’appliquer une couverture partagée.</string>
     <string name="share_cover_search">Rechercher un livre</string>
+    <string name="unsaved_changes_title">Modifications non enregistrées</string>
+    <string name="unsaved_changes_message">Enregistrer les modifications avant de quitter ce livre ?</string>
+    <string name="discard_changes">Ignorer</string>
+    <string name="privacy_title">Confidentialité</string>
+    <string name="privacy_description">Données, intégrations, conservation et suppression</string>
+    <string name="report_ai_content">Assistance et signalement de contenu IA</string>
+    <string name="ai_data_disclosure">La génération transmet votre demande et les métadonnées du livre à OpenAI avec votre clé. Des frais API peuvent être facturés. Vérifiez les résultats avant de les appliquer.</string>
+    <string name="report_content_description">Décrivez le problème. Seul ce texte sera envoyé à Foliore, sans livre ni image. Évitez les données personnelles.</string>
+    <string name="report_content_message">Description</string>
+    <string name="report_content_success">Signalement reçu. Merci.</string>
+    <string name="report_content_failure">Envoi impossible. Votre texte reste ici pour réessayer.</string>
+    <string name="report_content_send">Envoyer le signalement</string>
 </resources>

@@ -20,6 +20,7 @@ data class CoverImagePaths(
 
 class CoverImageWriter {
     fun writeCover(bookDir: File, bytes: ByteArray): CoverImagePaths? {
+        require(bytes.size.toLong() <= StorageLimits.ENTRY_BYTES) { "Cover exceeds size limit" }
         val decoded = decode(bytes) ?: return null
         val cover = decoded.scaledToFit(maxWidth = 1400, maxHeight = 2100)
         val thumb = decoded.scaledToFit(maxWidth = 420, maxHeight = 630)
@@ -67,11 +68,22 @@ class CoverImageWriter {
             decodeSvg(bytes)?.let { return it }
         }
 
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { return it }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth > 0 && bounds.outHeight > 0) {
+            require(bounds.outWidth.toLong() * bounds.outHeight <= StorageLimits.IMAGE_PIXELS) { "Cover dimensions exceed limit" }
+            val options = BitmapFactory.Options().apply { inSampleSize = 1 }
+            while (bounds.outWidth / options.inSampleSize > MAX_COVER_WIDTH * 2 ||
+                bounds.outHeight / options.inSampleSize > MAX_COVER_HEIGHT * 2) options.inSampleSize *= 2
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)?.let { return it }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             runCatching {
-                ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, _, _ ->
+                ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, info, _ ->
+                    require(info.size.width.toLong() * info.size.height <= StorageLimits.IMAGE_PIXELS) { "Cover dimensions exceed limit" }
+                    val scale = min(MAX_COVER_WIDTH.toFloat() / info.size.width, MAX_COVER_HEIGHT.toFloat() / info.size.height).coerceAtMost(1f)
+                    decoder.setTargetSize((info.size.width * scale).toInt().coerceAtLeast(1), (info.size.height * scale).toInt().coerceAtLeast(1))
                     decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
                     decoder.isMutableRequired = true
                 }

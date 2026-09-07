@@ -8,6 +8,8 @@ val FolioreInk = Color(0xFF24231F)
 val FolioreMuted = Color(0xFF6E6860)
 val FolioreLine = Color(0xFFE0D6C7)
 val FolioreBrass = Color(0xFFA87335)
+val FolioreBrassInk = Color(0xFF684216)
+val FolioreDarkBrassHighlight = Color(0xFFE2AB68)
 val FolioreMoss = Color(0xFF405A4A)
 val FolioreTerracotta = Color(0xFFB35D43)
 
@@ -18,4 +20,3 @@ val FolioreDarkMuted = Color(0xFFC1B7A7)
 val FolioreDarkLine = Color(0xFF3A352E)
 val FolioreDarkBrass = Color(0xFFD39B57)
 val FolioreDarkMoss = Color(0xFF89A18E)
-

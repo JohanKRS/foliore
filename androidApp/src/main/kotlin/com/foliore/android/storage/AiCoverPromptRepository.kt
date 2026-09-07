@@ -19,11 +19,11 @@ class AiCoverPromptRepository(context: Context) {
         }.getOrDefault(emptyList()).normalized()
     }
 
-    fun save(record: AiCoverPromptRecord): List<AiCoverPromptRecord> {
+    fun save(record: AiCoverPromptRecord): List<AiCoverPromptRecord> = synchronized(lock) {
         return replaceAll(records() + record)
     }
 
-    fun replaceAll(records: List<AiCoverPromptRecord>): List<AiCoverPromptRecord> {
+    fun replaceAll(records: List<AiCoverPromptRecord>): List<AiCoverPromptRecord> = synchronized(lock) {
         val nextRecords = records.normalized()
         preferences.edit()
             .putString(
@@ -32,6 +32,10 @@ class AiCoverPromptRepository(context: Context) {
             )
             .apply()
         return nextRecords
+    }
+
+    fun mergeAll(incoming: List<AiCoverPromptRecord>): List<AiCoverPromptRecord> = synchronized(lock) {
+        replaceAll(records() + incoming)
     }
 
     private fun List<AiCoverPromptRecord>.normalized(): List<AiCoverPromptRecord> {
@@ -43,6 +47,7 @@ class AiCoverPromptRepository(context: Context) {
     }
 
     private companion object {
+        val lock = Any()
         const val PREFERENCES_NAME = "foliore_ai_cover_prompts"
         const val KEY_SELECTED_PROMPTS = "selected_prompts"
         const val MAX_RECORDS = 250

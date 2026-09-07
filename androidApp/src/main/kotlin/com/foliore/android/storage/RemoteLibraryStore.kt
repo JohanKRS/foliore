@@ -3,11 +3,15 @@ package com.foliore.android.storage
 import java.io.File
 
 internal interface RemoteLibraryStore {
+    val currentTimeMillis: Long? get() = System.currentTimeMillis()
+    val deletionScope: String? get() = null
     val label: String
     val maxConcurrentUploads: Int
         get() = 1
     val maxConcurrentDownloads: Int
         get() = 1
+
+    fun listRootEntries(): List<RemoteRootEntry>
 
     fun readText(path: String): String?
 
@@ -41,10 +45,11 @@ internal interface RemoteLibraryStore {
 }
 
 internal fun String.normalizedRemotePath(): String {
-    return split('/')
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
-        .joinToString("/")
+    if (isEmpty()) return ""
+    require(!startsWith('/') && !contains('\\') && none { it.code < 32 }) { "Invalid remote path" }
+    val parts = split('/')
+    require(parts.all { it.isNotBlank() && it == it.trim() && it != "." && it != ".." }) { "Invalid remote path" }
+    return parts.joinToString("/")
 }
 
 internal fun String.parentRemotePath(): String {
@@ -55,3 +60,5 @@ internal fun String.parentRemotePath(): String {
 internal fun String.remoteName(): String {
     return normalizedRemotePath().substringAfterLast('/')
 }
+
+internal data class RemoteRootEntry(val name: String, val isDirectory: Boolean, val modifiedAtMillis: Long)

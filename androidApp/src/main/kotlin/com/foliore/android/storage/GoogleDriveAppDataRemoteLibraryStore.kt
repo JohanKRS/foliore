@@ -5,8 +5,10 @@ import java.util.concurrent.ConcurrentHashMap
 
 internal class GoogleDriveAppDataRemoteLibraryStore(
     private val drive: GoogleDriveApiClient,
+    override val deletionScope: String? = null,
     override val label: String = SyncSettingsRepository.GOOGLE_DRIVE_DEFAULT_LABEL,
 ) : RemoteLibraryStore {
+    override val currentTimeMillis: Long? get() = drive.serverTimeMillis
     override val maxConcurrentUploads: Int = 3
     override val maxConcurrentDownloads: Int = 3
 
@@ -15,6 +17,16 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
     }
     private val childrenByParentId = ConcurrentHashMap<String, List<DriveFileMetadata>>()
     private val clearedDirectoryPaths = ConcurrentHashMap.newKeySet<String>()
+
+    override fun listRootEntries(): List<RemoteRootEntry> {
+        val children = drive.listChildren(GoogleDriveApiClient.APP_DATA_ROOT_ID)
+        childrenByParentId[GoogleDriveApiClient.APP_DATA_ROOT_ID] = children
+        check(children.groupBy { it.name }.none { it.value.size > 1 && it.key.startsWith("foliore-v4-") }) {
+            "Ambiguous sync objects"
+        }
+        return children.map { RemoteRootEntry(it.name, it.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE,
+            runCatching { java.time.Instant.parse(it.modifiedTime).toEpochMilli() }.getOrDefault(0L)) }
+    }
 
     override fun readText(path: String): String? {
         val file = findFile(path) ?: return null
@@ -43,7 +55,7 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
         source: File,
         mimeType: String,
     ) {
-        if (!source.exists()) return
+        check(source.isFile) { "Missing upload source" }
         val parentId = ensureParentFolder(path)
         val existingFiles = existingFiles(path)
         val uploaded = drive.uploadFile(
@@ -131,6 +143,7 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
         return ensureFolder(path.parentRemotePath())
     }
 
+    @Synchronized
     private fun ensureFolder(path: String): String {
         val normalized = path.normalizedRemotePath()
         folderIdByPath[normalized]?.let { return it }

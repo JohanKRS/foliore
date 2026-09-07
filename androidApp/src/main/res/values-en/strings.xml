@@ -402,4 +402,16 @@
     <string name="share_cover_invalid_image">The shared image could not be opened.</string>
     <string name="share_cover_empty_library">Import an EPUB before applying a shared cover.</string>
     <string name="share_cover_search">Search book</string>
+    <string name="unsaved_changes_title">Unsaved changes</string>
+    <string name="unsaved_changes_message">Save your changes before leaving this book?</string>
+    <string name="discard_changes">Discard</string>
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_description">Data, integrations, retention and deletion</string>
+    <string name="report_ai_content">Support and report AI content</string>
+    <string name="ai_data_disclosure">Generating sends your prompt and book metadata to OpenAI using your key. API charges may apply. Review results before applying.</string>
+    <string name="report_content_description">Describe the issue. Only this text is sent to Foliore; no book or image is attached. Avoid personal information.</string>
+    <string name="report_content_message">Description</string>
+    <string name="report_content_success">Report received. Thank you.</string>
+    <string name="report_content_failure">Could not send. Your text remains here so you can retry.</string>
+    <string name="report_content_send">Send report</string>
 </resources>

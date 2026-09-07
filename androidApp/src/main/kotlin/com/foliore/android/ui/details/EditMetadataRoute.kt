@@ -80,13 +80,18 @@ fun EditMetadataRoute(
                     onSaved = {},
                 )
             },
-            onShareExport = {
-                viewModel.sharePreparedEpub(bookId) { intent ->
-                    context.startActivity(Intent.createChooser(intent, shareChooserTitle))
+            onSaveAndNavigate = { draft, destination -> viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = destination) },
+            onShareExport = { draft ->
+                val export = {
+                    viewModel.sharePreparedEpub(bookId) { intent ->
+                        context.startActivity(Intent.createChooser(intent, shareChooserTitle))
+                    }
                 }
+                if (draft != null) viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = export) else export()
             },
-            onSendToKindle = {
-                viewModel.sendPreparedEpubToKindleEmail(bookId)
+            onSendToKindle = { draft ->
+                val send = { viewModel.sendPreparedEpubToKindleEmail(bookId) }
+                if (draft != null) viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = send) else send()
             },
             onCoverGenerationUnavailable = viewModel::requestCoverGeneration,
             onLookupMetadataCandidates = { draft, onCandidatesReady ->

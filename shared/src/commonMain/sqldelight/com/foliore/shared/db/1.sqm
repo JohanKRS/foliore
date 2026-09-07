@@ -1,0 +1,29 @@
+CREATE TABLE book_new (
+  id TEXT NOT NULL PRIMARY KEY,
+  original_file_path TEXT NOT NULL,
+  prepared_file_path TEXT,
+  cover_image_path TEXT,
+  cover_thumb_path TEXT,
+  original_hash_sha256 TEXT NOT NULL,
+  file_size_bytes INTEGER NOT NULL,
+  imported_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  last_prepared_at TEXT,
+  last_exported_at TEXT,
+  last_synced_at TEXT,
+  status TEXT NOT NULL,
+  sync_status TEXT NOT NULL,
+  revision INTEGER NOT NULL,
+  updated_by_device_id TEXT NOT NULL,
+  technical_status TEXT
+);
+
+INSERT INTO book_new SELECT id, original_file_path, prepared_file_path, cover_image_path, cover_thumb_path, original_hash_sha256, file_size_bytes, imported_at, updated_at, last_prepared_at, last_exported_at, last_synced_at, status, sync_status, revision, updated_by_device_id, technical_status FROM book;
+CREATE TEMP TABLE saved_metadata AS SELECT book_id, title, subtitle, authors_json, sort_author, language, publisher, published_date, description, tags_json, isbn, identifiers_json, series_name, series_index, source FROM book_metadata;
+CREATE TEMP TABLE saved_technical AS SELECT book_id, epub_version, opf_path, nav_path, ncx_path, cover_href, package_identifier, has_nav, has_ncx, manifest_item_count, spine_item_count, warnings_json, errors_json FROM epub_technical_info;
+DROP TABLE book;
+ALTER TABLE book_new RENAME TO book;
+INSERT OR REPLACE INTO book_metadata SELECT book_id, title, subtitle, authors_json, sort_author, language, publisher, published_date, description, tags_json, isbn, identifiers_json, series_name, series_index, source FROM saved_metadata;
+INSERT OR REPLACE INTO epub_technical_info SELECT book_id, epub_version, opf_path, nav_path, ncx_path, cover_href, package_identifier, has_nav, has_ncx, manifest_item_count, spine_item_count, warnings_json, errors_json FROM saved_technical;
+DROP TABLE saved_metadata;
+DROP TABLE saved_technical;

@@ -282,17 +282,24 @@ class AndroidEpubImporter(
         val digest = MessageDigest.getInstance("SHA-256")
         var bytesCopied = 0L
 
+        try {
         input.use { source ->
             FileOutputStream(tempFile).use { output ->
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 while (true) {
                     val read = source.read(buffer)
                     if (read == -1) break
+                    require(bytesCopied + read <= StorageLimits.EPUB_BYTES) { "EPUB exceeds size limit" }
                     digest.update(buffer, 0, read)
                     output.write(buffer, 0, read)
                     bytesCopied += read
                 }
             }
+        }
+
+        } catch (error: Throwable) {
+            tempFile.delete()
+            throw error
         }
 
         if (bytesCopied == 0L) {

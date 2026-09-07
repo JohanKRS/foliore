@@ -26,7 +26,7 @@ class ManualSyncService(
     )
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun configureFolder(uri: Uri): ManualSyncResult {
+    fun configureFolder(uri: Uri): ManualSyncResult = synchronized(SyncOperationCoordinator.remoteLock) {
         return runCatching {
             val root = DocumentFile.fromTreeUri(appContext, uri)
                 ?.takeIf { it.exists() && it.canWrite() }
@@ -56,9 +56,10 @@ class ManualSyncService(
             Log.e(TAG, "Failed to configure sync folder", error)
             ManualSyncResult.Failed
         }
+
     }
 
-    fun disconnect() {
+    fun disconnect() = synchronized(SyncOperationCoordinator.remoteLock) {
         val uri = syncUri()
         if (uri != null) {
             runCatching {
@@ -77,6 +78,7 @@ class ManualSyncService(
         if (syncSettingsRepository.activeProvider() == SyncProvider.MANUAL_FOLDER) {
             syncSettingsRepository.setActiveProvider(SyncProvider.NONE)
         }
+
     }
 
     fun hasConfiguredFolder(): Boolean {
@@ -90,7 +92,7 @@ class ManualSyncService(
             ?: folderLabel(uri)
     }
 
-    fun syncNow(onProgress: (ManualSyncProgress) -> Unit = {}): ManualSyncResult {
+    fun syncNow(onProgress: (ManualSyncProgress) -> Unit = {}): ManualSyncResult = synchronized(SyncOperationCoordinator.remoteLock) {
         return runCatching {
             val store = remoteStoreOrNull() ?: return ManualSyncResult.NotConfigured
             syncEngine.sync(store, onProgress)
@@ -109,6 +111,7 @@ class ManualSyncService(
         val libraryRoot = root.resolveLibraryRoot(documentCache)
         return DocumentFileRemoteLibraryStore(
             context = appContext,
+            deletionScope = "folder:$treeUri",
             root = libraryRoot,
             label = folderLabel() ?: libraryRoot.name ?: DEFAULT_FOLDER_LABEL,
         )
@@ -117,46 +120,17 @@ class ManualSyncService(
     private fun DocumentFile.resolveLibraryRoot(
         documentCache: DocumentFileRemoteLibraryStore.DocumentFileCache,
     ): DocumentFile {
-        val nestedLibraryRoots = documentCache.directoriesNamed(this, LIBRARY_ROOT_NAME)
-        val selfIsLibraryRoot = isLibraryRootCandidate(documentCache)
-
-        if (selfIsLibraryRoot) {
-            if (nestedLibraryRoots.isNotEmpty()) {
-                val canonical = (listOf(this) + nestedLibraryRoots).bestLibraryRoot(documentCache)
-                    ?: error("Cannot resolve $LIBRARY_ROOT_NAME")
-                if (canonical.uri != uri) {
-                    nestedLibraryRoots
-                        .filterNot { duplicate -> duplicate.uri == canonical.uri }
-                        .forEach { duplicate -> duplicate.deleteTree(documentCache) }
-                    documentCache.invalidate(this)
-                    deleteLooseLibraryArtifacts(documentCache)
-                    markLibraryRootInitialized(canonical)
-                    return canonical
-                }
-                nestedLibraryRoots.forEach { duplicate -> duplicate.deleteTree(documentCache) }
-                documentCache.invalidate(this)
-            }
-            markLibraryRootInitialized(this)
-            return this
-        }
-
-        if (nestedLibraryRoots.isNotEmpty()) {
-            val canonical = nestedLibraryRoots.bestLibraryRoot(documentCache)
-                ?: error("Cannot resolve $LIBRARY_ROOT_NAME")
-            nestedLibraryRoots
-                .filterNot { duplicate -> duplicate.uri == canonical.uri }
-                .forEach { duplicate -> duplicate.deleteTree(documentCache) }
-            documentCache.invalidate(this)
-            deleteLooseLibraryArtifacts(documentCache)
-            markLibraryRootInitialized(canonical)
-            return canonical
-        }
-
-        val created = createDirectory(LIBRARY_ROOT_NAME) ?: error("Cannot create $LIBRARY_ROOT_NAME")
-        documentCache.invalidate(this)
-        deleteLooseLibraryArtifacts(documentCache)
-        markLibraryRootInitialized(created)
-        return created
+        val nested = documentCache.directoriesNamed(this, LIBRARY_ROOT_NAME)
+        val candidates = (nested + listOfNotNull(takeIf { isLibraryRootCandidate(documentCache) }))
+            .distinctBy { it.uri }
+        val saved = preferences.getString(KEY_LIBRARY_ROOT_URI, null)
+        val selected = candidates.firstOrNull { it.uri.toString() == saved }
+            ?: candidates.singleOrNull()
+        check(selected != null || candidates.isEmpty()) { "Multiple libraries found; select the intended library folder" }
+        val libraryRoot = selected ?: createDirectory(LIBRARY_ROOT_NAME)
+            ?: error("Cannot create $LIBRARY_ROOT_NAME")
+        markLibraryRootInitialized(libraryRoot)
+        return libraryRoot
     }
 
     private fun DocumentFile.inspectSyncFolderSelection(

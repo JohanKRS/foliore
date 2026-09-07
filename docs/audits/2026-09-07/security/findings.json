@@ -1,0 +1,804 @@
+{
+  "documentType": "codex-security.findings",
+  "findings": [
+    {
+      "attackPath": {
+        "dataflow": {
+          "evidenceRefs": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "outcome": "A manifest entry such as bookId='../../shared_prefs', with valid book state and a distinct hash, targets the app's shared_prefs directory when the books directory exists. Successful commit replaces that directory and deletes its backup. Other app-writable directories can also be targeted, causing loss or corruption of settings and library data.",
+          "sink": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "source": "Someone able to modify a configured SAF synchronization folder, including a shared-folder collaborator or malicious document provider.",
+          "summary": "ManualSyncService.remoteStoreOrNull supplies the configured external document tree to PortableLibrarySyncEngine. -> PortableLibrarySyncEngine.kt:61-65 reads manifest books without validating bookId; :1030-1033 merely deserializes JSON. -> PortableLibrarySyncEngine.kt:522-526 interpolates bookId into local destination and staging filesystem paths. -> PortableLibrarySyncEngine.kt:741-779 backs up, recursively replaces, and deletes those directories."
+        },
+        "impact": {
+          "level": "high",
+          "why": "A manifest entry such as bookId='../../shared_prefs', with valid book state and a distinct hash, targets the app's shared_prefs directory when the books directory exists. Successful commit replaces that directory and deletes its backup. Other app-writable directories can also be targeted, causing loss or corruption of settings and library data."
+        },
+        "likelihood": {
+          "level": "medium",
+          "why": "Exploitation requires write access to the configured external sync library; Android sandbox limits the affected scope."
+        },
+        "reachability": {
+          "attacker": "Someone able to modify a configured SAF synchronization folder, including a shared-folder collaborator or malicious document provider.",
+          "entrypoint": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "outcome": "A manifest entry such as bookId='../../shared_prefs', with valid book state and a distinct hash, targets the app's shared_prefs directory when the books directory exists. Successful commit replaces that directory and deletes its backup. Other app-writable directories can also be targeted, causing loss or corruption of settings and library data.",
+          "summary": "Someone able to modify a configured SAF synchronization folder, including a shared-folder collaborator or malicious document provider."
+        },
+        "summary": "Someone able to modify a configured SAF synchronization folder, including a shared-folder collaborator or malicious document provider. supplies or intercepts the inputs described in the source trace."
+      },
+      "codeEvidence": [
+        {
+          "code": "        val remoteManifest = store.readManifest()\n        val remoteBooks = remoteManifest?.books\n            ?.filterNot { it.deleted }\n            ?.associateBy { it.bookId }\n            .orEmpty()",
+          "endLine": 65,
+          "explanation": "External input enters the reviewed flow.",
+          "id": "e1",
+          "label": "entrypoint: PortableLibrarySyncEngine",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "role": "entrypoint",
+          "startLine": 61
+        },
+        {
+          "code": "        val startedAtElapsedMillis = SystemClock.elapsedRealtime()\n        Log.d(TAG, \"downloadBook start id=${remoteBook.bookId}\")\n        val destinationDir = File(appContext.filesDir, \"books/${remoteBook.bookId}\")\n        val stagingDir = File(\n            appContext.cacheDir,\n            \"sync-download/${remoteBook.bookId}-${UUID.randomUUID()}\",\n        ).apply { mkdirs() }",
+          "endLine": 526,
+          "explanation": "The expected validation is absent before the sensitive operation.",
+          "id": "e2",
+          "label": "root_control: PortableLibrarySyncEngine",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "role": "root_control",
+          "startLine": 520
+        },
+        {
+          "code": "                hasBackup = destinationDir.renameTo(backupDir)\n                if (!hasBackup) {\n                    check(destinationDir.copyRecursively(backupDir, overwrite = true)) {\n                        \"Could not back up local book ${record.book.id}\"\n                    }\n                    check(destinationDir.deleteRecursively()) {\n                        \"Could not replace local book ${record.book.id}\"\n                    }\n                    hasBackup = true\n                }\n            }\n\n            try {\n                if (!stagingDir.renameTo(destinationDir)) {\n                    check(stagingDir.copyRecursively(destinationDir, overwrite = true)) {\n                        \"Could not store downloaded book ${record.book.id}\"\n                    }\n                }\n                libraryRepository.insertImportedBook(record)\n                if (hasBackup) {\n                    backupDir.deleteRecursively()\n                }",
+          "endLine": 771,
+          "explanation": "This operation establishes the reported impact.",
+          "id": "e3",
+          "label": "sink: PortableLibrarySyncEngine",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "role": "sink",
+          "startLine": 750
+        }
+      ],
+      "confidence": {
+        "level": "high",
+        "rationale": "Independent parent source trace confirms the missing control; no exploit was run."
+      },
+      "findingId": "csf_730c404d056f29910b1498ac",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:353fe5e9554b0be36f65c58c2eb22dad5aa9804ca8cab0737069a993eafda140"
+      },
+      "identity": {
+        "anchor": "remote-manifest-bookid-can-escape-the-library-directory-and-replace-app-data"
+      },
+      "locations": [
+        {
+          "endLine": 65,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "role": "entrypoint",
+          "startLine": 61
+        },
+        {
+          "endLine": 526,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "role": "root_control",
+          "startLine": 520
+        },
+        {
+          "endLine": 771,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+          "role": "sink",
+          "startLine": 750
+        }
+      ],
+      "occurrenceId": "occ_e07f8af578f4d3b181879e8f",
+      "provenance": {
+        "candidateId": "SEC-01",
+        "originalCandidates": [
+          {
+            "attacker": "Someone able to modify a configured SAF synchronization folder, including a shared-folder collaborator or malicious document provider.",
+            "confidence": "high",
+            "counterevidence": [
+              "Ordinary imports generate UUID book IDs, but remote records bypass that path.",
+              "State bundle filenames are basename-allowlisted at lines 791-793; this prevents ordinary archive-entry traversal but does not validate the parent directory derived from bookId.",
+              "AndroidBookDeleter has a canonical parent check, but the synchronization commit does not.",
+              "Android's app sandbox limits the impact to app-writable locations."
+            ],
+            "cwe": "CWE-22",
+            "evidence": [
+              {
+                "code": "File(appContext.filesDir, \"books/${remoteBook.bookId}\"); File(appContext.cacheDir, \"sync-download/${remoteBook.bookId}-${UUID.randomUUID()}\")",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+                "lines": "522-526"
+              },
+              {
+                "code": "destinationDir.renameTo(backupDir); destinationDir.copyRecursively(...); destinationDir.deleteRecursively(); stagingDir.renameTo(destinationDir); backupDir.deleteRecursively()",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/PortableLibrarySyncEngine.kt",
+                "lines": "748-779"
+              }
+            ],
+            "id": "SEC-01",
+            "impact": "A manifest entry such as bookId='../../shared_prefs', with valid book state and a distinct hash, targets the app's shared_prefs directory when the books directory exists. Successful commit replaces that directory and deletes its backup. Other app-writable directories can also be targeted, causing loss or corruption of settings and library data.",
+            "invariant": "Untrusted synchronization records must only modify their own validated book directory.",
+            "remediation": "Validate remote book IDs as canonical UUIDs before planning any operation. Independently require canonical destination parents to equal the books root. Use random staging/backup names independent of remote identifiers. Reject the entire invalid record before downloads or deletions.",
+            "severity": "high",
+            "source_to_sink": [
+              "ManualSyncService.remoteStoreOrNull supplies the configured external document tree to PortableLibrarySyncEngine.",
+              "PortableLibrarySyncEngine.kt:61-65 reads manifest books without validating bookId; :1030-1033 merely deserializes JSON.",
+              "PortableLibrarySyncEngine.kt:522-526 interpolates bookId into local destination and staging filesystem paths.",
+              "PortableLibrarySyncEngine.kt:741-779 backs up, recursively replaces, and deletes those directories."
+            ],
+            "title": "Remote manifest bookId can escape the library directory and replace app data"
+          }
+        ],
+        "source": "local_plugin"
+      },
+      "remediation": "Validate remote book IDs as canonical UUIDs before planning any operation. Independently require canonical destination parents to equal the books root. Use random staging/backup names independent of remote identifiers. Reject the entire invalid record before downloads or deletions.",
+      "remediationTests": [
+        "Reject traversal and malformed IDs before any write; preserve existing preferences and book data."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3"
+        ],
+        "summary": "ManualSyncService.remoteStoreOrNull supplies the configured external document tree to PortableLibrarySyncEngine. PortableLibrarySyncEngine.kt:61-65 reads manifest books without validating bookId; :1030-1033 merely deserializes JSON. PortableLibrarySyncEngine.kt:522-526 interpolates bookId into local destination and staging filesystem paths. PortableLibrarySyncEngine.kt:741-779 backs up, recursively replaces, and deletes those directories."
+      },
+      "ruleId": "path-traversal.sync-book-id",
+      "severity": {
+        "level": "medium",
+        "rationale": "Exploitation requires write access to the configured external sync library; Android sandbox limits the affected scope."
+      },
+      "summary": "A manifest entry such as bookId='../../shared_prefs', with valid book state and a distinct hash, targets the app's shared_prefs directory when the books directory exists. Successful commit replaces that directory and deletes its backup. Other app-writable directories can also be targeted, causing loss or corruption of settings and library data.",
+      "taxonomy": {
+        "category": "path-traversal",
+        "cwe": [
+          "CWE-22"
+        ]
+      },
+      "title": "Remote manifest bookId can escape the library directory and replace app data",
+      "validation": {
+        "assertions": [
+          "ManualSyncService.remoteStoreOrNull supplies the configured external document tree to PortableLibrarySyncEngine.",
+          "PortableLibrarySyncEngine.kt:61-65 reads manifest books without validating bookId; :1030-1033 merely deserializes JSON.",
+          "PortableLibrarySyncEngine.kt:522-526 interpolates bookId into local destination and staging filesystem paths.",
+          "PortableLibrarySyncEngine.kt:741-779 backs up, recursively replaces, and deletes those directories."
+        ],
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3"
+        ],
+        "limitations": [
+          "No dynamic exploit reproduction.",
+          "Ordinary imports generate UUID book IDs, but remote records bypass that path.",
+          "State bundle filenames are basename-allowlisted at lines 791-793; this prevents ordinary archive-entry traversal but does not validate the parent directory derived from bookId.",
+          "AndroidBookDeleter has a canonical parent check, but the synchronization commit does not.",
+          "Android's app sandbox limits the impact to app-writable locations."
+        ],
+        "method": "Independent static source trace",
+        "summary": "Untrusted synchronization records must only modify their own validated book directory. A manifest entry such as bookId='../../shared_prefs', with valid book state and a distinct hash, targets the app's shared_prefs directory when the books directory exists. Successful commit replaces that directory and deletes its backup. Other app-writable directories can also be targeted, causing loss or corruption of settings and library data."
+      }
+    },
+    {
+      "attackPath": {
+        "dataflow": {
+          "evidenceRefs": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "outcome": "A network attacker can impersonate the configured SMTP server using an otherwise valid certificate for an unrelated domain, obtain the SMTP password, and intercept the EPUB attachment.",
+          "sink": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "source": "An active network attacker with a publicly trusted certificate for a different hostname.",
+          "summary": "KindleEmailPreferenceRepository supplies the user's SMTP credentials. -> SmtpEmailSender creates raw SSLSocket instances for STARTTLS and implicit TLS. -> Neither socket enables endpoint identification or performs a hostname check. -> After the handshake, AUTH LOGIN sends the Base64-encoded username and password."
+        },
+        "impact": {
+          "level": "high",
+          "why": "A network attacker can impersonate the configured SMTP server using an otherwise valid certificate for an unrelated domain, obtain the SMTP password, and intercept the EPUB attachment."
+        },
+        "likelihood": {
+          "level": "medium",
+          "why": "Credential compromise is serious, but requires an active network attacker with a trusted certificate for another domain."
+        },
+        "reachability": {
+          "attacker": "An active network attacker with a publicly trusted certificate for a different hostname.",
+          "entrypoint": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "outcome": "A network attacker can impersonate the configured SMTP server using an otherwise valid certificate for an unrelated domain, obtain the SMTP password, and intercept the EPUB attachment.",
+          "summary": "An active network attacker with a publicly trusted certificate for a different hostname."
+        },
+        "summary": "An active network attacker with a publicly trusted certificate for a different hostname. supplies or intercepts the inputs described in the source trace."
+      },
+      "codeEvidence": [
+        {
+          "code": "        }\n\n        fun startTls() {\n            command(\"STARTTLS\", 220)\n            val sslSocket = (SSLSocketFactory.getDefault() as SSLSocketFactory)\n                .createSocket(socket, host, port, true) as SSLSocket\n            sslSocket.soTimeout = TIMEOUT_MS\n            sslSocket.startHandshake()\n            socket = sslSocket\n            tlsActive = true\n            reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))\n            writer = BufferedWriter(OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8))",
+          "endLine": 153,
+          "explanation": "External input enters the reviewed flow.",
+          "id": "e1",
+          "label": "root_control: SmtpEmailSender",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "root_control",
+          "startLine": 142
+        },
+        {
+          "code": "        fun authLogin(username: String, password: String) {\n            command(\"AUTH LOGIN\", 334)\n            command(Base64.getEncoder().encodeToString(username.toByteArray(Charsets.UTF_8)), 334)\n            command(Base64.getEncoder().encodeToString(password.toByteArray(Charsets.UTF_8)), 235)",
+          "endLine": 159,
+          "explanation": "The expected validation is absent before the sensitive operation.",
+          "id": "e2",
+          "label": "sink: SmtpEmailSender",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "sink",
+          "startLine": 156
+        },
+        {
+          "code": "        private fun createSocket(): Socket {\n            return if (useImplicitTls) {\n                ((SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(host, port) as SSLSocket)\n                    .apply {\n                        soTimeout = TIMEOUT_MS\n                        startHandshake()\n                    }",
+          "endLine": 213,
+          "explanation": "This operation establishes the reported impact.",
+          "id": "e3",
+          "label": "root_control: SmtpEmailSender",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "root_control",
+          "startLine": 207
+        }
+      ],
+      "confidence": {
+        "level": "high",
+        "rationale": "Independent parent source trace confirms the missing control; no exploit was run."
+      },
+      "findingId": "csf_08caf9d3d7a0f57ea03553bc",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:c3ed79d06adfabac7b3fb47f0d20fc1a211a9baf19584f9c3b5082f3fa561732"
+      },
+      "identity": {
+        "anchor": "smtp-tls-does-not-verify-the-server-hostname-before-transmitting-credentials"
+      },
+      "locations": [
+        {
+          "endLine": 153,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "root_control",
+          "startLine": 142
+        },
+        {
+          "endLine": 159,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "sink",
+          "startLine": 156
+        },
+        {
+          "endLine": 213,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "root_control",
+          "startLine": 207
+        }
+      ],
+      "occurrenceId": "occ_aa5ce7601aeb64f7cc538487",
+      "provenance": {
+        "candidateId": "SEC-02",
+        "originalCandidates": [
+          {
+            "attacker": "An active network attacker with a publicly trusted certificate for a different hostname.",
+            "confidence": "high",
+            "counterevidence": [
+              "The default trust manager validates certificate trust; this is not a trust-all implementation.",
+              "Passing host to createSocket supplies connection/SNI context but does not itself enable JSSE endpoint identification.",
+              "Port 587 requires STARTTLS, so passive cleartext interception on that default port is prevented."
+            ],
+            "cwe": "CWE-297",
+            "evidence": [
+              {
+                "code": "SSLSocketFactory.getDefault().createSocket(socket, host, port, true); sslSocket.startHandshake()",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+                "lines": "144-153"
+              },
+              {
+                "code": "SSLSocketFactory.getDefault().createSocket(host, port); startHandshake()",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+                "lines": "207-213"
+              },
+              {
+                "code": "AUTH LOGIN followed by Base64 username and password",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+                "lines": "156-159"
+              }
+            ],
+            "id": "SEC-02",
+            "impact": "A network attacker can impersonate the configured SMTP server using an otherwise valid certificate for an unrelated domain, obtain the SMTP password, and intercept the EPUB attachment.",
+            "invariant": "SMTP authentication and EPUB contents must only be sent to the configured, authenticated SMTP host.",
+            "remediation": "Enable SSLParameters.endpointIdentificationAlgorithm before both TLS handshakes, or use a maintained SMTP client with explicit hostname verification enabled. Add a test that rejects a trusted certificate issued for another hostname.",
+            "severity": "high",
+            "source_to_sink": [
+              "KindleEmailPreferenceRepository supplies the user's SMTP credentials.",
+              "SmtpEmailSender creates raw SSLSocket instances for STARTTLS and implicit TLS.",
+              "Neither socket enables endpoint identification or performs a hostname check.",
+              "After the handshake, AUTH LOGIN sends the Base64-encoded username and password."
+            ],
+            "title": "SMTP TLS does not verify the server hostname before transmitting credentials"
+          }
+        ],
+        "source": "local_plugin"
+      },
+      "remediation": "Enable SSLParameters.endpointIdentificationAlgorithm before both TLS handshakes, or use a maintained SMTP client with explicit hostname verification enabled. Add a test that rejects a trusted certificate issued for another hostname.",
+      "remediationTests": [
+        "Reject a CA-trusted certificate for a different SMTP hostname in both TLS modes."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3"
+        ],
+        "summary": "KindleEmailPreferenceRepository supplies the user's SMTP credentials. SmtpEmailSender creates raw SSLSocket instances for STARTTLS and implicit TLS. Neither socket enables endpoint identification or performs a hostname check. After the handshake, AUTH LOGIN sends the Base64-encoded username and password."
+      },
+      "ruleId": "tls.smtp-hostname-verification",
+      "severity": {
+        "level": "medium",
+        "rationale": "Credential compromise is serious, but requires an active network attacker with a trusted certificate for another domain."
+      },
+      "summary": "A network attacker can impersonate the configured SMTP server using an otherwise valid certificate for an unrelated domain, obtain the SMTP password, and intercept the EPUB attachment.",
+      "taxonomy": {
+        "category": "certificate-validation",
+        "cwe": [
+          "CWE-297"
+        ]
+      },
+      "title": "SMTP TLS does not verify the server hostname before transmitting credentials",
+      "validation": {
+        "assertions": [
+          "KindleEmailPreferenceRepository supplies the user's SMTP credentials.",
+          "SmtpEmailSender creates raw SSLSocket instances for STARTTLS and implicit TLS.",
+          "Neither socket enables endpoint identification or performs a hostname check.",
+          "After the handshake, AUTH LOGIN sends the Base64-encoded username and password."
+        ],
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3"
+        ],
+        "limitations": [
+          "No dynamic exploit reproduction.",
+          "The default trust manager validates certificate trust; this is not a trust-all implementation.",
+          "Passing host to createSocket supplies connection/SNI context but does not itself enable JSSE endpoint identification.",
+          "Port 587 requires STARTTLS, so passive cleartext interception on that default port is prevented."
+        ],
+        "method": "Independent static source trace",
+        "summary": "SMTP authentication and EPUB contents must only be sent to the configured, authenticated SMTP host. A network attacker can impersonate the configured SMTP server using an otherwise valid certificate for an unrelated domain, obtain the SMTP password, and intercept the EPUB attachment."
+      }
+    },
+    {
+      "attackPath": {
+        "dataflow": {
+          "evidenceRefs": [
+            "e1",
+            "e2",
+            "e3"
+          ],
+          "outcome": "On ports such as 25 or 2525, absent or stripped STARTTLS advertisement results in plaintext transmission of recoverable SMTP credentials and the EPUB.",
+          "sink": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "source": "A passive or active network attacker when the user configures a nonstandard SMTP port.",
+          "summary": "KindleEmailPreferenceRepository.kt:74-75 accepts any port from 1 through 65535. -> SmtpEmailSender.kt:25 enables implicit TLS only on port 465. -> SmtpEmailSender.kt:30-35 refuses missing STARTTLS only on port 587. -> SmtpEmailSender.kt:36 and :156-159 then authenticate on the potentially plaintext socket."
+        },
+        "impact": {
+          "level": "high",
+          "why": "On ports such as 25 or 2525, absent or stripped STARTTLS advertisement results in plaintext transmission of recoverable SMTP credentials and the EPUB."
+        },
+        "likelihood": {
+          "level": "medium",
+          "why": "Credential compromise is serious, but requires an active network attacker and a user-configured nonstandard SMTP port."
+        },
+        "reachability": {
+          "attacker": "A passive or active network attacker when the user configures a nonstandard SMTP port.",
+          "entrypoint": "androidApp/src/main/kotlin/com/foliore/android/storage/KindleEmailPreferenceRepository.kt",
+          "outcome": "On ports such as 25 or 2525, absent or stripped STARTTLS advertisement results in plaintext transmission of recoverable SMTP credentials and the EPUB.",
+          "summary": "A passive or active network attacker when the user configures a nonstandard SMTP port."
+        },
+        "summary": "A passive or active network attacker when the user configures a nonstandard SMTP port. supplies or intercepts the inputs described in the source trace."
+      },
+      "codeEvidence": [
+        {
+          "code": "        val cleanPassword = smtpPassword.trim()\n        val keepExistingPassword = cleanPassword.isBlank() && hasSmtpPassword()\n\n        if (!Patterns.EMAIL_ADDRESS.matcher(cleanSender).matches()) return false\n        if (cleanHost.isBlank() || smtpPort !in 1..65535 || cleanUsername.isBlank()) return false\n        if (!keepExistingPassword && cleanPassword.isBlank()) return false",
+          "endLine": 75,
+          "explanation": "External input enters the reviewed flow.",
+          "id": "e1",
+          "label": "user_input: KindleEmailPreferenceRepository",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/KindleEmailPreferenceRepository.kt",
+          "role": "user_input",
+          "startLine": 70
+        },
+        {
+          "code": "                useImplicitTls = credentials.smtpPort == IMPLICIT_TLS_PORT,\n            )\n            smtp.use {\n                smtp.expect(220)\n                smtp.ehlo()\n                if (!smtp.isTlsActive && smtp.supportsStartTls) {\n                    smtp.startTls()\n                    smtp.ehlo()\n                } else if (!smtp.isTlsActive && credentials.smtpPort == STARTTLS_PORT) {\n                    error(\"SMTP server does not advertise STARTTLS\")\n                }\n                smtp.authLogin(credentials.smtpUsername, credentials.smtpPassword)",
+          "endLine": 36,
+          "explanation": "The expected validation is absent before the sensitive operation.",
+          "id": "e2",
+          "label": "root_control: SmtpEmailSender",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "root_control",
+          "startLine": 25
+        },
+        {
+          "code": "        fun authLogin(username: String, password: String) {\n            command(\"AUTH LOGIN\", 334)\n            command(Base64.getEncoder().encodeToString(username.toByteArray(Charsets.UTF_8)), 334)\n            command(Base64.getEncoder().encodeToString(password.toByteArray(Charsets.UTF_8)), 235)",
+          "endLine": 159,
+          "explanation": "This operation establishes the reported impact.",
+          "id": "e3",
+          "label": "sink: SmtpEmailSender",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "sink",
+          "startLine": 156
+        }
+      ],
+      "confidence": {
+        "level": "high",
+        "rationale": "Independent parent source trace confirms the missing control; no exploit was run."
+      },
+      "findingId": "csf_c5cb0f21eeb77ef75f88d6ed",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:218046f3be7563693a35a98fcd88ca8a8440430f9047c2f07ee0d30af5f5c9bb"
+      },
+      "identity": {
+        "anchor": "custom-smtp-ports-permit-authentication-without-tls"
+      },
+      "locations": [
+        {
+          "endLine": 75,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/KindleEmailPreferenceRepository.kt",
+          "role": "user_input",
+          "startLine": 70
+        },
+        {
+          "endLine": 36,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "root_control",
+          "startLine": 25
+        },
+        {
+          "endLine": 159,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+          "role": "sink",
+          "startLine": 156
+        }
+      ],
+      "occurrenceId": "occ_e448fa827e886c038e12be9d",
+      "provenance": {
+        "candidateId": "SEC-03",
+        "originalCandidates": [
+          {
+            "attacker": "A passive or active network attacker when the user configures a nonstandard SMTP port.",
+            "confidence": "high",
+            "counterevidence": [
+              "Default port 587 fails closed when STARTTLS is absent.",
+              "Port 465 uses implicit TLS.",
+              "The vulnerable branch requires a custom port, so it does not affect every configured account."
+            ],
+            "cwe": "CWE-319",
+            "evidence": [
+              {
+                "code": "else if (!smtp.isTlsActive && credentials.smtpPort == STARTTLS_PORT) { error(...) }; smtp.authLogin(...)",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/SmtpEmailSender.kt",
+                "lines": "30-36"
+              }
+            ],
+            "id": "SEC-03",
+            "impact": "On ports such as 25 or 2525, absent or stripped STARTTLS advertisement results in plaintext transmission of recoverable SMTP credentials and the EPUB.",
+            "invariant": "Credentials must never be transmitted before TLS is active, regardless of the configured port.",
+            "remediation": "Require isTlsActive unconditionally before AUTH. Model TLS mode explicitly instead of inferring the complete security policy from the port.",
+            "severity": "medium",
+            "source_to_sink": [
+              "KindleEmailPreferenceRepository.kt:74-75 accepts any port from 1 through 65535.",
+              "SmtpEmailSender.kt:25 enables implicit TLS only on port 465.",
+              "SmtpEmailSender.kt:30-35 refuses missing STARTTLS only on port 587.",
+              "SmtpEmailSender.kt:36 and :156-159 then authenticate on the potentially plaintext socket."
+            ],
+            "title": "Custom SMTP ports permit authentication without TLS"
+          }
+        ],
+        "source": "local_plugin"
+      },
+      "remediation": "Require isTlsActive unconditionally before AUTH. Model TLS mode explicitly instead of inferring the complete security policy from the port.",
+      "remediationTests": [
+        "Reject AUTH when STARTTLS is absent on 25, 2525 and 587."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3"
+        ],
+        "summary": "KindleEmailPreferenceRepository.kt:74-75 accepts any port from 1 through 65535. SmtpEmailSender.kt:25 enables implicit TLS only on port 465. SmtpEmailSender.kt:30-35 refuses missing STARTTLS only on port 587. SmtpEmailSender.kt:36 and :156-159 then authenticate on the potentially plaintext socket."
+      },
+      "ruleId": "cleartext.smtp-authentication",
+      "severity": {
+        "level": "medium",
+        "rationale": "Credential compromise is serious, but requires an active network attacker and a user-configured nonstandard SMTP port."
+      },
+      "summary": "On ports such as 25 or 2525, absent or stripped STARTTLS advertisement results in plaintext transmission of recoverable SMTP credentials and the EPUB.",
+      "taxonomy": {
+        "category": "cleartext-transmission",
+        "cwe": [
+          "CWE-319"
+        ]
+      },
+      "title": "Custom SMTP ports permit authentication without TLS",
+      "validation": {
+        "assertions": [
+          "KindleEmailPreferenceRepository.kt:74-75 accepts any port from 1 through 65535.",
+          "SmtpEmailSender.kt:25 enables implicit TLS only on port 465.",
+          "SmtpEmailSender.kt:30-35 refuses missing STARTTLS only on port 587.",
+          "SmtpEmailSender.kt:36 and :156-159 then authenticate on the potentially plaintext socket."
+        ],
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3"
+        ],
+        "limitations": [
+          "No dynamic exploit reproduction.",
+          "Default port 587 fails closed when STARTTLS is absent.",
+          "Port 465 uses implicit TLS.",
+          "The vulnerable branch requires a custom port, so it does not affect every configured account."
+        ],
+        "method": "Independent static source trace",
+        "summary": "Credentials must never be transmitted before TLS is active, regardless of the configured port. On ports such as 25 or 2525, absent or stripped STARTTLS advertisement results in plaintext transmission of recoverable SMTP credentials and the EPUB."
+      }
+    },
+    {
+      "attackPath": {
+        "dataflow": {
+          "evidenceRefs": [
+            "e1",
+            "e2",
+            "e3",
+            "e4",
+            "e5"
+          ],
+          "outcome": "A small compressed EPUB containing a very large OPF or cover entry can exhaust heap and crash import. Large or nonterminating provider streams can fill storage. A compact raster image with huge pixel dimensions can exhaust memory despite the intended 1400x2100 output limit. Cover sharing additionally performs its unrestricted copy synchronously in Activity.onCreate, allowing UI hangs.",
+          "sink": "androidApp/src/main/kotlin/com/foliore/android/share/IncomingCoverRepository.kt",
+          "source": "A supplier of a malicious EPUB/image, or another installed app sending content to the exported share activities.",
+          "summary": "MainActivity.kt:99-103 automatically imports received EPUB URIs. -> AndroidEpubImporter.kt:287-294 copies input until EOF without a byte limit. -> AndroidZipEpubArchive.kt:15-22 reads entire decompressed text/image entries into memory. -> AndroidEpubImporter.kt:157-160 parses the archive and decodes its cover. -> CoverImageWriter.kt:70 fully decodes raster images before the later resizing at :23-25."
+        },
+        "impact": {
+          "level": "medium",
+          "why": "A small compressed EPUB containing a very large OPF or cover entry can exhaust heap and crash import. Large or nonterminating provider streams can fill storage. A compact raster image with huge pixel dimensions can exhaust memory despite the intended 1400x2100 output limit. Cover sharing additionally performs its unrestricted copy synchronously in Activity.onCreate, allowing UI hangs."
+        },
+        "likelihood": {
+          "level": "high",
+          "why": "Import is exposed through share activities and accepts attacker supplied documents."
+        },
+        "reachability": {
+          "attacker": "A supplier of a malicious EPUB/image, or another installed app sending content to the exported share activities.",
+          "entrypoint": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidEpubImporter.kt",
+          "outcome": "A small compressed EPUB containing a very large OPF or cover entry can exhaust heap and crash import. Large or nonterminating provider streams can fill storage. A compact raster image with huge pixel dimensions can exhaust memory despite the intended 1400x2100 output limit. Cover sharing additionally performs its unrestricted copy synchronously in Activity.onCreate, allowing UI hangs.",
+          "summary": "A supplier of a malicious EPUB/image, or another installed app sending content to the exported share activities."
+        },
+        "summary": "A supplier of a malicious EPUB/image, or another installed app sending content to the exported share activities. supplies or intercepts the inputs described in the source trace."
+      },
+      "codeEvidence": [
+        {
+          "code": "                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)\n                while (true) {\n                    val read = source.read(buffer)\n                    if (read == -1) break\n                    digest.update(buffer, 0, read)\n                    output.write(buffer, 0, read)\n                    bytesCopied += read\n                }\n            }",
+          "endLine": 295,
+          "explanation": "External input enters the reviewed flow.",
+          "id": "e1",
+          "label": "entrypoint: AndroidEpubImporter",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidEpubImporter.kt",
+          "role": "entrypoint",
+          "startLine": 287
+        },
+        {
+          "code": "    override fun readText(path: String): String? {\n        val entry = zipFile.getEntry(path.trimStart('/')) ?: return null\n        return zipFile.getInputStream(entry).bufferedReader(Charsets.UTF_8).use { it.readText() }\n    }\n\n    override fun readBytes(path: String): ByteArray? {\n        val entry = zipFile.getEntry(path.trimStart('/')) ?: return null\n        return zipFile.getInputStream(entry).use { it.readBytes() }",
+          "endLine": 22,
+          "explanation": "The expected validation is absent before the sensitive operation.",
+          "id": "e2",
+          "label": "root_control: AndroidZipEpubArchive",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidZipEpubArchive.kt",
+          "role": "root_control",
+          "startLine": 15
+        },
+        {
+          "code": "    private fun decode(bytes: ByteArray): Bitmap? {\n        if (bytes.looksLikeSvg()) {\n            decodeSvg(bytes)?.let { return it }\n        }\n\n        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { return it }\n\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {\n            runCatching {\n                ImageDecoder.decodeBitmap(ImageDecoder.createSource(ByteBuffer.wrap(bytes))) { decoder, _, _ ->\n                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE\n                    decoder.isMutableRequired = true\n                }\n            }.getOrNull()?.let { return it }",
+          "endLine": 78,
+          "explanation": "This operation establishes the reported impact.",
+          "id": "e3",
+          "label": "sink: CoverImageWriter",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/CoverImageWriter.kt",
+          "role": "sink",
+          "startLine": 65
+        },
+        {
+          "code": "\n    override fun onCreate(savedInstanceState: Bundle?) {\n        super.onCreate(savedInstanceState)\n        enableEdgeToEdge()\n        allowDisplayCutout()\n\n        val incomingCoverUri = IncomingCoverRepository(this).copyFromIntent(intent)",
+          "endLine": 79,
+          "explanation": "This operation establishes the reported impact.",
+          "id": "e4",
+          "label": "entrypoint: CoverShareReceiverActivity",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/share/CoverShareReceiverActivity.kt",
+          "role": "entrypoint",
+          "startLine": 73
+        },
+        {
+          "code": "        return runCatching {\n            val cacheDir = File(appContext.cacheDir, \"incoming-covers\").apply { mkdirs() }\n            val target = File(cacheDir, \"${UUID.randomUUID()}.img\")\n            val input = appContext.contentResolver.openInputStream(source) ?: return null\n            input.use { sourceStream ->\n                FileOutputStream(target).use { output ->\n                    sourceStream.copyTo(output)\n                }\n            }",
+          "endLine": 33,
+          "explanation": "This operation establishes the reported impact.",
+          "id": "e5",
+          "label": "sink: IncomingCoverRepository",
+          "language": "kotlin",
+          "path": "androidApp/src/main/kotlin/com/foliore/android/share/IncomingCoverRepository.kt",
+          "role": "sink",
+          "startLine": 25
+        }
+      ],
+      "confidence": {
+        "level": "high",
+        "rationale": "Independent parent source trace confirms the missing control; no exploit was run."
+      },
+      "findingId": "csf_8dbcb6d31d6eed3de3806041",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:d24e295f6486ec31ef30edf7a5295b91b5c81573b0673eb42c8feecbdcc76173"
+      },
+      "identity": {
+        "anchor": "unbounded-epub-and-image-processing-allows-import-denial-of-service"
+      },
+      "locations": [
+        {
+          "endLine": 295,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidEpubImporter.kt",
+          "role": "entrypoint",
+          "startLine": 287
+        },
+        {
+          "endLine": 22,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidZipEpubArchive.kt",
+          "role": "root_control",
+          "startLine": 15
+        },
+        {
+          "endLine": 78,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/storage/CoverImageWriter.kt",
+          "role": "sink",
+          "startLine": 65
+        },
+        {
+          "endLine": 79,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/share/CoverShareReceiverActivity.kt",
+          "role": "entrypoint",
+          "startLine": 73
+        },
+        {
+          "endLine": 33,
+          "path": "androidApp/src/main/kotlin/com/foliore/android/share/IncomingCoverRepository.kt",
+          "role": "sink",
+          "startLine": 25
+        }
+      ],
+      "occurrenceId": "occ_74b0b6df9eca60274ad70740",
+      "provenance": {
+        "candidateId": "SEC-04",
+        "originalCandidates": [
+          {
+            "attacker": "A supplier of a malicious EPUB/image, or another installed app sending content to the exported share activities.",
+            "confidence": "high",
+            "counterevidence": [
+              "Normal EPUB import runs on Dispatchers.IO, avoiding ordinary main-thread I/O, but this does not bound memory or storage.",
+              "The first parser call uses runCatching, but storeCopied parses again and catches Exception rather than OutOfMemoryError.",
+              "SVG raster output is bounded and internal entities are disabled.",
+              "Google Books cover downloads have an 8 MiB limit, but local/shared covers and EPUB entries do not."
+            ],
+            "cwe": "CWE-400",
+            "evidence": [
+              {
+                "code": "bufferedReader(...).use { it.readText() }; getInputStream(entry).use { it.readBytes() }",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidZipEpubArchive.kt",
+                "lines": "15-22"
+              },
+              {
+                "code": "while (true) { val read = source.read(buffer); if (read == -1) break; output.write(buffer, 0, read) }",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/AndroidEpubImporter.kt",
+                "lines": "287-294"
+              },
+              {
+                "code": "BitmapFactory.decodeByteArray(...); ImageDecoder.decodeBitmap(...) without sampling or target dimensions",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/storage/CoverImageWriter.kt",
+                "lines": "70-76"
+              },
+              {
+                "code": "IncomingCoverRepository(this).copyFromIntent(intent)",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/share/CoverShareReceiverActivity.kt",
+                "lines": "79"
+              },
+              {
+                "code": "openInputStream(source); sourceStream.copyTo(output)",
+                "file": "androidApp/src/main/kotlin/com/foliore/android/share/IncomingCoverRepository.kt",
+                "lines": "25-30"
+              }
+            ],
+            "id": "SEC-04",
+            "impact": "A small compressed EPUB containing a very large OPF or cover entry can exhaust heap and crash import. Large or nonterminating provider streams can fill storage. A compact raster image with huge pixel dimensions can exhaust memory despite the intended 1400x2100 output limit. Cover sharing additionally performs its unrestricted copy synchronously in Activity.onCreate, allowing UI hangs.",
+            "invariant": "Untrusted documents must have bounded compressed size, expanded size, image dimensions, and processing work.",
+            "remediation": "Implement bounded streaming import and per-entry/total decompression budgets, enforce entry-count and pixel-count limits, and sample raster decoding before allocation. Move cover-share copying off the main thread, support cancellation, and delete partial files on failure.",
+            "severity": "medium",
+            "source_to_sink": [
+              "MainActivity.kt:99-103 automatically imports received EPUB URIs.",
+              "AndroidEpubImporter.kt:287-294 copies input until EOF without a byte limit.",
+              "AndroidZipEpubArchive.kt:15-22 reads entire decompressed text/image entries into memory.",
+              "AndroidEpubImporter.kt:157-160 parses the archive and decodes its cover.",
+              "CoverImageWriter.kt:70 fully decodes raster images before the later resizing at :23-25."
+            ],
+            "title": "Unbounded EPUB and image processing allows import denial of service"
+          }
+        ],
+        "source": "local_plugin"
+      },
+      "remediation": "Implement bounded streaming import and per-entry/total decompression budgets, enforce entry-count and pixel-count limits, and sample raster decoding before allocation. Move cover-share copying off the main thread, support cancellation, and delete partial files on failure.",
+      "remediationTests": [
+        "Reject oversized expanded EPUB entries and raster dimensions while cleaning partial files."
+      ],
+      "rootCause": {
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3",
+          "e4",
+          "e5"
+        ],
+        "summary": "MainActivity.kt:99-103 automatically imports received EPUB URIs. AndroidEpubImporter.kt:287-294 copies input until EOF without a byte limit. AndroidZipEpubArchive.kt:15-22 reads entire decompressed text/image entries into memory. AndroidEpubImporter.kt:157-160 parses the archive and decodes its cover. CoverImageWriter.kt:70 fully decodes raster images before the later resizing at :23-25."
+      },
+      "ruleId": "resource-exhaustion.document-import",
+      "severity": {
+        "level": "medium",
+        "rationale": "Import is exposed through share activities and accepts attacker supplied documents."
+      },
+      "summary": "A small compressed EPUB containing a very large OPF or cover entry can exhaust heap and crash import. Large or nonterminating provider streams can fill storage. A compact raster image with huge pixel dimensions can exhaust memory despite the intended 1400x2100 output limit. Cover sharing additionally performs its unrestricted copy synchronously in Activity.onCreate, allowing UI hangs.",
+      "taxonomy": {
+        "category": "resource-exhaustion",
+        "cwe": [
+          "CWE-400"
+        ]
+      },
+      "title": "Unbounded EPUB and image processing allows import denial of service",
+      "validation": {
+        "assertions": [
+          "MainActivity.kt:99-103 automatically imports received EPUB URIs.",
+          "AndroidEpubImporter.kt:287-294 copies input until EOF without a byte limit.",
+          "AndroidZipEpubArchive.kt:15-22 reads entire decompressed text/image entries into memory.",
+          "AndroidEpubImporter.kt:157-160 parses the archive and decodes its cover.",
+          "CoverImageWriter.kt:70 fully decodes raster images before the later resizing at :23-25."
+        ],
+        "evidenceRefs": [
+          "e1",
+          "e2",
+          "e3",
+          "e4",
+          "e5"
+        ],
+        "limitations": [
+          "No dynamic exploit reproduction.",
+          "Normal EPUB import runs on Dispatchers.IO, avoiding ordinary main-thread I/O, but this does not bound memory or storage.",
+          "The first parser call uses runCatching, but storeCopied parses again and catches Exception rather than OutOfMemoryError.",
+          "SVG raster output is bounded and internal entities are disabled.",
+          "Google Books cover downloads have an 8 MiB limit, but local/shared covers and EPUB entries do not."
+        ],
+        "method": "Independent static source trace",
+        "summary": "Untrusted documents must have bounded compressed size, expanded size, image dimensions, and processing work. A small compressed EPUB containing a very large OPF or cover entry can exhaust heap and crash import. Large or nonterminating provider streams can fill storage. A compact raster image with huge pixel dimensions can exhaust memory despite the intended 1400x2100 output limit. Cover sharing additionally performs its unrestricted copy synchronously in Activity.onCreate, allowing UI hangs."
+      }
+    }
+  ],
+  "scanId": "d90d5b51-370c-4f35-81c2-6a907808de47",
+  "schemaVersion": "1.0"
+}

@@ -1,5 +1,8 @@
 package com.foliore.android.share
 
+import com.foliore.android.storage.StorageLimits
+import com.foliore.android.storage.copyBounded
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -26,12 +29,14 @@ class IncomingCoverRepository(context: Context) {
             val cacheDir = File(appContext.cacheDir, "incoming-covers").apply { mkdirs() }
             val target = File(cacheDir, "${UUID.randomUUID()}.img")
             val input = appContext.contentResolver.openInputStream(source) ?: return null
+            try {
             input.use { sourceStream ->
                 FileOutputStream(target).use { output ->
-                    sourceStream.copyTo(output)
+                    sourceStream.copyBounded(output, StorageLimits.ENTRY_BYTES)
                 }
             }
             Uri.fromFile(target)
+            } catch (error: Throwable) { target.delete(); throw error }
         }.getOrNull()
     }
 }

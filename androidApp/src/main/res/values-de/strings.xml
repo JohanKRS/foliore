@@ -402,4 +402,16 @@
     <string name="share_cover_invalid_image">Das geteilte Bild konnte nicht geöffnet werden.</string>
     <string name="share_cover_empty_library">Importiere ein EPUB, bevor du ein geteiltes Cover anwendest.</string>
     <string name="share_cover_search">Buch suchen</string>
+    <string name="unsaved_changes_title">Ungespeicherte Änderungen</string>
+    <string name="unsaved_changes_message">Änderungen vor dem Verlassen dieses Buches speichern?</string>
+    <string name="discard_changes">Verwerfen</string>
+    <string name="privacy_title">Datenschutz</string>
+    <string name="privacy_description">Daten, Integrationen, Aufbewahrung und Löschung</string>
+    <string name="report_ai_content">Support und KI-Inhalte melden</string>
+    <string name="ai_data_disclosure">Bei der Generierung werden Ihre Eingabe und Buchmetadaten mit Ihrem Schlüssel an OpenAI gesendet. Es können API-Kosten entstehen. Prüfen Sie die Ergebnisse vor der Übernahme.</string>
+    <string name="report_content_description">Beschreiben Sie das Problem. Nur dieser Text wird an Foliore gesendet; kein Buch oder Bild wird angehängt. Vermeiden Sie persönliche Angaben.</string>
+    <string name="report_content_message">Beschreibung</string>
+    <string name="report_content_success">Meldung erhalten. Vielen Dank.</string>
+    <string name="report_content_failure">Senden fehlgeschlagen. Ihr Text bleibt für einen erneuten Versuch erhalten.</string>
+    <string name="report_content_send">Meldung senden</string>
 </resources>

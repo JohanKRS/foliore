@@ -26,6 +26,8 @@ internal object EpubContentFingerprint {
         val digest = MessageDigest.getInstance("SHA-256")
 
         ZipFile(file).use { zip ->
+            StorageLimits.inspect(zip)
+            val budget = ReadBudget(StorageLimits.EXPANDED_BYTES)
             val entries = zip.entries().asSequence()
                 .filterNot { it.isDirectory }
                 .filterNot { entry -> entry.name.shouldIgnoreForContentFingerprint(ignoredPaths) }
@@ -43,6 +45,7 @@ internal object EpubContentFingerprint {
                     while (true) {
                         val read = input.read(buffer)
                         if (read == -1) break
+                        budget.consume(read)
                         digest.update(buffer, 0, read)
                     }
                 }

@@ -855,13 +855,7 @@ private fun BookGrid(
     val accessibilityManager = remember(context) {
         context.getSystemService(AccessibilityManager::class.java)
     }
-    val exposeBookSemantics = accessibilityManager?.isTouchExplorationEnabled == true
-    val suppressComposeAccessibility = accessibilityManager?.isEnabled == true && !exposeBookSemantics
-    val semanticsModifier = if (exposeBookSemantics) {
-        Modifier
-    } else {
-        Modifier.clearAndSetSemantics {}
-    }
+    val semanticsModifier = Modifier
     val currentOnBookClick by rememberUpdatedState(onBookClick)
     val currentOnBookSelectionToggle by rememberUpdatedState(onBookSelectionToggle)
     val colorScheme = MaterialTheme.colorScheme
@@ -883,16 +877,6 @@ private fun BookGrid(
         statusSecondaryColor = colorScheme.secondary.toArgb(),
         statusErrorColor = colorScheme.error.toArgb(),
     )
-
-    DisposableEffect(composeView, suppressComposeAccessibility) {
-        val previousImportance = composeView.importantForAccessibility
-        if (suppressComposeAccessibility) {
-            composeView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        }
-        onDispose {
-            composeView.importantForAccessibility = previousImportance
-        }
-    }
 
     BoxWithConstraints(modifier = modifier.clipToBounds()) {
         val columnCount = gridColumns.columnCount(
@@ -990,7 +974,7 @@ private fun BookGrid(
                     books = books,
                     selectedBookIds = selectedBookIds,
                     isBatchMode = isBatchMode,
-                    exposeBookSemantics = exposeBookSemantics,
+                    exposeBookSemantics = true,
                     style = gridStyle,
                     itemLayout = itemLayout,
                     displayOptions = displayOptions,
@@ -1156,7 +1140,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
             item = book,
             isSelected = book.book.id in selectedBookIds,
             isBatchMode = isBatchMode,
-            exposeBookSemantics = exposeBookSemantics,
+            exposeBookSemantics = true,
             style = checkNotNull(style),
             itemLayout = checkNotNull(itemLayout),
             displayOptions = displayOptions,

@@ -30,7 +30,7 @@ class SmtpEmailSender {
                 if (!smtp.isTlsActive && smtp.supportsStartTls) {
                     smtp.startTls()
                     smtp.ehlo()
-                } else if (!smtp.isTlsActive && credentials.smtpPort == STARTTLS_PORT) {
+                } else if (!smtp.isTlsActive) {
                     error("SMTP server does not advertise STARTTLS")
                 }
                 smtp.authLogin(credentials.smtpUsername, credentials.smtpPassword)
@@ -146,7 +146,7 @@ class SmtpEmailSender {
             val sslSocket = (SSLSocketFactory.getDefault() as SSLSocketFactory)
                 .createSocket(socket, host, port, true) as SSLSocket
             sslSocket.soTimeout = TIMEOUT_MS
-            sslSocket.startHandshake()
+            sslSocket.verifySmtpPeer()
             socket = sslSocket
             tlsActive = true
             reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
@@ -154,6 +154,7 @@ class SmtpEmailSender {
         }
 
         fun authLogin(username: String, password: String) {
+            check(tlsActive) { "Authentication requires verified TLS" }
             command("AUTH LOGIN", 334)
             command(Base64.getEncoder().encodeToString(username.toByteArray(Charsets.UTF_8)), 334)
             command(Base64.getEncoder().encodeToString(password.toByteArray(Charsets.UTF_8)), 235)
@@ -209,7 +210,7 @@ class SmtpEmailSender {
                 ((SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(host, port) as SSLSocket)
                     .apply {
                         soTimeout = TIMEOUT_MS
-                        startHandshake()
+                        verifySmtpPeer()
                     }
             } else {
                 Socket(host, port).apply {
@@ -236,4 +237,9 @@ class SmtpEmailSender {
         const val IMPLICIT_TLS_PORT = 465
         const val STARTTLS_PORT = 587
     }
+}
+
+internal fun SSLSocket.verifySmtpPeer() {
+    sslParameters = sslParameters.apply { endpointIdentificationAlgorithm = "HTTPS" }
+    try { startHandshake() } catch (error: Throwable) { close(); throw error }
 }

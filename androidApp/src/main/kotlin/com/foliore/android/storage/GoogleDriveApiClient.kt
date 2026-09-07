@@ -14,6 +14,9 @@ import kotlinx.serialization.json.Json
 internal class GoogleDriveApiClient(
     private val accessToken: String,
 ) {
+    @Volatile var serverTimeMillis: Long? = null
+        private set
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = false
@@ -87,7 +90,7 @@ internal class GoogleDriveApiClient(
             }
             response.connection.inputStream.use { input ->
                 destination.outputStream().use { output ->
-                    input.copyTo(output)
+                    input.copyBounded(output, StorageLimits.EPUB_BYTES)
                 }
             }
         }
@@ -101,7 +104,7 @@ internal class GoogleDriveApiClient(
             if (response.responseCode !in 200..299) {
                 throw GoogleDriveHttpException(response.responseCode, response.errorText)
             }
-            response.connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            response.connection.inputStream.use { it.readBounded(StorageLimits.ENTRY_BYTES).toString(Charsets.UTF_8) }
         }
     }
 
@@ -284,7 +287,7 @@ internal class GoogleDriveApiClient(
         } else if (bodyFile != null) {
             connection.outputStream.use { output ->
                 bodyFile.inputStream().use { input ->
-                    input.copyTo(output)
+                    input.copyBounded(output, StorageLimits.EPUB_BYTES)
                 }
             }
         }
@@ -317,21 +320,25 @@ internal class GoogleDriveApiClient(
         val parents: List<String>,
     )
 
-    private class DriveHttpResponse(
+    private inner class DriveHttpResponse(
         val connection: HttpURLConnection,
     ) : AutoCloseable {
-        val responseCode: Int by lazy { connection.responseCode }
+        val responseCode: Int by lazy {
+            connection.responseCode.also {
+                connection.getHeaderFieldDate("Date", -1L).takeIf { it > 0L }?.let { serverTimeMillis = it }
+            }
+        }
 
         val text: String by lazy {
             if (responseCode in 200..299) {
-                connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                connection.inputStream.use { it.readBounded(StorageLimits.ENTRY_BYTES).toString(Charsets.UTF_8) }
             } else {
                 errorText
             }
         }
 
         val errorText: String by lazy {
-            connection.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            connection.errorStream?.use { it.readBounded(StorageLimits.XML_BYTES).toString(Charsets.UTF_8) }.orEmpty()
         }
 
         override fun close() {

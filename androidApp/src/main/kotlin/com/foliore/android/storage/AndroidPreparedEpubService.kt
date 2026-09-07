@@ -32,7 +32,7 @@ class AndroidPreparedEpubService(
     private val appContext = context.applicationContext
     private val json = Json { prettyPrint = true }
 
-    fun prepare(bookId: String): PreparedEpubResult {
+    fun prepare(bookId: String): PreparedEpubResult = synchronized(SyncOperationCoordinator.localDataLock) {
         return runCatching {
             val current = libraryRepository.getBook(bookId) ?: return PreparedEpubResult.NotFound
             val original = File(current.book.originalFilePath)
@@ -48,8 +48,7 @@ class AndroidPreparedEpubService(
                 metadata = current.metadata,
                 coverFile = current.book.coverImagePath?.let(::File)?.takeIf { it.exists() },
             )
-            if (prepared.exists()) prepared.delete()
-            temp.renameTo(prepared)
+            java.nio.file.Files.move(temp.toPath(), prepared.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
 
             val updated = libraryRepository.markPrepared(
                 bookId = bookId,
@@ -104,7 +103,7 @@ class AndroidPreparedEpubService(
         }.getOrDefault(PreparedEpubResult.Failed)
     }
 
-    private fun exportPreparedEpub(bookId: String): ExportPreparedResult {
+    private fun exportPreparedEpub(bookId: String): ExportPreparedResult = synchronized(SyncOperationCoordinator.localDataLock) {
         var current = libraryRepository.getBook(bookId) ?: return ExportPreparedResult.NotFound
         val preparedPath = current.book.preparedFilePath
         val needsPrepare = preparedPath == null ||
@@ -148,13 +147,17 @@ class AndroidPreparedEpubService(
         if (destination.exists()) destination.delete()
 
         ZipFile(source).use { zip ->
+            StorageLimits.inspect(zip)
+            val budget = ReadBudget(StorageLimits.EXPANDED_BYTES)
             AndroidZipEpubArchive(source).use { archive ->
                 val parsed = parser.parse(archive)
                 if (!parsed.isReadable) error("Unreadable EPUB")
 
                 val opfEntryName = parsed.technicalInfo.opfPath
                 val opfXml = archive.readText(opfEntryName) ?: error("Missing OPF")
-                val coverEntryName = parsed.coverPath ?: defaultCoverPath(opfEntryName)
+                val previousCoverEntry = parsed.coverPath
+                val coverEntryName = if (coverFile != null) defaultCoverPath(opfEntryName).removeSuffix(".jpg") + "-${java.util.UUID.randomUUID()}.jpg"
+                    else previousCoverEntry ?: defaultCoverPath(opfEntryName)
                 val coverHref = relativeHref(opfEntryName, coverEntryName)
                 val updatedOpf = updateOpf(
                     opfXml = opfXml,
@@ -163,24 +166,28 @@ class AndroidPreparedEpubService(
                     coverHref = coverHref,
                     needsCoverItem = parsed.coverPath == null && coverFile != null,
                 )
-                val coverBytes = coverFile?.readBytes()
+                val coverBytes = coverFile?.inputStream()?.use { it.readBounded(StorageLimits.ENTRY_BYTES) }
                 var wroteCover = false
 
                 ZipOutputStream(FileOutputStream(destination)).use { output ->
                     writeMimetypeFirst(zip, output)
 
                     zip.entries().asSequence().forEach { entry ->
-                        if (entry.name == "mimetype" || entry.isDirectory) return@forEach
+                        if (entry.name == "mimetype" || entry.isDirectory || (coverFile != null && entry.name == previousCoverEntry)) return@forEach
 
                         val data = when (entry.name) {
                             opfEntryName -> updatedOpf.toByteArray(Charsets.UTF_8)
                             coverEntryName -> {
                                 wroteCover = coverBytes != null
-                                coverBytes ?: zip.getInputStream(entry).use { it.readBytes() }
+                                coverBytes ?: zip.getInputStream(entry).use { it.readBounded(StorageLimits.ENTRY_BYTES, budget) }
                             }
-                            else -> zip.getInputStream(entry).use { it.readBytes() }
+                            else -> zip.getInputStream(entry).use { it.readBounded(StorageLimits.ENTRY_BYTES, budget) }
                         }
-                        output.writeDeflated(entry.name, data)
+                        val rewritten = if (coverFile != null && previousCoverEntry != null &&
+                            entry.name.substringAfterLast('.').lowercase() in setOf("opf", "xhtml", "html", "htm", "svg", "xml", "ncx", "css")) {
+                            EpubCoverReferences.rewrite(data.toString(Charsets.UTF_8), entry.name, previousCoverEntry, coverEntryName).toByteArray(Charsets.UTF_8)
+                        } else data
+                        output.writeDeflated(entry.name, rewritten)
                     }
 
                     if (coverBytes != null && !wroteCover) {
@@ -192,8 +199,9 @@ class AndroidPreparedEpubService(
     }
 
     private fun writeMimetypeFirst(zip: ZipFile, output: ZipOutputStream) {
+        val budget = ReadBudget(128)
         val mimetypeBytes = zip.getEntry("mimetype")?.let { entry ->
-            zip.getInputStream(entry).use { it.readBytes() }
+            zip.getInputStream(entry).use { it.readBounded(StorageLimits.ENTRY_BYTES, budget) }
         } ?: EPUB_MIME_TYPE.toByteArray(Charsets.UTF_8)
 
         val crc = CRC32().apply { update(mimetypeBytes) }
@@ -254,7 +262,7 @@ class AndroidPreparedEpubService(
         )
         val replacement = "<dc:$localName>$escaped</dc:$localName>"
         return if (regex.containsMatchIn(this)) {
-            replaceFirst(regex, replacement)
+            replaceFirst(regex, Regex.escapeReplacement(replacement))
         } else {
             insertIntoMetadata(replacement)
         }
@@ -290,7 +298,7 @@ class AndroidPreparedEpubService(
         )
         val replacement = "<meta property=\"dcterms:modified\">$now</meta>"
         return if (regex.containsMatchIn(this)) {
-            replaceFirst(regex, replacement)
+            replaceFirst(regex, Regex.escapeReplacement(replacement))
         } else {
             insertIntoMetadata(replacement)
         }
@@ -301,7 +309,7 @@ class AndroidPreparedEpubService(
         val item = "<item id=\"$itemId\" href=\"${href.escapeXml()}\" media-type=\"image/jpeg\" properties=\"cover-image\"/>"
         return replaceFirst(
             Regex("</manifest>", RegexOption.IGNORE_CASE),
-            "$item\n</manifest>",
+            Regex.escapeReplacement("$item\n</manifest>"),
         )
     }
 
@@ -315,7 +323,7 @@ class AndroidPreparedEpubService(
     private fun String.insertIntoMetadata(fragment: String): String {
         return replaceFirst(
             Regex("</metadata>", RegexOption.IGNORE_CASE),
-            "$fragment\n</metadata>",
+            Regex.escapeReplacement("$fragment\n</metadata>"),
         )
     }
 
@@ -333,8 +341,7 @@ class AndroidPreparedEpubService(
     }
 
     private fun relativeHref(opfPath: String, entryPath: String): String {
-        val base = opfPath.substringBeforeLast('/', missingDelimiterValue = "")
-        return if (base.isBlank()) entryPath else entryPath.removePrefix("$base/")
+        return EpubCoverReferences.relative(opfPath, entryPath)
     }
 
     private fun BookMetadata.exportFileName(): String {

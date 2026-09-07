@@ -24,7 +24,7 @@ class AndroidBookEditor(
     private val appContext = context.applicationContext
     private val json = Json { prettyPrint = true }
 
-    fun updateMetadata(bookId: String, draft: BookMetadataDraft): BookEditResult {
+    fun updateMetadata(bookId: String, draft: BookMetadataDraft): BookEditResult = synchronized(SyncOperationCoordinator.localDataLock) {
         if (!draft.isValid()) return BookEditResult.InvalidTitle
 
         return runCatching {
@@ -43,7 +43,7 @@ class AndroidBookEditor(
     fun updateMetadataBatch(
         bookIds: List<String>,
         patch: BatchMetadataPatch,
-    ): BatchBookEditResult {
+    ): BatchBookEditResult = synchronized(SyncOperationCoordinator.localDataLock) {
         if (bookIds.isEmpty()) return BatchBookEditResult.EmptySelection
         if (!patch.hasChanges()) return BatchBookEditResult.NoChanges
 
@@ -65,11 +65,11 @@ class AndroidBookEditor(
         }.getOrDefault(BatchBookEditResult.Failed)
     }
 
-    fun replaceCover(bookId: String, imageUri: Uri): BookEditResult {
+    fun replaceCover(bookId: String, imageUri: Uri): BookEditResult = synchronized(SyncOperationCoordinator.localDataLock) {
         return runCatching {
             val current = libraryRepository.getBook(bookId) ?: return BookEditResult.NotFound
             val imageBytes = appContext.contentResolver.openInputStream(imageUri)?.use { input ->
-                input.readBytes()
+                input.readBounded(StorageLimits.ENTRY_BYTES)
             } ?: return BookEditResult.Failed
 
             val bookDir = File(current.book.originalFilePath).parentFile ?: return BookEditResult.Failed
@@ -96,7 +96,7 @@ class AndroidBookEditor(
             coverImageWriter.isReadableCover(original)
     }
 
-    fun recoverMissingCover(bookId: String): BookEditResult {
+    fun recoverMissingCover(bookId: String): BookEditResult = synchronized(SyncOperationCoordinator.localDataLock) {
         return runCatching {
             val current = libraryRepository.getBook(bookId) ?: return BookEditResult.NotFound
             val originalFile = File(current.book.originalFilePath)

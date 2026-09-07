@@ -64,7 +64,7 @@ class SmtpEmailSenderTest {
     }
 
     @Test
-    fun sendEpubDeliversMessageToPlainLocalSmtpServer() {
+    fun sendEpubRejectsPlainServerOnCustomPortBeforeCredentials() {
         val attachment = File.createTempFile("foliore-send", ".epub").apply {
             writeBytes("epub".toByteArray(Charsets.UTF_8))
         }
@@ -88,13 +88,10 @@ class SmtpEmailSenderTest {
 
             serverThread.join(3_000)
 
-            assertTrue(sent)
-            assertTrue(smtpServer.commands.any { it == "MAIL FROM:<sender@example.com>" })
-            assertTrue(smtpServer.commands.any { it == "RCPT TO:<reader@kindle.com>" })
-            assertTrue(smtpServer.commands.any { it == "AUTH LOGIN" })
-            assertTrue(smtpServer.message.contains("To: <reader@kindle.com>"))
-            assertTrue(smtpServer.message.contains("Content-Type: application/epub+zip"))
-            assertTrue(smtpServer.message.contains(Base64.getEncoder().encodeToString("epub".toByteArray())))
+            assertFalse(sent)
+            assertTrue(smtpServer.commands.any { it.startsWith("EHLO") })
+            assertFalse(smtpServer.commands.any { it.startsWith("AUTH") || it.startsWith("MAIL") || it == "DATA" })
+            assertTrue(smtpServer.message.isEmpty())
         } finally {
             smtpServer.close()
             serverThread.join(1_000)

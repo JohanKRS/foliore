@@ -402,4 +402,16 @@
     <string name="share_cover_invalid_image">共有された画像を開けませんでした。</string>
     <string name="share_cover_empty_library">共有された表紙を設定する前にEPUBを読み込んでください。</string>
     <string name="share_cover_search">本を検索</string>
+    <string name="unsaved_changes_title">未保存の変更</string>
+    <string name="unsaved_changes_message">この本を閉じる前に変更を保存しますか？</string>
+    <string name="discard_changes">破棄</string>
+    <string name="privacy_title">プライバシー</string>
+    <string name="privacy_description">データ、連携、保存期間と削除</string>
+    <string name="report_ai_content">サポートとAIコンテンツの報告</string>
+    <string name="ai_data_disclosure">生成すると、プロンプトと本のメタデータがあなたのキーを使ってOpenAIに送信されます。API料金が発生する場合があります。適用前に結果を確認してください。</string>
+    <string name="report_content_description">問題を説明してください。このテキストのみがFolioreに送信され、本や画像は添付されません。個人情報は含めないでください。</string>
+    <string name="report_content_message">説明</string>
+    <string name="report_content_success">報告を受け付けました。ありがとうございます。</string>
+    <string name="report_content_failure">送信できませんでした。再試行できるようテキストは残っています。</string>
+    <string name="report_content_send">報告を送信</string>
 </resources>

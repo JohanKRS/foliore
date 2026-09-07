@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,8 +119,9 @@ fun EditMetadataScreen(
     aiCoverPromptRecords: List<AiCoverPromptRecord>,
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
-    onShareExport: () -> Unit,
-    onSendToKindle: () -> Unit,
+    onShareExport: (BookMetadataDraft?) -> Unit,
+    onSendToKindle: (BookMetadataDraft?) -> Unit,
+    onSaveAndNavigate: (BookMetadataDraft, () -> Unit) -> Unit,
     onCoverGenerationUnavailable: () -> Unit,
     onLookupMetadataCandidates: (BookMetadataDraft, (List<MetadataLookupCandidate>) -> Unit) -> Unit,
     onGenerateMetadataPreview: (String, BookMetadataDraft, (BookMetadataDraft) -> Unit) -> Unit,
@@ -220,8 +222,35 @@ fun EditMetadataScreen(
         }
     }
     val latestSaveDraft by rememberUpdatedState(saveDraft)
-    val latestShareExport by rememberUpdatedState(onShareExport)
-    val latestSendToKindle by rememberUpdatedState(onSendToKindle)
+    val latestShareExport by rememberUpdatedState({ onShareExport(currentDraft().takeIf { it != originalDraft }) })
+    val latestSendToKindle by rememberUpdatedState({ onSendToKindle(currentDraft().takeIf { it != originalDraft }) })
+    var showUnsavedChanges by rememberSaveable(book.book.id) { mutableStateOf(false) }
+    var pendingExit by remember(book.book.id) { mutableStateOf<(() -> Unit)?>(null) }
+    val requestExit: (() -> Unit) -> Unit = { destination ->
+        if (currentDraft() != originalDraft) { pendingExit = destination; showUnsavedChanges = true }
+        else destination()
+    }
+    val latestRequestExit by rememberUpdatedState(requestExit)
+    val guardedBack = { requestExit(onBack) }
+    BackHandler(enabled = currentDraft() != originalDraft) { guardedBack() }
+    if (showUnsavedChanges) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showUnsavedChanges = false },
+            title = { Text(stringResource(R.string.unsaved_changes_title)) },
+            text = { Text(stringResource(R.string.unsaved_changes_message)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { onSaveAndNavigate(currentDraft(), pendingExit ?: onBack) }, enabled = title.isNotBlank()) {
+                    Text(stringResource(R.string.edit_metadata_save))
+                }
+            },
+            dismissButton = {
+                Row {
+                    androidx.compose.material3.TextButton(onClick = { showUnsavedChanges = false }) { Text(stringResource(R.string.action_cancel)) }
+                    androidx.compose.material3.TextButton(onClick = { (pendingExit ?: onBack)() }) { Text(stringResource(R.string.discard_changes)) }
+                }
+            },
+        )
+    }
     val applyMetadataDraft: (BookMetadataDraft) -> Unit = { draft ->
         title = draft.title
         subtitle = draft.subtitle.orEmpty()
@@ -280,7 +309,7 @@ fun EditMetadataScreen(
         val saveEnabled = hasPendingSave
         val localHazeState = rememberHazeState()
         val hazeState = chromeHazeState ?: localHazeState
-        val currentOnBack by rememberUpdatedState(onBack)
+        val currentOnBack by rememberUpdatedState(guardedBack)
         val currentOnAutofillClick by rememberUpdatedState {
             showMetadataAutofillDialog = true
         }
@@ -306,6 +335,7 @@ fun EditMetadataScreen(
             onBottomBarActionsChange(
                 EditBottomBarActions(
                     onSave = { latestSaveDraft() },
+                    onRequestNavigate = { destination -> latestRequestExit(destination) },
                     onShareExport = { latestShareExport() },
                     onSendToKindle = { latestSendToKindle() },
                     saveEnabled = saveEnabled,
@@ -364,7 +394,7 @@ fun EditMetadataScreen(
                 isbn = isbn,
                 onIsbnChange = { isbn = it },
                 description = description,
-                onBack = onBack,
+                onBack = guardedBack,
                 onReplaceCover = onReplaceCover,
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
                 hasOpenAiApiKey = hasOpenAiApiKey,
@@ -402,7 +432,7 @@ fun EditMetadataScreen(
                 onAutofillClick = { showMetadataAutofillDialog = true },
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
                 onReplaceCover = onReplaceCover,
-                onBack = onBack,
+                onBack = guardedBack,
             )
         }
     }
@@ -676,14 +706,15 @@ private fun TabletEditBookScreen(
         Column(
             modifier = Modifier
                 .weight(TabletEditRightPaneWeight)
-                .fillMaxHeight(),
+                .fillMaxHeight()
+                .padding(horizontal = tuning.detailsPaneHorizontalPadding.dp),
         ) {
             if (showTopChrome) {
                 TabletRightHeader(
                     hasOpenAiApiKey = hasOpenAiApiKey,
                     onAutofillClick = onAutofillClick,
                 )
-                EditorialDivider(modifier = Modifier.fillMaxWidth())
+                EditorialDivider(modifier = Modifier.fillMaxWidth(), horizontalPadding = 0.dp)
             } else {
                 Spacer(modifier = Modifier.height(topChromeInset))
             }
@@ -698,7 +729,6 @@ private fun TabletEditBookScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            horizontal = tuning.detailsPaneHorizontalPadding.dp,
                             vertical = tuning.detailsPaneVerticalPadding.dp,
                         ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -866,12 +896,13 @@ private fun StackedEditBookScreen(
                     top = resolvedTopChromeInset + tuning.detailsMobileTopExtra.dp,
                     bottom = bottomChromeInset,
                 ),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
                     .padding(horizontal = tuning.detailsMobileHorizontalPadding.dp)
-                    .padding(bottom = tuning.detailsMobileBottomPadding.dp),
+                    .widthIn(max = tuning.detailsTabletCoverMaxWidth.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Column(
@@ -960,127 +991,127 @@ private fun StackedEditBookScreen(
                         syncStatus = book.book.syncStatus,
                     )
                 }
-            }
+                Spacer(modifier = Modifier.height(tuning.detailsMobileBottomPadding.dp))
 
-            TabletRightHeader(
-                hasOpenAiApiKey = hasOpenAiApiKey,
-                onAutofillClick = onAutofillClick,
-            )
-            EditorialDivider(modifier = Modifier.fillMaxWidth())
+                TabletRightHeader(
+                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    onAutofillClick = onAutofillClick,
+                )
+                EditorialDivider(modifier = Modifier.fillMaxWidth(), horizontalPadding = 0.dp)
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = tuning.detailsPaneHorizontalPadding.dp,
-                        vertical = tuning.detailsPaneVerticalPadding.dp,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                TabletMetadataField(
-                    icon = Icons.AutoMirrored.Outlined.MenuBook,
-                    label = stringResource(R.string.edit_metadata_field_title),
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = tuning.detailsPaneVerticalPadding.dp,
+                        ),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    MetadataTextField(
-                        value = title,
-                        onValueChange = onTitleChange,
+                    TabletMetadataField(
+                        icon = Icons.AutoMirrored.Outlined.MenuBook,
                         label = stringResource(R.string.edit_metadata_field_title),
-                        isError = titleError,
-                        supportingText = if (titleError) stringResource(R.string.edit_metadata_required) else null,
-                        showLabel = false,
-                        singleLine = true,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.PersonOutline,
-                    label = stringResource(R.string.edit_metadata_field_authors),
-                ) {
-                    MetadataTextField(
-                        value = authors,
-                        onValueChange = onAuthorsChange,
+                    ) {
+                        MetadataTextField(
+                            value = title,
+                            onValueChange = onTitleChange,
+                            label = stringResource(R.string.edit_metadata_field_title),
+                            isError = titleError,
+                            supportingText = if (titleError) stringResource(R.string.edit_metadata_required) else null,
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.PersonOutline,
                         label = stringResource(R.string.edit_metadata_field_authors),
-                        showLabel = false,
-                        singleLine = true,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.BookmarkBorder,
-                    label = stringResource(R.string.edit_metadata_field_series),
-                ) {
-                    MetadataTextField(
-                        value = seriesName,
-                        onValueChange = onSeriesNameChange,
+                    ) {
+                        MetadataTextField(
+                            value = authors,
+                            onValueChange = onAuthorsChange,
+                            label = stringResource(R.string.edit_metadata_field_authors),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.BookmarkBorder,
                         label = stringResource(R.string.edit_metadata_field_series),
-                        showLabel = false,
-                        singleLine = true,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.Numbers,
-                    label = stringResource(R.string.edit_metadata_field_series_index),
-                ) {
-                    MetadataTextField(
-                        value = seriesIndex,
-                        onValueChange = onSeriesIndexChange,
+                    ) {
+                        MetadataTextField(
+                            value = seriesName,
+                            onValueChange = onSeriesNameChange,
+                            label = stringResource(R.string.edit_metadata_field_series),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.Numbers,
                         label = stringResource(R.string.edit_metadata_field_series_index),
-                        showLabel = false,
-                        singleLine = true,
-                        keyboardType = KeyboardType.Decimal,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.Language,
-                    label = stringResource(R.string.edit_metadata_field_language),
-                ) {
-                    MetadataTextField(
-                        value = language,
-                        onValueChange = onLanguageChange,
+                    ) {
+                        MetadataTextField(
+                            value = seriesIndex,
+                            onValueChange = onSeriesIndexChange,
+                            label = stringResource(R.string.edit_metadata_field_series_index),
+                            showLabel = false,
+                            singleLine = true,
+                            keyboardType = KeyboardType.Decimal,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.Language,
                         label = stringResource(R.string.edit_metadata_field_language),
-                        showLabel = false,
-                        singleLine = true,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.CalendarToday,
-                    label = stringResource(R.string.details_published_year),
-                ) {
-                    MetadataTextField(
-                        value = publishedDate,
-                        onValueChange = onPublishedDateChange,
-                        label = stringResource(R.string.edit_metadata_field_published_date),
-                        showLabel = false,
-                        singleLine = true,
-                        keyboardType = KeyboardType.Number,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.LocalOffer,
-                    label = stringResource(R.string.edit_metadata_field_tags),
-                ) {
-                    MetadataTextField(
-                        value = tags,
-                        onValueChange = onTagsChange,
+                    ) {
+                        MetadataTextField(
+                            value = language,
+                            onValueChange = onLanguageChange,
+                            label = stringResource(R.string.edit_metadata_field_language),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.CalendarToday,
+                        label = stringResource(R.string.details_published_year),
+                    ) {
+                        MetadataTextField(
+                            value = publishedDate,
+                            onValueChange = onPublishedDateChange,
+                            label = stringResource(R.string.edit_metadata_field_published_date),
+                            showLabel = false,
+                            singleLine = true,
+                            keyboardType = KeyboardType.Number,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.LocalOffer,
                         label = stringResource(R.string.edit_metadata_field_tags),
-                        showLabel = false,
-                        singleLine = true,
-                    )
-                }
-                TabletMetadataField(
-                    icon = Icons.Outlined.Description,
-                    label = stringResource(R.string.edit_metadata_field_isbn),
-                ) {
-                    MetadataTextField(
-                        value = isbn,
-                        onValueChange = onIsbnChange,
+                    ) {
+                        MetadataTextField(
+                            value = tags,
+                            onValueChange = onTagsChange,
+                            label = stringResource(R.string.edit_metadata_field_tags),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
+                        icon = Icons.Outlined.Description,
                         label = stringResource(R.string.edit_metadata_field_isbn),
-                        showLabel = false,
-                        singleLine = true,
-                    )
+                    ) {
+                        MetadataTextField(
+                            value = isbn,
+                            onValueChange = onIsbnChange,
+                            label = stringResource(R.string.edit_metadata_field_isbn),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
                 }
-            }
 
-            TabletSyncSection(book = book)
-            TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
+                TabletSyncSection(book = book)
+                TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
+            }
         }
 
         if (showTopChrome) {
@@ -1190,6 +1221,7 @@ private fun TabletEditTopChrome(
                 TabletRightHeader(
                     hasOpenAiApiKey = hasOpenAiApiKey,
                     onAutofillClick = onAutofillClick,
+                    modifier = Modifier.padding(horizontal = tuning.detailsPaneHorizontalPadding.dp),
                 )
             }
         }
@@ -1314,15 +1346,15 @@ private fun TabletLeftTopBar(onBack: () -> Unit) {
 private fun TabletRightHeader(
     hasOpenAiApiKey: Boolean,
     onAutofillClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val actionColor = MaterialTheme.colorScheme.primary
     val tuning = LocalVisualTuning.current
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(tuning.topChromeHeaderHeight.dp)
-            .padding(start = tuning.detailsPaneHorizontalPadding.dp, end = 24.dp),
+            .height(tuning.topChromeHeaderHeight.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -1337,7 +1369,7 @@ private fun TabletRightHeader(
         Row(
             modifier = Modifier
                 .clickable(onClick = onAutofillClick)
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .padding(vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -1442,7 +1474,6 @@ private fun TabletSyncSection(book: LibraryBook) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = tuning.detailsPaneHorizontalPadding.dp,
                 vertical = tuning.detailsPaneVerticalPadding.dp + 4.dp,
             ),
     ) {
@@ -1463,7 +1494,14 @@ private fun TabletSyncSection(book: LibraryBook) {
         TabletInfoRow(
             icon = Icons.Outlined.CloudDone,
             label = stringResource(R.string.details_status),
-            value = stringResource(R.string.edit_metadata_sync_connected),
+            value = stringResource(when (book.book.syncStatus) {
+                com.foliore.shared.domain.SyncStatus.SYNCED -> R.string.status_synced
+                com.foliore.shared.domain.SyncStatus.LOCAL_ONLY -> R.string.status_local_only
+                com.foliore.shared.domain.SyncStatus.PENDING_UPLOAD -> R.string.status_pending_upload
+                com.foliore.shared.domain.SyncStatus.PENDING_DOWNLOAD -> R.string.status_pending_download
+                com.foliore.shared.domain.SyncStatus.CONFLICT -> R.string.status_conflict
+                else -> R.string.status_sync_error
+            }),
             valueColor = MaterialTheme.colorScheme.secondary,
         )
         TabletInfoRow(
@@ -1497,7 +1535,6 @@ private fun TabletAboutSection(description: String?) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(
-                horizontal = tuning.detailsPaneHorizontalPadding.dp,
                 vertical = tuning.detailsPaneVerticalPadding.dp + 4.dp,
             ),
     ) {
@@ -1696,6 +1733,12 @@ private fun MetadataAutofillDialog(
                                 Spacer(modifier = Modifier.height(18.dp))
                             }
 
+                            Text(
+                                stringResource(R.string.ai_data_disclosure),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(12.dp))
                             PromptEditorToggle(
                                 expanded = showPromptEditor,
                                 onToggle = { showPromptEditor = !showPromptEditor },
@@ -2146,6 +2189,8 @@ private fun CoverGenerationDialog(
     onUseSelected: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var showReport by remember { mutableStateOf(false) }
+    if (showReport) com.foliore.android.ui.library.ContentReportDialog { showReport = false }
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -2193,6 +2238,12 @@ private fun CoverGenerationDialog(
                     Spacer(modifier = Modifier.height(18.dp))
                 }
 
+                Text(stringResource(R.string.ai_data_disclosure), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(12.dp))
+                androidx.compose.material3.TextButton(onClick = { showReport = true }) {
+                    Text(stringResource(R.string.report_ai_content))
+                }
                 PromptEditorToggle(
                     expanded = showPromptEditor,
                     onToggle = { showPromptEditor = !showPromptEditor },

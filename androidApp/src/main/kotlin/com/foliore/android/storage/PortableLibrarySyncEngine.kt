@@ -31,7 +31,7 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 
 internal class PortableLibrarySyncEngine(
     context: Context,
@@ -41,8 +41,8 @@ internal class PortableLibrarySyncEngine(
 ) {
     private val appContext = context.applicationContext
     private val preferences = appContext.getSharedPreferences(SyncPreferenceKeys.PREFERENCES_NAME, Context.MODE_PRIVATE)
-    private val pendingRemoteDeletionStore = PendingRemoteDeletionStore(appContext)
-    private val repositoryLock = Any()
+    private var cacheScope = "default"
+    private val repositoryLock = SyncOperationCoordinator.localDataLock
     private val epubParser = EpubParser()
     private val coverImageWriter = CoverImageWriter()
     private val json = Json {
@@ -54,11 +54,25 @@ internal class PortableLibrarySyncEngine(
         store: RemoteLibraryStore,
         onProgress: (ManualSyncProgress) -> Unit = {},
     ): ManualSyncResult.Synced {
+        val uploadSnapshotDir = File(appContext.cacheDir, "sync-upload/${UUID.randomUUID()}")
+        return try { syncSnapshot(store, uploadSnapshotDir, onProgress) }
+        finally { uploadSnapshotDir.deleteRecursively() }
+    }
+
+    private fun syncSnapshot(store: RemoteLibraryStore, uploadSnapshotDir: File,
+        onProgress: (ManualSyncProgress) -> Unit): ManualSyncResult.Synced {
+        cacheScope = java.security.MessageDigest.getInstance("SHA-256").digest(store.deletionScope.orEmpty().toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        val previousManifestCache = readLocalManifestCache()
+        val previousBaseById = previousManifestCache?.books.orEmpty().associate { it.bookId to it.manifest }
+        val pendingRemoteDeletionStore = PendingRemoteDeletionStore(appContext, store.deletionScope)
         val startedAtElapsedMillis = SystemClock.elapsedRealtime()
         onProgress(ManualSyncProgress(ManualSyncPhase.PREPARING))
         val syncedAt = Clock.System.now().toString()
         val deviceId = deviceIdProvider.getDeviceId()
-        val remoteManifest = store.readManifest()
+        val journal = RemoteManifestJournal(store)
+        val remoteManifest = journal.read()?.let { json.decodeFromString<LibraryManifestSnapshot>(it) }
+        remoteManifest?.validate()
         val remoteBooks = remoteManifest?.books
             ?.filterNot { it.deleted }
             ?.associateBy { it.bookId }
@@ -68,6 +82,20 @@ internal class PortableLibrarySyncEngine(
         val localBooks = libraryRepository.getBooks()
         val localBooksById = localBooks.associateBy { it.book.id }
         val pendingDeletedBookIds = pendingRemoteDeletionStore.pendingBookIds() - localBooksById.keys
+        remoteManifest?.books.orEmpty().filter { it.deleted }.forEach { tombstone ->
+            synchronized(repositoryLock) {
+                val local = libraryRepository.getBook(tombstone.bookId)
+                if (local != null) {
+                    if (local.book.syncStatus == SyncStatus.SYNCED && local.book.revision <= tombstone.revision) {
+                        libraryRepository.deleteBook(tombstone.bookId)
+                    } else {
+                        preserveLocalConflict(local)
+                        libraryRepository.deleteBook(tombstone.bookId)
+                        counters.conflictedBooks += 1
+                    }
+                }
+            }
+        }
         val remoteBookList = remoteBooks.values.toList()
         val missingRemoteBookIds = linkedSetOf<String>()
         val removedRemoteBookIds = linkedSetOf<String>()
@@ -87,15 +115,21 @@ internal class PortableLibrarySyncEngine(
         )
         remoteBookList.forEachIndexed { index, remoteBook ->
             val localBook = localBooksById[remoteBook.bookId]
-            val shouldDeleteRemoteBook = remoteBook.bookId in pendingDeletedBookIds ||
-                (localBook == null && remoteBook.updatedByDeviceId == deviceId)
+            val shouldDeleteRemoteBook = remoteBook.bookId in pendingDeletedBookIds &&
+                pendingRemoteDeletionStore.matchesDeletedVersion(remoteBook.bookId, remoteBook.revision, remoteBook.updatedAt)
             val hasCurrentRemoteFiles = remoteManifest?.schemaVersion?.let { it >= CURRENT_MANIFEST_SCHEMA_VERSION } == true &&
                 remoteBook.files.isNotEmpty() &&
                 remoteBook.stateBundleFile != null
 
             if (shouldDeleteRemoteBook) {
-                remoteBook.deleteRemoteFiles(store)
                 removedRemoteBookIds += remoteBook.bookId
+            } else if (hasCurrentRemoteFiles && localBook != null &&
+                localBook.book.syncStatus in setOf(SyncStatus.PENDING_UPLOAD, SyncStatus.CONFLICT) &&
+                previousBaseById[localBook.book.id]?.let { base ->
+                    base.metadataSnapshot != remoteBook.metadataSnapshot || base.coverHash != remoteBook.coverHash
+                } != false
+            ) {
+                remoteDownloadActions += reconcileOfflineEdit(remoteBook, localBook, previousBaseById[localBook.book.id], counters)
             } else if (hasCurrentRemoteFiles) {
                 planRemoteBookAction(
                     remoteBook = remoteBook,
@@ -105,7 +139,7 @@ internal class PortableLibrarySyncEngine(
                     pendingStatusUpdates = pendingStatusUpdates,
                 )?.let(remoteDownloadActions::add)
             } else if (localBook == null) {
-                removedRemoteBookIds += remoteBook.bookId
+                counters.conflictedBooks += 1
             } else {
                 missingRemoteBookIds += remoteBook.bookId
             }
@@ -147,16 +181,6 @@ internal class PortableLibrarySyncEngine(
                         removedLocalBookId = duplicateBook.book.id
                         pendingStatusUpdates.syncedBookIds += action.remoteBook.bookId
                     }
-                } else if (
-                    action.currentBook == null &&
-                    error.missingRemoteBookFileOrNull()?.remotePath == action.remoteBook.originalFile
-                ) {
-                    removedRemoteBookIds += action.remoteBook.bookId
-                    Log.w(
-                        TAG,
-                        "Removing unrecoverable manifest entry id=${action.remoteBook.bookId}; " +
-                            "the remote EPUB no longer exists",
-                    )
                 } else {
                     counters.conflictedBooks += 1
                     action.currentBook?.book?.id?.let(pendingStatusUpdates.conflictedBookIds::add)
@@ -182,16 +206,24 @@ internal class PortableLibrarySyncEngine(
             (remoteManifest.schemaVersion < CURRENT_MANIFEST_SCHEMA_VERSION) ||
             missingRemoteBookIds.isNotEmpty() ||
             removedRemoteBookIds.isNotEmpty() ||
-            !store.hasDirectory("devices") ||
-            !store.hasDirectory("snapshots")
+            remoteBooks.values.any { it.autoMerged }
 
-        val booksAfterRemote = libraryRepository.getBooks()
-        val remoteLayoutsByBookId = booksAfterRemote.remoteLayoutsByBookId()
+        val booksAfterRemote = synchronized(repositoryLock) {
+            libraryRepository.getBooks().map { source -> snapshotLocalBook(source, uploadSnapshotDir) }
+        }
+        val remoteLayoutsByBookId = booksAfterRemote.associate { local ->
+            val remote = remoteBooks[local.book.id]
+            val reuse = remote != null && remote.originalFile.startsWith(RemoteManifestJournal.DATA_PREFIX) &&
+                local.book.syncStatus == SyncStatus.SYNCED && local.book.revision == remote.revision &&
+                local.book.updatedAt == remote.updatedAt && local.book.id !in missingRemoteBookIds &&
+                local.localSyncFiles(remote.toLayout()).all { file -> file.hasSameSignatureAs(remote.files.firstOrNull { it.path == file.remotePath }) }
+            local.book.id to if (reuse) remote!!.toLayout() else local.remoteLayout(UUID.randomUUID().toString())
+        }
         val localManifestIndex = buildLocalManifestIndex(
             localBooks = booksAfterRemote,
             remoteLayoutsByBookId = remoteLayoutsByBookId,
             remoteBooks = remoteBooks,
-            previousCache = readLocalManifestCache(),
+            previousCache = previousManifestCache,
         )
         val expectedRemoteBooksById = localManifestIndex.booksById
         val shouldRewriteRemoteMetadata = shouldRewriteRemoteMetadataBase ||
@@ -200,8 +232,7 @@ internal class PortableLibrarySyncEngine(
                     book.book.id !in pendingStatusUpdates.conflictedBookIds &&
                     remoteBooks[book.book.id]?.files?.isEmpty() == true
             }
-        val shouldRefreshRemoteBookFolders =
-            preferences.getInt(KEY_SYNC_UPLOAD_STRATEGY_VERSION, 0) < CURRENT_SYNC_UPLOAD_STRATEGY_VERSION
+        val shouldRefreshRemoteBookFolders = false
         val uploadCandidateIds = booksAfterRemote
             .filterNot { book ->
                 book.book.syncStatus == SyncStatus.CONFLICT ||
@@ -238,9 +269,6 @@ internal class PortableLibrarySyncEngine(
             )
         }
 
-        if (booksAfterRemote.isNotEmpty() || remoteBooks.isNotEmpty()) {
-            store.ensureDirectory("books")
-        }
         val uploadCandidates = booksAfterRemote
             .filterNot { book ->
                 book.book.syncStatus == SyncStatus.CONFLICT ||
@@ -275,19 +303,9 @@ internal class PortableLibrarySyncEngine(
             }
             .filter { book -> book.book.syncStatus != SyncStatus.SYNCED }
             .forEach { book -> pendingStatusUpdates.syncedBookIds += book.book.id }
-        val shouldCleanRemoteBookFolders = shouldRewriteRemoteMetadata ||
-            uploadCandidateIds.isNotEmpty() ||
-            shouldRefreshRemoteBookFolders
-        val cleanedRemoteBooks = if (shouldCleanRemoteBookFolders && store.hasDirectory("books")) {
-            store.deleteUnexpectedChildren(
-                directoryPath = "books",
-                expectedDirectoryNames = remoteLayoutsByBookId.values.mapTo(mutableSetOf()) { it.folderName },
-            )
-        } else {
-            false
-        }
+        val cleanedRemoteBooks = false // Collection uses committed remote references, never the local library.
         val aiCoverPromptSync = syncAiCoverPrompts(
-            store = store,
+            remoteRecords = remoteManifest?.aiCoverPrompts.orEmpty(),
             syncedAt = syncedAt,
             deviceId = deviceId,
         )
@@ -298,33 +316,18 @@ internal class PortableLibrarySyncEngine(
             aiCoverPromptSync.shouldWriteRemote
         ) {
             onProgress(ManualSyncProgress(ManualSyncPhase.WRITING_MANIFEST))
-            store.ensureDirectory("devices")
-            store.ensureDirectory("snapshots")
-            store.writeText(
-                path = "devices/$deviceId.json",
-                text = json.encodeToString(
-                    DeviceSnapshot(
-                        deviceId = deviceId,
-                        deviceName = android.os.Build.MODEL ?: "Android",
-                        platform = "android",
-                        updatedAt = syncedAt,
-                    ),
-                ),
-            )
-            store.writeText(
-                path = "library.manifest.json",
-                text = json.encodeToString(
+            journal.publish(
+                json.encodeToString(
                     LibraryManifestSnapshot(
                         schemaVersion = CURRENT_MANIFEST_SCHEMA_VERSION,
                         libraryId = libraryId(remoteManifest),
                         updatedAt = syncedAt,
                         updatedByDeviceId = deviceId,
-                        aiCoverPromptsFile = aiCoverPromptSync
-                            .mergedRecords
-                            .takeIf { it.isNotEmpty() }
-                            ?.let { AI_COVER_PROMPTS_FILE },
+                        aiCoverPrompts = aiCoverPromptSync.mergedRecords,
+                        deviceName = android.os.Build.MODEL,
                         books = mergedManifestBooks(
-                            remoteBooks = remoteBooks - removedRemoteBookIds,
+                            remoteBooks = remoteBooks.mapValues { (id, book) -> if (id in removedRemoteBookIds) book.copy(deleted = true) else book } +
+                                remoteManifest?.books.orEmpty().filter { it.deleted }.associateBy { it.bookId },
                             localBooks = booksAfterRemote,
                             remoteLayoutsByBookId = remoteLayoutsByBookId,
                             conflictedBookIds = pendingStatusUpdates.conflictedBookIds,
@@ -333,28 +336,21 @@ internal class PortableLibrarySyncEngine(
                     ),
                 ),
             )
-            if (aiCoverPromptSync.shouldWriteRemote) {
-                store.writeText(
-                    path = AI_COVER_PROMPTS_FILE,
-                    text = json.encodeToString(aiCoverPromptSync.snapshot),
-                )
-            }
-            store.writeText(
-                path = "snapshots/last-sync.txt",
-                text = syncedAt,
-                mimeType = "text/plain",
-            )
         }
 
         if (pendingStatusUpdates.hasUpdates()) {
             onProgress(ManualSyncProgress(ManualSyncPhase.APPLYING_STATUS))
             pendingStatusUpdates.conflictedBookIds.forEach { bookId ->
-                libraryRepository.markSyncConflict(bookId)
+                synchronized(repositoryLock) { libraryRepository.markSyncConflict(bookId) }
             }
             pendingStatusUpdates.syncedBookIds
                 .filterNot { it in pendingStatusUpdates.conflictedBookIds }
                 .forEach { bookId ->
-                    libraryRepository.markSynced(bookId, syncedAt)
+                    libraryRepository.markSynced(
+                        bookId, syncedAt,
+                        expectedRevision = booksAfterRemote.firstOrNull { it.book.id == bookId }?.book?.revision,
+                        expectedUpdatedAt = booksAfterRemote.firstOrNull { it.book.id == bookId }?.book?.updatedAt,
+                    )
                 }
         }
 
@@ -363,8 +359,12 @@ internal class PortableLibrarySyncEngine(
                 .putInt(KEY_SYNC_UPLOAD_STRATEGY_VERSION, CURRENT_SYNC_UPLOAD_STRATEGY_VERSION)
                 .apply()
         }
-        pendingRemoteDeletionStore.clear(pendingDeletedBookIds)
-        writeLocalManifestCache(localManifestIndex.snapshot)
+        pendingRemoteDeletionStore.clear(removedRemoteBookIds + pendingDeletedBookIds.filter { it !in remoteBooks })
+        writeLocalManifestCache(localManifestIndex.snapshot.copy(books = localManifestIndex.snapshot.books.mapNotNull { entry ->
+            if (entry.bookId in pendingStatusUpdates.conflictedBookIds) previousManifestCache?.books?.firstOrNull { it.bookId == entry.bookId }
+            else entry
+        }))
+        runCatching { journal.collectGarbage() }.onFailure { Log.w(TAG, "Deferred recovery history cleanup", it) }
 
         val durationMs = SystemClock.elapsedRealtime() - startedAtElapsedMillis
         Log.d(
@@ -382,21 +382,12 @@ internal class PortableLibrarySyncEngine(
     }
 
     private fun syncAiCoverPrompts(
-        store: RemoteLibraryStore,
+        remoteRecords: List<AiCoverPromptRecord>,
         syncedAt: String,
         deviceId: String,
     ): AiCoverPromptSync {
-        val localRecords = aiCoverPromptRepository.records()
-        val remoteSnapshot = store.readAiCoverPromptSnapshot()
-        val remoteRecords = remoteSnapshot?.records.orEmpty().normalizedAiCoverPromptRecords()
-        val mergedRecords = (remoteRecords + localRecords).normalizedAiCoverPromptRecords()
-
-        if (mergedRecords != localRecords) {
-            aiCoverPromptRepository.replaceAll(mergedRecords)
-        }
-
-        val shouldWriteRemote = mergedRecords.isNotEmpty() &&
-            (remoteSnapshot == null || remoteRecords != mergedRecords)
+        val mergedRecords = aiCoverPromptRepository.mergeAll(remoteRecords)
+        val shouldWriteRemote = mergedRecords != remoteRecords.normalizedAiCoverPromptRecords()
 
         return AiCoverPromptSync(
             mergedRecords = mergedRecords,
@@ -408,6 +399,27 @@ internal class PortableLibrarySyncEngine(
                 records = mergedRecords,
             ),
         )
+    }
+
+    private fun snapshotLocalBook(source: LibraryBook, root: File, destination: File? = null): LibraryBook {
+        val directory = (destination ?: safeChildDirectory(root, source.book.id)).apply { mkdirs() }
+        val originalDirectory = File(source.book.originalFilePath).parentFile ?: error("Missing local book")
+        fun copy(path: String?, name: String): String? = path?.let {
+            val input = File(it)
+            check(input.isFile) { "Missing local file: $name" }
+            input.copyTo(File(directory, name), overwrite = false).apply { setLastModified(input.lastModified()) }.absolutePath
+        }
+        val original = checkNotNull(copy(source.book.originalFilePath, "original.epub"))
+        check(File(original).sha256() == source.book.originalHashSha256) { "Local original EPUB checksum mismatch" }
+        stateBundleSources(originalDirectory).forEach { entry ->
+            entry.file.copyTo(File(directory, entry.entryName)).setLastModified(entry.file.lastModified())
+        }
+        return source.copy(book = source.book.copy(
+            originalFilePath = original,
+            preparedFilePath = copy(source.book.preparedFilePath, "prepared.epub"),
+            coverImagePath = source.book.coverImagePath?.let { File(directory, "cover_original.jpg").absolutePath },
+            coverThumbPath = source.book.coverThumbPath?.let { File(directory, "cover_thumb.jpg").absolutePath },
+        ))
     }
 
     private fun LibraryBook.shouldUploadTo(
@@ -424,6 +436,47 @@ internal class PortableLibrarySyncEngine(
             book.syncStatus == SyncStatus.PENDING_UPLOAD
     }
 
+    private fun reconcileOfflineEdit(remote: ManifestBookSnapshot, local: LibraryBook,
+        base: ManifestBookSnapshot?, counters: SyncCounters): RemoteDownloadAction = synchronized(repositoryLock) {
+        val baseMetadata = base?.metadataSnapshot?.let { json.encodeToJsonElement(it) }
+        val merged = if (baseMetadata != null && remote.metadataSnapshot != null) {
+            val remoteJson = json.encodeToJsonElement(remote).jsonObject
+            val localJson = JsonObject(remoteJson + mapOf(
+                "metadataSnapshot" to json.encodeToJsonElement(PortableSnapshots.metadata(local.book, local.metadata)),
+                "revision" to JsonPrimitive(local.book.revision), "updatedAt" to JsonPrimitive(local.book.updatedAt),
+                "updatedByDeviceId" to JsonPrimitive(local.book.updatedByDeviceId),
+                "coverHash" to (local.book.coverImagePath?.let(::File)?.takeIf { it.isFile }?.sha256()?.let(::JsonPrimitive) ?: JsonNull),
+                "mergeBase" to baseMetadata,
+            ))
+            RemoteManifestJournal.mergeIndependentMetadata(listOf(localJson, JsonObject(remoteJson + ("mergeBase" to baseMetadata))))
+        } else null
+        if (merged != null) {
+            RemoteDownloadAction(json.decodeFromJsonElement<ManifestBookSnapshot>(merged), local)
+        } else {
+            // Preserve the unsynchronized local branch as a normal, editable book
+            // before bringing in the remote branch. Originals can share a hash.
+            preserveLocalConflict(local)
+            counters.conflictedBooks += 1
+            RemoteDownloadAction(remote, local)
+        }
+    }
+
+    private fun preserveLocalConflict(local: LibraryBook) {
+        val recoveryId = UUID.nameUUIDFromBytes((local.book.id + local.book.updatedByDeviceId + local.book.revision + local.book.updatedAt).toByteArray()).toString()
+        if (libraryRepository.getBook(recoveryId) == null) {
+            val root = File(appContext.filesDir, "books")
+            val destination = File(safeChildDirectory(root, recoveryId), "versions/${UUID.randomUUID()}")
+            val recovery = snapshotLocalBook(local.copy(book = local.book.copy(id = recoveryId)), root, destination)
+            val metadata = recovery.metadata.copy(bookId = recoveryId, title = recovery.metadata.title + " (recovered conflict)")
+            val book = recovery.book.copy(revision = local.book.revision + 1, updatedAt = Clock.System.now().toString(),
+                updatedByDeviceId = deviceIdProvider.getDeviceId(), lastSyncedAt = null, syncStatus = SyncStatus.LOCAL_ONLY)
+            val directory = File(book.originalFilePath).parentFile!!
+            val technical = json.decodeFromString<TechnicalSnapshot>(File(directory, "technical.json").readText()).toDomain().copy(bookId = recoveryId)
+            writeRecoveredPortableSnapshots(directory, book, metadata, technical)
+            libraryRepository.insertImportedBook(ImportedBookRecord(book, metadata, technical))
+        }
+    }
+
     private fun planRemoteBookAction(
         remoteBook: ManifestBookSnapshot,
         local: LibraryBook?,
@@ -432,32 +485,20 @@ internal class PortableLibrarySyncEngine(
         pendingStatusUpdates: PendingSyncStatusUpdates,
     ): RemoteDownloadAction? {
         if (local == null) {
-            val duplicateBookId = libraryRepository.findBookIdByHash(remoteBook.originalHashSha256)
-            if (duplicateBookId != null) {
-                val duplicateBook = libraryRepository.getBook(duplicateBookId)
-                if (duplicateBook != null && duplicateBook.book.id != remoteBook.bookId) {
-                    if (duplicateBook.canAdoptRemoteDuplicate(remoteBook)) {
-                        return RemoteDownloadAction(
-                            remoteBook = remoteBook,
-                            currentBook = duplicateBook,
-                            duplicateBookToRemove = duplicateBook,
-                        )
-                    } else {
-                        pendingStatusUpdates.conflictedBookIds += duplicateBook.book.id
-                        counters.conflictedBooks += 1
-                    }
-                } else {
-                    pendingStatusUpdates.syncedBookIds += duplicateBookId
-                }
-                return null
-            }
-
             return RemoteDownloadAction(
                 remoteBook = remoteBook,
                 currentBook = null,
             )
         }
 
+        // A synchronized local branch is already preserved in the journal. Apply
+        // its causal result even when concurrent devices used the same revision.
+        if (local.book.syncStatus == SyncStatus.SYNCED) {
+            val changed = remoteBook.revision != local.book.revision ||
+                remoteBook.updatedAt != local.book.updatedAt ||
+                remoteBook.updatedByDeviceId != local.book.updatedByDeviceId
+            return if (changed) RemoteDownloadAction(remoteBook, local) else null
+        }
         return when {
             local.book.syncStatus == SyncStatus.CONFLICT -> {
                 counters.conflictedBooks += 1
@@ -519,7 +560,7 @@ internal class PortableLibrarySyncEngine(
     ): RemoteDownloadResult {
         val startedAtElapsedMillis = SystemClock.elapsedRealtime()
         Log.d(TAG, "downloadBook start id=${remoteBook.bookId}")
-        val destinationDir = File(appContext.filesDir, "books/${remoteBook.bookId}")
+        val destinationDir = File(safeChildDirectory(File(appContext.filesDir, "books"), remoteBook.bookId), "versions/${UUID.randomUUID()}")
         val stagingDir = File(
             appContext.cacheDir,
             "sync-download/${remoteBook.bookId}-${UUID.randomUUID()}",
@@ -584,7 +625,7 @@ internal class PortableLibrarySyncEngine(
                     ?: destinationPreparedFile?.let { remoteBook.updatedAt },
                 lastExportedAt = currentBook?.book?.lastExportedAt,
                 lastSyncedAt = syncedAt,
-                status = downloadedState.status,
+                status = if (remoteBook.autoMerged) BookStatus.OUTDATED_PREPARED else downloadedState.status,
                 syncStatus = SyncStatus.SYNCED,
                 revision = remoteBook.revision,
                 updatedByDeviceId = remoteBook.updatedByDeviceId,
@@ -592,10 +633,12 @@ internal class PortableLibrarySyncEngine(
                     .takeIf { it.isNotEmpty() }
                     ?.joinToString("; "),
             )
-            val metadata = downloadedState.metadata.copy(bookId = remoteBook.bookId)
+            val authoritativeMetadata = remoteBook.metadataSnapshot?.toDomain() ?: downloadedState.metadata
+            val metadata = authoritativeMetadata.copy(bookId = remoteBook.bookId,
+                title = if (remoteBook.conflictOriginId != null) authoritativeMetadata.title + " (recovered conflict)" else authoritativeMetadata.title)
             val technicalInfo = downloadedState.technicalInfo.copy(bookId = remoteBook.bookId)
 
-            if (!hasStateBundle) {
+            if (!hasStateBundle || remoteBook.autoMerged || remoteBook.conflictOriginId != null) {
                 writeRecoveredPortableSnapshots(
                     bookDir = stagingDir,
                     book = book,
@@ -606,6 +649,7 @@ internal class PortableLibrarySyncEngine(
             commitDownloadedBook(
                 stagingDir = stagingDir,
                 destinationDir = destinationDir,
+                expectedBook = currentBook,
                 record = ImportedBookRecord(
                     book = book,
                     metadata = metadata,
@@ -737,47 +781,22 @@ internal class PortableLibrarySyncEngine(
         stagingDir: File,
         destinationDir: File,
         record: ImportedBookRecord,
+        expectedBook: LibraryBook?,
     ) {
-        val backupDir = File(
-            appContext.cacheDir,
-            "sync-backup/${record.book.id}-${UUID.randomUUID()}",
-        )
-        backupDir.parentFile?.mkdirs()
-
         synchronized(repositoryLock) {
-            var hasBackup = false
-            if (destinationDir.exists()) {
-                hasBackup = destinationDir.renameTo(backupDir)
-                if (!hasBackup) {
-                    check(destinationDir.copyRecursively(backupDir, overwrite = true)) {
-                        "Could not back up local book ${record.book.id}"
-                    }
-                    check(destinationDir.deleteRecursively()) {
-                        "Could not replace local book ${record.book.id}"
-                    }
-                    hasBackup = true
+            val current = libraryRepository.getBook(expectedBook?.book?.id ?: record.book.id)
+            check(current?.book?.revision == expectedBook?.book?.revision &&
+                current?.book?.updatedAt == expectedBook?.book?.updatedAt) { "Book changed during download; retry sync" }
+            check(!destinationDir.exists()) { "Download destination already exists" }
+            check(destinationDir.parentFile!!.let { it.isDirectory || it.mkdirs() })
+            // Publish new files first. The database keeps pointing at the old, intact
+            // version if the process dies before the transaction commits.
+            if (!stagingDir.renameTo(destinationDir)) {
+                check(stagingDir.copyRecursively(destinationDir, overwrite = false)) {
+                    "Could not store downloaded book ${record.book.id}"
                 }
             }
-
-            try {
-                if (!stagingDir.renameTo(destinationDir)) {
-                    check(stagingDir.copyRecursively(destinationDir, overwrite = true)) {
-                        "Could not store downloaded book ${record.book.id}"
-                    }
-                }
-                libraryRepository.insertImportedBook(record)
-                if (hasBackup) {
-                    backupDir.deleteRecursively()
-                }
-            } catch (error: Throwable) {
-                destinationDir.deleteRecursively()
-                if (hasBackup) {
-                    check(backupDir.renameTo(destinationDir)) {
-                        "Could not restore local book ${record.book.id}"
-                    }
-                }
-                throw error
-            }
+            libraryRepository.insertImportedBook(record)
         }
     }
 
@@ -786,13 +805,16 @@ internal class PortableLibrarySyncEngine(
         destinationDir: File,
     ) {
         ZipInputStream(bundleFile.inputStream().buffered()).use { input ->
+            val budget = ReadBudget(StorageLimits.EXPANDED_BYTES)
+            val seen = HashSet<String>()
             while (true) {
                 val entry = input.nextEntry ?: break
-                val fileName = entry.name.substringAfterLast('/')
+                val fileName = entry.name
+                require(fileName in STATE_BUNDLE_ENTRY_NAMES && seen.add(fileName) && !entry.isDirectory) { "Invalid state bundle entry" }
                 if (!entry.isDirectory && fileName in STATE_BUNDLE_ENTRY_NAMES) {
                     val destination = destinationDir.resolve(fileName)
                     destination.outputStream().buffered().use { output ->
-                        input.copyTo(output)
+                        input.copyBounded(output, StorageLimits.ENTRY_BYTES, budget)
                     }
                     entry.time
                         .takeIf { modifiedAt -> modifiedAt > 0L }
@@ -811,16 +833,8 @@ internal class PortableLibrarySyncEngine(
     ) {
         val localDir = File(libraryBook.book.originalFilePath).parentFile
             ?: error("Missing local directory for ${libraryBook.book.id}")
-        val epubSource = libraryBook.book.preparedFilePath
-            ?.let(::File)
-            ?.takeIf { it.exists() }
-            ?: localDir.resolve("original.epub")
+        val epubSource = File(libraryBook.book.originalFilePath)
 
-        store.deleteObsoleteBookFolders(
-            bookId = libraryBook.book.id,
-            activeFolderPath = layout.folderPath,
-            previousRemoteBook = previousRemoteBook,
-        )
         store.ensureDirectory(layout.folderPath)
 
         val localFiles = libraryBook.localSyncFiles(layout, localDir, epubSource)
@@ -837,21 +851,6 @@ internal class PortableLibrarySyncEngine(
             .orEmpty()
             .associateBy { file -> file.path }
 
-        if (canUsePreviousFileIndex) {
-            var deletedFiles = 0
-            previousFilesByPath.keys
-                .filterNot { path -> path in localFilePaths }
-                .forEach { path ->
-                    store.deleteTree(path)
-                    deletedFiles += 1
-                }
-            if (deletedFiles > 0) {
-                Log.d(TAG, "uploadBook id=${libraryBook.book.id} deletedObsoleteFiles=$deletedFiles")
-            }
-        } else {
-            store.deleteUnexpectedChildren(layout.folderPath, expectedDirectoryNames = emptySet())
-        }
-
         var uploadedFiles = 0
         var skippedFiles = 0
         Log.d(TAG, "uploadBook start id=${libraryBook.book.id} files=${localFiles.size}")
@@ -863,6 +862,13 @@ internal class PortableLibrarySyncEngine(
                     source = syncFile.source,
                     mimeType = syncFile.mimeType,
                 )
+                val verification = File(localDir, "verify-${UUID.randomUUID()}")
+                try {
+                    check(store.copyToLocal(syncFile.remotePath, verification) != null &&
+                        verification.length() == syncFile.source.length() && verification.sha256() == syncFile.source.sha256()) {
+                        "Remote upload verification failed"
+                    }
+                } finally { verification.delete() }
                 uploadedFiles += 1
             } else {
                 skippedFiles += 1
@@ -932,6 +938,9 @@ internal class PortableLibrarySyncEngine(
             }
         } finally {
             executor.shutdownNow()
+            while (!executor.awaitTermination(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                // Do not release the transaction or remove staging files while a worker still uses them.
+            }
         }
     }
 
@@ -984,6 +993,9 @@ internal class PortableLibrarySyncEngine(
             }
         } finally {
             executor.shutdownNow()
+            while (!executor.awaitTermination(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                // Do not release the transaction or remove staging files while a worker still uses them.
+            }
         }
     }
 
@@ -1027,6 +1039,21 @@ internal class PortableLibrarySyncEngine(
             .firstOrNull()
     }
 
+    private fun ManifestBookSnapshot.toLayout() = RemoteBookLayout(
+        originalFile.parentRemotePath().remoteName(), originalFile.parentRemotePath(), originalFile.remoteName(),
+        metadataFile, originalFile, preparedFile, coverFile, checkNotNull(stateBundleFile),
+    )
+
+    private fun LibraryManifestSnapshot.validate() {
+        check(schemaVersion == CURRENT_MANIFEST_SCHEMA_VERSION) { "Unsupported library version" }
+        check(books.map { it.bookId }.distinct().size == books.size) { "Duplicate book IDs" }
+        books.forEach { book ->
+            requireSafeBookId(book.bookId)
+            (listOfNotNull(book.metadataFile, book.originalFile, book.preparedFile, book.coverFile, book.stateBundleFile) +
+                book.files.map { it.path }).forEach { it.normalizedRemotePath() }
+        }
+    }
+
     private fun RemoteLibraryStore.readManifest(): LibraryManifestSnapshot? {
         return readText("library.manifest.json")?.let { manifestText ->
             json.decodeFromString<LibraryManifestSnapshot>(manifestText)
@@ -1063,7 +1090,7 @@ internal class PortableLibrarySyncEngine(
             val remoteBook = remoteBooks[localBook.book.id]
             val previousEntry = previousBooksById[localBook.book.id]
             val manifest = when {
-                localBook.canReuseRemoteManifest(remoteBook) -> {
+                localBook.canReuseRemoteManifest(remoteBook) && remoteBook?.originalFile == layout.epubFile -> {
                     remoteManifestHits += 1
                     remoteBook!!
                 }
@@ -1126,7 +1153,7 @@ internal class PortableLibrarySyncEngine(
     }
 
     private fun localManifestCacheFile(): File {
-        return File(appContext.filesDir, "sync/local-manifest-cache.json")
+        return File(appContext.filesDir, "sync/local-manifest-cache-$cacheScope.json")
     }
 
     private fun RemoteLibraryStore.deleteObsoleteBookFolders(
@@ -1178,7 +1205,7 @@ internal class PortableLibrarySyncEngine(
             }
             .forEach { localBook -> merged[localBook.bookId] = localBook }
 
-        return merged.values.toList()
+        return merged.values.map { it.copy(autoMerged = false) }
     }
 
     private fun ManifestBookSnapshot.bookFolderPath(): String {
@@ -1232,7 +1259,7 @@ internal class PortableLibrarySyncEngine(
         return path == other.path &&
             mimeType == other.mimeType &&
             sizeBytes == other.sizeBytes &&
-            modifiedAtEpochMillis == other.modifiedAtEpochMillis
+            sha256 != null && sha256 == other.sha256
     }
 
     private fun ManifestBookSnapshot.fileSnapshot(path: String): ManifestFileSnapshot? {
@@ -1243,6 +1270,10 @@ internal class PortableLibrarySyncEngine(
         remoteBook: ManifestBookSnapshot,
         remotePath: String,
     ): File {
+        remoteBook.fileSnapshot(remotePath)?.let { expected ->
+            check(length() == expected.sizeBytes) { "Downloaded file size mismatch" }
+            expected.sha256?.let { check(sha256() == it) { "Downloaded file checksum mismatch" } }
+        }
         remoteBook.fileSnapshot(remotePath)
             ?.modifiedAtEpochMillis
             ?.takeIf { modifiedAt -> modifiedAt > 0L }
@@ -1322,8 +1353,8 @@ internal class PortableLibrarySyncEngine(
         val safeTitle = metadata.title.sanitizeRemotePathPart().ifBlank { "Livro sem titulo" }
         val prepared = book.preparedFilePath?.let { File(it) }?.takeIf { it.exists() }
         val cover = book.coverImagePath?.let { File(it) }?.takeIf { it.exists() }
-        val epubFileName = "$safeTitle.epub".takeRemotePathLength(extension = ".epub")
-        val folderPath = "books/$folderName"
+        val epubFileName = "original.epub"
+        val folderPath = "${RemoteManifestJournal.DATA_PREFIX}$folderName"
         val epubFile = "$folderPath/$epubFileName"
         return RemoteBookLayout(
             folderName = folderName,
@@ -1331,7 +1362,7 @@ internal class PortableLibrarySyncEngine(
             epubFileName = epubFileName,
             metadataFile = "$folderPath/metadata.json",
             epubFile = epubFile,
-            preparedFile = prepared?.let { epubFile },
+            preparedFile = prepared?.let { "$folderPath/prepared.epub" },
             coverFile = cover?.let { "$folderPath/cover_original.jpg" },
             stateBundleFile = "$folderPath/$STATE_BUNDLE_FILE_NAME",
         )
@@ -1352,6 +1383,8 @@ internal class PortableLibrarySyncEngine(
             preparedFile = layout.preparedFile,
             coverFile = layout.coverFile,
             deleted = false,
+            metadataSnapshot = PortableSnapshots.metadata(book, metadata),
+            coverHash = book.coverImagePath?.let(::File)?.takeIf { it.isFile }?.sha256(),
             files = files,
             stateBundleFile = files
                 .firstOrNull { file -> file.path == layout.stateBundleFile }
@@ -1363,17 +1396,15 @@ internal class PortableLibrarySyncEngine(
         layout: RemoteBookLayout,
         localDir: File = File(book.originalFilePath).parentFile
             ?: error("Missing local directory for ${book.id}"),
-        epubSource: File = book.preparedFilePath
-            ?.let(::File)
-            ?.takeIf { it.exists() }
-            ?: localDir.resolve("original.epub"),
+        epubSource: File = File(book.originalFilePath),
     ): List<LocalSyncFile> {
         val epubFile = LocalSyncFile(epubSource, "${layout.folderPath}/${layout.epubFileName}", "application/epub+zip")
         val stateBundle = buildStateBundle(localDir, book.id)
-        return listOf(
+        return listOfNotNull(
             epubFile,
+            layout.preparedFile?.let { LocalSyncFile(File(checkNotNull(book.preparedFilePath)), it, "application/epub+zip") },
             LocalSyncFile(stateBundle, layout.stateBundleFile, STATE_BUNDLE_MIME_TYPE),
-        ).filter { file -> file.source.exists() }
+        ).onEach { check(it.source.isFile) { "Missing required local file" } }
     }
 
     private fun buildStateBundle(
@@ -1387,7 +1418,8 @@ internal class PortableLibrarySyncEngine(
             "Missing local metadata or technical snapshot for $bookId"
         }
 
-        val bundleFile = File(appContext.cacheDir, "sync-state/$bookId/$STATE_BUNDLE_FILE_NAME")
+        val budget = ReadBudget(StorageLimits.EXPANDED_BYTES)
+        val bundleFile = File(safeChildDirectory(File(appContext.cacheDir, "sync-state"), bookId), STATE_BUNDLE_FILE_NAME)
         bundleFile.parentFile?.mkdirs()
         ZipOutputStream(bundleFile.outputStream().buffered()).use { output ->
             sources.forEach { source ->
@@ -1396,7 +1428,7 @@ internal class PortableLibrarySyncEngine(
                 }
                 output.putNextEntry(entry)
                 source.file.inputStream().buffered().use { input ->
-                    input.copyTo(output)
+                    input.copyBounded(output, StorageLimits.ENTRY_BYTES, budget)
                 }
                 output.closeEntry()
             }
@@ -1447,7 +1479,8 @@ internal class PortableLibrarySyncEngine(
         val libraryId: String,
         val updatedAt: String,
         val updatedByDeviceId: String,
-        val aiCoverPromptsFile: String? = null,
+        val aiCoverPrompts: List<AiCoverPromptRecord> = emptyList(),
+        val deviceName: String? = null,
         val books: List<ManifestBookSnapshot>,
     )
 
@@ -1463,6 +1496,10 @@ internal class PortableLibrarySyncEngine(
         val preparedFile: String?,
         val coverFile: String?,
         val deleted: Boolean,
+        val conflictOriginId: String? = null,
+        val metadataSnapshot: MetadataSnapshot? = null,
+        val coverHash: String? = null,
+        val autoMerged: Boolean = false,
         val files: List<ManifestFileSnapshot> = emptyList(),
         val stateBundleFile: String? = null,
     )
@@ -1474,6 +1511,7 @@ internal class PortableLibrarySyncEngine(
         val mimeType: String,
         val sizeBytes: Long,
         val modifiedAtEpochMillis: Long,
+        val sha256: String? = null,
     )
 
     @Serializable
@@ -1648,6 +1686,7 @@ internal class PortableLibrarySyncEngine(
                 mimeType = mimeType,
                 sizeBytes = source.length(),
                 modifiedAtEpochMillis = source.lastModified(),
+                sha256 = source.sha256(),
             )
         }
 
@@ -1657,7 +1696,7 @@ internal class PortableLibrarySyncEngine(
                 localFile.path == remoteFile.path &&
                 localFile.mimeType == remoteFile.mimeType &&
                 localFile.sizeBytes == remoteFile.sizeBytes &&
-                localFile.modifiedAtEpochMillis == remoteFile.modifiedAtEpochMillis
+                localFile.sha256 == remoteFile.sha256
         }
     }
 
@@ -1683,7 +1722,7 @@ internal class PortableLibrarySyncEngine(
         const val KEY_LIBRARY_ID = "library_id"
         const val KEY_SYNC_UPLOAD_STRATEGY_VERSION = "sync_upload_strategy_version"
         const val CURRENT_SYNC_UPLOAD_STRATEGY_VERSION = 3
-        const val CURRENT_MANIFEST_SCHEMA_VERSION = 3
+        const val CURRENT_MANIFEST_SCHEMA_VERSION = 4
         const val CURRENT_LOCAL_MANIFEST_CACHE_SCHEMA_VERSION = 1
         const val REMOTE_OPERATION_MAX_ATTEMPTS = 5
         const val AI_COVER_PROMPTS_FILE = "ai-cover-prompts.json"
