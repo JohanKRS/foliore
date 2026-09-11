@@ -112,7 +112,7 @@
     <string name="export_share_chooser">Partager l’EPUB</string>
 
     <string name="details_series">Série</string>
-    <string name="details_published_year">Année</string>
+    <string name="details_published_year">Publication</string>
     <string name="details_language">Langue</string>
     <string name="details_publisher">Maison d’édition</string>
     <string name="details_file_format">Format</string>
@@ -155,7 +155,7 @@
     <string name="edit_metadata_field_series_index">Nº dans la série</string>
     <string name="edit_metadata_field_language">Langue</string>
     <string name="edit_metadata_field_publisher">Maison d’édition</string>
-    <string name="edit_metadata_field_published_date">Année de publication</string>
+    <string name="edit_metadata_field_published_date">Date de publication</string>
     <string name="edit_metadata_field_description">Description</string>
     <string name="edit_metadata_field_tags">Étiquettes</string>
     <string name="edit_metadata_field_tags_helper">Séparez les étiquettes par des virgules.</string>
@@ -357,14 +357,13 @@
     <string name="ai_metadata_dialog_title">Aperçu du remplissage automatique</string>
     <string name="autofill_source_open_metadata">Sources ouvertes</string>
     <string name="autofill_source_ai">IA</string>
-    <string name="metadata_lookup_section_title">Sources ouvertes</string>
-    <string name="metadata_lookup_section_description">Recherche dans Open Library et Google Books. Les couvertures ne s’affichent que si elles satisfont à un contrôle minimal de résolution.</string>
+    <string name="metadata_lookup_section_title">Résultats</string>
     <string name="metadata_lookup_button">Rechercher les métadonnées</string>
     <string name="metadata_lookup_button_again">Rechercher à nouveau</string>
-    <string name="metadata_lookup_empty">Aucune recherche effectuée pour le moment.</string>
+    <string name="metadata_lookup_empty">Aucun résultat disponible. Réessayez.</string>
     <string name="metadata_lookup_cover_available">Couverture disponible</string>
     <string name="metadata_lookup_cover_resolution">Couverture %1$dx%2$d</string>
-    <string name="metadata_lookup_apply_selected">Appliquer le résultat</string>
+    <string name="metadata_lookup_apply_selected">Appliquer la sélection</string>
     <string name="ai_metadata_prompt_label">Consigne de métadonnées</string>
     <string name="ai_metadata_default_prompt">Complétez et corrigez les métadonnées bibliographiques de cet EPUB. Utilisez uniquement des informations vérifiables. Rédigez les champs textuels dans la langue déclarée par l’EPUB ; si elle manque, déduisez-la et renseignez son code. Le champ À propos doit être bref, élégant et sans divulgâcher : ne révélez ni la fin, ni les retournements, ni les morts, ni les identités cachées. Rédigez ce texte avec une qualité littéraire, dans le ton et le registre général du livre ; évitez le langage promotionnel générique, excessif ou maladroit. Si le contexte fiable ne suffit pas à produire un bon texte, conservez celui qui existe ou laissez le champ vide plutôt que d’inventer un résumé de catalogue. Recherchez un ISBN-10 ou un ISBN-13 dans le champ ISBN et les identifiants de l’EPUB. Répondez avec le titre, le sous-titre, les auteurs, la série, le numéro dans la série, la langue, la maison d’édition, l’année, les étiquettes, l’ISBN et le texte À propos.</string>
     <string name="ai_metadata_preview_label">Aperçu</string>
@@ -411,4 +410,7 @@
     <string name="report_content_success">Message reçu. Merci.</string>
     <string name="report_content_failure">Envoi impossible. Votre texte reste ici pour réessayer.</string>
     <string name="report_content_send">Envoyer</string>
+    <string name="metadata_lookup_identifiers">Identifiants</string>
+    <string name="metadata_lookup_cover">Couverture</string>
+    <string name="metadata_lookup_choose_result">Choisir un résultat (%1$d)</string>
 </resources>

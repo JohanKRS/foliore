@@ -1,6 +1,6 @@
 package com.foliore.shared.epub
 
-import com.foliore.shared.domain.publicationYearOrNull
+import com.foliore.shared.domain.publicationDateOrNull
 
 class EpubParser {
     fun parse(archive: EpubArchive): EpubParseResult {
@@ -54,7 +54,7 @@ class EpubParser {
             isbn = identifiers.values.firstNotNullOfOrNull { it.extractIsbn() },
             description = tagText(opfXml, "description"),
             publisher = tagText(opfXml, "publisher"),
-            publishedDate = publicationYear(opfXml),
+            publishedDate = publicationDate(opfXml),
         )
 
         val technicalInfo = ParsedEpubTechnicalInfo(
@@ -259,15 +259,15 @@ class EpubParser {
         return identifiers
     }
 
-    private fun publicationYear(opfXml: String): String? {
+    private fun publicationDate(opfXml: String): String? {
         val candidates = dateTagCandidates(opfXml) + metaDateCandidates(opfXml)
-        return candidates.firstYear(DateKind.PUBLICATION)
-            ?: candidates.firstYear(DateKind.NEUTRAL)
+        return candidates.firstDate(DateKind.PUBLICATION)
+            ?: candidates.firstDate(DateKind.NEUTRAL)
     }
 
-    private fun List<DateCandidate>.firstYear(kind: DateKind): String? {
+    private fun List<DateCandidate>.firstDate(kind: DateKind): String? {
         return firstNotNullOfOrNull { candidate ->
-            if (candidate.kind == kind) candidate.value.publicationYearOrNull() else null
+            if (candidate.kind == kind) candidate.value.publicationDateOrNull() else null
         }
     }
 

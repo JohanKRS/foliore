@@ -11,7 +11,7 @@ import com.foliore.shared.domain.ImportedBookRecord
 import com.foliore.shared.domain.LibraryBook
 import com.foliore.shared.domain.MetadataSource
 import com.foliore.shared.domain.SyncStatus
-import com.foliore.shared.domain.publicationYearOrNull
+import com.foliore.shared.domain.publicationDateOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -51,7 +51,7 @@ class LibraryRepository(
                     sortAuthor = row.sort_author,
                     language = row.language,
                     publisher = row.publisher,
-                    publishedDate = row.published_date.publicationYearOrNull(),
+                    publishedDate = row.published_date.publicationDateOrNull(),
                     description = row.description,
                     tags = decodeList(row.tags_json),
                     isbn = row.isbn,
@@ -94,7 +94,7 @@ class LibraryRepository(
                     sortAuthor = row.sort_author,
                     language = row.language,
                     publisher = row.publisher,
-                    publishedDate = row.published_date.publicationYearOrNull(),
+                    publishedDate = row.published_date.publicationDateOrNull(),
                     description = row.description,
                     tags = decodeList(row.tags_json),
                     isbn = row.isbn,
@@ -154,7 +154,7 @@ class LibraryRepository(
                 sort_author = metadata.sortAuthor,
                 language = metadata.language,
                 publisher = metadata.publisher,
-                published_date = metadata.publishedDate.publicationYearOrNull(),
+                published_date = metadata.publishedDate.publicationDateOrNull(),
                 description = metadata.description,
                 tags_json = json.encodeToString(metadata.tags),
                 isbn = metadata.isbn,
@@ -197,7 +197,7 @@ class LibraryRepository(
             sortAuthor = draft.sortAuthor.cleanOptional(),
             language = draft.language.cleanOptional(),
             publisher = draft.publisher.cleanOptional(),
-            publishedDate = draft.publishedDate.publicationYearOrNull(),
+            publishedDate = draft.publishedDate.publicationDateOrNull(),
             description = draft.description.cleanOptional(),
             tags = draft.tags.mapNotNull { it.cleanOptional() },
             isbn = draft.isbn.cleanOptional(),
@@ -361,7 +361,7 @@ class LibraryRepository(
             sort_author = metadata.sortAuthor,
             language = metadata.language,
             publisher = metadata.publisher,
-            published_date = metadata.publishedDate.publicationYearOrNull(),
+            published_date = metadata.publishedDate.publicationDateOrNull(),
             description = metadata.description,
             tags_json = json.encodeToString(metadata.tags),
             isbn = metadata.isbn,

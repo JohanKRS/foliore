@@ -453,7 +453,7 @@ class LibraryViewModel(
         draft: BookMetadataDraft,
         onCandidatesReady: (List<MetadataLookupCandidate>) -> Unit,
     ) {
-        if (_state.value.hasActiveProgress) return
+        if (_state.value.hasActiveProgress) { onCandidatesReady(emptyList()); return }
 
         viewModelScope.launch {
             _state.update {
@@ -484,9 +484,25 @@ class LibraryViewModel(
                     )
                 }
                 is MetadataLookupResult.Failure -> {
+                    onCandidatesReady(emptyList())
                     _notice.value = LibraryNotice(LibraryNoticeType.METADATA_LOOKUP_FAILED)
                 }
             }
+        }
+    }
+
+    fun resolveMetadataCandidate(
+        bookId: String,
+        candidate: MetadataLookupCandidate,
+        onReady: (MetadataLookupCandidate) -> Unit,
+    ) {
+        viewModelScope.launch {
+            val resolved = withContext(Dispatchers.IO) {
+                runCatching {
+                    libraryRepository.getBook(bookId)?.let { openMetadataLookupService.resolve(it, candidate) }
+                }.getOrNull() ?: candidate.copy(detailsResolved = true)
+            }
+            onReady(resolved)
         }
     }
 

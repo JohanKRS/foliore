@@ -54,7 +54,7 @@ class MetadataLookupTest {
     }
     @Test fun openLibraryUsesTheExactEditionRatherThanWorkLevelArrays() {
         val result = searchOpenLibrary(draft, 8) { url ->
-            assertTrue(url.endsWith("/isbn/9781466853454.json"))
+            if (!url.endsWith("/isbn/9781466853454.json")) return@searchOpenLibrary """{"docs":[]}"""
             """{"key":"/books/OL26214600M","title":"Death's End","isbn_13":["9781466853454"],"publishers":["Tor Books"],"publish_date":"2016","covers":[10745175],"languages":[{"key":"/languages/eng"}],"works":[{"key":"/works/OL17319605W"}]}"""
         } as MetadataLookupResult.Success
         val metadata = result.candidates.single().metadata
@@ -62,7 +62,7 @@ class MetadataLookupTest {
         assertEquals("en", metadata.language)
         assertEquals("2016", metadata.publishedDate)
         assertEquals("9781466853454", metadata.isbn)
-        assertEquals(listOf("https://covers.openlibrary.org/b/id/10745175.jpg?default=false"), result.candidates.single().coverUrls)
+        assertEquals(listOf("https://covers.openlibrary.org/b/id/10745175-L.jpg?default=false"), result.candidates.single().coverUrls)
     }
     @Test fun openLibraryRetriesTitleWithoutAuthorAndDoesNotMixWorkEditionFields() {
         val urls = mutableListOf<String>()
@@ -74,8 +74,8 @@ class MetadataLookupTest {
         assertEquals(2, urls.size)
         val candidate = result.candidates.single()
         assertEquals("Death's End", candidate.metadata.title)
-        assertEquals("Tor", candidate.metadata.publisher)
-        assertEquals("2016", candidate.metadata.publishedDate)
+        assertNull(candidate.metadata.publisher)
+        assertNull(candidate.metadata.publishedDate)
         assertNull(candidate.metadata.isbn)
         assertTrue(candidate.matchedIsbns.isEmpty())
     }
@@ -107,6 +107,14 @@ class MetadataLookupTest {
         val related = listOf("Virgins (Outlander 0.5)", "Outlander Collection", "The Official Outlander Coloring Book")
             .mapIndexed { i, title -> candidate("related$i", title, "Diana Gabaldon") }
         assertEquals(listOf("novel"), MetadataSearchRules.rank(related + good, request, 8).map { it.id })
+    }
+    @Test fun graphicAdaptationsDoNotMatchTheNovelJustBecauseTheTitleBeforeColonMatches() {
+        val request = draft.copy(title = "Dune", authors = listOf("Frank Herbert"), isbn = null)
+        val graphic = candidate("graphic", title = "Dune: The Graphic Novel", author = "Frank Herbert")
+        val spinOff = candidate("spinoff", title = "Dune: Maison Harkonnen", author = "Frank Herbert")
+        assertTrue(MetadataSearchRules.rank(listOf(spinOff), request, 12).isEmpty())
+        assertTrue(MetadataSearchRules.rank(listOf(graphic), request, 12).isEmpty())
+        assertEquals(1, MetadataSearchRules.rank(listOf(graphic), request.copy(title = "Dune: The Graphic Novel"), 12).size)
     }
     @Test fun confirmedLanguageOutranksLanguageInheritedFromTheEpub() {
         val unknown = candidate("a-unknown").copy(sourceLanguage = null)

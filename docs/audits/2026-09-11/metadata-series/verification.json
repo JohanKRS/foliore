@@ -1,0 +1,80 @@
+{
+  "date": "2026-09-11",
+  "environment": "Android API 36 isolated emulator; Google Books key absent; no Drive account",
+  "lookups": [
+    {
+      "title": "2001: A Space Odyssey",
+      "series": "Space Odyssey",
+      "seriesIndex": 1.0,
+      "source": "https://openlibrary.org/books/OL18674505M",
+      "searchMillis": 10774,
+      "totalMillis": 13796
+    },
+    {
+      "title": "2010: Odyssey Two",
+      "series": "Odyssey",
+      "seriesIndex": 2.0,
+      "source": "https://openlibrary.org/books/OL9415147M",
+      "searchMillis": 5914,
+      "totalMillis": 9915
+    },
+    {
+      "title": "2061: Odyssey Three",
+      "series": "Odyssey",
+      "seriesIndex": 3.0,
+      "source": "https://openlibrary.org/books/OL47830462M",
+      "searchMillis": 10055,
+      "totalMillis": 13222
+    },
+    {
+      "title": "3001: The Final Odyssey",
+      "series": "Odyssey",
+      "seriesIndex": 4.0,
+      "source": "https://openlibrary.org/books/OL32074689M",
+      "searchMillis": 3537,
+      "totalMillis": 7096
+    },
+    {
+      "title": "Dungeon Crawler Carl",
+      "series": "Dungeon Crawler Carl",
+      "seriesIndex": 1.0,
+      "source": "https://openlibrary.org/books/OL60638628M",
+      "searchMillis": 1636,
+      "totalMillis": 5362
+    },
+    {
+      "title": "Carl's Doomsday Scenario",
+      "series": "Dungeon Crawler Carl",
+      "seriesIndex": 2.0,
+      "source": "https://openlibrary.org/books/OL62207678M",
+      "searchMillis": 2125,
+      "totalMillis": 3735
+    },
+    {
+      "title": "The Dungeon Anarchist's Cookbook",
+      "series": "Dungeon Crawler Carl",
+      "seriesIndex": 3.0,
+      "source": "https://openlibrary.org/books/OL62207650M",
+      "searchMillis": 1650,
+      "totalMillis": 5048
+    }
+  ],
+  "androidTests": {
+    "tests": 104,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ui": {
+    "seriesAndIndexCheckedByDefault": true,
+    "savedSeries": "Dungeon Crawler Carl",
+    "savedSeriesIndex": 1,
+    "originalHashUnchanged": true,
+    "uncheckedCoverUnchanged": true
+  },
+  "lint": {
+    "Warning": 119,
+    "Hint": 5
+  },
+  "emulatorCrashes": 0
+}

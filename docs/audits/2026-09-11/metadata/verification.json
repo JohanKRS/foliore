@@ -1,0 +1,62 @@
+{
+  "date": "2026-09-11",
+  "environment": "Isolated Android API 36 emulator; synthetic EPUB contents; no Drive account; Google Books key absent",
+  "tests": {
+    "android": {
+      "tests": 87,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "lint": {
+    "Warning": 119,
+    "Hint": 5
+  },
+  "lookup": {
+    "dune": {
+      "resultCount": 12,
+      "firstIsbn": "9780441172719",
+      "publisher": "Ace Books",
+      "year": "1987",
+      "descriptionAvailable": true,
+      "coverAvailable": true
+    },
+    "domCasmurro": {
+      "resultCount": 12,
+      "sources": [
+        "Open Library",
+        "Internet Archive",
+        "BnF"
+      ]
+    },
+    "lePetitPrince": {
+      "resultCount": 12,
+      "savedLanguage": "fr",
+      "savedDate": "2007-03",
+      "uncheckedDescriptionPreserved": true,
+      "uncheckedSeriesPreserved": true,
+      "coverUncheckedByDefault": true,
+      "coverAppliedAfterOptIn": true,
+      "alternateEditionResolved": {
+        "publisher": "Wolters-Noordhoff",
+        "year": "1976",
+        "isbn": "9789001708528",
+        "coverSize": "325x500",
+        "applied": false
+      }
+    }
+  },
+  "originalsVerified": 3,
+  "uiSizes": [
+    "1080x2400 / 420dpi",
+    "2560x1600 / 240dpi"
+  ],
+  "appCrashesDuringUiQa": 0
+}

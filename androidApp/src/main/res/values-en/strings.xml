@@ -112,7 +112,7 @@
     <string name="export_share_chooser">Share EPUB</string>
 
     <string name="details_series">Series</string>
-    <string name="details_published_year">Year</string>
+    <string name="details_published_year">Publication</string>
     <string name="details_language">Language</string>
     <string name="details_publisher">Publisher</string>
     <string name="details_file_format">Format</string>
@@ -155,7 +155,7 @@
     <string name="edit_metadata_field_series_index">Series no.</string>
     <string name="edit_metadata_field_language">Language</string>
     <string name="edit_metadata_field_publisher">Publisher</string>
-    <string name="edit_metadata_field_published_date">Publication year</string>
+    <string name="edit_metadata_field_published_date">Publication date</string>
     <string name="edit_metadata_field_description">Description</string>
     <string name="edit_metadata_field_tags">Tags</string>
     <string name="edit_metadata_field_tags_helper">Separate tags with commas.</string>
@@ -357,14 +357,13 @@
     <string name="ai_metadata_dialog_title">Auto-fill preview</string>
     <string name="autofill_source_open_metadata">Open sources</string>
     <string name="autofill_source_ai">AI</string>
-    <string name="metadata_lookup_section_title">Open sources</string>
-    <string name="metadata_lookup_section_description">Searches Open Library and Google Books. Covers are shown only when they pass a minimum resolution check.</string>
+    <string name="metadata_lookup_section_title">Results</string>
     <string name="metadata_lookup_button">Search metadata</string>
     <string name="metadata_lookup_button_again">Search again</string>
-    <string name="metadata_lookup_empty">No search has been run yet.</string>
+    <string name="metadata_lookup_empty">No results available. Try again.</string>
     <string name="metadata_lookup_cover_available">Cover available</string>
     <string name="metadata_lookup_cover_resolution">Cover %1$dx%2$d</string>
-    <string name="metadata_lookup_apply_selected">Apply result</string>
+    <string name="metadata_lookup_apply_selected">Apply selected fields</string>
     <string name="ai_metadata_prompt_label">Metadata prompt</string>
     <string name="ai_metadata_default_prompt">Fill in and correct bibliographic metadata for this EPUB. Use only verifiable information. Generate text fields in the language declared by the EPUB; if the language is missing, infer and fill in its language code. The About field should be short, elegant, and spoiler-free: do not reveal endings, twists, deaths, or hidden identities. Write About with literary quality in the book’s general tone and register; avoid generic promotional language, hype, or awkward phrasing. If there is not enough reliable context to write a good About section, preserve the existing one or leave it null instead of inventing catalog copy. Look for ISBN-10 or ISBN-13 in the ISBN field and EPUB identifiers. Respond with title, subtitle, authors, series, series number, language, publisher, year, tags, ISBN, and About.</string>
     <string name="ai_metadata_preview_label">Preview</string>
@@ -411,4 +410,7 @@
     <string name="report_content_success">Message received. Thank you.</string>
     <string name="report_content_failure">Could not send. Your text remains here so you can retry.</string>
     <string name="report_content_send">Send</string>
+    <string name="metadata_lookup_identifiers">Identifiers</string>
+    <string name="metadata_lookup_cover">Cover</string>
+    <string name="metadata_lookup_choose_result">Choose result (%1$d)</string>
 </resources>

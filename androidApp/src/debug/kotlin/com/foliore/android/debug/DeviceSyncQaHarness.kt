@@ -149,6 +149,10 @@ internal object DeviceSyncQaHarness {
         put("books", JsonArray(books.map { book -> buildJsonObject {
             val b = book.book; val m = book.metadata
             put("id", b.id); put("title", m.title); put("authors", JsonArray(m.authors.map(::JsonPrimitive)))
+            put("language", m.language); put("publisher", m.publisher); put("publishedDate", m.publishedDate)
+            put("seriesName", m.seriesName); put("seriesIndex", m.seriesIndex)
+            put("identifiers", JsonObject(m.identifiers.mapValues { JsonPrimitive(it.value) }))
+            put("coverPath", b.coverImagePath)
             put("description", m.description); put("revision", b.revision); put("syncStatus", b.syncStatus.name)
             put("updatedAt", b.updatedAt); put("storedHash", b.originalHashSha256); put("size", b.fileSizeBytes)
             put("originalExists", File(b.originalFilePath).isFile)

@@ -112,7 +112,7 @@
     <string name="export_share_chooser">分享 EPUB</string>
 
     <string name="details_series">系列</string>
-    <string name="details_published_year">年份</string>
+    <string name="details_published_year">出版日期</string>
     <string name="details_language">语言</string>
     <string name="details_publisher">出版社</string>
     <string name="details_file_format">格式</string>
@@ -155,7 +155,7 @@
     <string name="edit_metadata_field_series_index">系列序号</string>
     <string name="edit_metadata_field_language">语言</string>
     <string name="edit_metadata_field_publisher">出版社</string>
-    <string name="edit_metadata_field_published_date">出版年份</string>
+    <string name="edit_metadata_field_published_date">出版日期</string>
     <string name="edit_metadata_field_description">简介</string>
     <string name="edit_metadata_field_tags">标签</string>
     <string name="edit_metadata_field_tags_helper">多个标签请用逗号分隔。</string>
@@ -357,14 +357,13 @@
     <string name="ai_metadata_dialog_title">自动填充预览</string>
     <string name="autofill_source_open_metadata">开放数据源</string>
     <string name="autofill_source_ai">AI</string>
-    <string name="metadata_lookup_section_title">开放数据源</string>
-    <string name="metadata_lookup_section_description">搜索 Open Library 和 Google Books。封面只有通过最低分辨率检查后才会显示。</string>
+    <string name="metadata_lookup_section_title">搜索结果</string>
     <string name="metadata_lookup_button">搜索元数据</string>
     <string name="metadata_lookup_button_again">重新搜索</string>
-    <string name="metadata_lookup_empty">尚未进行搜索。</string>
+    <string name="metadata_lookup_empty">暂无结果，请重试。</string>
     <string name="metadata_lookup_cover_available">有可用封面</string>
     <string name="metadata_lookup_cover_resolution">封面 %1$dx%2$d</string>
-    <string name="metadata_lookup_apply_selected">应用结果</string>
+    <string name="metadata_lookup_apply_selected">应用所选字段</string>
     <string name="ai_metadata_prompt_label">元数据提示词</string>
     <string name="ai_metadata_default_prompt">请补全并修正此 EPUB 的书目元数据。仅使用可验证的信息。文本字段应使用 EPUB 声明的语言；如果未声明语言，请推断并填写语言代码。“内容简介”应简短、雅致且不剧透：不要透露结局、情节反转、角色死亡或隐藏身份。请以文学性良好的文字撰写，并符合图书整体的语气和文体；避免空泛、夸张或生硬的宣传语言。如果没有足够可靠的背景来写出优质简介，请保留现有内容或留空，不要编造目录式文案。请在 ISBN 字段和 EPUB 标识符中查找 ISBN-10 或 ISBN-13。请返回书名、副标题、作者、系列、系列序号、语言、出版社、年份、标签、ISBN 和内容简介。</string>
     <string name="ai_metadata_preview_label">预览</string>
@@ -411,4 +410,7 @@
     <string name="report_content_success">消息已收到，谢谢。</string>
     <string name="report_content_failure">无法发送。文字已保留，可重试。</string>
     <string name="report_content_send">发送</string>
+    <string name="metadata_lookup_identifiers">标识符</string>
+    <string name="metadata_lookup_cover">封面</string>
+    <string name="metadata_lookup_choose_result">选择结果（%1$d）</string>
 </resources>

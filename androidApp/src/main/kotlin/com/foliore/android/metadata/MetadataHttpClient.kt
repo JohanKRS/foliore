@@ -7,7 +7,7 @@ import java.net.SocketTimeoutException
 import java.util.LinkedHashMap
 import com.foliore.android.storage.readBounded
 
-/** Per-operation deadline; successful JSON responses are cached, errors are never cached. */
+/** Per-operation deadline; successful catalog responses are cached, errors are never cached. */
 internal class MetadataHttpClient(timeoutMillis: Long = 18_000) {
     private val deadline = System.nanoTime() + timeoutMillis * 1_000_000
     fun remainingMillis(): Long {
@@ -26,7 +26,7 @@ internal class MetadataHttpClient(timeoutMillis: Long = 18_000) {
             try {
                 connection.connectTimeout = minOf(6_000L, remainingMillis()).toInt()
                 connection.readTimeout = minOf(10_000L, remainingMillis()).toInt()
-                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("Accept", "application/json, application/xml;q=0.9")
                 connection.setRequestProperty("User-Agent", "Foliore/0.1 (metadata lookup)")
                 val code = connection.responseCode
                 if (code !in 200..299) {

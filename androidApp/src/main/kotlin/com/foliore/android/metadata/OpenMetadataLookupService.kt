@@ -13,51 +13,32 @@ class OpenMetadataLookupService(
     private val googleBooksMetadataService: GoogleBooksMetadataService,
     private val cacheDir: File? = null,
 ) {
-    fun search(book: LibraryBook, draft: BookMetadataDraft, limit: Int = 8): MetadataLookupResult {
-        val result = collectMetadataResults(draft, limit, listOf(
-            { googleBooksMetadataService.search(book, draft, 8) },
-            { openLibraryMetadataService.search(book, draft, 8) },
+    fun search(book: LibraryBook, draft: BookMetadataDraft, limit: Int = 12): MetadataLookupResult =
+        collectMetadataResults(draft, limit, listOf(
+            { googleBooksMetadataService.search(book, draft, 12) },
+            { openLibraryMetadataService.search(book, draft, 12) },
+            { searchInternetArchive(draft, 12, MetadataHttpClient()::getText) },
+            { searchBnf(draft, 12, MetadataHttpClient()::getText) },
         ))
-        if (result !is MetadataLookupResult.Success || result.candidates.isEmpty() || cacheDir == null) return result
+
+    /** Resolve any selected result, not only the first few in the list. */
+    fun resolve(book: LibraryBook, candidate: MetadataLookupCandidate): MetadataLookupCandidate {
+        if (candidate.detailsResolved || cacheDir == null) return candidate
         val enricher = MetadataCandidateEnricher(cacheDir)
-        val candidates = result.candidates
-        val enriched = java.util.concurrent.atomic.AtomicReferenceArray(candidates.toTypedArray())
-        val pool = Executors.newFixedThreadPool(6)
-        val completion = ExecutorCompletionService<Unit>(pool)
-        val tasks = candidates.take(3).flatMapIndexed { index, candidate ->
-            listOf(
-                completion.submit(Callable {
-                    enricher.enrichMetadata(candidate) { detail ->
-                        enriched.updateAndGet(index) { previous -> detail.copy(
-                            coverImagePath = previous.coverImagePath,
-                            coverPixelWidth = previous.coverPixelWidth,
-                            coverPixelHeight = previous.coverPixelHeight,
-                        ) }
-                    }
-                    Unit
-                }),
-                completion.submit(Callable {
-                    val cover = enricher.enrichCover(book, candidate)
-                    if (cover.coverImagePath != null) enriched.updateAndGet(index) { previous -> previous.copy(
-                        coverImagePath = cover.coverImagePath,
-                        coverPixelWidth = cover.coverPixelWidth,
-                        coverPixelHeight = cover.coverPixelHeight,
-                    ) }
-                    Unit
-                }),
-            )
-        }
-        val deadline = System.nanoTime() + 6_500_000_000
+        val pool = Executors.newFixedThreadPool(2)
+        val partial = java.util.concurrent.atomic.AtomicReference(candidate)
+        val metadata = pool.submit(Callable { enricher.enrichMetadata(candidate) { partial.set(it) } })
+        val cover = pool.submit(Callable { enricher.enrichCover(book, candidate) })
+        val deadline = System.nanoTime() + 10_000_000_000
+        fun remaining() = (deadline - System.nanoTime()).coerceAtLeast(1)
         try {
-            repeat(tasks.size) {
-                val remaining = deadline - System.nanoTime()
-                if (remaining > 0) completion.poll(remaining, TimeUnit.NANOSECONDS)?.let { future ->
-                    runCatching { future.get() }
-                }
-            }
-        } finally { tasks.forEach { it.cancel(true) }; pool.shutdownNow() }
-        return MetadataLookupResult.Success(MetadataSearchRules.rank(candidates.indices.map { enriched.get(it) }, draft, limit))
+            val detail = runCatching { metadata.get(remaining(), TimeUnit.NANOSECONDS) }.getOrElse { partial.get() }
+            val image = runCatching { cover.get(remaining(), TimeUnit.NANOSECONDS) }.getOrDefault(candidate)
+            return detail.copy(coverImagePath = image.coverImagePath, coverPixelWidth = image.coverPixelWidth,
+                coverPixelHeight = image.coverPixelHeight, detailsResolved = true)
+        } finally { metadata.cancel(true); cover.cancel(true); pool.shutdownNow() }
     }
+
 }
 
 /** A slow/failing provider must not discard the other provider's successful response. */

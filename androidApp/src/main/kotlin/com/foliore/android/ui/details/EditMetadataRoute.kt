@@ -101,6 +101,8 @@ fun EditMetadataRoute(
                     onCandidatesReady = onCandidatesReady,
                 )
             },
+            onResolveMetadataCandidate = { candidate, onReady -> viewModel.resolveMetadataCandidate(bookId, candidate, onReady) },
+            onUseLookupCover = { path -> viewModel.useMetadataLookupCover(bookId, path) },
             onGenerateMetadataPreview = { prompt, draft, onPreviewReady ->
                 viewModel.generateMetadataPreview(
                     bookId = bookId,

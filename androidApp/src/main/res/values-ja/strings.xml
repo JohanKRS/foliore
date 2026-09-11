@@ -112,7 +112,7 @@
     <string name="export_share_chooser">EPUBを共有</string>
 
     <string name="details_series">シリーズ</string>
-    <string name="details_published_year">発行年</string>
+    <string name="details_published_year">発行日</string>
     <string name="details_language">言語</string>
     <string name="details_publisher">出版社</string>
     <string name="details_file_format">形式</string>
@@ -155,7 +155,7 @@
     <string name="edit_metadata_field_series_index">シリーズ番号</string>
     <string name="edit_metadata_field_language">言語</string>
     <string name="edit_metadata_field_publisher">出版社</string>
-    <string name="edit_metadata_field_published_date">発行年</string>
+    <string name="edit_metadata_field_published_date">発行日</string>
     <string name="edit_metadata_field_description">説明</string>
     <string name="edit_metadata_field_tags">タグ</string>
     <string name="edit_metadata_field_tags_helper">タグはカンマで区切ってください。</string>
@@ -357,14 +357,13 @@
     <string name="ai_metadata_dialog_title">自動入力のプレビュー</string>
     <string name="autofill_source_open_metadata">公開データソース</string>
     <string name="autofill_source_ai">AI</string>
-    <string name="metadata_lookup_section_title">公開データソース</string>
-    <string name="metadata_lookup_section_description">Open LibraryとGoogle Booksを検索します。最低解像度の基準を満たす表紙だけが表示されます。</string>
+    <string name="metadata_lookup_section_title">検索結果</string>
     <string name="metadata_lookup_button">メタデータを検索</string>
     <string name="metadata_lookup_button_again">再検索</string>
-    <string name="metadata_lookup_empty">まだ検索していません。</string>
+    <string name="metadata_lookup_empty">結果がありません。もう一度お試しください。</string>
     <string name="metadata_lookup_cover_available">表紙あり</string>
     <string name="metadata_lookup_cover_resolution">表紙 %1$dx%2$d</string>
-    <string name="metadata_lookup_apply_selected">結果を適用</string>
+    <string name="metadata_lookup_apply_selected">選択した項目を適用</string>
     <string name="ai_metadata_prompt_label">メタデータ用プロンプト</string>
     <string name="ai_metadata_default_prompt">このEPUBの書誌メタデータを補完・修正してください。検証可能な情報だけを使用してください。テキスト項目はEPUBに指定された言語で生成し、言語がない場合は推定して言語コードを入力してください。「この本について」は短く上品で、ネタバレを含めないでください。結末、どんでん返し、登場人物の死、隠された正体を明かしてはいけません。本の全体的な文体や雰囲気に合う質の高い文章にし、ありきたりな宣伝文句、過剰な表現、不自然な言い回しを避けてください。信頼できる情報が足りず良い紹介文を書けない場合は、カタログ文を捏造せず、既存の文章を残すか空欄にしてください。ISBN欄とEPUB識別子からISBN-10またはISBN-13を探してください。タイトル、サブタイトル、著者、シリーズ、シリーズ番号、言語、出版社、年、タグ、ISBN、紹介文を返してください。</string>
     <string name="ai_metadata_preview_label">プレビュー</string>
@@ -411,4 +410,7 @@
     <string name="report_content_success">メッセージを受け付けました。ありがとうございます。</string>
     <string name="report_content_failure">送信できませんでした。再試行できるようテキストは残っています。</string>
     <string name="report_content_send">送信</string>
+    <string name="metadata_lookup_identifiers">識別子</string>
+    <string name="metadata_lookup_cover">表紙</string>
+    <string name="metadata_lookup_choose_result">結果を選択（%1$d件）</string>
 </resources>

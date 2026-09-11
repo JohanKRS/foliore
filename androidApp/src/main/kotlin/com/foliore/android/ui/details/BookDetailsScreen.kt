@@ -286,7 +286,7 @@ private fun BookSummary(
         )
         DetailsMetadataRow(
             label = stringResource(R.string.details_language),
-            value = book.metadata.language ?: stringResource(R.string.details_not_available),
+            value = book.metadata.language?.let { com.foliore.android.metadata.MetadataLanguages.display(it, androidx.compose.ui.platform.LocalConfiguration.current.locales[0]) } ?: stringResource(R.string.details_not_available),
         )
         DetailsMetadataRow(
             label = stringResource(R.string.details_publisher),

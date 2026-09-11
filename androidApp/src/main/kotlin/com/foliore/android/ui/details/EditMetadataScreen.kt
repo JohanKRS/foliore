@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.Numbers
@@ -54,6 +55,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
@@ -90,6 +92,9 @@ import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiCoverStyleRequest
 import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.metadata.MetadataLookupCandidate
+import com.foliore.android.metadata.MetadataLanguages
+import com.foliore.android.metadata.MetadataField
+import com.foliore.android.metadata.applySelectedMetadata
 import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.TopChromeDividerHalfHeight
 import com.foliore.android.ui.TopChromeHeaderHeight
@@ -124,6 +129,8 @@ fun EditMetadataScreen(
     onSaveAndNavigate: (BookMetadataDraft, () -> Unit) -> Unit,
     onCoverGenerationUnavailable: () -> Unit,
     onLookupMetadataCandidates: (BookMetadataDraft, (List<MetadataLookupCandidate>) -> Unit) -> Unit,
+    onResolveMetadataCandidate: (MetadataLookupCandidate, (MetadataLookupCandidate) -> Unit) -> Unit,
+    onUseLookupCover: (String) -> Unit,
     onGenerateMetadataPreview: (String, BookMetadataDraft, (BookMetadataDraft) -> Unit) -> Unit,
     onGenerateCoverImages: (
         String,
@@ -162,13 +169,18 @@ fun EditMetadataScreen(
         return
     }
 
+    val displayLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    var languageAnchor by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.language) }
+    var identifiers by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.identifiers) }
     var title by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.title) }
     var subtitle by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.subtitle.orEmpty()) }
+    var authorsAnchor by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.authors) }
+    var tagsAnchor by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.tags) }
     var authors by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.authors.joinToString(", ")) }
     var sortAuthor by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.sortAuthor.orEmpty()) }
     var seriesName by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.seriesName.orEmpty()) }
     var seriesIndex by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.seriesIndex.formatSeriesIndex()) }
-    var language by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.language.orEmpty()) }
+    var language by rememberSaveable(book.book.id) { mutableStateOf(MetadataLanguages.display(book.metadata.language, displayLocale)) }
     var publisher by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.publisher.orEmpty()) }
     var publishedDate by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.publishedDate.orEmpty()) }
     var description by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.description.orEmpty()) }
@@ -179,6 +191,8 @@ fun EditMetadataScreen(
     var showCoverGenerationDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var metadataPreview by remember(book.book.id) { mutableStateOf<MetadataAutofillPreview?>(null) }
     var lookupCandidates by remember(book.book.id) { mutableStateOf<List<MetadataLookupCandidate>>(emptyList()) }
+    var lookupSession by remember(book.book.id) { mutableStateOf(0) }
+    var resolvingCandidateId by remember(book.book.id) { mutableStateOf<String?>(null) }
     var selectedLookupCandidateId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
     var coverOptions by remember(book.book.id) { mutableStateOf<List<AiGeneratedCoverOption>>(emptyList()) }
     var selectedCoverOptionId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
@@ -198,21 +212,21 @@ fun EditMetadataScreen(
         BookMetadataDraft(
             title = title,
             subtitle = subtitle.cleanOptional(),
-            authors = authors.splitValues(),
+            authors = if (authors == authorsAnchor.joinToString(", ")) authorsAnchor else authors.splitValues(),
             sortAuthor = sortAuthor.cleanOptional(),
-            language = language.cleanOptional(),
+            language = MetadataLanguages.fromDisplay(language, languageAnchor, displayLocale),
             publisher = publisher.cleanOptional(),
             publishedDate = publishedDate.cleanOptional(),
             description = description.cleanOptional(),
-            tags = tags.splitValues(),
+            tags = if (tags == tagsAnchor.joinToString(", ")) tagsAnchor else tags.splitValues(),
             isbn = isbn.cleanOptional(),
-            identifiers = book.metadata.identifiers,
+            identifiers = identifiers,
             seriesName = seriesName.cleanOptional(),
             seriesIndex = seriesIndex.cleanOptional()?.toDoubleOrNull(),
         )
     }
     val originalDraft = remember(book.book.id, book.metadata) {
-        book.toMetadataDraft()
+        book.toMetadataDraft().let { it.copy(language = MetadataLanguages.code(it.language) ?: it.language) }
     }
     val hasPendingSave = title.isNotBlank() && currentDraft() != originalDraft
     val saveDraft = {
@@ -254,14 +268,18 @@ fun EditMetadataScreen(
     val applyMetadataDraft: (BookMetadataDraft) -> Unit = { draft ->
         title = draft.title
         subtitle = draft.subtitle.orEmpty()
+        authorsAnchor = draft.authors
+        tagsAnchor = draft.tags
         authors = draft.authors.joinToString(", ")
         sortAuthor = draft.sortAuthor.orEmpty()
         seriesName = draft.seriesName.orEmpty()
         seriesIndex = draft.seriesIndex.formatSeriesIndex()
-        language = draft.language.orEmpty()
+        languageAnchor = draft.language
+        language = MetadataLanguages.display(draft.language, displayLocale)
+        identifiers = draft.identifiers
         publisher = draft.publisher.orEmpty()
-        publishedDate = draft.publishedDate.yearOnlyOrNull().orEmpty()
-        description = draft.description.toDisplayDescription().orEmpty()
+        publishedDate = draft.publishedDate.orEmpty()
+        description = draft.description.orEmpty()
         tags = draft.tags.joinToString(", ")
         isbn = draft.isbn.orEmpty()
         titleTouched = true
@@ -270,11 +288,14 @@ fun EditMetadataScreen(
     val applyMetadataPreview: (MetadataAutofillPreview) -> Unit = { preview ->
         title = preview.title
         subtitle = preview.subtitle.orEmpty()
+        authorsAnchor = preview.authors
+        tagsAnchor = preview.tags
         authors = preview.authors.joinToString(", ")
         sortAuthor = preview.sortAuthor.orEmpty()
         seriesName = preview.seriesName.orEmpty()
         seriesIndex = preview.seriesIndex.formatSeriesIndex()
-        language = preview.language.orEmpty()
+        languageAnchor = preview.language
+        language = MetadataLanguages.display(preview.language, displayLocale)
         publisher = preview.publisher.orEmpty()
         publishedDate = preview.publishedDate.orEmpty()
         description = preview.description.orEmpty()
@@ -311,6 +332,9 @@ fun EditMetadataScreen(
         val hazeState = chromeHazeState ?: localHazeState
         val currentOnBack by rememberUpdatedState(guardedBack)
         val currentOnAutofillClick by rememberUpdatedState {
+            lookupSession++
+            lookupCandidates = emptyList()
+            selectedLookupCandidateId = null
             showMetadataAutofillDialog = true
         }
         val externalTopChromeContent: TopChromeContent = remember(
@@ -398,7 +422,7 @@ fun EditMetadataScreen(
                 onReplaceCover = onReplaceCover,
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
                 hasOpenAiApiKey = hasOpenAiApiKey,
-                onAutofillClick = { showMetadataAutofillDialog = true },
+                onAutofillClick = { lookupSession++; lookupCandidates = emptyList(); selectedLookupCandidateId = null; showMetadataAutofillDialog = true },
             )
         } else {
             StackedEditBookScreen(
@@ -429,7 +453,7 @@ fun EditMetadataScreen(
                 onTagsChange = { tags = it },
                 isbn = isbn,
                 onIsbnChange = { isbn = it },
-                onAutofillClick = { showMetadataAutofillDialog = true },
+                onAutofillClick = { lookupSession++; lookupCandidates = emptyList(); selectedLookupCandidateId = null; showMetadataAutofillDialog = true },
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
                 onReplaceCover = onReplaceCover,
                 onBack = guardedBack,
@@ -438,6 +462,19 @@ fun EditMetadataScreen(
     }
 
     if (showMetadataAutofillDialog) {
+        val session = lookupSession
+        LaunchedEffect(selectedLookupCandidateId, session) {
+            val candidate = lookupCandidates.firstOrNull { it.id == selectedLookupCandidateId }
+            resolvingCandidateId = candidate?.id?.takeUnless { candidate.detailsResolved }
+            if (candidate != null && !candidate.detailsResolved) {
+                onResolveMetadataCandidate(candidate) { resolved ->
+                    if (showMetadataAutofillDialog && lookupSession == session) {
+                        lookupCandidates = lookupCandidates.map { if (it.id == resolved.id) resolved else it }
+                        if (resolvingCandidateId == resolved.id) resolvingCandidateId = null
+                    }
+                }
+            }
+        }
         MetadataAutofillDialog(
             prompt = metadataPrompt,
             onPromptChange = { metadataPrompt = it },
@@ -446,19 +483,23 @@ fun EditMetadataScreen(
             lookupCandidates = lookupCandidates,
             selectedLookupCandidateId = selectedLookupCandidateId,
             isLookingUpMetadata = isLookingUpMetadata,
+            isResolvingCandidate = resolvingCandidateId == selectedLookupCandidateId && resolvingCandidateId != null,
             isGenerating = isGeneratingMetadata,
             progress = progress,
             onLookupMetadata = {
                 if (!isLookingUpMetadata) {
                     onLookupMetadataCandidates(currentDraft()) { candidates ->
-                        lookupCandidates = candidates
-                        selectedLookupCandidateId = candidates.firstOrNull()?.id
+                        if (showMetadataAutofillDialog && lookupSession == session) {
+                            lookupCandidates = candidates
+                            selectedLookupCandidateId = candidates.firstOrNull()?.id
+                        }
                     }
                 }
             },
             onSelectLookupCandidate = { selectedLookupCandidateId = it },
-            onApplyLookupCandidate = { candidate ->
-                applyMetadataDraft(candidate.metadata)
+            onApplyLookupCandidate = { candidate, fields ->
+                applyMetadataDraft(currentDraft().applySelectedMetadata(candidate.metadata, fields))
+                if (MetadataField.COVER in fields) candidate.coverImagePath?.let(onUseLookupCover)
             },
             onGeneratePreview = {
                 if (!isGeneratingMetadata) {
@@ -470,7 +511,7 @@ fun EditMetadataScreen(
                 }
             },
             onApplyPreview = applyMetadataPreview,
-            onDismiss = { showMetadataAutofillDialog = false },
+            onDismiss = { showMetadataAutofillDialog = false; lookupSession++; resolvingCandidateId = null },
         )
     }
 
@@ -1609,15 +1650,19 @@ private fun MetadataAutofillDialog(
     lookupCandidates: List<MetadataLookupCandidate>,
     selectedLookupCandidateId: String?,
     isLookingUpMetadata: Boolean,
+    isResolvingCandidate: Boolean,
     isGenerating: Boolean,
     progress: SyncProgress?,
     onLookupMetadata: () -> Unit,
     onSelectLookupCandidate: (String) -> Unit,
-    onApplyLookupCandidate: (MetadataLookupCandidate) -> Unit,
+    onApplyLookupCandidate: (MetadataLookupCandidate, Set<MetadataField>) -> Unit,
     onGeneratePreview: () -> Unit,
     onApplyPreview: (MetadataAutofillPreview) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var showCandidateChoices by remember { mutableStateOf(false) }
+    var selectedFields by rememberSaveable { mutableStateOf(MetadataField.defaultSelection) }
+    LaunchedEffect(Unit) { onLookupMetadata() }
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
     var selectedSourceName by rememberSaveable(hasOpenAiApiKey) {
         mutableStateOf(AutofillSource.OPEN_METADATA.name)
@@ -1689,27 +1734,41 @@ private fun MetadataAutofillDialog(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = stringResource(R.string.metadata_lookup_section_description),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            if (lookupCandidates.isEmpty()) {
+                            if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
                                 Text(
                                     text = stringResource(R.string.metadata_lookup_empty),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
-                            } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    lookupCandidates.forEach { candidate ->
-                                        MetadataLookupCandidateCard(
-                                            candidate = candidate,
-                                            selected = candidate.id == selectedLookupCandidate?.id,
-                                            onClick = { onSelectLookupCandidate(candidate.id) },
-                                        )
+                            } else if (lookupCandidates.isNotEmpty()) {
+                                Box {
+                                    TextButton(onClick = { showCandidateChoices = true }, modifier = Modifier.fillMaxWidth()) {
+                                        Text(stringResource(R.string.metadata_lookup_choose_result, lookupCandidates.size))
+                                        Icon(Icons.Outlined.ArrowDropDown, contentDescription = null)
                                     }
+                                    androidx.compose.material3.DropdownMenu(
+                                        expanded = showCandidateChoices,
+                                        onDismissRequest = { showCandidateChoices = false },
+                                        modifier = Modifier.heightIn(max = 420.dp),
+                                    ) {
+                                        lookupCandidates.forEach { candidate ->
+                                            androidx.compose.material3.DropdownMenuItem(
+                                                text = { Column {
+                                                    Text(candidate.metadata.title, style = MaterialTheme.typography.titleSmall)
+                                                    Text(listOfNotNull(candidate.sourceName, candidate.metadata.publisher,
+                                                        candidate.metadata.publishedDate).joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+                                                } },
+                                                onClick = {
+                                                    selectedFields = selectedFields - MetadataField.COVER
+                                                    onSelectLookupCandidate(candidate.id)
+                                                    showCandidateChoices = false
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+                                selectedLookupCandidate?.let { candidate ->
+                                    MetadataLookupCandidateCard(candidate, selected = true, onClick = { showCandidateChoices = true })
                                 }
                                 Spacer(modifier = Modifier.height(18.dp))
                                 Text(
@@ -1718,9 +1777,15 @@ private fun MetadataAutofillDialog(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                                 Spacer(modifier = Modifier.height(10.dp))
-                                MetadataPreviewContent(
-                                    preview = selectedLookupCandidate?.metadata?.toAutofillPreview(),
-                                )
+                                if (isResolvingCandidate) {
+                                    androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                    Spacer(Modifier.height(10.dp))
+                                }
+                                selectedLookupCandidate?.let { candidate ->
+                                    MetadataFieldSelection(candidate, selectedFields) { field ->
+                                        selectedFields = if (field in selectedFields) selectedFields - field else selectedFields + field
+                                    }
+                                }
                             }
                         }
 
@@ -1775,72 +1840,19 @@ private fun MetadataAutofillDialog(
 
                 when (selectedSource) {
                     AutofillSource.OPEN_METADATA -> {
-                        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                            val lookupButtonLabel = if (lookupCandidates.isEmpty()) {
-                                stringResource(R.string.metadata_lookup_button)
-                            } else {
-                                stringResource(R.string.metadata_lookup_button_again)
-                            }
-                            val canApplyLookup = selectedLookupCandidate != null && !isLookingUpMetadata
-
-                            if (maxWidth < 520.dp) {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    horizontalAlignment = Alignment.End,
-                                ) {
-                                    Button(
-                                        onClick = { selectedLookupCandidate?.let(onApplyLookupCandidate) },
-                                        enabled = canApplyLookup,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Text(text = stringResource(R.string.metadata_lookup_apply_selected))
-                                    }
-                                    OutlinedButton(
-                                        onClick = onLookupMetadata,
-                                        enabled = !isLookingUpMetadata,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.AutoAwesome,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = lookupButtonLabel)
-                                    }
-                                    TextButton(onClick = onDismiss) {
-                                        Text(text = stringResource(R.string.edit_metadata_cancel))
-                                    }
+                        val canApply = selectedLookupCandidate != null && !isLookingUpMetadata && !isResolvingCandidate &&
+                            selectedFields.any { field -> if (field == MetadataField.COVER) selectedLookupCandidate.coverImagePath != null else field.available(selectedLookupCandidate.metadata) }
+                        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                            Button(
+                                onClick = { selectedLookupCandidate?.let { onApplyLookupCandidate(it, selectedFields) } },
+                                enabled = canApply,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(stringResource(R.string.metadata_lookup_apply_selected)) }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
+                                    TextButton(onClick = onLookupMetadata) { Text(stringResource(R.string.metadata_lookup_button_again)) }
                                 }
-                            } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    TextButton(onClick = onDismiss) {
-                                        Text(text = stringResource(R.string.edit_metadata_cancel))
-                                    }
-                                    OutlinedButton(
-                                        onClick = onLookupMetadata,
-                                        enabled = !isLookingUpMetadata,
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.AutoAwesome,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(text = lookupButtonLabel)
-                                    }
-                                    Button(
-                                        onClick = { selectedLookupCandidate?.let(onApplyLookupCandidate) },
-                                        enabled = canApplyLookup,
-                                    ) {
-                                        Text(text = stringResource(R.string.metadata_lookup_apply_selected))
-                                    }
-                                }
+                                TextButton(onClick = onDismiss) { Text(stringResource(R.string.edit_metadata_cancel)) }
                             }
                         }
                     }
@@ -1994,9 +2006,17 @@ private fun MetadataLookupCandidateCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Row(
+                Text(
+                    text = listOfNotNull(
+                        candidate.metadata.language?.let { MetadataLanguages.display(it, androidx.compose.ui.platform.LocalConfiguration.current.locales[0]) },
+                        candidate.metadata.publisher,
+                        candidate.metadata.isbn,
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.foundation.layout.FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = candidate.sourceName,

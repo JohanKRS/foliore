@@ -24,7 +24,8 @@ class DebugSyncReceiver : BroadcastReceiver() {
         Thread {
             try {
                 intent.getStringExtra("metadataLookupBookId")?.let { bookId ->
-                    MetadataLookupHarness.run(context, bookId)
+                    MetadataLookupHarness.run(context, bookId, intent.getStringExtra("metadataLookupTitle"),
+                        intent.getStringExtra("metadataLookupAuthor"), intent.getStringExtra("metadataLookupIsbn"))
                     Log.d(TAG, "Read-only metadata lookup QA complete")
                     return@Thread
                 }

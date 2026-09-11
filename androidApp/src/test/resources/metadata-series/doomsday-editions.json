@@ -1,0 +1,136 @@
+{
+  "entries": [
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "Carl e o Cenário Apocalíptico",
+      "key": "/books/OL62296967M",
+      "languages": [
+        {
+          "key": "/languages/por"
+        }
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "Carl’s Doomsday Scenario",
+      "key": "/books/OL62210529M",
+      "series": [
+        "Dungeon Crawler Carl #2"
+      ],
+      "languages": [
+        {
+          "key": "/languages/ger"
+        }
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "Carl’s Doomsday Scenario",
+      "key": "/books/OL62207678M",
+      "series": [
+        "Dungeon Crawler Carl Book 2"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "L'Ogive du jugement dernier",
+      "key": "/books/OL62072602M",
+      "subtitle": "Dungeon Crawler Carl T2"
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "Carl’s Doomsday Scenario",
+      "key": "/books/OL60640329M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "subtitle": "Dungeon Crawler Carl Book II"
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "Carl's Doomsday Scenario",
+      "key": "/books/OL57409203M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "title": "Carl’s Doomsday Scenario",
+      "key": "/books/OL60487296M",
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "subtitle": "Dungeon Crawler Carl, Book 2"
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "title": "Carl’s Doomsday Scenario",
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ],
+      "key": "/books/OL51633677M"
+    },
+    {
+      "title": "Carl’s Doomsday Scenario",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "key": "/books/OL33026470M",
+      "works": [
+        {
+          "key": "/works/OL24848193W"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "apk": "Foliore-0.1.0-release-series-2026-09-11.apk",
+  "sha256": "3d9a62a189f77842cd5f0bccf45762cb95b82ed2787353f1099b4f7725c0a04d",
+  "bytes": 17020223,
+  "installations": [
+    {
+      "device": "Galaxy S24 Ultra",
+      "installedApkMatchesRelease": true
+    },
+    {
+      "device": "Galaxy Tab S9 Ultra",
+      "installedApkMatchesRelease": true
+    }
+  ]
+}

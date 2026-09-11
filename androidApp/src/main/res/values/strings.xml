@@ -112,7 +112,7 @@
     <string name="export_share_chooser">Compartilhar EPUB</string>
 
     <string name="details_series">Série</string>
-    <string name="details_published_year">Ano</string>
+    <string name="details_published_year">Publicação</string>
     <string name="details_language">Idioma</string>
     <string name="details_publisher">Editora</string>
     <string name="details_file_format">Formato</string>
@@ -155,7 +155,7 @@
     <string name="edit_metadata_field_series_index">Nº da série</string>
     <string name="edit_metadata_field_language">Idioma</string>
     <string name="edit_metadata_field_publisher">Editora</string>
-    <string name="edit_metadata_field_published_date">Ano de publicação</string>
+    <string name="edit_metadata_field_published_date">Data de publicação</string>
     <string name="edit_metadata_field_description">Descrição</string>
     <string name="edit_metadata_field_tags">Tags</string>
     <string name="edit_metadata_field_tags_helper">Separe tags por vírgula.</string>
@@ -357,14 +357,13 @@
     <string name="ai_metadata_dialog_title">Prévia do auto-fill</string>
     <string name="autofill_source_open_metadata">Fontes abertas</string>
     <string name="autofill_source_ai">IA</string>
-    <string name="metadata_lookup_section_title">Fontes abertas</string>
-    <string name="metadata_lookup_section_description">Busca em Open Library e Google Books. Capas só aparecem quando passam por uma checagem mínima de resolução.</string>
+    <string name="metadata_lookup_section_title">Resultados</string>
     <string name="metadata_lookup_button">Buscar metadados</string>
     <string name="metadata_lookup_button_again">Buscar novamente</string>
-    <string name="metadata_lookup_empty">Nenhum resultado buscado ainda.</string>
+    <string name="metadata_lookup_empty">Nenhum resultado disponível. Tente novamente.</string>
     <string name="metadata_lookup_cover_available">Capa disponível</string>
     <string name="metadata_lookup_cover_resolution">Capa %1$dx%2$d</string>
-    <string name="metadata_lookup_apply_selected">Aplicar resultado</string>
+    <string name="metadata_lookup_apply_selected">Aplicar selecionados</string>
     <string name="ai_metadata_prompt_label">Prompt de metadados</string>
     <string name="ai_metadata_default_prompt">Preencha e corrija metadados bibliográficos para este EPUB. Use apenas informação verificável. Gere os campos textuais no idioma declarado do EPUB; se o idioma estiver ausente, infira e preencha o código do idioma. O campo Sobre deve ser curto, elegante e sem spoilers: não revele final, reviravoltas, mortes ou identidades ocultas. Escreva o Sobre com qualidade literária, no tom e registro geral do livro; evite linguagem promocional genérica, exagerada, cringe ou vergonha alheia. Se não houver contexto confiável suficiente para escrever um Sobre bom, preserve o existente ou deixe nulo em vez de inventar texto de catálogo. Procure ISBN-10 ou ISBN-13 no campo ISBN e nos identificadores do EPUB. Responda com título, subtítulo, autores, série, número da série, idioma, editora, ano, tags, ISBN e sobre.</string>
     <string name="ai_metadata_preview_label">Prévia</string>
@@ -412,4 +411,7 @@
     <string name="report_content_failure">Não foi possível enviar. Seu texto permanece aqui para tentar novamente.</string>
     <string name="report_content_send">Enviar</string>
     <string name="support_email" translatable="false">foliore@johankrs.com</string>
+    <string name="metadata_lookup_identifiers">Identificadores</string>
+    <string name="metadata_lookup_cover">Capa</string>
+    <string name="metadata_lookup_choose_result">Escolher resultado (%1$d)</string>
 </resources>

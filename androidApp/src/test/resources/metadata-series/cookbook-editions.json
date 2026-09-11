@@ -1,0 +1,82 @@
+{
+  "entries": [
+    {
+      "works": [
+        {
+          "key": "/works/OL24848242W"
+        }
+      ],
+      "title": "The Dungeon Anarchist’s Cookbook",
+      "key": "/books/OL62207650M",
+      "series": [
+        "Dungeon Crawler Carl Book 3"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848242W"
+        }
+      ],
+      "title": "Le Livre de recettes de l'Anarchiste",
+      "key": "/books/OL62072632M",
+      "subtitle": "Dungeon Crawler Carl T3",
+      "series": [
+        "Dungeon Crawler Carl"
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24848242W"
+        }
+      ],
+      "title": "The Dungeon Anarchist’s Cookbook",
+      "key": "/books/OL60487312M",
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "subtitle": "Dungeon Crawler Carl, Book 3"
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "subjects": [
+        "American literature"
+      ],
+      "title": "The Dungeon Anarchist’s Cookbook",
+      "works": [
+        {
+          "key": "/works/OL24848242W"
+        }
+      ],
+      "key": "/books/OL52237752M"
+    },
+    {
+      "title": "The Dungeon Anarchist’s Cookbook",
+      "subtitle": "Welcome to the Gun Show!",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "key": "/books/OL33026514M",
+      "works": [
+        {
+          "key": "/works/OL24848242W"
+        }
+      ]
+    }
+  ]
+}

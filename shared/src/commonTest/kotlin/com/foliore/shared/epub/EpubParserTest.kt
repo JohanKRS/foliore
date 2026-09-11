@@ -71,7 +71,7 @@ class EpubParserTest {
 
         val result = EpubParser().parse(archive)
 
-        assertEquals("2011", result.metadata.publishedDate)
+        assertEquals("2011-04-12", result.metadata.publishedDate)
     }
 
     @Test
@@ -102,7 +102,7 @@ class EpubParserTest {
     }
 
     @Test
-    fun normalizesNeutralDateToYear() {
+    fun preservesNeutralDateWithoutItsTime() {
         val archive = FakeArchive(
             mapOf(
                 "META-INF/container.xml" to """
@@ -125,7 +125,7 @@ class EpubParserTest {
 
         val result = EpubParser().parse(archive)
 
-        assertEquals("1999", result.metadata.publishedDate)
+        assertEquals("1999-08-07", result.metadata.publishedDate)
     }
 
     @Test

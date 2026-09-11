@@ -1,0 +1,190 @@
+{
+  "entries": [
+    {
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "key": "/books/OL62072570M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "key": "/books/OL61416418M",
+      "series": [
+        "Dungeon Crawler Carl #1"
+      ],
+      "languages": [
+        {
+          "key": "/languages/ger"
+        }
+      ]
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "key": "/books/OL60832271M"
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "key": "/books/OL60826876M"
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "key": "/books/OL60638628M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "key": "/books/OL60638007M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "key": "/books/OL60483643M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "subtitle": "The Apocalypse Will Be Televised!"
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "subjects": [
+        "American literature"
+      ],
+      "title": "Dungeon Crawler Carl",
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "key": "/books/OL51810161M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ]
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "subjects": [
+        "Fiction, fantasy, general",
+        "Fiction, science fiction, general"
+      ],
+      "title": "Dungeon Crawler Carl",
+      "subtitle": "A LitRPG Adventure",
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "key": "/books/OL49310859M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ]
+    },
+    {
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "subtitle": "The Apocalypse Will Be Televised!",
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "key": "/books/OL42227193M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ]
+    },
+    {
+      "works": [
+        {
+          "key": "/works/OL24593432W"
+        }
+      ],
+      "title": "Dungeon Crawler Carl",
+      "key": "/books/OL32618729M",
+      "series": [
+        "Dungeon Crawler Carl"
+      ],
+      "languages": [
+        {
+          "key": "/languages/eng"
+        }
+      ]
+    }
+  ]
+}
