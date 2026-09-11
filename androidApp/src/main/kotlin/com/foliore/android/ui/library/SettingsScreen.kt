@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -31,7 +33,6 @@ import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Sync
-import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -155,49 +157,6 @@ fun SettingsScreen(
             description = stringResource(appLanguage.labelResource()),
             onClick = onChooseAppLanguage,
         )
-
-        Spacer(modifier = Modifier.height(28.dp))
-        EditorialDivider(modifier = Modifier.fillMaxWidth())
-        Spacer(modifier = Modifier.height(28.dp))
-
-        CompactSettingsRow(
-            icon = Icons.Outlined.TaskAlt,
-            title = stringResource(R.string.privacy_title),
-            description = stringResource(R.string.privacy_description),
-            onClick = { showPrivacy = true },
-        )
-        CompactSettingsRow(
-            icon = Icons.Outlined.Email,
-            title = stringResource(R.string.report_ai_content),
-            description = "foliore@johankrs.com",
-            onClick = { showReport = true },
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        SectionTitle(text = stringResource(R.string.settings_library))
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.TaskAlt,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings_preserve_original),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = stringResource(R.string.settings_preserve_original_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
@@ -418,6 +377,28 @@ fun SettingsScreen(
                 }
             }
         }
+        Spacer(modifier = Modifier.height(28.dp))
+        EditorialDivider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = stringResource(R.string.settings_preserve_original_description),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            TextButton(
+                onClick = { showPrivacy = true },
+                contentPadding = PaddingValues(vertical = 8.dp),
+            ) {
+                Text(stringResource(R.string.privacy_title))
+            }
+            TextButton(
+                onClick = { showReport = true },
+                contentPadding = PaddingValues(vertical = 8.dp),
+            ) {
+                Text(stringResource(R.string.report_ai_content))
+            }
+        }
         Spacer(modifier = Modifier.height(48.dp))
         }
         }
@@ -503,7 +484,6 @@ private fun GoogleDriveBackupStatus(
                 else -> stringResource(
                     R.string.settings_sync_google_drive_backup_status_summary,
                     stats.syncedBooks,
-                    stats.remoteFiles,
                     stats.totalBytes.toReadableDriveSize(),
                 )
             },
@@ -517,11 +497,19 @@ private fun GoogleDriveBackupStatus(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (stats?.updatedAt != null) {
+        val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+        val updatedAt = stats?.updatedAt?.let { timestamp ->
+            runCatching {
+                java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.SHORT)
+                    .withLocale(locale).withZone(java.time.ZoneId.systemDefault())
+                    .format(java.time.Instant.parse(timestamp))
+            }.getOrNull()
+        }
+        if (updatedAt != null) {
             Text(
                 text = stringResource(
                     R.string.settings_sync_google_drive_backup_status_updated,
-                    stats.updatedAt,
+                    updatedAt,
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

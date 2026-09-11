@@ -95,12 +95,17 @@ internal object SyncSafetyHarness {
             metadata.isbn, metadata.identifiers, metadata.seriesName, metadata.seriesIndex)
         check(a.bookEditor.updateMetadata(id, draft) is BookEditResult.Success)
         check(a.preparedEpubService.prepare(id) is PreparedEpubResult.Prepared)
+        remote.uploadedPaths.clear()
         remote.failNextFileWrite = true
         check(runCatching { engineA.sync(remote) }.isFailure)
         before.forEach { (path, bytes) -> check(remote.bytes()[path]?.contentEquals(bytes) == true) { "Previous backup changed: $path" } }
         check(b.libraryRepository.getBook(id)!!.metadata.title == "QA Original")
         check(engineA.sync(remote).uploadedBooks == 1)
+        check(remote.uploadedPaths.none { it.endsWith("/original.epub") }) { "Metadata edit uploaded unchanged original" }
+        check(remote.uploadedPaths.any { it.endsWith("/prepared.epub") }) { "New prepared EPUB was skipped" }
+        remote.downloadedPaths.clear()
         check(engineB.sync(remote).downloadedBooks == 1)
+        check(remote.downloadedPaths.none { it.endsWith("/original.epub") }) { "Metadata edit downloaded unchanged original" }
         val restored = b.libraryRepository.getBook(id)!!
         check(restored.metadata.title == draft.title)
         check(File(restored.book.originalFilePath).sha256() == epub.sha256())
@@ -149,8 +154,16 @@ internal object SyncSafetyHarness {
         engineA.sync(remote)
         engineB.sync(remote)
         check(b.libraryRepository.getBook(id) == null) { "Explicit deletion was not propagated" }
+        check(!File(contextB.filesDir, "books/$id").exists()) { "Remote deletion left local book versions behind" }
+        // Simulate files left behind when a process died after removing the database row.
+        File(contextB.filesDir, "books/$id/versions/interrupted").apply { mkdirs() }
+        engineB.sync(remote)
+        check(!File(contextB.filesDir, "books/$id").exists()) { "Interrupted deletion cleanup did not resume" }
         engineA.sync(remote)
-        for (app in listOf(a, b)) check(app.libraryRepository.getBooks().any { it.metadata.title.startsWith("Offline edit during deletion") })
+        for (app in listOf(a, b)) {
+            val recovered = app.libraryRepository.getBooks().first { it.metadata.title.startsWith("Offline edit during deletion") }
+            check(File(recovered.book.originalFilePath).sha256() == epub.sha256())
+        }
         val deletionA = PendingRemoteDeletionStore(contextA, "drive:account-a")
         val deletionB = PendingRemoteDeletionStore(contextA, "drive:account-b")
         deletionA.markDeleted("scope-test", 1, "now")
@@ -182,10 +195,11 @@ internal object SyncSafetyHarness {
         check(a.bookEditor.updateMetadata(faultBookId, currentDraft().copy(title = "After corrupt download")) is BookEditResult.Success)
         engineA.sync(remote)
         remote.fault = "download"
-        val failedDownload = engineB.sync(remote)
-        check(failedDownload.conflictedBooks > 0 && failedDownload.downloadedBooks == 0) { "Corrupt download was not rejected per book" }
+        val failedDownload = runCatching { engineB.sync(remote) }
+        check(failedDownload.isFailure) { "Corrupt download was reported as successful sync" }
         check(remote.fault == null)
         check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == beforeDownload.metadata.title)
+        check(b.libraryRepository.getBook(faultBookId)!!.book.syncStatus == beforeDownload.book.syncStatus) { "Transfer failure changed editing conflict state" }
         check(File(beforeDownload.book.originalFilePath).sha256() == originalBeforeDownload)
         engineB.sync(remote)
         check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == "After corrupt download")
@@ -212,6 +226,8 @@ internal object SyncSafetyHarness {
     }
 
     private class LocalStore(private val root: File) : RemoteLibraryStore {
+        val uploadedPaths = java.util.Collections.synchronizedList(mutableListOf<String>())
+        val downloadedPaths = java.util.Collections.synchronizedList(mutableListOf<String>())
         override val label = "Isolated QA"
         var failNextFileWrite = false
         var fault: String? = null
@@ -227,6 +243,7 @@ internal object SyncSafetyHarness {
             if (path.startsWith(RemoteManifestJournal.RECORD_PREFIX)) publicationBarrier?.await(20, java.util.concurrent.TimeUnit.SECONDS)
         }
         override fun replaceFile(path: String, source: File, mimeType: String) {
+            uploadedPaths += path
             if (failNextFileWrite) { failNextFileWrite = false; error("Injected upload failure") }
             onNextFileWrite?.also { onNextFileWrite = null }?.invoke()
             File(root, path).apply {
@@ -236,6 +253,7 @@ internal object SyncSafetyHarness {
             }
         }
         override fun copyToLocal(path: String, destination: File): File? = File(root, path).takeIf { it.isFile }?.let {
+            downloadedPaths += path
             destination.parentFile!!.mkdirs()
             it.copyTo(destination, true).also { if (consume("download")) it.writeText("Injected corrupt download") }
         }

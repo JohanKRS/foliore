@@ -14,6 +14,7 @@ import kotlinx.serialization.json.Json
 internal class GoogleDriveApiClient(
     private val accessToken: String,
 ) {
+    val requestCount = java.util.concurrent.atomic.AtomicInteger()
     @Volatile var serverTimeMillis: Long? = null
         private set
 
@@ -73,6 +74,40 @@ internal class GoogleDriveApiClient(
             if (response.responseCode !in 200..299 && response.responseCode != HTTP_NOT_FOUND) {
                 throw GoogleDriveHttpException(response.responseCode, response.errorText)
             }
+        }
+    }
+
+    fun deleteFiles(fileIds: List<String>) {
+        fileIds.distinct().chunked(100).forEach(::deleteBatchWithRetry)
+    }
+
+    private fun deleteBatchWithRetry(fileIds: List<String>) {
+        var pending = fileIds
+        repeat(3) { attempt ->
+            try {
+                val boundary = "foliore-${UUID.randomUUID()}"
+                val body = buildString {
+                    pending.forEachIndexed { index, id ->
+                        append("--$boundary\r\nContent-Type: application/http\r\nContent-ID: <$index>\r\n\r\n")
+                        append("DELETE /drive/v3/files/${id.urlPathEncoded()} HTTP/1.1\r\n\r\n")
+                    }
+                    append("--$boundary--\r\n")
+                }
+                val parts = request("https://www.googleapis.com/batch/drive/v3", "POST",
+                    contentType = "multipart/mixed; boundary=$boundary", body = body.toByteArray()).use { response ->
+                    if (response.responseCode !in 200..299) throw GoogleDriveHttpException(response.responseCode, response.errorText)
+                    parseDriveDeleteBatch(response.connection.contentType.orEmpty(), response.text, pending.size)
+                }
+                val failed = parts.filterNot { it.succeeded }
+                if (failed.isEmpty()) return
+                val errors = failed.map { GoogleDriveHttpException(it.status, it.body) }
+                errors.firstOrNull { !it.isRetryable }?.let { throw it }
+                pending = failed.map { pending[it.index] }
+                throw errors.first()
+            } catch (error: Exception) {
+                if (attempt == 2 || !(error is java.io.IOException || error is GoogleDriveHttpException && error.isRetryable)) throw error
+            }
+            Thread.sleep(if (attempt == 0) 750 else 2000)
         }
     }
 
@@ -156,7 +191,7 @@ internal class GoogleDriveApiClient(
         System.arraycopy(suffix, 0, body, prefix.size + bytes.size, suffix.size)
 
         return request(
-            url = "$UPLOAD_FILES_ENDPOINT?uploadType=multipart&fields=id,name,mimeType,modifiedTime,size",
+            url = "$UPLOAD_FILES_ENDPOINT?uploadType=multipart&fields=id,name,mimeType,modifiedTime,size,version,sha256Checksum",
             method = "POST",
             contentType = "multipart/related; boundary=$boundary",
             body = body,
@@ -180,7 +215,7 @@ internal class GoogleDriveApiClient(
             parents = listOf(parentId),
         )
         val uploadUrl = request(
-            url = "$UPLOAD_FILES_ENDPOINT?uploadType=resumable&fields=id,name,mimeType,modifiedTime,size",
+            url = "$UPLOAD_FILES_ENDPOINT?uploadType=resumable&fields=id,name,mimeType,modifiedTime,size,version,sha256Checksum",
             method = "POST",
             contentType = "application/json; charset=UTF-8",
             body = json.encodeToString(metadata).toByteArray(Charsets.UTF_8),
@@ -226,7 +261,7 @@ internal class GoogleDriveApiClient(
                 ?.let { token -> "&pageToken=${token.urlEncoded()}" }
                 .orEmpty()
             val url = "$FILES_ENDPOINT?spaces=appDataFolder&pageSize=1000" +
-                "&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,parents)" +
+                "&fields=nextPageToken,files(id,name,mimeType,modifiedTime,size,parents,version,sha256Checksum)" +
                 "&q=${query.urlEncoded()}$pageTokenParameter"
             val page = getJson<DriveFileList>(url)
             files += page.files
@@ -261,6 +296,7 @@ internal class GoogleDriveApiClient(
         bodyFile: File? = null,
         extraHeaders: Map<String, String> = emptyMap(),
     ): DriveHttpResponse {
+        requestCount.incrementAndGet()
         val connection = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = CONNECT_TIMEOUT_MS
@@ -367,7 +403,16 @@ internal data class DriveFileMetadata(
     val modifiedTime: String? = null,
     @SerialName("size") val sizeText: String? = null,
     val parents: List<String> = emptyList(),
+    val version: String? = null,
+    val sha256Checksum: String? = null,
 )
+
+/** Missing server checksums use the full download verification fallback. */
+internal fun DriveFileMetadata.verifiesUpload(size: Long, sha256: String): Boolean {
+    val checksum = sha256Checksum ?: return false
+    check(sizeText?.toLongOrNull() == size && checksum == sha256) { "Remote upload verification failed" }
+    return true
+}
 
 internal class GoogleDriveHttpException(
     val statusCode: Int,

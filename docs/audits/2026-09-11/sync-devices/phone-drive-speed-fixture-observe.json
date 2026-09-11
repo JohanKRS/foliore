@@ -1,0 +1,60 @@
+{
+  "run": "phone-drive-speed-fixture-observe",
+  "action": "drive-performance-fixture",
+  "status": "PASS",
+  "elapsedMs": 66148,
+  "appRxBytes": 8066047,
+  "appTxBytes": 7910492,
+  "pssKb": 203836,
+  "result": {
+    "measurements": [
+      {
+        "name": "recursive-delete-9-items",
+        "ms": 7671,
+        "requests": 12
+      },
+      {
+        "name": "cascade-delete-9-items",
+        "ms": 725,
+        "requests": 1
+      },
+      {
+        "name": "cascade-listing-convergence",
+        "ms": 3380,
+        "remaining": 0
+      },
+      {
+        "name": "upload-1-MiB",
+        "ms": 2066,
+        "requests": 1
+      },
+      {
+        "name": "server-verify-1-MiB",
+        "ms": 1,
+        "requests": 0
+      },
+      {
+        "name": "download-verify-1-MiB",
+        "ms": 1291,
+        "requests": 1
+      },
+      {
+        "name": "upload-6-MiB",
+        "ms": 2474,
+        "requests": 2
+      },
+      {
+        "name": "server-verify-6-MiB",
+        "ms": 1,
+        "requests": 0
+      },
+      {
+        "name": "download-verify-6-MiB",
+        "ms": 1703,
+        "requests": 1
+      }
+    ],
+    "sentinelPreserved": true,
+    "fixtureRemoved": true
+  }
+}

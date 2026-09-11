@@ -1,5 +1,7 @@
 # Sincronização em aparelhos físicos — 7 de setembro de 2026
 
+A continuação desta rodada está em [11 de setembro](../../2026-09-11/sync-devices/README.md).
+
 **Bloqueador de publicação reproduzido:** uma mesclagem local ainda não publicada recebeu status SYNCED; após queda de rede, a repetição substituiu a edição pela versão antiga do Drive. O EPUB permaneceu íntegro. **Corrigido no código:** versões mescladas ficam PENDING_UPLOAD e não avançam lastSyncedAt antes do commit. A regressão isolada falhou antes do patch e passou após o patch nos estágios de payload, record e commit; no Drive real uma nova falha de DNS deixou a mesclagem corretamente PENDING_UPLOAD. A retomada final entre aparelhos foi pausada a pedido do usuário.
 
 **Rodada pausada a pedido do usuário em 07/09/2026.** Evidências locais em `.codex-artifacts/sync-qa-2026-09-07/`. O release corrigido foi reinstalado nos dois aparelhos; não considerar concluídos os cenários ainda pendentes abaixo.

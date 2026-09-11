@@ -55,6 +55,10 @@ internal object DeviceSyncQaHarness {
                     } })) }
                 }
                 "sync" -> summary(app.syncService.syncNow(allowGoogleDriveLibraryRecreation = intent.getBooleanExtra("qaRecreate", false), onProgress = ::event))
+                "drive-performance-fixture", "drive-fixture-cleanup" -> synchronized(SyncOperationCoordinator.remoteLock) {
+                    drivePerformanceFixture(context, app, action == "drive-fixture-cleanup")
+                }
+                "drive-batch-fixture" -> synchronized(SyncOperationCoordinator.remoteLock) { driveBatchFixture(app) }
                 "remove-invalid" -> {
                     val invalid = app.libraryRepository.getBooks().filter { File(it.book.originalFilePath).isFile && File(it.book.originalFilePath).sha256() != it.book.originalHashSha256 }
                     buildJsonObject { put("removed", JsonArray(invalid.map { book ->
@@ -151,6 +155,124 @@ internal object DeviceSyncQaHarness {
             if (hashes && File(b.originalFilePath).isFile) put("actualHash", File(b.originalFilePath).sha256())
         } }))
     }
+
+    private fun drivePerformanceFixture(context: Context, app: AppContainer, cleanupOnly: Boolean): JsonObject {
+        val auth = app.googleDriveAuthService.authorize()
+        check(auth is GoogleDriveAuthorization.Authorized)
+        val drive = GoogleDriveApiClient(auth.accessToken)
+        val store = GoogleDriveAppDataRemoteLibraryStore(drive)
+        if (cleanupOnly) {
+            val candidates = drive.listAppDataFiles().filter {
+                (it.name.startsWith("foliore-qa-performance-") || it.name in setOf("branch-0", "branch-1", "file-0.txt", "file-1.txt", "file-2.txt", "sentinel.txt", "recursive", "cascade")) &&
+                    it.modifiedTime.orEmpty().startsWith("2026-09-11")
+            }
+            Log.d("FolioreDeviceQA", "Fixture leftovers=" + Json.encodeToString(kotlinx.serialization.builtins.ListSerializer(DriveFileMetadata.serializer()), candidates))
+            candidates.sortedBy { it.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE }.forEach { drive.deleteFile(it.id) }
+            check(drive.listAppDataFiles().none { item -> candidates.any { it.id == item.id } })
+            return buildJsonObject { put("removedFixtureObjects", candidates.size) }
+        }
+        val prefix = "foliore-qa-performance-${UUID.randomUUID()}"
+        val root = drive.createFolder(GoogleDriveApiClient.APP_DATA_ROOT_ID, prefix)
+        val file = File(context.cacheDir, "$prefix.bin")
+        val results = mutableListOf<JsonElement>()
+        val created = mutableListOf(root)
+        try {
+            val sentinel = drive.uploadText(root.id, "sentinel.txt", "text/plain", "keep")
+            created += sentinel
+            fun timed(name: String, block: () -> Unit) {
+                val start = SystemClock.elapsedRealtime(); val requests = drive.requestCount.get()
+                block()
+                results += buildJsonObject { put("name", name); put("ms", SystemClock.elapsedRealtime() - start)
+                    put("requests", drive.requestCount.get() - requests) }
+                Log.d("FolioreDeviceQA", results.last().toString())
+            }
+            fun populate(name: String): String {
+                val folder = drive.createFolder(root.id, name)
+                created += folder
+                repeat(2) { branch ->
+                    val child = drive.createFolder(folder.id, "branch-$branch")
+                    created += child
+                    repeat(3) { created += drive.uploadText(child.id, "file-$it.txt", "text/plain", "test $branch/$it") }
+                }
+                return folder.id
+            }
+            fun recursiveDelete(id: String) {
+                drive.listChildren(id).forEach { child ->
+                    if (child.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE) recursiveDelete(child.id)
+                    else drive.deleteFile(child.id)
+                }
+                drive.deleteFile(id)
+            }
+            val old = populate("recursive")
+            timed("recursive-delete-9-items") { recursiveDelete(old) }
+            val fast = populate("cascade")
+            val descendants = drive.listChildren(fast).flatMap { child -> listOf(child.id) + drive.listChildren(child.id).map { it.id } }
+            // Prime exactly the lookup caches used during real garbage collection.
+            store.hasDirectory("$prefix/cascade/branch-0")
+            timed("cascade-delete-9-items") { store.deleteTree("$prefix/cascade") }
+            var remaining = drive.listAppDataFiles().map { it.id }.toSet()
+            val visibilityStart = SystemClock.elapsedRealtime()
+            repeat(15) {
+                if ((descendants + fast).any { it in remaining }) {
+                    val directRead = runCatching { drive.readText(descendants.last()) }.fold({ "readable" }, { (it as? GoogleDriveHttpException)?.statusCode?.toString() ?: it.javaClass.simpleName })
+                    Log.d("FolioreDeviceQA", "Cascade remaining=${(descendants + fast).count { it in remaining }} directRead=$directRead waitMs=${SystemClock.elapsedRealtime() - visibilityStart}")
+                    Thread.sleep(1000)
+                    remaining = drive.listAppDataFiles().map { it.id }.toSet()
+                }
+            }
+            results += buildJsonObject { put("name", "cascade-listing-convergence"); put("ms", SystemClock.elapsedRealtime() - visibilityStart); put("remaining", (descendants + fast).count { it in remaining }) }
+            check((descendants + fast).none { it in remaining }) { "Cascade left ${(descendants + fast).count { it in remaining }} of 9 fixture objects" }
+            check(sentinel.id in remaining && drive.readText(sentinel.id) == "keep") { "Cascade removed sibling sentinel" }
+            check(!store.hasDirectory("$prefix/cascade/branch-0")) { "Deleted path remains in folder cache" }
+            // Exercise multipart and resumable uploads; all bytes stay in an isolated QA folder.
+            for (sizeMiB in listOf(1, 6)) {
+                file.outputStream().use { output ->
+                    val random = java.util.Random(42); val bytes = ByteArray(1024 * 1024)
+                    repeat(sizeMiB) { random.nextBytes(bytes); output.write(bytes) }
+                }
+                val hash = file.sha256()
+                var uploaded: DriveFileMetadata? = null
+                timed("upload-$sizeMiB-MiB") { uploaded = drive.uploadFile(root.id, "$sizeMiB.bin", "application/octet-stream", file); created += uploaded!! }
+                timed("server-verify-$sizeMiB-MiB") { check(uploaded!!.verifiesUpload(file.length(), hash)) { "Server omitted SHA256 for $sizeMiB MiB" } }
+                timed("download-verify-$sizeMiB-MiB") {
+                    drive.downloadFile(uploaded!!.id, file); check(file.sha256() == hash)
+                }
+            }
+        } finally {
+            file.delete()
+            created.asReversed().forEach { item ->
+                runCatching { drive.deleteFile(item.id) }.onFailure { Log.e("FolioreDeviceQA", "Fixture cleanup failed id=${item.id}", it) }
+            }
+        }
+        check(drive.listChildren(GoogleDriveApiClient.APP_DATA_ROOT_ID).none { it.id == root.id })
+        return buildJsonObject { put("measurements", JsonArray(results)); put("sentinelPreserved", true); put("fixtureRemoved", true) }
+    }
+
+    private fun driveBatchFixture(app: AppContainer): JsonObject {
+        val auth = app.googleDriveAuthService.authorize()
+        check(auth is GoogleDriveAuthorization.Authorized)
+        val drive = GoogleDriveApiClient(auth.accessToken)
+        val store = GoogleDriveAppDataRemoteLibraryStore(drive)
+        val prefix = "foliore-qa-performance-${UUID.randomUUID()}"
+        val root = drive.createFolder(GoogleDriveApiClient.APP_DATA_ROOT_ID, prefix)
+        val created = mutableListOf(root.id)
+        try {
+            val sentinel = drive.uploadText(root.id, "sentinel.txt", "text/plain", "keep")
+            created += sentinel.id
+            val files = (0 until 8).map { drive.uploadText(root.id, "batch-$it.txt", "text/plain", "test").also { created += it.id } }
+            check(store.readText("$prefix/batch-0.txt") == "test")
+            drive.deleteFile(files.first().id)
+            val start = SystemClock.elapsedRealtime(); val requests = drive.requestCount.get()
+            store.deleteTrees(files.map { "$prefix/${it.name}" })
+            val elapsed = SystemClock.elapsedRealtime() - start; val calls = drive.requestCount.get() - requests
+            check(drive.listChildren(root.id).none { item -> files.any { it.id == item.id } }) { "Batch left undeleted fixture files" }
+            check(drive.readText(sentinel.id) == "keep")
+            return buildJsonObject { put("targets", 8); put("alreadyDeleted", 1); put("ms", elapsed)
+                put("requests", calls); put("allDeleted", true); put("sentinelPreserved", true) }
+        } finally {
+            drive.deleteFiles(created.asReversed())
+        }
+    }
     private fun summary(result: ManualSyncResult) = buildJsonObject {
         put("type", result.javaClass.simpleName)
         if (result is ManualSyncResult.Synced) {
@@ -201,7 +323,7 @@ internal object DeviceSyncQaHarness {
         }
         override fun copyToLocal(path: String, destination: File): File? {
             val result = store.copyToLocal(path, destination)
-            if (mode == "download" && path.endsWith("original.epub") && fired.compareAndSet(false, true)) {
+            if (mode == "download" && result != null && fired.compareAndSet(false, true)) {
                 java.io.RandomAccessFile(destination, "rw").use { it.setLength(128) }
             }
             return result

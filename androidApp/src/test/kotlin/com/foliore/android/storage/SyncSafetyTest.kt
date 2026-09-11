@@ -97,7 +97,9 @@ class SyncSafetyTest {
             val store = TestStore(root)
             val first = RemoteManifestJournal(store).also { it.read() }
             first.publish(manifest(book("old")).toString())
-            val stale = RemoteManifestJournal(store).also { assertNotNull(it.read()) }
+            val staleSnapshot = RemoteManifestJournal(store).snapshot()
+            assertNotNull(staleSnapshot.text)
+            val stale = staleSnapshot.journal
             store.writeText("library.deleted.json", "new deletion epoch")
             assertFails { stale.publish(manifest(book("old", 2)).toString()) }
             assertNull(RemoteManifestJournal(store).read())
@@ -105,6 +107,22 @@ class SyncSafetyTest {
             fresh.publish(manifest(book("new")).toString())
             val books = Json.parseToJsonElement(RemoteManifestJournal(store).read()!!).jsonObject["books"]!!.jsonArray
             assertEquals("new", books.single().jsonObject["bookId"]!!.jsonPrimitive.content)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun preparedSnapshotKeepsConcurrentChangesOutsideItsObservedParents() {
+        val root = kotlin.io.path.createTempDirectory().toFile()
+        try {
+            val store = TestStore(root)
+            RemoteManifestJournal(store).snapshot().journal.publish(manifest(book("one")).toString())
+            val prepared = RemoteManifestJournal(store).snapshot()
+            val concurrent = RemoteManifestJournal(store).snapshot()
+            concurrent.journal.publish(manifest(book("one", 2, "b")).toString())
+            // Publishing the prepared view must not claim to supersede the unseen concurrent edit.
+            prepared.journal.publish(manifest(book("one", 2, "a")).toString())
+            val books = Json.parseToJsonElement(RemoteManifestJournal(store).read()!!).jsonObject["books"]!!.jsonArray
+            assertEquals(2, books.size)
+            assertEquals(1, books.count { "conflictOriginId" in it.jsonObject })
         } finally { root.deleteRecursively() }
     }
 
@@ -128,11 +146,83 @@ class SyncSafetyTest {
         } finally { root.deleteRecursively() }
     }
 
-    private class TestStore(private val root: File) : RemoteLibraryStore {
+    @Test fun garbageCollectionSkipsJournalDownloadsUntilOwnedObjectsExpire() {
+        val root = kotlin.io.path.createTempDirectory().toFile()
+        try {
+            val store = TestStore(root)
+            val journal = RemoteManifestJournal(store).also { it.read() }
+            journal.publish(manifest(book("book")).toString())
+            val now = System.currentTimeMillis()
+            val recent = File(root, RemoteManifestJournal.DATA_PREFIX + "recent").apply { mkdirs() }
+            File(root, "unrelated-old-directory").apply { mkdirs(); setLastModified(1) }
+            store.textReads = 0
+            journal.collectGarbage(now)
+            assertEquals(0, store.textReads)
+            assertTrue(recent.exists())
+            journal.collectGarbage(now + RemoteManifestJournal.RETENTION_MILLIS + 10000)
+            assertTrue(store.textReads > 0)
+            assertFalse(recent.exists())
+            assertTrue(File(root, "unrelated-old-directory").exists())
+            assertNotNull(RemoteManifestJournal(store).read())
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun parallelJournalReadIsBoundedAndKeepsTheSameCausalResult() {
+        val root = kotlin.io.path.createTempDirectory().toFile()
+        try {
+            val serial = TestStore(root)
+            repeat(5) { revision ->
+                RemoteManifestJournal(serial).also { it.read() }.publish(manifest(book("book", revision + 1)).toString())
+            }
+            val expected = RemoteManifestJournal(serial).read()
+            val gate = java.util.concurrent.CountDownLatch(2)
+            val active = java.util.concurrent.atomic.AtomicInteger()
+            val peak = java.util.concurrent.atomic.AtomicInteger()
+            val parallel = TestStore(root, maxConcurrentDownloads = 10, onRead = { path ->
+                if (path.startsWith(RemoteManifestJournal.COMMIT_PREFIX)) {
+                    val count = active.incrementAndGet()
+                    peak.updateAndGet { maxOf(it, count) }
+                    try {
+                        gate.countDown()
+                        check(gate.await(5, java.util.concurrent.TimeUnit.SECONDS)) { "Journal reads did not overlap" }
+                    } finally { active.decrementAndGet() }
+                }
+            })
+            assertEquals(expected, RemoteManifestJournal(parallel).read())
+            assertTrue(peak.get() in 2..3)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test fun parallelJournalReadRejectsAnyCorruptCommittedRecord() {
+        val root = kotlin.io.path.createTempDirectory().toFile()
+        try {
+            val store = TestStore(root, maxConcurrentDownloads = 3)
+            repeat(3) { revision ->
+                RemoteManifestJournal(store).also { it.read() }.publish(manifest(book("book", revision + 1)).toString())
+            }
+            root.listFiles()!!.first { it.name.startsWith(RemoteManifestJournal.RECORD_PREFIX) }.appendText("corrupt")
+            val failure = assertFails { RemoteManifestJournal(store).read() }
+            assertTrue(generateSequence(failure) { it.cause }.any { it.message?.contains("checksum mismatch") == true })
+        } finally { root.deleteRecursively() }
+    }
+
+    private class TestStore(
+        private val root: File,
+        override val maxConcurrentDownloads: Int = 1,
+        private val onRead: (String) -> Unit = {},
+    ) : RemoteLibraryStore {
         override val label = "test"
         var interruptMarker = false
+        private val readCount = java.util.concurrent.atomic.AtomicInteger()
+        var textReads: Int
+            get() = readCount.get()
+            set(value) { readCount.set(value) }
         override fun listRootEntries() = root.listFiles().orEmpty().map { RemoteRootEntry(it.name, it.isDirectory, it.lastModified()) }
-        override fun readText(path: String) = File(root, path).takeIf { it.isFile }?.readText()
+        override fun readText(path: String): String? {
+            readCount.incrementAndGet()
+            onRead(path)
+            return File(root, path).takeIf { it.isFile }?.readText()
+        }
         override fun writeText(path: String, text: String, mimeType: String) {
             if (interruptMarker && path.startsWith(RemoteManifestJournal.COMMIT_PREFIX)) {
                 File(root, path).writeText(text.take(7)); error("interrupted marker")

@@ -53,14 +53,14 @@ internal class PortableLibrarySyncEngine(
     fun sync(
         store: RemoteLibraryStore,
         onProgress: (ManualSyncProgress) -> Unit = {},
-    ): ManualSyncResult.Synced {
-        val uploadSnapshotDir = File(appContext.cacheDir, "sync-upload/${UUID.randomUUID()}")
-        return try { syncSnapshot(store, uploadSnapshotDir, onProgress) }
-        finally { uploadSnapshotDir.deleteRecursively() }
+        remoteSnapshot: RemoteManifestJournal.Snapshot? = null,
+    ): ManualSyncResult.Synced = SyncUploadSnapshots.withDirectory(appContext.cacheDir) { uploadSnapshotDir ->
+        require(remoteSnapshot == null || remoteSnapshot.store === store) { "Remote snapshot belongs to a different store" }
+        syncSnapshot(store, uploadSnapshotDir, onProgress, remoteSnapshot)
     }
 
     private fun syncSnapshot(store: RemoteLibraryStore, uploadSnapshotDir: File,
-        onProgress: (ManualSyncProgress) -> Unit): ManualSyncResult.Synced {
+        onProgress: (ManualSyncProgress) -> Unit, remoteSnapshot: RemoteManifestJournal.Snapshot?): ManualSyncResult.Synced {
         cacheScope = java.security.MessageDigest.getInstance("SHA-256").digest(store.deletionScope.orEmpty().toByteArray())
             .joinToString("") { "%02x".format(it) }
         val previousManifestCache = readLocalManifestCache()
@@ -70,8 +70,9 @@ internal class PortableLibrarySyncEngine(
         onProgress(ManualSyncProgress(ManualSyncPhase.PREPARING))
         val syncedAt = Clock.System.now().toString()
         val deviceId = deviceIdProvider.getDeviceId()
-        val journal = RemoteManifestJournal(store)
-        val remoteManifest = journal.read()?.let { json.decodeFromString<LibraryManifestSnapshot>(it) }
+        val snapshot = remoteSnapshot ?: RemoteManifestJournal(store).snapshot()
+        val journal = snapshot.journal
+        val remoteManifest = snapshot.text?.let { json.decodeFromString<LibraryManifestSnapshot>(it) }
         remoteManifest?.validate()
         val remoteBooks = remoteManifest?.books
             ?.filterNot { it.deleted }
@@ -93,6 +94,12 @@ internal class PortableLibrarySyncEngine(
                         libraryRepository.deleteBook(tombstone.bookId)
                         counters.conflictedBooks += 1
                     }
+                }
+                // A remote deletion must also remove the local version directories.
+                // Repeat this for existing tombstones so an interrupted cleanup can resume.
+                val deletedDirectory = safeChildDirectory(File(appContext.filesDir, "books"), tombstone.bookId)
+                check(!deletedDirectory.exists() || deletedDirectory.deleteRecursively()) {
+                    "Cannot remove files for deleted book ${tombstone.bookId}"
                 }
             }
         }
@@ -153,6 +160,7 @@ internal class PortableLibrarySyncEngine(
         }
 
         var downloadProgress = 0
+        var downloadFailure: Throwable? = null
         if (remoteDownloadActions.isNotEmpty()) {
             onProgress(
                 ManualSyncProgress(
@@ -182,8 +190,7 @@ internal class PortableLibrarySyncEngine(
                         pendingStatusUpdates.syncedBookIds += action.remoteBook.bookId
                     }
                 } else {
-                    counters.conflictedBooks += 1
-                    action.currentBook?.book?.id?.let(pendingStatusUpdates.conflictedBookIds::add)
+                    if (downloadFailure == null) downloadFailure = error
                     Log.e(
                         TAG,
                         "Skipping remote book id=${action.remoteBook.bookId} after download failure",
@@ -201,6 +208,9 @@ internal class PortableLibrarySyncEngine(
                 )
             },
         )
+        // A transfer failure is not an editing conflict. Keep the previous local
+        // version and merge base, and let the provider/worker handle retry or authorization.
+        downloadFailure?.let { throw it }
 
         val shouldRewriteRemoteMetadataBase = remoteManifest == null ||
             (remoteManifest.schemaVersion < CURRENT_MANIFEST_SCHEMA_VERSION) ||
@@ -217,7 +227,10 @@ internal class PortableLibrarySyncEngine(
                 local.book.syncStatus == SyncStatus.SYNCED && local.book.revision == remote.revision &&
                 local.book.updatedAt == remote.updatedAt && local.book.id !in missingRemoteBookIds &&
                 local.localSyncFiles(remote.toLayout()).all { file -> file.hasSameSignatureAs(remote.files.firstOrNull { it.path == file.remotePath }) }
-            local.book.id to if (reuse) remote!!.toLayout() else local.remoteLayout(UUID.randomUUID().toString())
+            local.book.id to if (reuse) remote!!.toLayout() else {
+                val layout = local.remoteLayout(UUID.randomUUID().toString())
+                if (local.book.id in missingRemoteBookIds) layout else local.reuseCommittedEpubs(layout, remote)
+            }
         }
         val localManifestIndex = buildLocalManifestIndex(
             localBooks = booksAfterRemote,
@@ -580,14 +593,17 @@ internal class PortableLibrarySyncEngine(
             } == true
 
             val stagedOriginalFile = File(stagingDir, "original.epub")
-            store.copyToLocal(remoteBook.originalFile, stagedOriginalFile)
+            (copyVerifiedLocalEpub(currentBook?.book?.originalFilePath, stagedOriginalFile, remoteBook.fileSnapshot(remoteBook.originalFile))
+                ?: store.copyToLocal(remoteBook.originalFile, stagedOriginalFile))
                 ?.applyManifestModifiedTime(remoteBook, remoteBook.originalFile)
                 ?: throw MissingRemoteBookFileException(
                     bookId = remoteBook.bookId,
                     remotePath = remoteBook.originalFile,
                 )
             val stagedPreparedFile = remoteBook.preparedFile?.let { path ->
-                store.copyToLocal(path, File(stagingDir, "prepared.epub"))
+                val destination = File(stagingDir, "prepared.epub")
+                (copyVerifiedLocalEpub(currentBook?.book?.preparedFilePath, destination, remoteBook.fileSnapshot(path))
+                    ?: store.copyToLocal(path, destination))
                     ?.applyManifestModifiedTime(remoteBook, path)
             }
 
@@ -840,14 +856,6 @@ internal class PortableLibrarySyncEngine(
         store.ensureDirectory(layout.folderPath)
 
         val localFiles = libraryBook.localSyncFiles(layout, localDir, epubSource)
-        val localFilePaths = localFiles.mapTo(mutableSetOf()) { it.remotePath }
-        val expectedManifest = libraryBook.toManifestBook(
-            layout = layout,
-            files = localFiles.map { file -> file.toManifestFileSnapshot() },
-        )
-        val canUsePreviousFileIndex = previousRemoteBook != null &&
-            previousRemoteBook.files.isNotEmpty() &&
-            !previousRemoteBook.hasDifferentPathsThan(expectedManifest)
         val previousFilesByPath = previousRemoteBook
             ?.files
             .orEmpty()
@@ -858,19 +866,22 @@ internal class PortableLibrarySyncEngine(
         Log.d(TAG, "uploadBook start id=${libraryBook.book.id} files=${localFiles.size}")
         localFiles.forEach { syncFile ->
             val previousFile = previousFilesByPath[syncFile.remotePath]
-            if (!canUsePreviousFileIndex || !syncFile.hasSameSignatureAs(previousFile)) {
+            if (!syncFile.hasSameSignatureAs(previousFile)) {
                 store.replaceFile(
                     path = syncFile.remotePath,
                     source = syncFile.source,
                     mimeType = syncFile.mimeType,
                 )
-                val verification = File(localDir, "verify-${UUID.randomUUID()}")
-                try {
-                    check(store.copyToLocal(syncFile.remotePath, verification) != null &&
-                        verification.length() == syncFile.source.length() && verification.sha256() == syncFile.source.sha256()) {
-                        "Remote upload verification failed"
-                    }
-                } finally { verification.delete() }
+                val expectedHash = syncFile.source.sha256()
+                if (!store.verifiesUpload(syncFile.remotePath, syncFile.source.length(), expectedHash)) {
+                    val verification = File(localDir, "verify-${UUID.randomUUID()}")
+                    try {
+                        check(store.copyToLocal(syncFile.remotePath, verification) != null &&
+                            verification.length() == syncFile.source.length() && verification.sha256() == expectedHash) {
+                            "Remote upload verification failed"
+                        }
+                    } finally { verification.delete() }
+                }
                 uploadedFiles += 1
             } else {
                 skippedFiles += 1
@@ -878,7 +889,7 @@ internal class PortableLibrarySyncEngine(
         }
         Log.d(
             TAG,
-            "uploadBook id=${libraryBook.book.id} fullRewrite=${!canUsePreviousFileIndex} " +
+            "uploadBook id=${libraryBook.book.id} " +
                 "uploadedFiles=$uploadedFiles skippedFiles=$skippedFiles",
         )
     }
@@ -1042,9 +1053,39 @@ internal class PortableLibrarySyncEngine(
     }
 
     private fun ManifestBookSnapshot.toLayout() = RemoteBookLayout(
-        originalFile.parentRemotePath().remoteName(), originalFile.parentRemotePath(), originalFile.remoteName(),
+        metadataFile.parentRemotePath().remoteName(), metadataFile.parentRemotePath(), originalFile.remoteName(),
         metadataFile, originalFile, preparedFile, coverFile, checkNotNull(stateBundleFile),
     )
+
+    private fun LibraryBook.reuseCommittedEpubs(layout: RemoteBookLayout, remote: ManifestBookSnapshot?): RemoteBookLayout {
+        if (remote == null) return layout
+        fun matchingPath(localPath: String?, remotePath: String?): String? {
+            if (localPath == null || remotePath?.startsWith(RemoteManifestJournal.DATA_PREFIX) != true) return null
+            val expected = remote.fileSnapshot(remotePath) ?: return null
+            val file = File(localPath)
+            return remotePath.takeIf { file.isFile && file.length() == expected.sizeBytes &&
+                expected.sha256 != null && file.sha256() == expected.sha256 }
+        }
+        return layout.copy(
+            epubFile = matchingPath(book.originalFilePath, remote.originalFile) ?: layout.epubFile,
+            preparedFile = matchingPath(book.preparedFilePath, remote.preparedFile) ?: layout.preparedFile,
+        )
+    }
+
+    /** Metadata edits do not require transferring an unchanged EPUB again in either direction. */
+    private fun copyVerifiedLocalEpub(localPath: String?, destination: File, expected: ManifestFileSnapshot?): File? =
+        synchronized(repositoryLock) {
+            val source = localPath?.let(::File) ?: return@synchronized null
+            if (expected?.sha256 == null || !source.isFile || source.length() != expected.sizeBytes ||
+                source.sha256() != expected.sha256) return@synchronized null
+            source.copyTo(destination, overwrite = true)
+            // Verify the staging copy too, before it can replace the current version.
+            if (destination.sha256() != expected.sha256) {
+                destination.delete()
+                return@synchronized null
+            }
+            destination
+        }
 
     private fun LibraryManifestSnapshot.validate() {
         check(schemaVersion == CURRENT_MANIFEST_SCHEMA_VERSION) { "Unsupported library version" }
@@ -1400,7 +1441,7 @@ internal class PortableLibrarySyncEngine(
             ?: error("Missing local directory for ${book.id}"),
         epubSource: File = File(book.originalFilePath),
     ): List<LocalSyncFile> {
-        val epubFile = LocalSyncFile(epubSource, "${layout.folderPath}/${layout.epubFileName}", "application/epub+zip")
+        val epubFile = LocalSyncFile(epubSource, layout.epubFile, "application/epub+zip")
         val stateBundle = buildStateBundle(localDir, book.id)
         return listOfNotNull(
             epubFile,

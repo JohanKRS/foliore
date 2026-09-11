@@ -27,6 +27,9 @@ internal interface RemoteLibraryStore {
         mimeType: String,
     )
 
+    /** Verify the last upload using a provider-computed digest, or return false to read it back. */
+    fun verifiesUpload(path: String, size: Long, sha256: String): Boolean = false
+
     fun copyToLocal(
         path: String,
         destination: File,
@@ -37,6 +40,8 @@ internal interface RemoteLibraryStore {
     fun ensureDirectory(path: String)
 
     fun deleteTree(path: String)
+
+    fun deleteTrees(paths: List<String>) { paths.forEach(::deleteTree) }
 
     fun deleteUnexpectedChildren(
         directoryPath: String,

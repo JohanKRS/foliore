@@ -1,0 +1,158 @@
+[
+  {
+    "run": "phone-final-converge",
+    "elapsedMs": 66056,
+    "appRxBytes": 526431,
+    "appTxBytes": 61571,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-noop-final-1",
+    "elapsedMs": 30952,
+    "appRxBytes": 533386,
+    "appTxBytes": 67068,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-noop-final-2",
+    "elapsedMs": 28166,
+    "appRxBytes": 525333,
+    "appTxBytes": 67767,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-noop-final-3",
+    "elapsedMs": 28092,
+    "appRxBytes": 526404,
+    "appTxBytes": 67103,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-cache-noop-1",
+    "elapsedMs": 19581,
+    "appRxBytes": 354662,
+    "appTxBytes": 40455,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-cache-noop-2",
+    "elapsedMs": 8599,
+    "appRxBytes": 144522,
+    "appTxBytes": 11755,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-cache-noop-3",
+    "elapsedMs": 8615,
+    "appRxBytes": 142183,
+    "appTxBytes": 10963,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-cache-noop-4",
+    "elapsedMs": 8660,
+    "appRxBytes": 141991,
+    "appTxBytes": 11151,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-fast-noop-1",
+    "elapsedMs": 6584,
+    "appRxBytes": 54370,
+    "appTxBytes": 12166,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-fast-noop-2",
+    "elapsedMs": 5196,
+    "appRxBytes": 41277,
+    "appTxBytes": 3874,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "phone-fast-noop-3",
+    "elapsedMs": 5045,
+    "appRxBytes": 40272,
+    "appTxBytes": 3810,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "tablet-fast-noop-1",
+    "elapsedMs": 16777,
+    "appRxBytes": 253284,
+    "appTxBytes": 33497,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "tablet-fast-noop-2",
+    "elapsedMs": 5887,
+    "appRxBytes": 40610,
+    "appTxBytes": 3810,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  }
+]

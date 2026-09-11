@@ -45,44 +45,51 @@ class GoogleDriveSyncService(
         return when (val authorization = googleDriveAuthService.authorize()) {
             is GoogleDriveAuthorization.Authorized -> runCatching {
                 val drive = GoogleDriveApiClient(authorization.accessToken)
-                val stats = inspectBackupStats(drive)
-                val localBooks = libraryRepository.getBooks()
-                val hasLocalBooks = localBooks.isNotEmpty()
-                val hasPriorLibraryEvidence =
-                    syncSettingsRepository.hasKnownNonEmptyGoogleDriveLibrary() ||
-                        localBooks.any { book -> book.book.lastSyncedAt != null }
-                val shouldPause = shouldPauseGoogleDriveSync(
-                    stats = stats,
-                    hasLocalBooks = hasLocalBooks,
-                    hasPriorLibraryEvidence = hasPriorLibraryEvidence,
-                )
-
-                rememberInspectedRemoteState(stats, hasLocalBooks, hasPriorLibraryEvidence)
-                if (shouldPause && !allowRemoteLibraryRecreation) {
-                    return@runCatching ManualSyncResult.GoogleDriveRemoteLibraryRemoved(
-                        remainingFiles = stats.remoteFiles,
-                        remainingBytes = stats.totalBytes,
-                    )
-                }
-
-                // Recreating the index must never erase recoverable remote files.
-                if (!hasLocalBooks && stats.syncedBooks == 0 && !stats.hasBackup) {
-                    return@runCatching ManualSyncResult.Synced(
-                        uploadedBooks = 0,
-                        downloadedBooks = 0,
-                        conflictedBooks = 0,
-                        folderLabel = syncSettingsRepository.googleDriveAccountLabel()
-                            ?: SyncSettingsRepository.GOOGLE_DRIVE_DEFAULT_LABEL,
-                    )
-                }
-
                 val store = GoogleDriveAppDataRemoteLibraryStore(
                     drive = drive,
                     deletionScope = destinationScope,
                     label = syncSettingsRepository.googleDriveAccountLabel()
                         ?: SyncSettingsRepository.GOOGLE_DRIVE_DEFAULT_LABEL,
+                    journalCache = driveJournalCache(),
                 )
-                val result = syncEngine.sync(store, onProgress)
+                val snapshot = RemoteManifestJournal(store).snapshot()
+                // A non-empty committed index already answers the removal guard.
+                // Enumerate every payload only when recovery needs exact remaining counts,
+                // or when the user explicitly opens backup statistics.
+                if ((snapshot.text?.let(::parseManifestInfo)?.bookCount ?: 0) == 0) {
+                    val stats = inspectBackupStats(drive, snapshot.text)
+                    val localBooks = libraryRepository.getBooks()
+                    val hasLocalBooks = localBooks.isNotEmpty()
+                    val hasPriorLibraryEvidence =
+                        syncSettingsRepository.hasKnownNonEmptyGoogleDriveLibrary() ||
+                            localBooks.any { book -> book.book.lastSyncedAt != null }
+                    val shouldPause = shouldPauseGoogleDriveSync(
+                        stats = stats,
+                        hasLocalBooks = hasLocalBooks,
+                        hasPriorLibraryEvidence = hasPriorLibraryEvidence,
+                    )
+
+                    rememberInspectedRemoteState(stats, hasLocalBooks, hasPriorLibraryEvidence)
+                    if (shouldPause && !allowRemoteLibraryRecreation) {
+                        return@runCatching ManualSyncResult.GoogleDriveRemoteLibraryRemoved(
+                            remainingFiles = stats.remoteFiles,
+                            remainingBytes = stats.totalBytes,
+                        )
+                    }
+
+                    // Recreating the index must never erase recoverable remote files.
+                    if (!hasLocalBooks && stats.syncedBooks == 0 && !stats.hasBackup) {
+                        return@runCatching ManualSyncResult.Synced(
+                            uploadedBooks = 0,
+                            downloadedBooks = 0,
+                            conflictedBooks = 0,
+                            folderLabel = syncSettingsRepository.googleDriveAccountLabel()
+                                ?: SyncSettingsRepository.GOOGLE_DRIVE_DEFAULT_LABEL,
+                        )
+                    }
+                }
+
+                val result = syncEngine.sync(store, onProgress, snapshot)
                 if (libraryRepository.getBooks().isNotEmpty()) {
                     syncSettingsRepository.rememberNonEmptyGoogleDriveLibrary()
                 } else {
@@ -172,7 +179,9 @@ class GoogleDriveSyncService(
         }
     }
 
-    private fun inspectBackupStats(drive: GoogleDriveApiClient): GoogleDriveBackupStats {
+    private fun inspectBackupStats(drive: GoogleDriveApiClient,
+        manifestText: String? = RemoteManifestJournal(GoogleDriveAppDataRemoteLibraryStore(drive,
+            journalCache = driveJournalCache())).read()): GoogleDriveBackupStats {
         val allAppDataItems = drive.listAppDataFiles()
         val allRootChildren = drive.listChildren(GoogleDriveApiClient.APP_DATA_ROOT_ID)
         val deletionMarkers = allRootChildren.filter { child ->
@@ -184,7 +193,7 @@ class GoogleDriveSyncService(
         val rootChildren = allRootChildren.filterNot { item -> item.id in deletionMarkerIds }
         val knownRootChildren = rootChildren.filter(::isKnownFolioreRootChild)
         val unknownRootChildren = rootChildren.filterNot(::isKnownFolioreRootChild)
-        val manifestInfo = RemoteManifestJournal(GoogleDriveAppDataRemoteLibraryStore(drive)).read()?.let(::parseManifestInfo)
+        val manifestInfo = manifestText?.let(::parseManifestInfo)
         val remoteFiles = appDataItems.filter { item ->
             item.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE
         }
@@ -207,6 +216,9 @@ class GoogleDriveSyncService(
             deletionMarkerPresent = deletionMarkerPresent,
         )
     }
+
+    private fun driveJournalCache() = DriveJournalCache(appContext.cacheDir,
+        "drive:" + syncSettingsRepository.googleDriveAccountName().orEmpty())
 
     private fun rememberInspectedRemoteState(
         stats: GoogleDriveBackupStats,
@@ -251,7 +263,7 @@ class GoogleDriveSyncService(
                 return
             }
 
-            val targets = planGoogleDriveDeletionTargets(filesToDelete)
+            val targets = planGoogleDriveDeletionTargets(filesToDelete).chunked(100)
             val deletedBeforePass = (totalItems - filesToDelete.size).coerceAtLeast(0)
             var deletedInPass = 0
 
@@ -263,8 +275,8 @@ class GoogleDriveSyncService(
                 targets.forEach { target ->
                     completionService.submit(
                         Callable {
-                            deleteFileWithRetry(drive, target.file.id)
-                            target.representedItems
+                            drive.deleteFiles(target.map { it.file.id })
+                            target.sumOf { it.representedItems }
                         },
                     )
                 }
@@ -286,26 +298,6 @@ class GoogleDriveSyncService(
             throw IOException("Google Drive cleanup left ${remaining.size} app data items")
         }
         onProgress(totalItems.coerceAtLeast(0), totalItems.coerceAtLeast(0))
-    }
-
-    private fun deleteFileWithRetry(
-        drive: GoogleDriveApiClient,
-        fileId: String,
-    ) {
-        var lastError: Throwable? = null
-        repeat(DELETE_MAX_ATTEMPTS) { attempt ->
-            try {
-                drive.deleteFile(fileId)
-                return
-            } catch (error: Throwable) {
-                lastError = error
-                val retryable = error is IOException ||
-                    error is GoogleDriveHttpException && error.isRetryable
-                if (!retryable || attempt == DELETE_MAX_ATTEMPTS - 1) throw error
-                Thread.sleep(DELETE_RETRY_DELAYS_MS[attempt])
-            }
-        }
-        throw checkNotNull(lastError)
     }
 
     private fun isKnownFolioreRootChild(child: DriveFileMetadata): Boolean {
@@ -374,8 +366,6 @@ class GoogleDriveSyncService(
         const val DELETION_MARKER_FILE_NAME = "library.deleted.json"
         const val MAX_CONCURRENT_DELETES = 4
         const val MAX_DELETE_PASSES = 4
-        const val DELETE_MAX_ATTEMPTS = 3
-        val DELETE_RETRY_DELAYS_MS = longArrayOf(750L, 2_000L)
     }
 }
 

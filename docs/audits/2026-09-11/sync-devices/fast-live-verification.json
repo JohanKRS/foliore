@@ -1,0 +1,17 @@
+{
+  "books": 162,
+  "matchesBaseline": true,
+  "fields": [
+    "title",
+    "authors",
+    "description",
+    "revision",
+    "actualHash",
+    "storedHash"
+  ],
+  "metadataEditConverged": true,
+  "incompleteCommitInvisible": true,
+  "invalidStateBundlePreservedOldState": true,
+  "retryConverged": true,
+  "qaBookDeletedOnBoth": true
+}

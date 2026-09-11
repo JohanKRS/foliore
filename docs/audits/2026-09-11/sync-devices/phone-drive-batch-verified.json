@@ -1,0 +1,17 @@
+{
+  "run": "phone-drive-batch-verified",
+  "action": "drive-batch-fixture",
+  "status": "PASS",
+  "elapsedMs": 23795,
+  "appRxBytes": 45907,
+  "appTxBytes": 22361,
+  "pssKb": 185363,
+  "result": {
+    "targets": 8,
+    "alreadyDeleted": 1,
+    "ms": 1779,
+    "requests": 1,
+    "allDeleted": true,
+    "sentinelPreserved": true
+  }
+}

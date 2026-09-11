@@ -1,0 +1,10 @@
+{
+  "failureReportedAs": "ERROR",
+  "failureType": "IllegalStateException",
+  "error": "Downloaded file size mismatch",
+  "oldMetadataPreserved": true,
+  "oldOriginalPreserved": true,
+  "conflictStateUnchanged": true,
+  "retryReceivedLatestMetadata": true,
+  "retryOriginalValid": true
+}

@@ -7,6 +7,7 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
     private val drive: GoogleDriveApiClient,
     override val deletionScope: String? = null,
     override val label: String = SyncSettingsRepository.GOOGLE_DRIVE_DEFAULT_LABEL,
+    private val journalCache: DriveJournalCache? = null,
 ) : RemoteLibraryStore {
     override val currentTimeMillis: Long? get() = drive.serverTimeMillis
     override val maxConcurrentUploads: Int = 3
@@ -17,6 +18,7 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
     }
     private val childrenByParentId = ConcurrentHashMap<String, List<DriveFileMetadata>>()
     private val clearedDirectoryPaths = ConcurrentHashMap.newKeySet<String>()
+    private val uploadedFiles = ConcurrentHashMap<String, DriveFileMetadata>()
 
     override fun listRootEntries(): List<RemoteRootEntry> {
         val children = drive.listChildren(GoogleDriveApiClient.APP_DATA_ROOT_ID)
@@ -24,13 +26,14 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
         check(children.groupBy { it.name }.none { it.value.size > 1 && it.key.startsWith("foliore-v4-") }) {
             "Ambiguous sync objects"
         }
+        journalCache?.retain(children)
         return children.map { RemoteRootEntry(it.name, it.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE,
             runCatching { java.time.Instant.parse(it.modifiedTime).toEpochMilli() }.getOrDefault(0L)) }
     }
 
     override fun readText(path: String): String? {
         val file = findFile(path) ?: return null
-        return drive.readText(file.id)
+        return journalCache?.read(file) { drive.readText(file.id) } ?: drive.readText(file.id)
     }
 
     override fun writeText(
@@ -64,9 +67,13 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
             mimeType = mimeType,
             source = source,
         )
+        uploadedFiles[path.normalizedRemotePath()] = uploaded
         deleteReplacedFiles(existingFiles, uploaded)
         invalidateChildren(parentId)
     }
+
+    override fun verifiesUpload(path: String, size: Long, sha256: String): Boolean =
+        uploadedFiles[path.normalizedRemotePath()]?.verifiesUpload(size, sha256) ?: false
 
     override fun copyToLocal(
         path: String,
@@ -89,14 +96,22 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
         val normalized = path.normalizedRemotePath()
         if (normalized.isBlank()) return
         findFolderId(normalized)?.let { folderId ->
-            deleteFolderChildren(folderId)
+            // Drive deletes owned descendants too; listings may briefly lag behind the deletion.
             drive.deleteFile(folderId)
-            folderIdByPath.remove(normalized)
+            forgetTree(normalized)
             return
         }
         findFile(normalized)?.let { file ->
             drive.deleteFile(file.id)
+            forgetTree(normalized)
         }
+    }
+
+    override fun deleteTrees(paths: List<String>) {
+        val targets = paths.map { it.normalizedRemotePath() }.filter { it.isNotBlank() }.distinct()
+            .mapNotNull { path -> (findFolderId(path) ?: findFile(path)?.id)?.let { path to it } }
+        drive.deleteFiles(targets.map { it.second })
+        targets.forEach { forgetTree(it.first) }
     }
 
     override fun deleteUnexpectedChildren(
@@ -111,9 +126,6 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
                 child.name !in expectedDirectoryNames || child.mimeType != GoogleDriveApiClient.FOLDER_MIME_TYPE
             }
             .forEach { obsolete ->
-                if (obsolete.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE) {
-                    deleteFolderChildren(obsolete.id)
-                }
                 drive.deleteFile(obsolete.id)
                 changed = true
             }
@@ -210,15 +222,15 @@ internal class GoogleDriveAppDataRemoteLibraryStore(
             .forEach { existing -> drive.deleteFile(existing.id) }
     }
 
-    private fun deleteFolderChildren(folderId: String) {
-        childrenOf(folderId).forEach { child ->
-            if (child.mimeType == GoogleDriveApiClient.FOLDER_MIME_TYPE) {
-                deleteFolderChildren(child.id)
-            }
-            drive.deleteFile(child.id)
+    private fun forgetTree(path: String) {
+        folderIdByPath[path.parentRemotePath()]?.let(::invalidateChildren)
+        folderIdByPath.keys.filter { it == path || it.startsWith("$path/") }.toList().forEach {
+            folderIdByPath.remove(it)?.let(::invalidateChildren)
         }
-        invalidateChildren(folderId)
+        clearedDirectoryPaths.removeIf { it == path || it.startsWith("$path/") }
+        uploadedFiles.keys.removeIf { it == path || it.startsWith("$path/") }
     }
+
 
     private fun findChild(
         parentId: String,

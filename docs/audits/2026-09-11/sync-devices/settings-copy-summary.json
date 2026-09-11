@@ -1,0 +1,42 @@
+{
+  "values": {
+    "strings": 28,
+    "beforeCharacters": 1663,
+    "afterCharacters": 1125
+  },
+  "values-en": {
+    "strings": 28,
+    "beforeCharacters": 1476,
+    "afterCharacters": 992
+  },
+  "values-es": {
+    "strings": 28,
+    "beforeCharacters": 1785,
+    "afterCharacters": 1169
+  },
+  "values-fr": {
+    "strings": 28,
+    "beforeCharacters": 1911,
+    "afterCharacters": 1307
+  },
+  "values-it": {
+    "strings": 28,
+    "beforeCharacters": 1766,
+    "afterCharacters": 1173
+  },
+  "values-de": {
+    "strings": 28,
+    "beforeCharacters": 1829,
+    "afterCharacters": 1251
+  },
+  "values-ja": {
+    "strings": 28,
+    "beforeCharacters": 789,
+    "afterCharacters": 536
+  },
+  "values-zh-rCN": {
+    "strings": 28,
+    "beforeCharacters": 652,
+    "afterCharacters": 441
+  }
+}

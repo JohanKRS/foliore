@@ -1,6 +1,8 @@
 package com.foliore.android.storage
 
 import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
@@ -12,6 +14,15 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
     private var baseline: JsonObject? = null
     private var epoch = ""
     private val startedNanos = System.nanoTime()
+
+    /** Carries both the validated view and its observed causal parents into the sync. */
+    class Snapshot internal constructor(
+        val journal: RemoteManifestJournal,
+        val store: RemoteLibraryStore,
+        val text: String?,
+    )
+
+    fun snapshot(): Snapshot = Snapshot(this, store, read())
 
     fun read(): String? {
         val entries = store.listRootEntries()
@@ -49,21 +60,36 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
         check(store.readText(path) == digest) { "Could not verify commit marker" }
     }
 
-    private fun readCommitted(entries: List<RemoteRootEntry>): Map<RemoteRootEntry, Commit> = entries
-        .filter { it.name.startsWith(COMMIT_PREFIX) && !it.isDirectory }
-        .mapNotNull { entry ->
-            val id = entry.name.removePrefix(COMMIT_PREFIX).removeSuffix(".json")
-            requireSafeBookId(id)
-            val marker = store.readText(entry.name).orEmpty()
-            // Only a complete 64-byte checksum publishes a record. Interrupted
-            // marker writes are not commits; complete but damaged commits fail closed.
-            if (!Regex("[a-f0-9]{64}").matches(marker)) return@mapNotNull null
-            val text = checkNotNull(store.readText("$RECORD_PREFIX$id.json")) { "Committed index record is missing" }
-            check(text.digest() == marker) { "Committed index checksum mismatch" }
-            val commit = json.decodeFromString<Commit>(text)
-            check(commit.id == id && commit.schema == 1) { "Unsupported or invalid commit" }
-            entry to commit
-        }.toMap()
+    private fun readCommitted(entries: List<RemoteRootEntry>): Map<RemoteRootEntry, Commit> {
+        val candidates = entries.filter { it.name.startsWith(COMMIT_PREFIX) && !it.isDirectory }
+        val parallelism = store.maxConcurrentDownloads.coerceIn(1, 3).coerceAtMost(candidates.size)
+        if (parallelism < 2) return candidates.mapNotNull(::readCommit).toMap()
+        val executor = Executors.newFixedThreadPool(parallelism)
+        try {
+            val reads = candidates.map { entry -> executor.submit<Pair<RemoteRootEntry, Commit>?> { readCommit(entry) } }
+            // Preserve listing order, and fail the whole read if any committed record is invalid.
+            return reads.mapNotNull { it.get() }.toMap()
+        } finally {
+            executor.shutdownNow()
+            while (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                // Do not leave provider requests running after this journal operation exits.
+            }
+        }
+    }
+
+    private fun readCommit(entry: RemoteRootEntry): Pair<RemoteRootEntry, Commit>? {
+        val id = entry.name.removePrefix(COMMIT_PREFIX).removeSuffix(".json")
+        requireSafeBookId(id)
+        val marker = store.readText(entry.name).orEmpty()
+        // Only a complete 64-byte checksum publishes a record. Interrupted
+        // marker writes are not commits; complete but damaged commits fail closed.
+        if (!Regex("[a-f0-9]{64}").matches(marker)) return null
+        val text = checkNotNull(store.readText("$RECORD_PREFIX$id.json")) { "Committed index record is missing" }
+        check(text.digest() == marker) { "Committed index checksum mismatch" }
+        val commit = json.decodeFromString<Commit>(text)
+        check(commit.id == id && commit.schema == 1) { "Unsupported or invalid commit" }
+        return entry to commit
+    }
 
     private fun deletionEpoch(refresh: Boolean = true): String {
         if (refresh) store.listRootEntries()
@@ -77,10 +103,17 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
     fun collectGarbage(nowMillis: Long? = null) {
         val entries = store.listRootEntries()
         val clock = nowMillis ?: store.currentTimeMillis ?: return
+        val cutoff = clock - RETENTION_MILLIS
+        // Nothing can be collected before the retention deadline. Avoid downloading
+        // the entire journal again when every owned object is still recent.
+        if (entries.none { entry ->
+                entry.modifiedAtMillis in 1 until cutoff &&
+                    (entry.isDirectory && entry.name.startsWith(DATA_PREFIX) ||
+                        !entry.isDirectory && (entry.name.startsWith(COMMIT_PREFIX) || entry.name.startsWith(RECORD_PREFIX)))
+            }) return
         val collectionEpoch = deletionEpoch(refresh = false)
         val commits = readCommitted(entries)
         val newest = commits.values.filter { it.epoch == collectionEpoch }.maxByOrNull { it.manifest["updatedAt"]?.jsonPrimitive?.content.orEmpty() }?.id
-        val cutoff = clock - RETENTION_MILLIS
         val obsolete = commits.filter { (entry, candidate) ->
             entry.modifiedAtMillis in 1 until cutoff && candidate.id != newest &&
                 (candidate.epoch != collectionEpoch || candidate.manifest.books().all { book ->
@@ -89,24 +122,26 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
         }.keys.take(100)
         // Remove redundant index records before their unreferenced payloads. A failure
         // leaves extra retained data, never a manifest pointing to a collected file.
-        obsolete.forEach { entry ->
-            store.deleteTree(entry.name)
-            store.deleteTree(RECORD_PREFIX + entry.name.removePrefix(COMMIT_PREFIX))
-        }
+        deletePaths(obsolete.map { it.name })
+        deletePaths(obsolete.map { RECORD_PREFIX + it.name.removePrefix(COMMIT_PREFIX) })
         val retained = commits.filterKeys { it !in obsolete }
         val referenced = retained.flatMap { (entry, commit) ->
             if (entry.modifiedAtMillis >= cutoff) references(commit.manifest)
             else commit.manifest.books().filter { it["deleted"]?.jsonPrimitive?.booleanOrNull != true }.flatMap(::references)
         }.toSet()
         val committedRecordNames = commits.keys.map { RECORD_PREFIX + it.name.removePrefix(COMMIT_PREFIX) }.toSet()
-        entries.filter { entry -> !entry.isDirectory && entry.modifiedAtMillis in 1 until cutoff &&
+        deletePaths(entries.filter { entry -> !entry.isDirectory && entry.modifiedAtMillis in 1 until cutoff &&
             ((entry.name.startsWith(RECORD_PREFIX) && entry.name !in committedRecordNames) ||
                 (entry.name.startsWith(COMMIT_PREFIX) && entry !in commits.keys))
-        }.take(100).forEach { store.deleteTree(it.name) }
-        entries.filter { entry ->
+        }.take(100).map { it.name })
+        deletePaths(entries.filter { entry ->
             entry.isDirectory && entry.name.startsWith(DATA_PREFIX) &&
                 entry.modifiedAtMillis in 1 until cutoff && entry.name !in referenced
-        }.take(100).forEach { store.deleteTree(it.name) }
+        }.take(100).map { it.name })
+    }
+
+    private fun deletePaths(paths: List<String>) {
+        store.deleteTrees(paths)
     }
 
     private fun references(element: JsonElement): List<String> = when (element) {

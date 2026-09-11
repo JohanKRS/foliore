@@ -1,9 +1,15 @@
 package com.foliore.android.ui.library
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,10 +27,13 @@ internal fun ContentReportDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = { if (!sending) onDismiss() },
         title = { Text(stringResource(R.string.report_ai_content)) },
-        text = { Column {
+        text = { Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            androidx.compose.foundation.text.selection.SelectionContainer {
+                Text(stringResource(R.string.support_email), color = MaterialTheme.colorScheme.primary)
+            }
             Text(stringResource(R.string.report_content_description))
             OutlinedTextField(value = message, onValueChange = { if (it.length <= 4000) message = it },
-                enabled = !sending && outcome != true, minLines = 4,
+                modifier = Modifier.fillMaxWidth(), enabled = !sending && outcome != true, minLines = 4,
                 label = { Text(stringResource(R.string.report_content_message)) })
             outcome?.let { Text(stringResource(if (it) R.string.report_content_success else R.string.report_content_failure)) }
         } },

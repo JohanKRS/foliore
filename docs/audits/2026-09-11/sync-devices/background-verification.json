@@ -1,0 +1,10 @@
+{
+  "twoEnqueuesOneWorkId": true,
+  "observedStates": [
+    "RUNNING",
+    "SUCCEEDED"
+  ],
+  "runAttemptCountAtCompletion": 1,
+  "ranWithHomeScreenVisible": true,
+  "changeReceivedOnTablet": true
+}

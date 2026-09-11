@@ -1,0 +1,24 @@
+{
+  "phone": {
+    "installedSha256": "c2c383fbb09b2ff231dd5bdea16885ead0e079c25c7df44e8b7047ec36f875bf",
+    "debuggable": false,
+    "manualSync": "0 uploads, 0 downloads, 0 conflicts",
+    "driveBooks": 162,
+    "footerVisible": true,
+    "emailOnlyInsideSupport": true,
+    "autoSync": true,
+    "wifiOnly": true,
+    "screenOffTimeoutRestoredMs": 120000
+  },
+  "tablet": {
+    "installedSha256": "c2c383fbb09b2ff231dd5bdea16885ead0e079c25c7df44e8b7047ec36f875bf",
+    "debuggable": false,
+    "manualSync": "0 uploads, 0 downloads, 0 conflicts",
+    "driveBooks": 162,
+    "footerVisible": true,
+    "emailOnlyInsideSupport": true,
+    "autoSync": false,
+    "wifiOnly": true,
+    "screenOffTimeoutRestoredMs": 120000
+  }
+}
