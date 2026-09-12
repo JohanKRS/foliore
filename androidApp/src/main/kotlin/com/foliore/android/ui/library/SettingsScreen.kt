@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.storage.AppLanguage
@@ -101,16 +103,18 @@ fun SettingsScreen(
     var showReport by rememberSaveable { mutableStateOf(false) }
     if (showReport) ContentReportDialog { showReport = false }
     var showPrivacy by rememberSaveable { mutableStateOf(false) }
+    var showAbout by rememberSaveable { mutableStateOf(false) }
+    if (showAbout) AboutDialog { showAbout = false }
     if (showPrivacy) {
         val policy = androidx.compose.runtime.remember { context.assets.open("privacy.txt").bufferedReader().use { it.readText() } }
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showPrivacy = false },
-            title = { Text(stringResource(R.string.privacy_title)) },
-            text = { androidx.compose.foundation.text.selection.SelectionContainer {
-                Text(policy, modifier = Modifier.verticalScroll(rememberScrollState()))
-            } },
-            confirmButton = { androidx.compose.material3.TextButton(onClick = { showPrivacy = false }) { Text(stringResource(R.string.action_close)) } },
-        )
+        FolioreOptionsDialog(
+            title = stringResource(R.string.privacy_title),
+            onDismiss = { showPrivacy = false },
+        ) {
+            SelectionContainer {
+                Text(policy, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
     var showThemePicker by rememberSaveable { mutableStateOf(false) }
     var showKindleSettings by rememberSaveable { mutableStateOf(false) }
@@ -382,10 +386,15 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.settings_preserve_original_description),
+            modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+        ) {
             TextButton(
                 onClick = { showPrivacy = true },
                 contentPadding = PaddingValues(vertical = 8.dp),
@@ -397,6 +406,12 @@ fun SettingsScreen(
                 contentPadding = PaddingValues(vertical = 8.dp),
             ) {
                 Text(stringResource(R.string.report_ai_content))
+            }
+            TextButton(
+                onClick = { showAbout = true },
+                contentPadding = PaddingValues(vertical = 8.dp),
+            ) {
+                Text(stringResource(R.string.about_title))
             }
         }
         Spacer(modifier = Modifier.height(48.dp))

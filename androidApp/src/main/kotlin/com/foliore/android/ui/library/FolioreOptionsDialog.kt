@@ -47,6 +47,7 @@ import com.foliore.android.R
 internal fun FolioreOptionsDialog(
     title: String,
     onDismiss: () -> Unit,
+    scrollContent: Boolean = true,
     content: @Composable BoxWithConstraintsScope.() -> Unit,
 ) {
     Dialog(
@@ -116,7 +117,7 @@ internal fun FolioreOptionsDialog(
                     BoxWithConstraints(
                         modifier = Modifier
                             .heightIn(max = optionsMaxHeight)
-                            .verticalScroll(rememberScrollState()),
+                            .then(if (scrollContent) Modifier.verticalScroll(rememberScrollState()) else Modifier),
                         content = content,
                     )
 

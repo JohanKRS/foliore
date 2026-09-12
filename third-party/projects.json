@@ -1,0 +1,107 @@
+[
+  {
+    "id": "androidx",
+    "name": "AndroidX / Jetpack Compose / Material Icons",
+    "prefix": "androidx.",
+    "url": "https://android.googlesource.com/platform/frameworks/support/",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "sqldelight",
+    "name": "SQLDelight",
+    "prefix": "app.cash.sqldelight:",
+    "url": "https://github.com/cashapp/sqldelight",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "androidsvg",
+    "name": "AndroidSVG",
+    "prefix": "com.caverock:",
+    "url": "https://github.com/BigBadaboom/androidsvg",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "accompanist",
+    "name": "Accompanist Drawable Painter",
+    "prefix": "com.google.accompanist:",
+    "url": "https://github.com/google/accompanist",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "google-play",
+    "name": "Google Play services",
+    "prefix": "com.google.android.gms:",
+    "url": "https://developers.google.com/android/guides/opensource",
+    "license": "Android SDK License / third-party notices"
+  },
+  {
+    "id": "guava",
+    "name": "Guava ListenableFuture",
+    "prefix": "com.google.guava:",
+    "url": "https://github.com/google/guava",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "okhttp",
+    "name": "OkHttp / Public Suffix List",
+    "prefix": "com.squareup.okhttp3:",
+    "url": "https://github.com/square/okhttp",
+    "license": "Apache License 2.0 / Mozilla Public License 2.0"
+  },
+  {
+    "id": "okio",
+    "name": "Okio",
+    "prefix": "com.squareup.okio:",
+    "url": "https://github.com/square/okio",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "haze",
+    "name": "Haze",
+    "prefix": "dev.chrisbanes.haze:",
+    "url": "https://github.com/chrisbanes/haze",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "poko",
+    "name": "Poko annotations",
+    "prefix": "dev.drewhamilton.poko:",
+    "url": "https://github.com/drewhamilton/Poko",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "coil",
+    "name": "Coil",
+    "prefix": "io.coil-kt:",
+    "url": "https://github.com/coil-kt/coil",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "jetbrains-annotations",
+    "name": "JetBrains Annotations",
+    "prefix": "org.jetbrains:",
+    "url": "https://github.com/JetBrains/java-annotations",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "kotlin",
+    "name": "Kotlin Standard Library",
+    "prefix": "org.jetbrains.kotlin:",
+    "url": "https://github.com/JetBrains/kotlin",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "kotlinx",
+    "name": "Kotlin Coroutines / Serialization / DateTime",
+    "prefix": "org.jetbrains.kotlinx:",
+    "url": "https://github.com/Kotlin",
+    "license": "Apache License 2.0"
+  },
+  {
+    "id": "jspecify",
+    "name": "JSpecify",
+    "prefix": "org.jspecify:",
+    "url": "https://github.com/jspecify/jspecify",
+    "license": "Apache License 2.0"
+  }
+]

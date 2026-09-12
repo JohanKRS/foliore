@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_title">このアプリについて</string>
+    <string name="about_version">バージョン %1$s (%2$d)</string>
+    <string name="about_thanks">Folioreはオープンなプロジェクトや公開カタログ、コミュニティの協力に支えられています。これらのリソースを作成・維持する皆様に感謝します。</string>
+    <string name="about_metadata">メタデータの提供元</string>
+    <string name="about_metadata_summary">カタログ、表紙、利用条件</string>
+    <string name="about_libraries">ライブラリとライセンス</string>
+    <string name="about_libraries_summary">コンポーネントと第三者の権利表記</string>
+    <string name="about_design">フォントとアイコン</string>
+    <string name="about_design_summary">Cormorant GaramondとMaterial Icons</string>
+    <string name="about_integrations">連携サービス</string>
+    <string name="about_integrations_summary">Google Drive、OpenAI、Kindle</string>
+    <string name="about_project_site">ウェブサイト</string>
+    <string name="about_terms">利用規約</string>
+    <string name="about_read_notice">ライセンス・権利表記を読む</string>
+    <string name="about_licenses_offline">このバージョンに含まれる直接・間接の依存コンポーネントです。ライセンスと権利表記の全文は、原文の言語でオフラインでも閲覧できます。</string>
+    <string name="about_open_library">Internet Archiveによる共同編集カタログと表紙サービスです。投稿には個別の権利が存在する場合があります。提供元の条件をご確認ください。</string>
+    <string name="about_internet_archive">書誌情報と表紙の検索に使用します。利用条件は項目と権利者によって異なります。</string>
+    <string name="about_bnf">フランス国立図書館（Bibliothèque nationale de France）のメタデータをSRU経由で取得します。Licence Ouverte / Open Licence（Etalab）が適用されます。</string>
+    <string name="about_google_books">設定済みの場合、Google Books APIから書籍情報と表紙を取得します。Google Booksの利用規約と出典表示ルールが適用されます。</string>
+    <string name="about_content_rights">表紙、説明文、書籍には個別の権利が存在する場合があります。ここに記載するソフトウェアライセンスは、これらのコンテンツには適用されません。</string>
+    <string name="about_font_credit">Cormorant GaramondはChristian Thalmann（Catharsis Fonts）と貢献者によるフォントです。アプリに同梱されています。</string>
+    <string name="about_icons_credit">GoogleのMaterial IconsをJetpack Composeライブラリ経由で使用しています。その他のテキストにはシステムフォントを使用します。</string>
+    <string name="about_drive">Googleアカウントとの接続と、Folioreの隠しフォルダへの任意の同期に使用します。Google Play services SDKには独自の規約があり、オープンソースコンポーネントも含まれます。</string>
+    <string name="about_openai">設定したキーを使ってメタデータと表紙を任意で生成します。OpenAIのサービス規約が適用されます。</string>
+    <string name="about_kindle">設定したサーバーからメールでEPUBを送信します。KindleはAmazonの商標です。このアプリにはKindle SDKは含まれていません。</string>
+    <string name="about_independent">名称と商標は各権利者に帰属します。Folioreはこれらのサービスから独立しています。</string>
+    <string name="about_load_error">クレジットを開けませんでした。</string>
+    <string name="about_link_error">リンクを開けませんでした。ブラウザがインストールされているか確認してください。</string>
+</resources>

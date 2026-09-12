@@ -1,0 +1,5 @@
+{
+  "licenses/texts/apache-2.0.txt": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt",
+  "licenses/texts/mpl-2.0.txt": "https://www.mozilla.org/MPL/2.0/",
+  "licenses/cormorant_garamond/OFL.txt": "https://github.com/google/fonts/blob/main/ofl/cormorantgaramond/OFL.txt"
+}

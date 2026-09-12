@@ -2,9 +2,9 @@ package com.foliore.android.ui.library
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
@@ -24,28 +24,30 @@ internal fun ContentReportDialog(onDismiss: () -> Unit) {
     var sending by remember { mutableStateOf(false) }
     var outcome by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
-    AlertDialog(
-        onDismissRequest = { if (!sending) onDismiss() },
-        title = { Text(stringResource(R.string.report_ai_content)) },
-        text = { Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            androidx.compose.foundation.text.selection.SelectionContainer {
+    FolioreOptionsDialog(
+        title = stringResource(R.string.report_ai_content),
+        onDismiss = { if (!sending) onDismiss() },
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SelectionContainer {
                 Text(stringResource(R.string.support_email), color = MaterialTheme.colorScheme.primary)
             }
-            Text(stringResource(R.string.report_content_description))
+            Text(stringResource(R.string.report_content_description), style = MaterialTheme.typography.bodyMedium)
             OutlinedTextField(value = message, onValueChange = { if (it.length <= 4000) message = it },
                 modifier = Modifier.fillMaxWidth(), enabled = !sending && outcome != true, minLines = 4,
                 label = { Text(stringResource(R.string.report_content_message)) })
             outcome?.let { Text(stringResource(if (it) R.string.report_content_success else R.string.report_content_failure)) }
-        } },
-        confirmButton = { TextButton(enabled = message.isNotBlank() && !sending && outcome != true, onClick = {
-            sending = true
-            scope.launch {
-                outcome = withContext(Dispatchers.IO) { submitContentReport(message) }
-                sending = false
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(enabled = message.isNotBlank() && !sending && outcome != true, onClick = {
+                    sending = true
+                    scope.launch {
+                        outcome = withContext(Dispatchers.IO) { submitContentReport(message) }
+                        sending = false
+                    }
+                }) { Text(stringResource(R.string.report_content_send)) }
             }
-        }) { Text(stringResource(R.string.report_content_send)) } },
-        dismissButton = { TextButton(enabled = !sending, onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
-    )
+        }
+    }
 }
 
 private fun submitContentReport(message: String): Boolean = runCatching {

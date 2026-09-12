@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_title">Acerca de</string>
+    <string name="about_version">Versión %1$s (%2$d)</string>
+    <string name="about_thanks">Foliore utiliza proyectos abiertos, catálogos públicos y el trabajo de sus comunidades. Gracias a quienes crean y mantienen estos recursos.</string>
+    <string name="about_metadata">Fuentes de metadatos</string>
+    <string name="about_metadata_summary">Catálogos, portadas y condiciones de uso</string>
+    <string name="about_libraries">Bibliotecas y licencias</string>
+    <string name="about_libraries_summary">Componentes y avisos de terceros</string>
+    <string name="about_design">Tipografía e iconos</string>
+    <string name="about_design_summary">Cormorant Garamond y Material Icons</string>
+    <string name="about_integrations">Integraciones</string>
+    <string name="about_integrations_summary">Google Drive, OpenAI y Kindle</string>
+    <string name="about_project_site">Sitio web</string>
+    <string name="about_terms">Condiciones de uso</string>
+    <string name="about_read_notice">Leer licencia o aviso</string>
+    <string name="about_licenses_offline">Componentes directos e indirectos de esta versión. Las licencias y los avisos completos están disponibles sin conexión, en su idioma original.</string>
+    <string name="about_open_library">Catálogo colaborativo y servicio de portadas del Internet Archive. Las contribuciones pueden tener derechos propios; consulta las condiciones de la fuente.</string>
+    <string name="about_internet_archive">Registros bibliográficos y portadas. Las condiciones de uso varían según el elemento y su titular.</string>
+    <string name="about_bnf">Metadatos de la Bibliothèque nationale de France, consultados mediante SRU, bajo la Licence Ouverte / Open Licence (Etalab).</string>
+    <string name="about_google_books">Información de libros y portadas mediante la Google Books API, cuando está configurada. Sujeta a las condiciones y reglas de atribución de Google Books.</string>
+    <string name="about_content_rights">Las portadas, descripciones y libros pueden tener derechos propios. Las licencias de software indicadas aquí no se aplican a ese contenido.</string>
+    <string name="about_font_credit">Cormorant Garamond, de Christian Thalmann (Catharsis Fonts) y colaboradores. Fuente incluida en la aplicación.</string>
+    <string name="about_icons_credit">Material Icons, de Google, mediante la biblioteca Jetpack Compose. Los demás textos usan la fuente del sistema.</string>
+    <string name="about_drive">Conexión a la cuenta Google y sincronización opcional en la carpeta oculta de Foliore. El SDK Google Play services tiene condiciones propias e incluye componentes abiertos.</string>
+    <string name="about_openai">Generación opcional de metadatos y portadas con tu clave configurada. Se aplican las condiciones del servicio de OpenAI.</string>
+    <string name="about_kindle">Envío de EPUBs por correo mediante tu servidor configurado. Kindle es una marca de Amazon; la aplicación no incluye un SDK Kindle.</string>
+    <string name="about_independent">Los nombres y las marcas pertenecen a sus titulares. Foliore es independiente de estos servicios.</string>
+    <string name="about_load_error">No se pudieron abrir los créditos.</string>
+    <string name="about_link_error">No se pudo abrir el enlace. Comprueba que haya un navegador instalado.</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_title">关于</string>
+    <string name="about_version">版本 %1$s (%2$d)</string>
+    <string name="about_thanks">Foliore依托开放项目、公共目录及其社区。感谢所有创建和维护这些资源的人。</string>
+    <string name="about_metadata">元数据来源</string>
+    <string name="about_metadata_summary">目录、封面及使用条款</string>
+    <string name="about_libraries">软件库与许可证</string>
+    <string name="about_libraries_summary">组件与第三方声明</string>
+    <string name="about_design">字体与图标</string>
+    <string name="about_design_summary">Cormorant Garamond与Material Icons</string>
+    <string name="about_integrations">集成服务</string>
+    <string name="about_integrations_summary">Google Drive、OpenAI与Kindle</string>
+    <string name="about_project_site">网站</string>
+    <string name="about_terms">使用条款</string>
+    <string name="about_read_notice">阅读许可证或声明</string>
+    <string name="about_licenses_offline">本版本中的直接和间接依赖组件。完整许可证和声明以原文提供，可离线阅读。</string>
+    <string name="about_open_library">Internet Archive提供的协作目录和封面服务。部分内容可能受独立权利保护，请参阅来源的条款。</string>
+    <string name="about_internet_archive">书目记录和封面搜索。使用条款因条目及权利人而异。</string>
+    <string name="about_bnf">通过SRU查询法国国家图书馆（Bibliothèque nationale de France）的元数据，适用Licence Ouverte / Open Licence（Etalab）。</string>
+    <string name="about_google_books">配置后可通过Google Books API获取图书信息和封面。须遵守Google Books的条款及署名规则。</string>
+    <string name="about_content_rights">封面、简介和图书可能受独立权利保护。此处列出的软件许可证不适用于这些内容。</string>
+    <string name="about_font_credit">Cormorant Garamond由Christian Thalmann（Catharsis Fonts）及贡献者创作，随应用分发。</string>
+    <string name="about_icons_credit">通过Jetpack Compose软件库使用Google的Material Icons。其他文本使用系统字体。</string>
+    <string name="about_drive">用于连接Google账号，并可选择同步到Foliore的隐藏文件夹。Google Play services SDK有独立条款，也包含开放组件。</string>
+    <string name="about_openai">使用您配置的密钥，可选择生成元数据和封面。适用OpenAI服务条款。</string>
+    <string name="about_kindle">通过您配置的服务器以电子邮件发送EPUB。Kindle是Amazon的商标；应用未包含Kindle SDK。</string>
+    <string name="about_independent">名称和商标归其各自权利人所有。Foliore独立于这些服务。</string>
+    <string name="about_load_error">无法打开致谢信息。</string>
+    <string name="about_link_error">无法打开链接。请确认已安装浏览器。</string>
+</resources>

@@ -1,0 +1,608 @@
+{
+  "groups": [
+    {
+      "id": "accompanist",
+      "name": "Accompanist Drawable Painter",
+      "url": "https://github.com/google/accompanist",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "com.google.accompanist:accompanist-drawablepainter:0.32.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "androidsvg",
+      "name": "AndroidSVG",
+      "url": "https://github.com/BigBadaboom/androidsvg",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "com.caverock:androidsvg-aar:1.4"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "androidx",
+      "name": "AndroidX / Jetpack Compose / Material Icons",
+      "url": "https://android.googlesource.com/platform/frameworks/support/",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "androidx.activity:activity-compose:1.13.0",
+        "androidx.activity:activity-ktx:1.13.0",
+        "androidx.activity:activity:1.13.0",
+        "androidx.annotation:annotation-experimental:1.4.1",
+        "androidx.annotation:annotation-jvm:1.9.1",
+        "androidx.appcompat:appcompat-resources:1.6.1",
+        "androidx.arch.core:core-common:2.2.0",
+        "androidx.arch.core:core-runtime:2.2.0",
+        "androidx.autofill:autofill:1.0.0",
+        "androidx.collection:collection-jvm:1.6.0",
+        "androidx.collection:collection-ktx:1.6.0",
+        "androidx.compose.animation:animation-android:1.11.3",
+        "androidx.compose.animation:animation-core-android:1.11.3",
+        "androidx.compose.foundation:foundation-android:1.11.3",
+        "androidx.compose.foundation:foundation-layout-android:1.11.3",
+        "androidx.compose.material3:material3-android:1.4.0",
+        "androidx.compose.material:material-icons-core-android:1.7.8",
+        "androidx.compose.material:material-icons-extended-android:1.7.8",
+        "androidx.compose.material:material-ripple-android:1.11.3",
+        "androidx.compose.runtime:runtime-android:1.11.3",
+        "androidx.compose.runtime:runtime-annotation-android:1.11.3",
+        "androidx.compose.runtime:runtime-retain-android:1.11.3",
+        "androidx.compose.runtime:runtime-saveable-android:1.11.3",
+        "androidx.compose.ui:ui-android:1.11.3",
+        "androidx.compose.ui:ui-geometry-android:1.11.3",
+        "androidx.compose.ui:ui-graphics-android:1.11.3",
+        "androidx.compose.ui:ui-text-android:1.11.3",
+        "androidx.compose.ui:ui-tooling-preview-android:1.11.3",
+        "androidx.compose.ui:ui-unit-android:1.11.3",
+        "androidx.compose.ui:ui-util-android:1.11.3",
+        "androidx.concurrent:concurrent-futures-ktx:1.1.0",
+        "androidx.concurrent:concurrent-futures:1.1.0",
+        "androidx.core:core-ktx:1.18.0",
+        "androidx.core:core-viewtree:1.0.0",
+        "androidx.core:core:1.18.0",
+        "androidx.customview:customview-poolingcontainer:1.0.0",
+        "androidx.customview:customview:1.0.0",
+        "androidx.documentfile:documentfile:1.0.1",
+        "androidx.dynamicanimation:dynamicanimation:1.0.0",
+        "androidx.emoji2:emoji2:1.4.0",
+        "androidx.exifinterface:exifinterface:1.3.7",
+        "androidx.fragment:fragment:1.5.7",
+        "androidx.graphics:graphics-path:1.0.1",
+        "androidx.interpolator:interpolator:1.0.0",
+        "androidx.legacy:legacy-support-core-utils:1.0.0",
+        "androidx.lifecycle:lifecycle-common-java8:2.9.4",
+        "androidx.lifecycle:lifecycle-common-jvm:2.9.4",
+        "androidx.lifecycle:lifecycle-livedata-core-ktx:2.9.4",
+        "androidx.lifecycle:lifecycle-livedata-core:2.9.4",
+        "androidx.lifecycle:lifecycle-livedata:2.9.4",
+        "androidx.lifecycle:lifecycle-process:2.9.4",
+        "androidx.lifecycle:lifecycle-runtime-android:2.9.4",
+        "androidx.lifecycle:lifecycle-runtime-compose-android:2.9.4",
+        "androidx.lifecycle:lifecycle-runtime-ktx-android:2.9.4",
+        "androidx.lifecycle:lifecycle-service:2.9.4",
+        "androidx.lifecycle:lifecycle-viewmodel-android:2.9.4",
+        "androidx.lifecycle:lifecycle-viewmodel-compose-android:2.9.4",
+        "androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.4",
+        "androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.9.4",
+        "androidx.lifecycle:lifecycle-viewmodel:2.9.4",
+        "androidx.loader:loader:1.1.0",
+        "androidx.localbroadcastmanager:localbroadcastmanager:1.0.0",
+        "androidx.navigation:navigation-common-ktx:2.7.7",
+        "androidx.navigation:navigation-common:2.7.7",
+        "androidx.navigation:navigation-compose:2.7.7",
+        "androidx.navigation:navigation-runtime-ktx:2.7.7",
+        "androidx.navigation:navigation-runtime:2.7.7",
+        "androidx.navigationevent:navigationevent-android:1.0.0",
+        "androidx.navigationevent:navigationevent-compose-android:1.0.0",
+        "androidx.print:print:1.0.0",
+        "androidx.profileinstaller:profileinstaller:1.4.0",
+        "androidx.recyclerview:recyclerview:1.3.2",
+        "androidx.room:room-common:2.6.1",
+        "androidx.room:room-ktx:2.6.1",
+        "androidx.room:room-runtime:2.6.1",
+        "androidx.savedstate:savedstate-android:1.4.0",
+        "androidx.savedstate:savedstate-compose-android:1.4.0",
+        "androidx.savedstate:savedstate-ktx:1.4.0",
+        "androidx.sqlite:sqlite-framework:2.4.0",
+        "androidx.sqlite:sqlite:2.4.0",
+        "androidx.startup:startup-runtime:1.1.1",
+        "androidx.tracing:tracing-android:1.3.0",
+        "androidx.tracing:tracing-ktx:1.3.0",
+        "androidx.transition:transition:1.6.0",
+        "androidx.vectordrawable:vectordrawable-animated:1.1.0",
+        "androidx.vectordrawable:vectordrawable:1.1.0",
+        "androidx.versionedparcelable:versionedparcelable:1.1.1",
+        "androidx.viewpager:viewpager:1.0.0",
+        "androidx.window:window-core-android:1.5.0",
+        "androidx.window:window:1.5.0",
+        "androidx.work:work-runtime-ktx:2.10.5",
+        "androidx.work:work-runtime:2.10.5"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        },
+        {
+          "title": "Apache License 2.0 (AndroidX)",
+          "path": "licenses/texts/809fa1ed21450f59827d1e9aec720bbc4b687434fa22283c6cb5dd82a47ab9c0.txt",
+          "sha256": "809fa1ed21450f59827d1e9aec720bbc4b687434fa22283c6cb5dd82a47ab9c0",
+          "source": "androidx.activity:activity-compose:1.13.0!META-INF/androidx/activity/activity-compose/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "coil",
+      "name": "Coil",
+      "url": "https://github.com/coil-kt/coil",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "io.coil-kt:coil-base:2.6.0",
+        "io.coil-kt:coil-compose-base:2.6.0",
+        "io.coil-kt:coil-compose:2.6.0",
+        "io.coil-kt:coil:2.6.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "cormorant",
+      "name": "Cormorant Garamond",
+      "url": "https://github.com/CatharsisFonts/Cormorant",
+      "license": "SIL Open Font License 1.1",
+      "coordinates": [],
+      "notices": [
+        {
+          "title": "SIL Open Font License 1.1",
+          "path": "licenses/cormorant_garamond/OFL.txt",
+          "sha256": "60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956",
+          "source": "https://github.com/google/fonts/blob/main/ofl/cormorantgaramond/OFL.txt"
+        }
+      ]
+    },
+    {
+      "id": "google-play",
+      "name": "Google Play services",
+      "url": "https://developers.google.com/android/guides/opensource",
+      "license": "Android SDK License / third-party notices",
+      "coordinates": [
+        "com.google.android.gms:play-services-auth-api-phone:18.0.2",
+        "com.google.android.gms:play-services-auth-base:18.0.10",
+        "com.google.android.gms:play-services-auth:21.6.0",
+        "com.google.android.gms:play-services-base:18.5.0",
+        "com.google.android.gms:play-services-basement:18.9.0",
+        "com.google.android.gms:play-services-fido:20.0.1",
+        "com.google.android.gms:play-services-tasks:18.2.0"
+      ],
+      "notices": [
+        {
+          "title": "Animal Sniffer",
+          "path": "licenses/texts/32d66e2183bf8e7435b702284b960a4803f1df6eb138a02b3fb81f6c6a5e1351.txt",
+          "sha256": "32d66e2183bf8e7435b702284b960a4803f1df6eb138a02b3fb81f6c6a5e1351",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "apksig",
+          "path": "licenses/texts/38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a.txt",
+          "sha256": "38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "Checker Framework Annotations",
+          "path": "licenses/texts/0a0d953557de1c47817def2774d227d1ebd9a52cc120245f33fbd9614ff796b5.txt",
+          "sha256": "0a0d953557de1c47817def2774d227d1ebd9a52cc120245f33fbd9614ff796b5",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "checker_framework_util",
+          "path": "licenses/texts/edad15df7d01516356d84c8a887598e2051e8b55d520ac19085d9afad89941bb.txt",
+          "sha256": "edad15df7d01516356d84c8a887598e2051e8b55d520ac19085d9afad89941bb",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "chrome_sync",
+          "path": "licenses/texts/3dbd2c90050b652d63656481c3e5871c52261575292db77d4ea63419f187a55b.txt",
+          "sha256": "3dbd2c90050b652d63656481c3e5871c52261575292db77d4ea63419f187a55b",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Dagger",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Error Prone",
+          "path": "licenses/texts/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "Google Auto",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
+        },
+        {
+          "title": "gsfclient",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "Guava JDK5",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "Guava JDK7",
+          "path": "licenses/texts/01b4bb058a35cf06dde9e3447b34f4af535df2ec1423393893e517e8ee83ba53.txt",
+          "sha256": "01b4bb058a35cf06dde9e3447b34f4af535df2ec1423393893e517e8ee83ba53",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "HighwayHash",
+          "path": "licenses/texts/8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac.txt",
+          "sha256": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "J2ObjC",
+          "path": "licenses/texts/22418fba3d2030cc22690f1c0c38ae423d5540110e9d61519027e3210ac29726.txt",
+          "sha256": "22418fba3d2030cc22690f1c0c38ae423d5540110e9d61519027e3210ac29726",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "Jakarta Inject",
+          "path": "licenses/texts/58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd.txt",
+          "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "java_annotations",
+          "path": "licenses/texts/fa0c4e18606d2893cb6c05f492dde582267c0f0a5cd097f71bf9e6ec860208f8.txt",
+          "sha256": "fa0c4e18606d2893cb6c05f492dde582267c0f0a5cd097f71bf9e6ec860208f8",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "JsInterop Annotations",
+          "path": "licenses/texts/b3e17cd48de9bfefe076d376cc136df378ebfceffbb48069205c0dd0231a0cae.txt",
+          "sha256": "b3e17cd48de9bfefe076d376cc136df378ebfceffbb48069205c0dd0231a0cae",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "JSpecify",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "JSR 250",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
+        },
+        {
+          "title": "JSR 305",
+          "path": "licenses/texts/fb9bdee1ef51ee85a17d04fda7fbf0ea2af92454b151a252c13cea7a720f3a8b.txt",
+          "sha256": "fb9bdee1ef51ee85a17d04fda7fbf0ea2af92454b151a252c13cea7a720f3a8b",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "JSR 330",
+          "path": "licenses/texts/9cf3b8a82221b4a6382ce164d099c79a2827e160d5fd533d07bc63f69ca6b34f.txt",
+          "sha256": "9cf3b8a82221b4a6382ce164d099c79a2827e160d5fd533d07bc63f69ca6b34f",
+          "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin",
+          "path": "licenses/texts/04700eb0ab99885a21f56fd1992a49c1841bee18a3775895fb4ebb0b8f438573.txt",
+          "sha256": "04700eb0ab99885a21f56fd1992a49c1841bee18a3775895fb4ebb0b8f438573",
+          "source": "com.google.android.gms:play-services-fido:20.0.1!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin",
+          "path": "licenses/texts/4fe7bc606857fd3954bc067fad926e7993ddca7232202969e0dfabe4a9e50fdd.txt",
+          "sha256": "4fe7bc606857fd3954bc067fad926e7993ddca7232202969e0dfabe4a9e50fdd",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "kotlin",
+          "path": "licenses/texts/6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d.txt",
+          "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin",
+          "path": "licenses/texts/986c0aa4841023c4c1fe795fe436dafac21760ca09d9056e736d1587cd1cbf94.txt",
+          "sha256": "986c0aa4841023c4c1fe795fe436dafac21760ca09d9056e736d1587cd1cbf94",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin",
+          "path": "licenses/texts/c15ad8d2096909c1116f59ea0d4d1c83a0390feec493a2de116e6d489082a7c4.txt",
+          "sha256": "c15ad8d2096909c1116f59ea0d4d1c83a0390feec493a2de116e6d489082a7c4",
+          "source": "com.google.android.gms:play-services-basement:18.9.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin coroutines",
+          "path": "licenses/texts/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "kotlinx_atomicfu",
+          "path": "licenses/texts/43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1.txt",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "kotlinx_serialization",
+          "path": "licenses/texts/c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851.txt",
+          "sha256": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "mobiledatadownload",
+          "path": "licenses/texts/58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd.txt",
+          "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Protocol Buffers",
+          "path": "licenses/texts/31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0.txt",
+          "sha256": "31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Protocol Buffers for Go v2",
+          "path": "licenses/texts/4835612df0098ca95f8e7d9e3bffcb02358d435dbb38057c844c99d7f725eb20.txt",
+          "sha256": "4835612df0098ca95f8e7d9e3bffcb02358d435dbb38057c844c99d7f725eb20",
+          "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Protocol Buffers for Java",
+          "path": "licenses/texts/6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d.txt",
+          "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+          "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
+        },
+        {
+          "title": "SafeParcelable library",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "Tink",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
+        }
+      ]
+    },
+    {
+      "id": "guava",
+      "name": "Guava ListenableFuture",
+      "url": "https://github.com/google/guava",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "com.google.guava:listenablefuture:1.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "haze",
+      "name": "Haze",
+      "url": "https://github.com/chrisbanes/haze",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "dev.chrisbanes.haze:haze-android:2.0.0-alpha03",
+        "dev.chrisbanes.haze:haze-blur-android:2.0.0-alpha03",
+        "dev.chrisbanes.haze:haze-utils-android:2.0.0-alpha03"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "jetbrains-annotations",
+      "name": "JetBrains Annotations",
+      "url": "https://github.com/JetBrains/java-annotations",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "org.jetbrains:annotations:23.0.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "jspecify",
+      "name": "JSpecify",
+      "url": "https://github.com/jspecify/jspecify",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "org.jspecify:jspecify:1.0.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "kotlinx",
+      "name": "Kotlin Coroutines / Serialization / DateTime",
+      "url": "https://github.com/Kotlin",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0",
+        "org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.0",
+        "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3",
+        "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.7.3"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "kotlin",
+      "name": "Kotlin Standard Library",
+      "url": "https://github.com/JetBrains/kotlin",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0",
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0",
+        "org.jetbrains.kotlin:kotlin-stdlib:2.3.21"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "okhttp",
+      "name": "OkHttp / Public Suffix List",
+      "url": "https://github.com/square/okhttp",
+      "license": "Apache License 2.0 / Mozilla Public License 2.0",
+      "coordinates": [
+        "com.squareup.okhttp3:okhttp:4.12.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        },
+        {
+          "title": "Mozilla Public License 2.0",
+          "path": "licenses/texts/mpl-2.0.txt",
+          "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85",
+          "source": "https://www.mozilla.org/MPL/2.0/"
+        },
+        {
+          "title": "NOTICE",
+          "path": "licenses/texts/8a9c58fbded5ea3474315e4a9824ca8b1486098a1a03e897e0b19419d5e1876a.txt",
+          "sha256": "8a9c58fbded5ea3474315e4a9824ca8b1486098a1a03e897e0b19419d5e1876a",
+          "source": "com.squareup.okhttp3:okhttp:4.12.0!okhttp3/internal/publicsuffix/NOTICE"
+        },
+        {
+          "title": "Public Suffix List",
+          "path": "licenses/texts/2fe1f04cc0a32d1689c9fd7aef15391aa1c1300706af71a82d64f6210e047f23.txt",
+          "sha256": "2fe1f04cc0a32d1689c9fd7aef15391aa1c1300706af71a82d64f6210e047f23",
+          "source": "com.squareup.okhttp3:okhttp:4.12.0!okhttp3/internal/publicsuffix/publicsuffixes.gz"
+        }
+      ]
+    },
+    {
+      "id": "okio",
+      "name": "Okio",
+      "url": "https://github.com/square/okio",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "com.squareup.okio:okio-jvm:3.8.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "poko",
+      "name": "Poko annotations",
+      "url": "https://github.com/drewhamilton/Poko",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "dev.drewhamilton.poko:poko-annotations-jvm:0.22.1"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "sqldelight",
+      "name": "SQLDelight",
+      "url": "https://github.com/cashapp/sqldelight",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "app.cash.sqldelight:android-driver:2.0.2",
+        "app.cash.sqldelight:async-extensions-jvm:2.0.2",
+        "app.cash.sqldelight:coroutines-extensions-jvm:2.0.2",
+        "app.cash.sqldelight:runtime-jvm:2.0.2"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    }
+  ]
+}
