@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_launcher_icon">App-Symbol</string>
+    <string name="settings_launcher_icon_hint">Der Launcher benötigt eventuell einen Moment zum Aktualisieren. Bei aktivierten thematischen Symbolen legt Android die Farben fest.</string>
+    <string name="settings_launcher_icon_error">Das Symbol konnte nicht geändert werden. Versuche es erneut.</string>
+</resources>

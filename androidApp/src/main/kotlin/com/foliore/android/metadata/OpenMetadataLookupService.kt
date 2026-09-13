@@ -10,12 +10,10 @@ import java.util.concurrent.TimeUnit
 
 class OpenMetadataLookupService(
     private val openLibraryMetadataService: OpenLibraryMetadataService,
-    private val googleBooksMetadataService: GoogleBooksMetadataService,
     private val cacheDir: File? = null,
 ) {
     fun search(book: LibraryBook, draft: BookMetadataDraft, limit: Int = 12): MetadataLookupResult =
         collectMetadataResults(draft, limit, listOf(
-            { googleBooksMetadataService.search(book, draft, 12) },
             { openLibraryMetadataService.search(book, draft, 12) },
             { searchInternetArchive(draft, 12, MetadataHttpClient()::getText) },
             { searchBnf(draft, 12, MetadataHttpClient()::getText) },

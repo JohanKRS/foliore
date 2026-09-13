@@ -22,7 +22,6 @@ enum class MetadataSource {
     EPUB,
     MANUAL,
     OPEN_LIBRARY,
-    GOOGLE_BOOKS,
     MIXED,
 }
 

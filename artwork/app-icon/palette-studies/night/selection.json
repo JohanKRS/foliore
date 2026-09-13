@@ -1,0 +1,12 @@
+{
+  "status": "integrated",
+  "name": "Night",
+  "palette": {
+    "name": "Night",
+    "detail": "Azul e prata",
+    "f": "#DFEEF5",
+    "star": "#AFCEDC",
+    "edge": "#132238"
+  },
+  "approvedSourceDirectory": ".codex-artifacts/adaptive-icon-2026-09-12/time-palettes/night"
+}

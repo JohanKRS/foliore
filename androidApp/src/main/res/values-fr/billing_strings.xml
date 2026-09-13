@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_title">Foliore illimité</string>
+    <string name="billing_unlock_title">Débloquer Foliore illimité</string>
+    <string name="billing_active">Foliore illimité activé</string>
+    <string name="billing_owned">Votre catalogue est débloqué, sans limite de livres.</string>
+    <string name="billing_description">Livres illimités avec un achat unique. Sans abonnement.</string>
+    <string name="billing_catalog_count">%1$d livres au catalogue · gratuit jusqu’à %2$d</string>
+    <string name="billing_buy_price">Débloquer pour %1$s</string>
+    <string name="billing_price_unavailable">Prix indisponible</string>
+    <string name="billing_restore">Restaurer l’achat</string>
+    <string name="billing_retry">Réessayer</string>
+    <string name="billing_terms">Conditions d’utilisation et d’achat</string>
+    <string name="billing_unavailable">Impossible de consulter Google Play. Réessayez avec une connexion internet.</string>
+    <string name="billing_pending">Paiement en attente. Le déblocage suivra la confirmation de Google Play.</string>
+    <string name="billing_restored">Achat restauré. Foliore illimité activé.</string>
+    <string name="billing_no_purchase">Aucun achat trouvé pour le compte Google Play utilisé.</string>
+    <string name="billing_verify_failed">Impossible de vérifier l’achat. Restaurez-le ou contactez l’assistance.</string>
+    <string name="billing_ack_retry">Accès débloqué. Nous réessayons la confirmation auprès de Google Play.</string>
+    <string name="billing_limit_title">Limite du catalogue gratuit</string>
+    <string name="billing_import_available">Vous pouvez ajouter %1$d livres. Les doublons peuvent être examinés sans utiliser une place supplémentaire.</string>
+    <string name="billing_import_skipped">%1$d fichiers non ajoutés : le catalogue a atteint la limite gratuite.</string>
+    <string name="billing_import_safety">Les livres existants et les fichiers sources restent intacts. La synchronisation reste disponible.</string>
+    <string name="billing_import_continue">Importer jusqu’à la limite</string>
+    <string name="billing_close">Fermer</string>
+    <string name="billing_terms_body">Fichiers et sauvegardes\nConservez des copies à jour de vos livres et données importantes en dehors de Foliore. La synchronisation propage aussi les modifications et suppressions et ne remplace pas une sauvegarde indépendante. Avant de supprimer des données, de changer d’appareil ou de désinstaller l’application, vérifiez vos copies. La récupération dépend des fichiers et versions encore disponibles et peut ne pas être possible dans tous les cas. Cet avis n’exclut pas les responsabilités prévues par la loi et ne limite pas vos droits.\n\nAchat unique\nFoliore illimité supprime la limite de 50 livres. Le déblocage n’a ni expiration programmée ni paiement récurrent. Il n’inclut pas de livres, d’espace Google Drive supplémentaire ni de crédits IA.\n\nCompatibilité et mises à jour\nLa compatibilité figure sur la fiche Google Play. L’achat ne promet pas une maintenance indéfinie, de nouvelles fonctions ni un fonctionnement avec toutes les futures versions d’Android et tous les appareils. Cela n’exclut pas les mises à jour nécessaires à la conformité, les garanties ni les recours imposés par la loi applicable.\n\nCompte et restauration\nL’achat est lié au compte Google Play utilisé et peut être restauré sur des appareils compatibles avec ce compte. Réinstaller ne nécessite pas de racheter un droit valide. Les achats en attente sont débloqués après confirmation. Le déblocage ne remplace pas une sauvegarde.\n\nVos livres\nLa limite gratuite concerne l’ajout de nouveaux livres. Les livres existants restent accessibles pour modification, exportation et synchronisation, même si une restauration dépasse la limite. Un remboursement ou une révocation peut rétablir la limite pour les nouveaux ajouts sans effacer la bibliothèque.\n\nAssistance et droits\nUtilisez Assistance dans les paramètres pour les problèmes et achats. Les remboursements peuvent être demandés auprès de Google Play ou de l’assistance selon les règles applicables. Ces conditions ne limitent pas les droits légaux de rétractation, garantie, réparation ou remboursement.</string>
+</resources>

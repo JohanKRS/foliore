@@ -341,15 +341,11 @@ internal fun KindleSettingsDialog(
 
 @Composable
 internal fun ExperimentalSettingsDialog(
-    hasGoogleBooksApiKey: Boolean,
     hasOpenAiApiKey: Boolean,
-    onGoogleBooksApiKeySave: (String) -> Unit,
-    onGoogleBooksApiKeyClear: () -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var googleBooksApiKeyInput by rememberSaveable { mutableStateOf("") }
     var openAiApiKeyInput by rememberSaveable { mutableStateOf("") }
 
     FolioreOptionsDialog(
@@ -357,32 +353,6 @@ internal fun ExperimentalSettingsDialog(
         onDismiss = onDismiss,
     ) {
         Column {
-            FolioreDialogSectionCard(label = stringResource(R.string.settings_metadata_google_books)) {
-                ApiKeySettingsForm(
-                    description = stringResource(R.string.settings_metadata_google_books_description),
-                    status = if (hasGoogleBooksApiKey) {
-                        stringResource(R.string.settings_metadata_google_books_key_configured)
-                    } else {
-                        stringResource(R.string.settings_metadata_google_books_key_missing)
-                    },
-                    value = googleBooksApiKeyInput,
-                    onValueChange = { googleBooksApiKeyInput = it },
-                    label = stringResource(R.string.settings_metadata_google_books_key_label),
-                    placeholder = stringResource(R.string.settings_metadata_google_books_key_placeholder),
-                    saveLabel = stringResource(R.string.settings_metadata_google_books_key_save),
-                    clearLabel = stringResource(R.string.settings_metadata_google_books_key_clear),
-                    canClear = hasGoogleBooksApiKey,
-                    onSave = {
-                        onGoogleBooksApiKeySave(googleBooksApiKeyInput)
-                        googleBooksApiKeyInput = ""
-                    },
-                    onClear = {
-                        onGoogleBooksApiKeyClear()
-                        googleBooksApiKeyInput = ""
-                    },
-                )
-            }
-
             FolioreDialogSectionCard(label = stringResource(R.string.settings_ai_openai_api)) {
                 ApiKeySettingsForm(
                     description = stringResource(R.string.settings_ai_openai_api_description),

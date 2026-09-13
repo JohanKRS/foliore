@@ -184,6 +184,451 @@
       ]
     },
     {
+      "id": "firebase",
+      "name": "Firebase encoders",
+      "url": "https://github.com/firebase/firebase-android-sdk",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "com.google.firebase:firebase-encoders-json:18.0.0",
+        "com.google.firebase:firebase-encoders-proto:16.0.0",
+        "com.google.firebase:firebase-encoders:17.0.0"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "datatransport",
+      "name": "Google Data Transport",
+      "url": "https://github.com/firebase/firebase-android-sdk",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "com.google.android.datatransport:transport-api:3.0.0",
+        "com.google.android.datatransport:transport-backend-cct:3.1.8",
+        "com.google.android.datatransport:transport-runtime:3.1.8"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        },
+        {
+          "title": "Dagger",
+          "path": "licenses/texts/e8076546f4222d1eb96f7c60dd5a450360d7aeb51d31153eda7c9e6e008a541f.txt",
+          "sha256": "e8076546f4222d1eb96f7c60dd5a450360d7aeb51d31153eda7c9e6e008a541f",
+          "source": "com.google.android.datatransport:transport-runtime:3.1.8!third_party_licenses.txt"
+        }
+      ]
+    },
+    {
+      "id": "play-billing",
+      "name": "Google Play Billing",
+      "url": "https://developer.android.com/google/play/billing",
+      "license": "Android SDK License / third-party notices",
+      "coordinates": [
+        "com.android.billingclient:billing:9.1.0"
+      ],
+      "notices": [
+        {
+          "title": "Android SDK Platforms",
+          "path": "licenses/texts/8598f4e111252d203df6c4ec0b9274d8d9ea034d4fcf13cd50b2b15de23a5e62.txt",
+          "sha256": "8598f4e111252d203df6c4ec0b9274d8d9ea034d4fcf13cd50b2b15de23a5e62",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX activity library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX annotation experimental library",
+          "path": "licenses/texts/0366083b9f13b07a2bbbd01979783001c96c4d7037068c4226bf116e05780105.txt",
+          "sha256": "0366083b9f13b07a2bbbd01979783001c96c4d7037068c4226bf116e05780105",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX annotation library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX architecture core common library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX architecture core runtime library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX asynclayoutinflater library",
+          "path": "licenses/texts/f01b55631ca239fda6f323b88f16e0fd3b211987704cf619644602641d04e526.txt",
+          "sha256": "f01b55631ca239fda6f323b88f16e0fd3b211987704cf619644602641d04e526",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX collection library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX compose runtime annotation library",
+          "path": "licenses/texts/0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9.txt",
+          "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX concurrent futures library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX coordinatorlayout library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX core ktx library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX core library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX core viewtree library",
+          "path": "licenses/texts/fc4e1b18d75d2cc6b4f033a84b5442cf074022aeb034862781c56ccbcfe20b9c.txt",
+          "sha256": "fc4e1b18d75d2cc6b4f033a84b5442cf074022aeb034862781c56ccbcfe20b9c",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX cursoradapter library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX customview library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX documentfile library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX drawerlayout library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX fragment library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX interpolator library",
+          "path": "licenses/texts/91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c.txt",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX legacy coreui library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX legacy coreutils library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX legacy v4 library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle common library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle livedatacore library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle runtime library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle viewmodel library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle viewmodel savedstate library",
+          "path": "licenses/texts/91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c.txt",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX loader library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX localbroadcastmanager library",
+          "path": "licenses/texts/91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c.txt",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX media base library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX navigationevent library",
+          "path": "licenses/texts/91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c.txt",
+          "sha256": "91829f267b9311ecc8b9996c372c0c22e67d1a994aeec2db94bbb45a5105c40c",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX print library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX savedstate library",
+          "path": "licenses/texts/d01ce9a0672de1a119755c19a79cfbe9b2916379fa0e67187fa413484e4e624d.txt",
+          "sha256": "d01ce9a0672de1a119755c19a79cfbe9b2916379fa0e67187fa413484e4e624d",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX swiperefreshlayout library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX tracing library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX versionedparcelable library",
+          "path": "licenses/texts/3c5edbd56525e321a53eda1a587f1ca1c78b30481fb8abd2ba93f9c610f861ba.txt",
+          "sha256": "3c5edbd56525e321a53eda1a587f1ca1c78b30481fb8abd2ba93f9c610f861ba",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX viewpager library",
+          "path": "licenses/texts/8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4.txt",
+          "sha256": "8a9d1ae85f7e294183b3df28502f8c511eb96481937ba71fca535f32fa80f4e4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Animal Sniffer",
+          "path": "licenses/texts/32d66e2183bf8e7435b702284b960a4803f1df6eb138a02b3fb81f6c6a5e1351.txt",
+          "sha256": "32d66e2183bf8e7435b702284b960a4803f1df6eb138a02b3fb81f6c6a5e1351",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "apksig",
+          "path": "licenses/texts/38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a.txt",
+          "sha256": "38751245389e1e23f73e6f5384b5cbe7fa972cc4410c5adc9c04b082a0b9561a",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Checker Framework Annotations",
+          "path": "licenses/texts/0a0d953557de1c47817def2774d227d1ebd9a52cc120245f33fbd9614ff796b5.txt",
+          "sha256": "0a0d953557de1c47817def2774d227d1ebd9a52cc120245f33fbd9614ff796b5",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Dagger",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Error Prone",
+          "path": "licenses/texts/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Firebase",
+          "path": "licenses/texts/4b6062c11fef70a520223b3c3c6591e6b00fa09fdc6fb0f35e486b41e78fe11f.txt",
+          "sha256": "4b6062c11fef70a520223b3c3c6591e6b00fa09fdc6fb0f35e486b41e78fe11f",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Google Auto",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "gsfclient",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Guava JDK5",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Guava JDK7",
+          "path": "licenses/texts/01b4bb058a35cf06dde9e3447b34f4af535df2ec1423393893e517e8ee83ba53.txt",
+          "sha256": "01b4bb058a35cf06dde9e3447b34f4af535df2ec1423393893e517e8ee83ba53",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "HighwayHash",
+          "path": "licenses/texts/8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac.txt",
+          "sha256": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "J2ObjC",
+          "path": "licenses/texts/1f38da7b7c4ea64f39657a8aaf5c88c13c2515a7abc60290ab7bab65229f141b.txt",
+          "sha256": "1f38da7b7c4ea64f39657a8aaf5c88c13c2515a7abc60290ab7bab65229f141b",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Jakarta Inject",
+          "path": "licenses/texts/58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd.txt",
+          "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "java_annotations",
+          "path": "licenses/texts/fa0c4e18606d2893cb6c05f492dde582267c0f0a5cd097f71bf9e6ec860208f8.txt",
+          "sha256": "fa0c4e18606d2893cb6c05f492dde582267c0f0a5cd097f71bf9e6ec860208f8",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "JsInterop Annotations",
+          "path": "licenses/texts/b3e17cd48de9bfefe076d376cc136df378ebfceffbb48069205c0dd0231a0cae.txt",
+          "sha256": "b3e17cd48de9bfefe076d376cc136df378ebfceffbb48069205c0dd0231a0cae",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "JSpecify",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "JSR 250",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "JSR 305",
+          "path": "licenses/texts/fb9bdee1ef51ee85a17d04fda7fbf0ea2af92454b151a252c13cea7a720f3a8b.txt",
+          "sha256": "fb9bdee1ef51ee85a17d04fda7fbf0ea2af92454b151a252c13cea7a720f3a8b",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "JSR 330",
+          "path": "licenses/texts/9cf3b8a82221b4a6382ce164d099c79a2827e160d5fd533d07bc63f69ca6b34f.txt",
+          "sha256": "9cf3b8a82221b4a6382ce164d099c79a2827e160d5fd533d07bc63f69ca6b34f",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "kotlin",
+          "path": "licenses/texts/6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d.txt",
+          "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin",
+          "path": "licenses/texts/986c0aa4841023c4c1fe795fe436dafac21760ca09d9056e736d1587cd1cbf94.txt",
+          "sha256": "986c0aa4841023c4c1fe795fe436dafac21760ca09d9056e736d1587cd1cbf94",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Kotlin coroutines",
+          "path": "licenses/texts/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "kotlinx_atomicfu",
+          "path": "licenses/texts/43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1.txt",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "kotlinx_serialization",
+          "path": "licenses/texts/c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851.txt",
+          "sha256": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Protocol Buffers",
+          "path": "licenses/texts/31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0.txt",
+          "sha256": "31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Protocol Buffers for Java",
+          "path": "licenses/texts/6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d.txt",
+          "sha256": "6e5e117324afd944dcf67f36cf329843bc1a92229a8cd9bb573d7a83130fea7d",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        },
+        {
+          "title": "SafeParcelable library",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.android.billingclient:billing:9.1.0!third_party_licenses.txt"
+        }
+      ]
+    },
+    {
       "id": "google-play",
       "name": "Google Play services",
       "url": "https://developers.google.com/android/guides/opensource",
@@ -195,9 +640,29 @@
         "com.google.android.gms:play-services-base:18.5.0",
         "com.google.android.gms:play-services-basement:18.9.0",
         "com.google.android.gms:play-services-fido:20.0.1",
+        "com.google.android.gms:play-services-location:19.0.0",
+        "com.google.android.gms:play-services-places-placereport:17.0.0",
         "com.google.android.gms:play-services-tasks:18.2.0"
       ],
       "notices": [
+        {
+          "title": "AndroidX lifecycle common library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.google.android.gms:play-services-location:19.0.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle livedatacore library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.google.android.gms:play-services-location:19.0.0!third_party_licenses.txt"
+        },
+        {
+          "title": "AndroidX lifecycle runtime library",
+          "path": "licenses/texts/2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3.txt",
+          "sha256": "2f1aa69014fbe0b673f7ed0a26efc04c605787a42c7f3acd0a452ee0e84254b3",
+          "source": "com.google.android.gms:play-services-location:19.0.0!third_party_licenses.txt"
+        },
         {
           "title": "Animal Sniffer",
           "path": "licenses/texts/32d66e2183bf8e7435b702284b960a4803f1df6eb138a02b3fb81f6c6a5e1351.txt",
@@ -235,10 +700,22 @@
           "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
         },
         {
+          "title": "darts_clone",
+          "path": "licenses/texts/155f59997298ee336602c49f9c1110f268ac394ca2197eb02647a3555935ad52.txt",
+          "sha256": "155f59997298ee336602c49f9c1110f268ac394ca2197eb02647a3555935ad52",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
           "title": "Error Prone",
           "path": "licenses/texts/c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4.txt",
           "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
           "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "flatbuffers",
+          "path": "licenses/texts/7ec9661a8afafab1eee3523d6f1a193eff76314a5ab10b4ce96aefd87621b0c3.txt",
+          "sha256": "7ec9661a8afafab1eee3523d6f1a193eff76314a5ab10b4ce96aefd87621b0c3",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
         },
         {
           "title": "Google Auto",
@@ -271,10 +748,22 @@
           "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
         },
         {
+          "title": "ICU4C",
+          "path": "licenses/texts/24c771ce37201a3ab604852e47d10d21595d0493269dd6c8a5e567e998e18c00.txt",
+          "sha256": "24c771ce37201a3ab604852e47d10d21595d0493269dd6c8a5e567e998e18c00",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
           "title": "J2ObjC",
           "path": "licenses/texts/22418fba3d2030cc22690f1c0c38ae423d5540110e9d61519027e3210ac29726.txt",
           "sha256": "22418fba3d2030cc22690f1c0c38ae423d5540110e9d61519027e3210ac29726",
           "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
+        },
+        {
+          "title": "J2ObjC",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-location:19.0.0!third_party_licenses.txt"
         },
         {
           "title": "Jakarta Inject",
@@ -373,6 +862,18 @@
           "source": "com.google.android.gms:play-services-auth:21.6.0!third_party_licenses.txt"
         },
         {
+          "title": "PCRE",
+          "path": "licenses/texts/9ac4dfc82b2645ff77b56b759f95f28aa15ab15a03670fa6d4313a6b351e60f0.txt",
+          "sha256": "9ac4dfc82b2645ff77b56b759f95f28aa15ab15a03670fa6d4313a6b351e60f0",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
+          "title": "Protobuf Nano",
+          "path": "licenses/texts/31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0.txt",
+          "sha256": "31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
           "title": "Protocol Buffers",
           "path": "licenses/texts/31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0.txt",
           "sha256": "31c7505c31a1ea8557a5362cd69946dc9f5ee80fac8fa1d1b1531c08530497b0",
@@ -391,16 +892,46 @@
           "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
         },
         {
+          "title": "RE2",
+          "path": "licenses/texts/6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449.txt",
+          "sha256": "6040cda75d90b1738292a631d89934c411ef7ffd543c4d6a1b7edfc8edf29449",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
+          "title": "safeparcel",
+          "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
           "title": "SafeParcelable library",
           "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
           "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
           "source": "com.google.android.gms:play-services-auth-api-phone:18.0.2!third_party_licenses.txt"
         },
         {
+          "title": "STL",
+          "path": "licenses/texts/c90e5f7087454491c222670ecf8ba419dd9e0a8ecbd43bc83926bce0bce05741.txt",
+          "sha256": "c90e5f7087454491c222670ecf8ba419dd9e0a8ecbd43bc83926bce0bce05741",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
           "title": "Tink",
           "path": "licenses/texts/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
           "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
           "source": "com.google.android.gms:play-services-auth-base:18.0.10!third_party_licenses.txt"
+        },
+        {
+          "title": "UTF",
+          "path": "licenses/texts/fb80673636bcfc1b5dc9e9953224e7a38d373edc9b7253a21814f67a2a22939f.txt",
+          "sha256": "fb80673636bcfc1b5dc9e9953224e7a38d373edc9b7253a21814f67a2a22939f",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
+        },
+        {
+          "title": "zlib",
+          "path": "licenses/texts/c5dfe96e13dc602460341e597353fdd92543a9df55024119b2311f97e43f1d89.txt",
+          "sha256": "c5dfe96e13dc602460341e597353fdd92543a9df55024119b2311f97e43f1d89",
+          "source": "com.google.android.gms:play-services-places-placereport:17.0.0!third_party_licenses.txt"
         }
       ]
     },
@@ -430,6 +961,23 @@
         "dev.chrisbanes.haze:haze-android:2.0.0-alpha03",
         "dev.chrisbanes.haze:haze-blur-android:2.0.0-alpha03",
         "dev.chrisbanes.haze:haze-utils-android:2.0.0-alpha03"
+      ],
+      "notices": [
+        {
+          "title": "Apache License 2.0",
+          "path": "licenses/texts/apache-2.0.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "javax-inject",
+      "name": "Java dependency injection (JSR-330)",
+      "url": "https://github.com/javax-inject/javax-inject",
+      "license": "Apache License 2.0",
+      "coordinates": [
+        "javax.inject:javax.inject:1"
       ],
       "notices": [
         {

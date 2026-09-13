@@ -1,0 +1,12 @@
+{
+  "status": "integrated",
+  "name": "Day",
+  "palette": {
+    "name": "Day",
+    "detail": "S\u00e1lvia e esmeralda",
+    "f": "#123025",
+    "star": "#8B611B",
+    "edge": "#F1F0D9"
+  },
+  "approvedSourceDirectory": ".codex-artifacts/adaptive-icon-2026-09-12/time-palettes/day"
+}

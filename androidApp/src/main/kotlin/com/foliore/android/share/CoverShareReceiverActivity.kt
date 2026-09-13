@@ -116,7 +116,8 @@ class CoverShareReceiverActivity : ComponentActivity() {
             FolioreTheme(themeMode = themeMode.value) {
                 val factory = remember {
                     LibraryViewModelFactory(
-                        libraryRepository = appContainer.libraryRepository,
+                        billingRepository = appContainer.billingRepository,
+                                libraryRepository = appContainer.libraryRepository,
                         epubImporter = appContainer.epubImporter,
                         bookEditor = appContainer.bookEditor,
                         bookDeleter = appContainer.bookDeleter,
@@ -127,7 +128,6 @@ class CoverShareReceiverActivity : ComponentActivity() {
                         aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
                         kindleEmailPreferenceRepository = appContainer.kindleEmailPreferenceRepository,
                         libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
-                        metadataPreferenceRepository = appContainer.metadataPreferenceRepository,
                         openAiApiService = appContainer.openAiApiService,
                         openMetadataLookupService = appContainer.openMetadataLookupService,
                     )

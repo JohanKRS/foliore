@@ -18,7 +18,6 @@
     <string name="about_open_library">Internet Archive提供的协作目录和封面服务。部分内容可能受独立权利保护，请参阅来源的条款。</string>
     <string name="about_internet_archive">书目记录和封面搜索。使用条款因条目及权利人而异。</string>
     <string name="about_bnf">通过SRU查询法国国家图书馆（Bibliothèque nationale de France）的元数据，适用Licence Ouverte / Open Licence（Etalab）。</string>
-    <string name="about_google_books">配置后可通过Google Books API获取图书信息和封面。须遵守Google Books的条款及署名规则。</string>
     <string name="about_content_rights">封面、简介和图书可能受独立权利保护。此处列出的软件许可证不适用于这些内容。</string>
     <string name="about_font_credit">Cormorant Garamond由Christian Thalmann（Catharsis Fonts）及贡献者创作，随应用分发。</string>
     <string name="about_icons_credit">通过Jetpack Compose软件库使用Google的Material Icons。其他文本使用系统字体。</string>

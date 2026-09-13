@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_title">Foliore unlimited</string>
+    <string name="billing_unlock_title">Unlock Foliore unlimited</string>
+    <string name="billing_active">Foliore unlimited activated</string>
+    <string name="billing_owned">Your catalog is unlocked, with no book limit.</string>
+    <string name="billing_description">Unlimited books with a one-time purchase. No subscription.</string>
+    <string name="billing_catalog_count">%1$d books in your catalog · free up to %2$d</string>
+    <string name="billing_buy_price">Unlock for %1$s</string>
+    <string name="billing_price_unavailable">Price unavailable</string>
+    <string name="billing_restore">Restore purchase</string>
+    <string name="billing_retry">Try again</string>
+    <string name="billing_terms">Use and purchase terms</string>
+    <string name="billing_unavailable">Google Play could not be reached. Try again with an internet connection.</string>
+    <string name="billing_pending">Payment pending. Access will unlock when Google Play confirms the purchase.</string>
+    <string name="billing_restored">Purchase restored. Foliore unlimited activated.</string>
+    <string name="billing_no_purchase">No purchase found for the Google Play account in use.</string>
+    <string name="billing_verify_failed">The purchase could not be verified. Try restoring it or contact Support.</string>
+    <string name="billing_ack_retry">Access unlocked. We are retrying the confirmation with Google Play.</string>
+    <string name="billing_limit_title">Free catalog limit</string>
+    <string name="billing_import_available">You can add %1$d more books. Duplicates can be reviewed without using an extra slot.</string>
+    <string name="billing_import_skipped">%1$d files were not added because the catalog reached the free limit.</string>
+    <string name="billing_import_safety">Existing books and source files remain intact. Sync is still available.</string>
+    <string name="billing_import_continue">Import up to the limit</string>
+    <string name="billing_close">Close</string>
+    <string name="billing_terms_body">Files and backups\nKeep up-to-date copies of your books and important data outside Foliore. Sync also propagates changes and deletions and does not replace an independent backup. Before deleting data, changing devices, or uninstalling the app, check your copies. Recovery depends on the files and versions still available and may not be possible in every case. This notice does not exclude liability imposed by law or limit your rights.\n\nOne-time purchase\nFoliore unlimited removes the catalog limit of 50 books. The unlock has no scheduled expiry or recurring charge. It does not include books, extra Google Drive storage, or AI service credits.\n\nCompatibility and updates\nCompatibility is stated on the Google Play app listing. The purchase is not a promise of indefinite maintenance, new features, or operation on every future Android version and every device. This does not exclude updates needed for conformity, guarantees, or remedies required by applicable law.\n\nAccount and restoration\nThe purchase is linked to the Google Play account used for payment and can be restored on compatible devices using that account. Reinstalling does not require repurchasing a valid entitlement. Pending purchases unlock only after confirmation. The unlock does not replace a library backup.\n\nYour books\nThe free limit applies to adding new books. Existing books remain available for editing, export, and sync, including when a restore exceeds the limit. A refund or revocation may reinstate the limit for new additions without deleting the library.\n\nSupport and rights\nUse Support in Settings for help with problems or purchases. Refunds may be requested through Google Play or Support under the applicable rules. These terms do not limit statutory withdrawal, warranty, repair, or refund rights.</string>
+</resources>

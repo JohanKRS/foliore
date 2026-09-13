@@ -106,17 +106,6 @@ class MetadataSeriesTest {
         val other = current.copy(id = "b", metadata = current.metadata.copy(seriesName = "Publisher collection", seriesIndex = 100.0))
         assertNull(current.complementWith(other).metadata.seriesIndex)
     }
-    @Test fun googleUsesTheSequenceNumberAndResolvesItsSeriesName() {
-        val c = googleCandidate(json("""{"id":"book","volumeInfo":{"title":"The Dungeon Anarchist's Cookbook",
-          "seriesInfo":{"bookDisplayNumber":"99","volumeSeries":[{"seriesId":"carl","orderNumber":3}]}}}"""), emptySourceMetadata("Title"))!!
-        val result = resolveGoogleSeries(listOf(c), "synthetic-key") { url ->
-            assertTrue(url.contains("/series/get?series_id=carl&"))
-            """{"series":[{"seriesId":"carl","title":"Dungeon Crawler Carl"}]}"""
-        }.single().metadata
-        assertEquals("Dungeon Crawler Carl", result.seriesName)
-        assertEquals(3.0, result.seriesIndex)
-        assertEquals(listOf(c), resolveGoogleSeries(listOf(c), "synthetic-key") { throw java.io.IOException() })
-    }
     @Test fun missingSeriesLookupDoesNotDiscardTheExistingMetadata() {
         val candidate = MetadataLookupCandidate("missing", "Open Library", emptySourceMetadata("Title").copy(seriesName = "Saga", authors = listOf("Author")), null,
             sourceUrl = null, workKey = "/works/OL1W", editionResolved = true)

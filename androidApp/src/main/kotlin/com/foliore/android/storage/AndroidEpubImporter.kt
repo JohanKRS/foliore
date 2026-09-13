@@ -29,9 +29,11 @@ class AndroidEpubImporter(
     context: Context,
     private val libraryRepository: LibraryRepository,
     private val deviceIdProvider: DeviceIdProvider,
+    private val isUnlimited: () -> Boolean,
     private val parser: EpubParser = EpubParser(),
     private val coverImageWriter: CoverImageWriter = CoverImageWriter(),
 ) {
+    private val importLock = ImportLock
     private val appContext = context.applicationContext
     private val contentResolver = appContext.contentResolver
     private val json = Json { prettyPrint = true }
@@ -83,6 +85,7 @@ class AndroidEpubImporter(
             displayName = pendingImport.displayName,
             copied = copied,
             contentFingerprint = pendingImport.contentFingerprint,
+            replacingBookId = pendingImport.existingBookId,
         )
     }
 
@@ -144,13 +147,23 @@ class AndroidEpubImporter(
         displayName: String,
         copied: CopiedEpub,
         contentFingerprint: String?,
-    ): EpubImportResult {
-
+        replacingBookId: String? = null,
+    ): EpubImportResult = synchronized(importLock) {
+        // Repeat checks under a process-wide lock: shares, duplicate reviews and imports can overlap.
+        libraryRepository.findBookIdByHash(copied.sha256)?.let { existing ->
+            copied.file.delete()
+            return@synchronized EpubImportResult.Duplicate(existing)
+        }
+        val replacing = replacingBookId?.let { libraryRepository.getBook(it) != null } == true
+        if (!com.foliore.android.billing.LibraryLimit.canAdd(libraryRepository.bookCount(), isUnlimited(), replacing)) {
+            copied.file.delete()
+            return@synchronized EpubImportResult.LimitReached
+        }
         val bookId = UUID.randomUUID().toString()
         val bookDir = File(appContext.filesDir, "books/$bookId").apply { mkdirs() }
         val originalFile = File(bookDir, "original.epub")
 
-        return try {
+        try {
             copied.file.copyTo(originalFile, overwrite = true)
             copied.file.delete()
 
@@ -381,3 +394,5 @@ class AndroidEpubImporter(
         const val SHA_256_HEX_LENGTH = 64
     }
 }
+
+private object ImportLock

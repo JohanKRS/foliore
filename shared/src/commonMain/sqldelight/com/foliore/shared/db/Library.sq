@@ -200,3 +200,6 @@ WHERE book_id = ?;
 deleteTechnicalInfo:
 DELETE FROM epub_technical_info
 WHERE book_id = ?;
+
+countBooks:
+SELECT COUNT(*) FROM book;

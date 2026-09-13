@@ -15,6 +15,7 @@ sqldelight = "2.0.2"
 coil = "2.6.0"
 androidSvg = "1.4"
 playServicesAuth = "21.6.0"
+playBilling = "9.1.0"
 workManager = "2.10.5"
 haze = "2.0.0-alpha03"
 
@@ -36,6 +37,7 @@ androidx-compose-material-icons-extended = { module = "androidx.compose.material
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 android-svg = { module = "com.caverock:androidsvg-aar", version.ref = "androidSvg" }
 google-play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
+google-play-billing = { module = "com.android.billingclient:billing", version.ref = "playBilling" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workManager" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }

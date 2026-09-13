@@ -118,7 +118,7 @@ class OpenAiApiService(
             Write the description/about with literary quality in the book's general tone and register, using the title, author, existing description, tags, and language as cues. Avoid generic marketing copy, hype, melodrama, cringe, or embarrassing phrasing.
             If there is not enough reliable context to write a genuinely good description/about, preserve the current description or return null. Never fill the field with vague catalog copy, stock phrases, or a generic "invites the reader" summary.
             When the current EPUB metadata is incomplete, ambiguous, missing ISBN, or lacks enough context for the about field, use web search to verify public bibliographic facts from reliable sources before filling fields.
-            Prefer publisher, author, library, ISBN registry, Open Library, WorldCat, Google Books, or other reputable book pages. Do not copy copyrighted blurbs; synthesize a short original about text.
+            Prefer publisher, author, library, ISBN registry, Open Library, WorldCat, or other reputable book pages. Do not copy copyrighted blurbs; synthesize a short original about text.
             publishedDate must be only a four-digit year when known.
             Generate natural-language fields in the EPUB language, especially description/about and tags. If the language field is present, use that language. If it is missing, infer it and return an ISO 639 language code.
             Inspect isbn and every identifier. If any identifier is an ISBN-10 or ISBN-13, return it in isbn.

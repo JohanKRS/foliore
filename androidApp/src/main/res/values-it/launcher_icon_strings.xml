@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_launcher_icon">Icona dell’app</string>
+    <string name="settings_launcher_icon_hint">Il launcher potrebbe impiegare qualche istante ad aggiornarsi. Con le icone a tema attive, Android imposta i colori.</string>
+    <string name="settings_launcher_icon_error">Impossibile cambiare l’icona. Riprova.</string>
+</resources>

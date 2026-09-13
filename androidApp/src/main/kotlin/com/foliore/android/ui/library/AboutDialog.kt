@@ -52,6 +52,11 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
         }
     }
     var section by rememberSaveable { mutableStateOf(AboutSection.HOME) }
+    var showPurchaseTerms by rememberSaveable { mutableStateOf(false) }
+    if (showPurchaseTerms) {
+        PurchaseTermsDialog { showPurchaseTerms = false }
+        return
+    }
     var groupId by rememberSaveable { mutableStateOf<String?>(null) }
     var noticePath by rememberSaveable { mutableStateOf<String?>(null) }
     var noticeTitle by rememberSaveable { mutableStateOf<String?>(null) }
@@ -81,7 +86,7 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
             if (group != null) {
                 Text(group.license, style = MaterialTheme.typography.bodyMedium)
                 ExternalCreditLink(stringResource(R.string.about_project_site), group.url)
-                if (group.id == "google-play") {
+                if (group.id in setOf("google-play", "play-billing")) {
                     ExternalCreditLink(stringResource(R.string.about_terms), "https://developer.android.com/studio/terms")
                 }
                 if (group.coordinates.isNotEmpty()) {
@@ -107,6 +112,7 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(stringResource(R.string.about_thanks), style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = { showPurchaseTerms = true }) { Text(stringResource(R.string.billing_terms)) }
                     AboutSection.entries.filter { it != AboutSection.HOME }.forEach { entry ->
                         AboutRow(stringResource(entry.title), stringResource(entry.description)) { section = entry }
                     }
@@ -115,7 +121,6 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
                     CreditService("Open Library", R.string.about_open_library, "https://openlibrary.org", "https://openlibrary.org/developers/licensing")
                     CreditService("Internet Archive", R.string.about_internet_archive, "https://archive.org", "https://archive.org/about/terms")
                     CreditService("Bibliothèque nationale de France (BnF)", R.string.about_bnf, "https://catalogue.bnf.fr", "https://www.bnf.fr/fr/conditions-de-reutilisations-des-donnees-de-la-bnf")
-                    CreditService("Google Books", R.string.about_google_books, "https://books.google.com", "https://developers.google.com/books/terms")
                     Text(stringResource(R.string.about_content_rights), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 AboutSection.LIBRARIES -> {

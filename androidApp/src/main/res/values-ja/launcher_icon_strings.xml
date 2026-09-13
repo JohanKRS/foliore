@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_launcher_icon">アプリアイコン</string>
+    <string name="settings_launcher_icon_hint">ランチャーへの反映には少し時間がかかる場合があります。テーマアイコンが有効な場合、色はAndroidによって設定されます。</string>
+    <string name="settings_launcher_icon_error">アイコンを変更できませんでした。もう一度お試しください。</string>
+</resources>

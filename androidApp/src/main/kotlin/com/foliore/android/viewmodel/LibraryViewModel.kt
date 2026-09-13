@@ -30,7 +30,6 @@ import com.foliore.android.storage.LibraryDisplayPreferenceRepository
 import com.foliore.android.storage.ManualSyncPhase
 import com.foliore.android.storage.ManualSyncProgress
 import com.foliore.android.storage.ManualSyncResult
-import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.PendingEpubImport
 import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.android.storage.GoogleDriveBackupStats
@@ -55,6 +54,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class LibraryViewModel(
+    private val billingRepository: com.foliore.android.billing.PlayBillingRepository,
     private val libraryRepository: LibraryRepository,
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
@@ -66,7 +66,6 @@ class LibraryViewModel(
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
     private val libraryDisplayPreferenceRepository: LibraryDisplayPreferenceRepository,
-    private val metadataPreferenceRepository: MetadataPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
 ) : ViewModel() {
@@ -91,7 +90,6 @@ class LibraryViewModel(
             isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
             aiProviderMode = aiPreferenceRepository.providerMode.value,
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
-            hasGoogleBooksApiKey = metadataPreferenceRepository.hasGoogleBooksApiKey.value,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
             kindleEmailSettings = kindleEmailPreferenceRepository.settings,
             gridColumns = libraryDisplayPreferenceRepository.gridColumns().toBookGridColumns(),
@@ -107,6 +105,13 @@ class LibraryViewModel(
     private val _notice = MutableStateFlow<LibraryNotice?>(null)
     val notice: StateFlow<LibraryNotice?> = _notice.asStateFlow()
     private val pendingEpubImports = linkedMapOf<String, PendingEpubImport>()
+    private var limitedImportUris: List<Uri> = emptyList()
+    val billingState = billingRepository.state
+
+    fun refreshPurchases() = billingRepository.refresh()
+    fun restorePurchase() = billingRepository.refresh(restore = true)
+    fun purchaseUnlimited(activity: android.app.Activity) = billingRepository.purchase(activity)
+
     private var pendingImportCounts = ImportCounts()
     private var isResolvingImportConflicts = false
     private var pendingGoogleDriveOperation: GoogleDriveOperation = GoogleDriveOperation.Connect
@@ -127,6 +132,27 @@ class LibraryViewModel(
     }
 
     fun importUris(uris: List<Uri>) {
+        if (uris.isEmpty() || pendingEpubImports.isNotEmpty() || _state.value.isImporting || limitedImportUris.isNotEmpty()) return
+        val available = com.foliore.android.billing.LibraryLimit.remaining(_state.value.books.size, billingState.value.unlimited)
+        if (uris.size > available) {
+            limitedImportUris = uris
+            _state.update { it.copy(importLimitAvailable = available) }
+        } else startImport(uris)
+    }
+
+    fun continueLimitedImport() {
+        val uris = limitedImportUris
+        limitedImportUris = emptyList()
+        _state.update { it.copy(importLimitAvailable = null) }
+        startImport(uris)
+    }
+
+    fun dismissImportLimit() {
+        limitedImportUris = emptyList()
+        _state.update { it.copy(importLimitAvailable = null, importLimitSkipped = 0) }
+    }
+
+    private fun startImport(uris: List<Uri>) {
         if (uris.isEmpty() || pendingEpubImports.isNotEmpty() || _state.value.isImporting) return
 
         viewModelScope.launch {
@@ -148,6 +174,7 @@ class LibraryViewModel(
                     when (val importResult = epubImporter.import(uri)) {
                         is EpubImportResult.Imported -> counts = counts.copy(imported = counts.imported + 1)
                         is EpubImportResult.Duplicate -> counts = counts.copy(duplicates = counts.duplicates + 1)
+                        EpubImportResult.LimitReached -> counts = counts.copy(limited = counts.limited + 1)
                         is EpubImportResult.Failed -> counts = counts.copy(failed = counts.failed + 1)
                         is EpubImportResult.NeedsReview -> {
                             val pendingImport = importResult.pendingImport
@@ -235,6 +262,7 @@ class LibraryViewModel(
                                 is EpubImportResult.Duplicate -> {
                                     counts = counts.copy(duplicates = counts.duplicates + 1)
                                 }
+                                EpubImportResult.LimitReached -> counts = counts.copy(limited = counts.limited + 1)
                                 is EpubImportResult.Failed,
                                 is EpubImportResult.NeedsReview -> {
                                     counts = counts.copy(failed = counts.failed + 1)
@@ -349,30 +377,6 @@ class LibraryViewModel(
         aiPreferenceRepository.setProviderMode(AiProviderMode.DISABLED)
         _state.update { it.copy(aiProviderMode = AiProviderMode.DISABLED, hasOpenAiApiKey = false) }
         _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
-    }
-
-    fun saveGoogleBooksApiKey(apiKey: String) {
-        viewModelScope.launch {
-            val saved = withContext(Dispatchers.IO) {
-                metadataPreferenceRepository.saveGoogleBooksApiKey(apiKey)
-            }
-            _state.update {
-                it.copy(hasGoogleBooksApiKey = metadataPreferenceRepository.hasGoogleBooksApiKey.value)
-            }
-            _notice.value = LibraryNotice(
-                if (saved) {
-                    LibraryNoticeType.GOOGLE_BOOKS_API_KEY_SAVED
-                } else {
-                    LibraryNoticeType.GOOGLE_BOOKS_API_KEY_INVALID
-                },
-            )
-        }
-    }
-
-    fun clearGoogleBooksApiKey() {
-        metadataPreferenceRepository.clearGoogleBooksApiKey()
-        _state.update { it.copy(hasGoogleBooksApiKey = false) }
-        _notice.value = LibraryNotice(LibraryNoticeType.GOOGLE_BOOKS_API_KEY_CLEARED)
     }
 
     fun saveKindleEmail(email: String) {
@@ -1461,6 +1465,10 @@ class LibraryViewModel(
     }
 
     private fun publishImportNotice(counts: ImportCounts) {
+        if (counts.limited > 0) {
+            _state.update { it.copy(importLimitSkipped = counts.limited) }
+            if (counts.imported == 0 && counts.duplicates == 0 && counts.failed == 0) return
+        }
         _notice.value = LibraryNotice(
             type = when {
                 counts.imported > 0 && counts.duplicates == 0 && counts.failed == 0 -> {
@@ -1596,6 +1604,7 @@ private data class ImportCounts(
     val imported: Int = 0,
     val duplicates: Int = 0,
     val failed: Int = 0,
+    val limited: Int = 0,
 )
 
 private data class SyncStateSnapshot(

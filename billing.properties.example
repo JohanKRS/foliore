@@ -1,0 +1,3 @@
+# Public RSA licensing key from Play Console > Monetize > Monetization setup.
+# This is NOT the signing key, API key, or a service-account credential.
+playBillingPublicKey=

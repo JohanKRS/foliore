@@ -21,6 +21,8 @@ class LibraryRepository(
 ) {
     private val database = FolioreDatabase(driver)
 
+    fun bookCount(): Int = database.libraryQueries.countBooks().executeAsOne().toInt()
+
     fun getBooks(): List<LibraryBook> {
         return database.libraryQueries.selectAll().executeAsList().map { row ->
             LibraryBook(

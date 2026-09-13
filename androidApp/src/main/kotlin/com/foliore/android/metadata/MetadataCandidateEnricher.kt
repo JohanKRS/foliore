@@ -122,7 +122,7 @@ internal class MetadataCandidateEnricher(private val cacheDir: File) {
             val cover = runCatching {
                 http.remainingMillis()
                 val parsed = URL(url)
-                check(parsed.protocol == "https" && parsed.host in setOf("covers.openlibrary.org", "books.google.com", "books.googleusercontent.com", "archive.org"))
+                check(parsed.protocol == "https" && parsed.host in setOf("covers.openlibrary.org", "archive.org"))
                 val connection = parsed.openConnection() as HttpURLConnection
                 try {
                     connection.connectTimeout = minOf(2_000L, http.remainingMillis()).toInt()

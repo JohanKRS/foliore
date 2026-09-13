@@ -2,7 +2,6 @@ package com.foliore.android.di
 
 import android.content.Context
 import com.foliore.android.ai.OpenAiApiService
-import com.foliore.android.metadata.GoogleBooksMetadataService
 import com.foliore.android.metadata.OpenMetadataLookupService
 import com.foliore.android.metadata.OpenLibraryMetadataService
 import com.foliore.android.storage.AiCoverPromptRepository
@@ -17,7 +16,6 @@ import com.foliore.android.storage.GoogleDriveSyncService
 import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.LibraryDisplayPreferenceRepository
 import com.foliore.android.storage.ManualSyncService
-import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.SyncService
 import com.foliore.android.storage.SyncSettingsRepository
 import com.foliore.android.storage.SyncWorkScheduler
@@ -31,13 +29,16 @@ class AppContainer(context: Context) {
     private val driver = DatabaseDriverFactory(appContext).createDriver()
     private val deviceIdProvider = DeviceIdProvider(appContext)
 
+    val billingRepository = com.foliore.android.billing.PlayBillingRepository.get(appContext)
     val libraryRepository = LibraryRepository(driver)
+    val launcherIconRepository by lazy {
+        com.foliore.android.storage.LauncherIconRepository(appContext)
+    }
     val themePreferenceRepository = ThemePreferenceRepository(appContext)
     val aiPreferenceRepository = AiPreferenceRepository(appContext)
     val aiCoverPromptRepository = AiCoverPromptRepository(appContext)
     val kindleEmailPreferenceRepository = KindleEmailPreferenceRepository(appContext)
     val libraryDisplayPreferenceRepository = LibraryDisplayPreferenceRepository(appContext)
-    val metadataPreferenceRepository = MetadataPreferenceRepository(appContext)
     val syncSettingsRepository = SyncSettingsRepository(appContext)
     val googleDriveAuthService = GoogleDriveAuthService(
         context = appContext,
@@ -48,16 +49,12 @@ class AppContainer(context: Context) {
         aiPreferenceRepository = aiPreferenceRepository,
     )
     val openLibraryMetadataService = OpenLibraryMetadataService(appContext)
-    val googleBooksMetadataService = GoogleBooksMetadataService(
-        context = appContext,
-        metadataPreferenceRepository = metadataPreferenceRepository,
-    )
     val openMetadataLookupService = OpenMetadataLookupService(
         openLibraryMetadataService = openLibraryMetadataService,
-        googleBooksMetadataService = googleBooksMetadataService,
         cacheDir = appContext.cacheDir,
     )
     val epubImporter = AndroidEpubImporter(
+        isUnlimited = { billingRepository.state.value.unlimited },
         context = appContext,
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,

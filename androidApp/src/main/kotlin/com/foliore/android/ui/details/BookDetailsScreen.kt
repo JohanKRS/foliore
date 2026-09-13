@@ -68,6 +68,8 @@ fun BookDetailsScreen(
     onSendToKindle: () -> Unit,
     onDeleteBook: () -> Unit,
     onBack: () -> Unit,
+    topChromeInset: androidx.compose.ui.unit.Dp = 0.dp,
+    bottomChromeInset: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -76,6 +78,7 @@ fun BookDetailsScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         if (book == null) {
+            Spacer(Modifier.height(topChromeInset))
             DetailsTopBar(onBack = onBack)
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -104,8 +107,8 @@ fun BookDetailsScreen(
                         .padding(
                             start = horizontalPadding,
                             end = horizontalPadding,
-                            top = 18.dp,
-                            bottom = 36.dp,
+                            top = 18.dp + topChromeInset,
+                            bottom = 36.dp + bottomChromeInset,
                         ),
                 ) {
                     DetailsTopBar(onBack = onBack)

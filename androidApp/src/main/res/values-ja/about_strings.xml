@@ -18,7 +18,6 @@
     <string name="about_open_library">Internet Archiveによる共同編集カタログと表紙サービスです。投稿には個別の権利が存在する場合があります。提供元の条件をご確認ください。</string>
     <string name="about_internet_archive">書誌情報と表紙の検索に使用します。利用条件は項目と権利者によって異なります。</string>
     <string name="about_bnf">フランス国立図書館（Bibliothèque nationale de France）のメタデータをSRU経由で取得します。Licence Ouverte / Open Licence（Etalab）が適用されます。</string>
-    <string name="about_google_books">設定済みの場合、Google Books APIから書籍情報と表紙を取得します。Google Booksの利用規約と出典表示ルールが適用されます。</string>
     <string name="about_content_rights">表紙、説明文、書籍には個別の権利が存在する場合があります。ここに記載するソフトウェアライセンスは、これらのコンテンツには適用されません。</string>
     <string name="about_font_credit">Cormorant GaramondはChristian Thalmann（Catharsis Fonts）と貢献者によるフォントです。アプリに同梱されています。</string>
     <string name="about_icons_credit">GoogleのMaterial IconsをJetpack Composeライブラリ経由で使用しています。その他のテキストにはシステムフォントを使用します。</string>

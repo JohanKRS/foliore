@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_launcher_icon">Icono de la app</string>
+    <string name="settings_launcher_icon_hint">El lanzador puede tardar un momento en actualizarse. Con los iconos temáticos activados, Android define los colores.</string>
+    <string name="settings_launcher_icon_error">No se pudo cambiar el icono. Inténtalo de nuevo.</string>
+</resources>

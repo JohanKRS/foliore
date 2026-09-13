@@ -26,11 +26,11 @@ class MetadataSelectionTest {
     }
     @Test fun uncheckedIsbnCannotBeOverwrittenThroughProviderIdentifiers() {
         val incoming = emptySourceMetadata("Source").copy(isbn = "9780765377104",
-            identifiers = mapOf("google_books_isbn" to "9780765377104", "google_books_volume" to "book"))
+            identifiers = mapOf("bnf_isbn" to "9780765377104", "bnf" to "book"))
         val result = current.applySelectedMetadata(incoming, MetadataField.defaultSelection - MetadataField.ISBN)
         assertEquals(current.isbn, result.isbn)
-        assertFalse("google_books_isbn" in result.identifiers)
-        assertEquals("book", result.identifiers["google_books_volume"])
+        assertFalse("bnf_isbn" in result.identifiers)
+        assertEquals("book", result.identifiers["bnf"])
     }
     @Test fun seriesNumbersAreOnlyTakenFromExplicitSeriesInformation() {
         assertEquals("The Expanse" to 5.0, "The Expanse ; 5".seriesDetails())

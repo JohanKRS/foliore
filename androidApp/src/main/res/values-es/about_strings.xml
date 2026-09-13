@@ -18,7 +18,6 @@
     <string name="about_open_library">Catálogo colaborativo y servicio de portadas del Internet Archive. Las contribuciones pueden tener derechos propios; consulta las condiciones de la fuente.</string>
     <string name="about_internet_archive">Registros bibliográficos y portadas. Las condiciones de uso varían según el elemento y su titular.</string>
     <string name="about_bnf">Metadatos de la Bibliothèque nationale de France, consultados mediante SRU, bajo la Licence Ouverte / Open Licence (Etalab).</string>
-    <string name="about_google_books">Información de libros y portadas mediante la Google Books API, cuando está configurada. Sujeta a las condiciones y reglas de atribución de Google Books.</string>
     <string name="about_content_rights">Las portadas, descripciones y libros pueden tener derechos propios. Las licencias de software indicadas aquí no se aplican a ese contenido.</string>
     <string name="about_font_credit">Cormorant Garamond, de Christian Thalmann (Catharsis Fonts) y colaboradores. Fuente incluida en la aplicación.</string>
     <string name="about_icons_credit">Material Icons, de Google, mediante la biblioteca Jetpack Compose. Los demás textos usan la fuente del sistema.</string>

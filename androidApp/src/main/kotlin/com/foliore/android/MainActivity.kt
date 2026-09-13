@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val launcherIcon = appContainer.launcherIconRepository.icon.collectAsStateWithLifecycle()
             val themeMode = appContainer.themePreferenceRepository.themeMode.collectAsStateWithLifecycle()
             val appLanguage =
                 appLanguagePreferenceRepository.appLanguage.collectAsStateWithLifecycle()
@@ -59,17 +61,20 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(darkTheme) {
-                val lightSystemBar = Color.rgb(248, 243, 234)
-                val darkSystemBar = Color.rgb(17, 20, 17)
                 val systemBarStyle = if (darkTheme) {
-                    SystemBarStyle.dark(darkSystemBar)
+                    SystemBarStyle.dark(Color.TRANSPARENT)
                 } else {
-                    SystemBarStyle.light(lightSystemBar, darkSystemBar)
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 }
                 enableEdgeToEdge(
                     statusBarStyle = systemBarStyle,
                     navigationBarStyle = systemBarStyle,
                 )
+                // The app draws a contrast-protected glass surface behind both bars.
+                if (Build.VERSION.SDK_INT >= 29) {
+                    window.isNavigationBarContrastEnforced = false
+                    window.isStatusBarContrastEnforced = false
+                }
                 allowDisplayCutout()
             }
 
@@ -78,6 +83,7 @@ class MainActivity : ComponentActivity() {
                     VisualTuningHost {
                         val factory = remember {
                             LibraryViewModelFactory(
+                                billingRepository = appContainer.billingRepository,
                                 libraryRepository = appContainer.libraryRepository,
                                 epubImporter = appContainer.epubImporter,
                                 bookEditor = appContainer.bookEditor,
@@ -89,7 +95,6 @@ class MainActivity : ComponentActivity() {
                                 aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
                                 kindleEmailPreferenceRepository = appContainer.kindleEmailPreferenceRepository,
                                 libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
-                                metadataPreferenceRepository = appContainer.metadataPreferenceRepository,
                                 openAiApiService = appContainer.openAiApiService,
                                 openMetadataLookupService = appContainer.openMetadataLookupService,
                             )
@@ -106,6 +111,8 @@ class MainActivity : ComponentActivity() {
 
                         FolioreNavHost(
                             libraryViewModel = libraryViewModel,
+                            launcherIcon = launcherIcon.value,
+                            onLauncherIconChange = appContainer.launcherIconRepository::select,
                             themeMode = themeMode.value,
                             onThemeModeChange = appContainer.themePreferenceRepository::setThemeMode,
                             appLanguage = appLanguage.value,
@@ -120,6 +127,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        appContainer.billingRepository.refresh()
     }
 
     override fun onNewIntent(intent: Intent) {

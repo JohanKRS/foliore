@@ -32,7 +32,7 @@ def supplemental(title, path):
 
 apache = supplemental("Apache License 2.0", "licenses/texts/apache-2.0.txt")
 groups = {p["id"]: {k: p[k] for k in ("id", "name", "url", "license")} | {
-    "coordinates": [], "notices": [] if p["id"] == "google-play" else [apache],
+    "coordinates": [], "notices": [] if p["id"] in ("google-play", "play-billing") else [apache],
 } for p in PROJECTS}
 
 
@@ -51,11 +51,11 @@ for line in sorted(INVENTORY.read_text().splitlines()):
     poms = list(Path(artifact).parent.parent.glob("*/*.pom"))
     ns = {"m": "http://maven.apache.org/POM/4.0.0"}
     license_names = [element.text or "" for pom in poms
-        for element in ET.parse(pom).getroot().findall("m:licenses/m:license/m:name", ns)]
+        for element in (ET.parse(pom).getroot().findall("m:licenses/m:license/m:name", ns) or ET.parse(pom).getroot().findall("licenses/license/name"))]
     if not license_names:
         # This POM inherits Apache-2.0 from its Guava parent; reviewed explicitly.
         assert coordinate == "com.google.guava:listenablefuture:1.0", f"Missing POM license: {coordinate}"
-    elif group["id"] == "google-play":
+    elif group["id"] in ("google-play", "play-billing"):
         assert all("Android Software Development Kit License" == n for n in license_names), (coordinate, license_names)
     else:
         assert all("Apache" in n for n in license_names), f"Review changed license: {coordinate}: {license_names}"

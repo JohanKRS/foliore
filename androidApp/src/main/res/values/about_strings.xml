@@ -18,7 +18,6 @@
     <string name="about_open_library">Catálogo colaborativo e serviço de capas do Internet Archive. As contribuições podem ter direitos próprios; consulte as condições da fonte.</string>
     <string name="about_internet_archive">Busca de registros bibliográficos e capas. As condições de uso variam conforme o item e seu titular.</string>
     <string name="about_bnf">Metadados da Bibliothèque nationale de France, consultados via SRU, sob a Licence Ouverte / Open Licence (Etalab).</string>
-    <string name="about_google_books">Informações de livros e capas pela Google Books API, quando configurada. Sujeitas aos termos e às regras de atribuição do Google Books.</string>
     <string name="about_content_rights">Capas, descrições e livros podem ter direitos próprios. As licenças de software listadas aqui não se aplicam a esse conteúdo.</string>
     <string name="about_font_credit">Cormorant Garamond, de Christian Thalmann (Catharsis Fonts) e colaboradores. Fonte distribuída com o app.</string>
     <string name="about_icons_credit">Material Icons, do Google, pela biblioteca Jetpack Compose. Os demais textos usam a fonte do sistema.</string>

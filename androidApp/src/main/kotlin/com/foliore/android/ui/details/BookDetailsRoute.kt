@@ -34,6 +34,7 @@ fun BookDetailsRoute(
     bookId: String,
     onEditMetadata: () -> Unit,
     onBack: () -> Unit,
+    topChromeInset: Dp = 0.dp,
     bottomChromeInset: Dp = 0.dp,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -71,6 +72,8 @@ fun BookDetailsRoute(
     ) { paddingValues ->
         BookDetailsScreen(
             book = book,
+            topChromeInset = topChromeInset,
+            bottomChromeInset = bottomChromeInset,
             isLoading = state.hasActiveProgress,
             progress = state.activeProgress,
             onEditMetadata = onEditMetadata,

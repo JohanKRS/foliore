@@ -10,6 +10,8 @@ import com.foliore.shared.domain.LibraryBook
 
 data class LibraryUiState(
     val books: List<LibraryBook> = emptyList(),
+    val importLimitAvailable: Int? = null,
+    val importLimitSkipped: Int = 0,
     val isImporting: Boolean = false,
     val importProgress: SyncProgress? = null,
     val pendingImportConflicts: List<ImportDuplicateConflict> = emptyList(),
@@ -36,7 +38,6 @@ data class LibraryUiState(
     val selectedBookIds: Set<String> = emptySet(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
-    val hasGoogleBooksApiKey: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
     val kindleEmailSettings: KindleEmailSettings = KindleEmailSettings(
         kindleEmail = null,
@@ -181,9 +182,6 @@ enum class LibraryNoticeType {
     AI_SETTINGS_UPDATED,
     AI_API_KEY_SAVED,
     AI_API_KEY_CLEARED,
-    GOOGLE_BOOKS_API_KEY_SAVED,
-    GOOGLE_BOOKS_API_KEY_CLEARED,
-    GOOGLE_BOOKS_API_KEY_INVALID,
     AI_PROVIDER_REQUIRED,
     AI_PROVIDER_NOT_READY,
     AI_REQUEST_FAILED,

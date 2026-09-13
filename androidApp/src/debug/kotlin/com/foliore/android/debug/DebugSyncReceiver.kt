@@ -13,6 +13,11 @@ class DebugSyncReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
+        if (intent.getBooleanExtra("billingLimitSafetyTest", false)) {
+            Thread { runCatching { BillingLimitHarness.run(context.applicationContext) }
+                .onFailure { Log.e(TAG, "Isolated billing QA failed", it) } }.start()
+            return
+        }
         if (intent.hasExtra("qaAction")) {
             Thread {
                 runCatching { DeviceSyncQaHarness.run(context.applicationContext, intent) }

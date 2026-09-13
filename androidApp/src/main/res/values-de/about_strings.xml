@@ -18,7 +18,6 @@
     <string name="about_open_library">Gemeinschaftlicher Katalog und Coverdienst des Internet Archive. Beiträge können eigenen Rechten unterliegen; siehe die Bedingungen der Quelle.</string>
     <string name="about_internet_archive">Bibliografische Datensätze und Cover. Die Nutzungsbedingungen hängen vom jeweiligen Eintrag und Rechteinhaber ab.</string>
     <string name="about_bnf">Metadaten der Bibliothèque nationale de France, über SRU abgefragt, unter der Licence Ouverte / Open Licence (Etalab).</string>
-    <string name="about_google_books">Buchinformationen und Cover über die Google Books API, sofern eingerichtet. Es gelten die Bedingungen und Zuordnungsregeln von Google Books.</string>
     <string name="about_content_rights">Cover, Beschreibungen und Bücher können eigenen Rechten unterliegen. Die hier aufgeführten Softwarelizenzen gelten nicht für diese Inhalte.</string>
     <string name="about_font_credit">Cormorant Garamond von Christian Thalmann (Catharsis Fonts) und Mitwirkenden. Diese Schrift ist in der App enthalten.</string>
     <string name="about_icons_credit">Material Icons von Google über die Jetpack-Compose-Bibliothek. Andere Texte verwenden die Systemschrift.</string>

@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
 import com.foliore.android.storage.AppLanguage
 import com.foliore.android.storage.SyncProvider
+import com.foliore.android.storage.LauncherIcon
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.LibraryNoticeType
 import com.foliore.android.viewmodel.LibraryViewModel
@@ -34,12 +35,16 @@ import com.foliore.android.viewmodel.LibraryViewModel
 @Composable
 fun SettingsRoute(
     viewModel: LibraryViewModel,
+    launcherIcon: LauncherIcon,
+    onLauncherIconChange: (LauncherIcon) -> Boolean,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
     appLanguage: AppLanguage,
     onAppLanguageChange: (AppLanguage) -> Unit,
     bottomChromeInset: Dp = 0.dp,
 ) {
+    val billingState by viewModel.billingState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -114,10 +119,17 @@ fun SettingsRoute(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->
         SettingsScreen(
+            billingState = billingState,
+            bookCount = state.books.size,
+            onRefreshPurchases = viewModel::refreshPurchases,
+            onRestorePurchase = viewModel::restorePurchase,
+            onPurchaseUnlimited = { context.findActivity()?.let(viewModel::purchaseUnlimited) },
+            bottomChromeInset = bottomChromeInset,
+            launcherIcon = launcherIcon,
+            onLauncherIconChange = onLauncherIconChange,
             themeMode = themeMode,
             appLanguage = appLanguage,
             hasOpenAiApiKey = state.hasOpenAiApiKey,
-            hasGoogleBooksApiKey = state.hasGoogleBooksApiKey,
             kindleEmailSettings = state.kindleEmailSettings,
             syncProvider = state.syncProvider,
             syncFolderLabel = state.syncFolderLabel,
@@ -133,8 +145,6 @@ fun SettingsRoute(
             onChooseAppLanguage = { showLanguagePicker = true },
             onOpenAiApiKeySave = viewModel::saveOpenAiApiKey,
             onOpenAiApiKeyClear = viewModel::clearOpenAiApiKey,
-            onGoogleBooksApiKeySave = viewModel::saveGoogleBooksApiKey,
-            onGoogleBooksApiKeyClear = viewModel::clearGoogleBooksApiKey,
             onKindleEmailSave = viewModel::saveKindleEmail,
             onKindleEmailClear = viewModel::clearKindleEmail,
             onKindleSmtpSave = viewModel::saveKindleSmtpSettings,

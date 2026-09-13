@@ -33,24 +33,9 @@ class MetadataLookupTest {
         assertEquals(1, MetadataSearchRules.rank(listOf(one.copy(matchedIsbns = setOf("9781466853454")), two.copy(matchedIsbns = setOf("9781466853454"))), draft, 8).size)
     }
     @Test fun queriesQuotePhrasesAndOfferShortTitlesAndAliases() {
-        val queries = googleBooksQueries(draft.copy(title = "Outlander aka Cross Stitch", isbn = "bad"))
-        assertTrue(queries.any { "intitle:\"Outlander\"" in it })
-        assertFalse(queries.any { it.startsWith("isbn:") })
-        assertTrue(queries.any { "inauthor:" !in it && "Outlander" in it })
         assertEquals(listOf("A Book: A subtitle", "A Book"), MetadataSearchRules.titleVariants("A Book: A subtitle"))
         assertEquals("pt", MetadataSearchRules.language("pt-BR"))
         assertEquals("pt", MetadataSearchRules.language("/languages/por"))
-    }
-    @Test fun googleUsesFullFieldsAndFallsBackAfterEmptyIsbnResult() {
-        val urls = mutableListOf<String>()
-        val result = searchGoogleBooks(draft, 8, "synthetic-key") { url ->
-            urls += url
-            if (urls.size == 1) "{}" else """{"items":[null,{}, {"id":"correct","volumeInfo":{"title":"Death's End","authors":["Cixin Liu"],"description":"A complete description","publisher":"Tor","language":"en","industryIdentifiers":[{"type":"ISBN_10","identifier":"146685345X"}]}}]}"""
-        } as MetadataLookupResult.Success
-        assertTrue(urls.all { "projection=full" in it })
-        assertEquals(2, urls.size)
-        assertEquals("A complete description", result.candidates.single().metadata.description)
-        assertEquals(setOf("9781466853454"), result.candidates.single().matchedIsbns)
     }
     @Test fun openLibraryUsesTheExactEditionRatherThanWorkLevelArrays() {
         val result = searchOpenLibrary(draft, 8) { url ->
@@ -82,7 +67,6 @@ class MetadataLookupTest {
     @Test fun failureIsNotReportedAsNoMatchesAndPartialSuccessSurvives() {
         val failure = { MetadataLookupResult.Failure("offline") }
         assertIs<MetadataLookupResult.Failure>(collectMetadataResults(draft, 8, listOf(failure, failure)))
-        assertIs<MetadataLookupResult.Failure>(searchGoogleBooks(draft, 8, "test") { throw MetadataHttpException(403) })
         assertIs<MetadataLookupResult.Failure>(searchOpenLibrary(draft, 8) { if ("/isbn/" in it) throw MetadataHttpException(404) else throw java.io.IOException("offline") })
         val result = collectMetadataResults(draft, 8, listOf(failure, { MetadataLookupResult.Success(listOf(candidate("good"))) })) as MetadataLookupResult.Success
         assertEquals("good", result.candidates.single().id)

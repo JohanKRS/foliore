@@ -1,0 +1,15 @@
+{
+  "status": "integrated",
+  "name": "Dawn",
+  "description": "Amarelo suave e ameixa",
+  "palette": {
+    "name": "Dawn",
+    "detail": "Amarelo suave e ameixa",
+    "f": "#432638",
+    "star": "#9C6B22",
+    "edge": "#FFF0CD"
+  },
+  "source": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-3e3f47f0-7ce4-44d1-b7ef-eac97b1a2604.png",
+  "approvedSourceDirectory": ".codex-artifacts/adaptive-icon-2026-09-12/time-palettes-warm-test/dawn",
+  "note": "Selected palette integrated in the Android launcher picker; source artwork preserved."
+}

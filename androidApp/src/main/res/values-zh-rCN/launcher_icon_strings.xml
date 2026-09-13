@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_launcher_icon">应用图标</string>
+    <string name="settings_launcher_icon_hint">启动器可能需要片刻才能更新。启用主题图标时，颜色由 Android 决定。</string>
+    <string name="settings_launcher_icon_error">无法更改图标。请重试。</string>
+</resources>

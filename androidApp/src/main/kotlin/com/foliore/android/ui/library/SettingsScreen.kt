@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Button
@@ -51,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
 import com.foliore.android.storage.AppLanguage
@@ -58,16 +60,23 @@ import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.FolioreTopLevelHeader
+import com.foliore.android.storage.LauncherIcon
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 import java.util.Locale
 
 @Composable
 fun SettingsScreen(
+    billingState: com.foliore.android.billing.BillingState,
+    bookCount: Int,
+    onRefreshPurchases: () -> Unit,
+    onRestorePurchase: () -> Unit,
+    onPurchaseUnlimited: () -> Unit,
+    launcherIcon: LauncherIcon,
+    onLauncherIconChange: (LauncherIcon) -> Boolean,
     themeMode: ThemeMode,
     appLanguage: AppLanguage,
     hasOpenAiApiKey: Boolean,
-    hasGoogleBooksApiKey: Boolean,
     kindleEmailSettings: KindleEmailSettings,
     syncProvider: SyncProvider,
     syncFolderLabel: String?,
@@ -83,8 +92,6 @@ fun SettingsScreen(
     onChooseAppLanguage: () -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
-    onGoogleBooksApiKeySave: (String) -> Unit,
-    onGoogleBooksApiKeyClear: () -> Unit,
     onKindleEmailSave: (String) -> Unit,
     onKindleEmailClear: () -> Unit,
     onKindleSmtpSave: (String, String, String, String, String) -> Unit,
@@ -97,6 +104,7 @@ fun SettingsScreen(
     onAutoSyncWifiOnlyChange: (Boolean) -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
+    bottomChromeInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -116,6 +124,7 @@ fun SettingsScreen(
             }
         }
     }
+    var showIconPicker by rememberSaveable { mutableStateOf(false) }
     var showThemePicker by rememberSaveable { mutableStateOf(false) }
     var showKindleSettings by rememberSaveable { mutableStateOf(false) }
     var showExperimentalSettings by rememberSaveable { mutableStateOf(false) }
@@ -154,6 +163,12 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_theme),
             description = stringResource(themeMode.labelResource()),
             onClick = { showThemePicker = true },
+        )
+        CompactSettingsRow(
+            icon = Icons.Outlined.Apps,
+            title = stringResource(R.string.settings_launcher_icon),
+            description = launcherIcon.label,
+            onClick = { showIconPicker = true },
         )
         CompactSettingsRow(
             icon = Icons.Outlined.Language,
@@ -384,6 +399,8 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(20.dp))
+        UnlimitedSettingsEntry(billingState, bookCount, onRefreshPurchases, onRestorePurchase, onPurchaseUnlimited)
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = stringResource(R.string.settings_preserve_original_description),
             modifier = Modifier.fillMaxWidth(),
@@ -414,11 +431,18 @@ fun SettingsScreen(
                 Text(stringResource(R.string.about_title))
             }
         }
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(48.dp + bottomChromeInset))
         }
         }
     }
 
+    if (showIconPicker) {
+        LauncherIconSettingsDialog(
+            selectedIcon = launcherIcon,
+            onSelect = onLauncherIconChange,
+            onDismiss = { showIconPicker = false },
+        )
+    }
     if (showThemePicker) {
         ThemeSettingsDialog(
             themeMode = themeMode,
@@ -438,10 +462,7 @@ fun SettingsScreen(
     }
     if (showExperimentalSettings) {
         ExperimentalSettingsDialog(
-            hasGoogleBooksApiKey = hasGoogleBooksApiKey,
             hasOpenAiApiKey = hasOpenAiApiKey,
-            onGoogleBooksApiKeySave = onGoogleBooksApiKeySave,
-            onGoogleBooksApiKeyClear = onGoogleBooksApiKeyClear,
             onOpenAiApiKeySave = onOpenAiApiKeySave,
             onOpenAiApiKeyClear = onOpenAiApiKeyClear,
             onDismiss = { showExperimentalSettings = false },

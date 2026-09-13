@@ -51,9 +51,9 @@ class OpenCatalogSourcesTest {
         val text = "*A novel* with **bold text**. [Wikipedia](https://en.wikipedia.org/wiki/Example) [**PDF**](https://example.invalid/download)"
         assertEquals("A novel with bold text. Wikipedia", text.displayMetadataText())
     }
-    @Test fun missingGoogleFieldsAreNotMisrepresentedAsFoundData() {
+    @Test fun missingOpenLibraryFieldsAreNotMisrepresentedAsFoundData() {
         val current = emptySourceMetadata("Dune").copy(description = "Local text", publisher = "Local publisher")
-        val candidate = googleCandidate(Json.parseToJsonElement("""{"id":"dune","volumeInfo":{"title":"Dune"}}""").jsonObject, current)!!
+        val candidate = openLibraryEdition(Json.parseToJsonElement("""{"key":"/books/OL1M","title":"Dune"}""").jsonObject, current)!!
         assertNull(candidate.metadata.description)
         assertNull(candidate.metadata.publisher)
         assertTrue(candidate.metadata.authors.isEmpty())

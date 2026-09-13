@@ -12,12 +12,12 @@ import com.foliore.android.storage.AndroidEpubImporter
 import com.foliore.android.storage.AndroidPreparedEpubService
 import com.foliore.android.storage.KindleEmailPreferenceRepository
 import com.foliore.android.storage.LibraryDisplayPreferenceRepository
-import com.foliore.android.storage.MetadataPreferenceRepository
 import com.foliore.android.storage.SyncService
 import com.foliore.android.storage.SyncWorkScheduler
 import com.foliore.shared.library.LibraryRepository
 
 class LibraryViewModelFactory(
+    private val billingRepository: com.foliore.android.billing.PlayBillingRepository,
     private val libraryRepository: LibraryRepository,
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
@@ -29,7 +29,6 @@ class LibraryViewModelFactory(
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
     private val libraryDisplayPreferenceRepository: LibraryDisplayPreferenceRepository,
-    private val metadataPreferenceRepository: MetadataPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
 ) : ViewModelProvider.Factory {
@@ -37,6 +36,7 @@ class LibraryViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
             return LibraryViewModel(
+                billingRepository = billingRepository,
                 libraryRepository = libraryRepository,
                 epubImporter = epubImporter,
                 bookEditor = bookEditor,
@@ -48,7 +48,6 @@ class LibraryViewModelFactory(
                 aiCoverPromptRepository = aiCoverPromptRepository,
                 kindleEmailPreferenceRepository = kindleEmailPreferenceRepository,
                 libraryDisplayPreferenceRepository = libraryDisplayPreferenceRepository,
-                metadataPreferenceRepository = metadataPreferenceRepository,
                 openAiApiService = openAiApiService,
                 openMetadataLookupService = openMetadataLookupService,
             ) as T

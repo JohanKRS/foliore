@@ -37,7 +37,6 @@ internal object MetadataLookupHarness {
                 put("cover", candidate.coverImagePath != null)
                 put("defaultCoverSelected", MetadataField.COVER in MetadataField.defaultSelection)
             }) }
-            put("googleBooksConfigured", app.metadataPreferenceRepository.hasGoogleBooksApiKey.value)
             when (result) {
                 is MetadataLookupResult.Failure -> { put("status", "FAILURE"); put("reason", result.message) }
                 is MetadataLookupResult.Success -> {

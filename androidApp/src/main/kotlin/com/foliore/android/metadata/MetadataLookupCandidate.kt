@@ -18,8 +18,6 @@ data class MetadataLookupCandidate(
     val sourceLanguage: String? = null,
     val authorKeys: List<String> = emptyList(),
     val detailsResolved: Boolean = false,
-    val googleSeriesId: String? = null,
-    val googleSeriesOrder: Double? = null,
     val workEditionCount: Int = 0,
     val seriesWorkKeys: List<String> = emptyList(),
 )

@@ -27,7 +27,7 @@ O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **127 co
 - [Open Library — condições do catálogo](https://openlibrary.org/developers/licensing): não presume que capas ou contribuições individuais estejam livres de direitos. Crédito ao Internet Archive e à comunidade.
 - [Internet Archive — termos](https://archive.org/about/terms): direitos e condições podem variar por item. O app consulta registros e imagens; não incorpora o código do servidor Open Library/Internet Archive.
 - [BnF — reutilização de metadados](https://www.bnf.fr/fr/conditions-de-reutilisations-des-donnees-de-la-bnf): Licence Ouverte / Open Licence (Etalab), com identificação da fonte e data de recuperação. A licença dos metadados não deve ser confundida com as condições de digitalizações Gallica.
-- [Google Books — termos](https://developers.google.com/books/terms) e [atribuição](https://developers.google.com/books/branding): integração opcional com chave do usuário. Crédito no “Sobre” não substitui requisitos junto aos resultados.
+- [Google Play Billing](https://developer.android.com/google/play/billing): SDK de compras, com termos Android SDK e avisos dos componentes incorporados. Incluído no catálogo offline.
 - [Google Play services — avisos de terceiros](https://developers.google.com/android/guides/opensource) e [Android SDK — termos](https://developer.android.com/studio/terms).
 - [Google APIs — termos](https://developers.google.com/terms), para a integração Drive.
 - [OpenAI — contrato de serviços de API](https://openai.com/policies/services-agreement/).
@@ -37,9 +37,9 @@ O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **127 co
 
 O conteúdo de “Sobre” foi concluído; estes pontos dependem do fluxo de busca e da distribuição do produto, e **não são resolvidos por uma página de créditos**:
 
-1. **Google Books:** a busca atual mistura, reordena e complementa resultados entre provedores. As regras publicadas pedem resultados Google identificados com a marca oficial, links por livro e preservação da ordem, sem mistura com terceiros. É necessário separar a apresentação e o tratamento dos resultados Google ou retirar essa fonte. Isso altera o fluxo aprovado de busca; não foi feito silenciosamente nesta tarefa de créditos.
-2. **Google Books e cobrança:** os termos específicos publicados vedam cobrar pelo uso do app sem acordo separado ou permissão escrita. Definir isso antes de disponibilizar uma versão paga; usar uma chave do usuário não demonstra uma dispensa.
-3. **BnF:** o ARK já está no resultado, mas a data de recuperação não é preservada. A atribuição precisa acompanhar dados aplicados, sincronizados e exportados, mesmo se o usuário desmarcar identificadores. Isso exige implementar e testar a proveniência, além da referência geral agora incluída no “Sobre”.
-4. **Contato público:** a caixa `foliore@johankrs.com`, o domínio e o atendimento de pedidos de remoção ainda dependem da publicação/verificação prevista no plano de lançamento. Não apresentamos os serviços como parceiros ou patrocinadores.
+1. **BnF:** o ARK já está no resultado, mas a data de recuperação não é preservada. A atribuição precisa acompanhar dados aplicados, sincronizados e exportados, mesmo se o usuário desmarcar identificadores. Isso exige implementar e testar a proveniência, além da referência geral agora incluída no “Sobre”.
+2. **Contato público:** a caixa `foliore@johankrs.com`, o domínio e o atendimento de pedidos de remoção ainda dependem da publicação/verificação prevista no plano de lançamento. Não apresentamos os serviços como parceiros ou patrocinadores.
 
 Esses pontos foram identificados nas páginas oficiais consultadas, não constituem uma conclusão de conformidade global do produto.
+
+Google Books foi removido em 12/09/2026: serviço, configurações, armazenamento de chave, créditos e domínios de capas. Não existe busca ou enriquecimento por essa API no app monetizado. As fontes restantes são Open Library, Internet Archive e BnF.

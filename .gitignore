@@ -15,4 +15,5 @@ qa/
 tablet-*.png
 
 publication.properties
+billing.properties
 support/private-reports/

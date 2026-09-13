@@ -1,0 +1,15 @@
+{
+  "status": "integrated",
+  "name": "Dusk",
+  "description": "Pêssego e lavanda, com F violeta escuro",
+  "palette": {
+    "name": "Dusk",
+    "detail": "Pêssego e violeta suave",
+    "f": "#3A2848",
+    "star": "#925725",
+    "edge": "#F6DED0"
+  },
+  "source": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-75ab1088-cf9f-4560-b93f-82a55722d8d3.png",
+  "approvedSourceDirectory": ".codex-artifacts/adaptive-icon-2026-09-12/dusk-soft/dusk",
+  "note": "Selected palette integrated in the Android launcher picker; source artwork preserved."
+}
