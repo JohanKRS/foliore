@@ -1,0 +1,12 @@
+{
+  "id": "restaurant-ja",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "title": "注文の多い料理店",
+  "author": "宮沢賢治",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/restaurant-ja.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-b3a0aa32-f9ca-4584-ab10-1365ebaf5397.png",
+  "prompt": "Use case: illustration-story. Asset type: original Japanese literary ebook front cover, flat full-bleed portrait image in 2:3 aspect ratio. An imaginative gouache picture of a mysterious door standing in a fantastical woodland, playful and witty but with mature contemporary editorial art direction, not a preschool illustration. Visibly opaque gouache brushwork, irregular painted shapes, striking forest color relationships, a strong door silhouette. The forest and doorway are the only narrative scene; no extra writing on the door. Typography is designed natively as Japanese book-cover lettering, not imitation glyphs. Exact title, every character correct: \"注文の多い料理店\". Title characters in order: 注 文 の 多 い 料 理 店. Exact author: \"宮沢賢治\" (characters 宮 沢 賢 治). Integrate the title confidently into the composition and the author smaller; make both legible at bookshelf thumbnail size. Keep all writing fully inside safe margins. No English translation, no extra text, no publisher, no logos, no watermark, no spine, no physical book mockup. Original cover, not a copy of a published design. Produce one image.",
+  "quality_review": "Visually inspected generated title and author against requested characters. Original composition and requested medium confirmed; no publisher logo or invented credits."
+}

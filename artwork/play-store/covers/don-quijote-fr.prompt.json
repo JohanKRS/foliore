@@ -1,0 +1,11 @@
+{
+  "id": "don-quijote-fr",
+  "date": "2026-09-13",
+  "mode": "built-in image_gen edit",
+  "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/don-quijote.png",
+  "generated_source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-a7f63072-7baf-4b21-af91-cc740a57c451.png",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/don-quijote-fr.png",
+  "prompt": "Use case: text-localization. Edit target: the attached original Don Quijote cover. Localize ONLY the bottom title panel to French. Replace its red blackletter title with exact text \"DON QUICHOTTE\" and add a smaller clear line \"TOME I\" below it in the same bottom panel. Preserve the author line exactly \"MIGUEL DE CERVANTES\". Preserve the original engraved illustration, riders, windmills, landscape, sky, paper texture, borders, ornaments, colors, portrait 2:3 proportions and overall layout. The title must retain the original red blackletter style, carefully fitting the longer French spelling without cutting any letters off. Slightly adjust spacing within the bottom text panel only as necessary to fit the volume label. No other changes, no added subtitle or publisher, no logo, no watermark, no redesign, no 3D mockup. Return a single flat cover.",
+  "justification": "French title localization: DON QUICHOTTE, TOME I.",
+  "quality_review": "Source image viewed before editing. Title and author visually inspected; original engraving style, composition, palette and portrait format preserved."
+}

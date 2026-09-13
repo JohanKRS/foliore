@@ -108,6 +108,8 @@ import com.foliore.android.ui.library.LibraryTopChromeOverlay
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.GoogleDriveRemoteLibraryDialog
 import com.foliore.android.ui.library.SettingsRoute
+import com.foliore.android.ui.library.UnlimitedReminderHost
+import com.foliore.android.ui.library.findActivity
 import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.TopChromeContent
@@ -158,6 +160,19 @@ fun FolioreNavHost(
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentRoute = currentDestination?.route
+    val billingState by libraryViewModel.billingState.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    UnlimitedReminderHost(
+        canPresent = currentRoute == Routes.LIBRARY && !libraryState.hasActiveProgress &&
+            !libraryState.isSearchOpen && !libraryState.isBatchMode &&
+            libraryState.pendingImportConflicts.isEmpty() && libraryState.importLimitAvailable == null &&
+            libraryState.importLimitSkipped == 0 && libraryState.googleDriveRemoteLibraryRecovery == null,
+        bookCount = libraryState.books.size,
+        billing = billingState,
+        onRefresh = libraryViewModel::refreshPurchases,
+        onRestore = libraryViewModel::restorePurchase,
+        onPurchase = { context.findActivity()?.let(libraryViewModel::purchaseUnlimited) },
+    )
     val currentBookId = backStackEntry?.arguments?.getString(Routes.ARG_BOOK_ID)
     var editBottomBarState by remember { mutableStateOf<EditBottomBarState?>(null) }
     var editTopChromeContent by remember { mutableStateOf<TopChromeContent?>(null) }

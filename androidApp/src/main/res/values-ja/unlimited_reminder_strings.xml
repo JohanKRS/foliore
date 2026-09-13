@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_reminder_title">もっと多くの本をライブラリに</string>
+    <string name="billing_reminder_count">現在の蔵書は%1$d冊です。無料版では%2$d冊まで追加できます。</string>
+    <string name="billing_reminder_view">無制限版について</string>
+    <string name="billing_reminder_later">1週間後に再通知</string>
+    <string name="billing_reminder_dismiss">今後表示しない</string>
+    <string name="billing_settings_limit_title">無料版の上限に達しました</string>
+    <string name="billing_settings_limit_body">無制限版で%1$d冊を超える本を追加できます。買い切りで、定期購入はありません。</string>
+</resources>

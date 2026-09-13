@@ -1,0 +1,12 @@
+{
+  "id": "fleurs-du-mal",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "title": "LES FLEURS DU MAL",
+  "author": "CHARLES BAUDELAIRE",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/fleurs-du-mal.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-80f3f307-1cb1-4c46-8b09-bd841e8cfdae.png",
+  "prompt": "Use case: stylized-concept. Asset type: original literary ebook front cover; a flat full-bleed portrait image at 2:3 ratio, not a physical book mockup. Design a botanical photogram cover for a public-domain poetry book. Very dark blue-black background; white flowers, delicate stems and leaves rendered as luminous negative silhouettes, like botanical photographic contact prints. Strong, beautiful contrast at bookshelf thumbnail size, lyrical and haunting, refined analog photographic texture. An asymmetric narrow vertical side strip carries slender poetic serif typography, reading cleanly along the strip. Exact French title text: \"LES FLEURS DU MAL\". Exact author text: \"CHARLES BAUDELAIRE\". Keep both texts completely visible, elegant and legible, with safe margins; no other words. This is a new design, do not reproduce any existing published cover. No publisher names or symbols, no logo, no watermark, no spine, no 3D mockup. Produce one finished cover.",
+  "quality_review": "Visually inspected generated title and author against requested characters. Original composition and requested medium confirmed; no publisher logo or invented credits."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "madame-bovary",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/madame-bovary.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-d4e1bca7-2447-4f2c-a330-0e2784acaa5a.png",
+  "prompt": "Use case: stylized-concept. Asset type: original literary ebook front cover, a flat full-bleed portrait image in 2:3 aspect ratio, not a photograph of a physical book. Create a sophisticated all-typographic cover for the French public-domain novel. Palette only pale lavender and deep plum. Enormous elegantly italic high-contrast serif letters dominate the whole cover, bold editorial typography, considered unusual line breaks with immaculate spacing, confident art direction and subtle printed-paper texture. Absolutely no scene, no people, no objects, no ornamental illustration. Exact title text, spelled correctly: \"MADAME BOVARY\". Exact author text: \"GUSTAVE FLAUBERT\". Title vastly larger than author. Keep every letter entirely inside the image, with a calm narrow safety margin. Native integrated lettering, highly readable at bookshelf thumbnail size. No other text, no publisher, no logos, no watermarks, no border, no mockup, no spine. Produce only one finished original cover image.",
+  "quality_review": "Native title and author inspected; matching requested visual style. No publisher logo or invented credits."
+}

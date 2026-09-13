@@ -1,0 +1,10 @@
+{
+  "id": "sandmann",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/sandmann.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-47b6a312-635d-467c-8c73-ec6aad2cdd59.png",
+  "prompt": "Use case: stylized-concept. Asset type: original literary ebook front cover, flat full-bleed portrait image in 2:3 aspect ratio, not a physical book mockup. Create an original surreal expressionist collage for the German public-domain story Der Sandmann. Acid green and deep black, jagged cut-paper shapes, a disembodied eye and interlocking mechanical gears as a bold uncanny assemblage. High-contrast handmade collage with sharp graphic shapes and coarse printed textures, unsettling but not gory; no whole person or realistic portrait. Energetic asymmetric composition, eye and gears in unexpected scales, negative space is purposeful. Bold grotesque sans-serif title, startling asymmetrical placement and varied scale, no symmetrical classic layout. Exact title text: \"DER SANDMANN\". Exact author text: \"E. T. A. HOFFMANN\". Title and author must be cleanly spelled and readable at bookshelf thumbnail size. Keep all lettering entirely within the image. No extra text, no publisher, no logo, no watermark, no spine, no mockup. Produce only one finished original cover image.",
+  "quality_review": "Native title and author inspected; matching requested visual style. No publisher logo or invented credits."
+}

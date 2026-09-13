@@ -1,0 +1,20 @@
+[
+  {
+    "id": "alice-fr",
+    "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/alice.png",
+    "prompt": "Text-localization edit. Preserve this exact original illustrated Alice book cover: Victorian hand-colored engraving of mushrooms, garden, chess path, palette, paper, margins, composition. Change ONLY title text to French: \"AVENTURES D’ALICE\" / \"AU PAYS DES\" / \"MERVEILLES\", with ALICE most prominent. Keep author \"LEWIS CARROLL\" exactly as is. Classical blue serif typography with balanced spacing, exact French spelling, fully legible, keep all art untouched. Flat portrait1024x1536.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-6978a8cc-5db2-48b4-9eb0-ae2d74070631.png"
+  },
+  {
+    "id": "alice-it",
+    "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/alice.png",
+    "prompt": "Text-localization edit. Preserve this exact original illustrated Alice book cover: Victorian hand-colored engraving of mushrooms, garden, chess path, palette, paper, margins, composition. Change ONLY title text to Italian: \"LE AVVENTURE D’ALICE\" / \"NEL PAESE DELLE\" / \"MERAVIGLIE\", ALICE most prominent. Keep author \"LEWIS CARROLL\" exactly as is. Classical blue serif typography with balanced spacing, exact Italian spelling, fully legible, keep all art untouched. Flat portrait1024x1536.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-b1e9f358-d43d-45a8-b2dc-a533150c6255.png"
+  },
+  {
+    "id": "camellias-zh-corrected",
+    "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/camellias-zh.png",
+    "prompt": "Precise text correction only. Keep the burgundy/pink all-type cover, texture, petal, author 小仲马 and overall layout. The seven-character title 巴黎茶花女遗事 is currently in the wrong column order. Set EXACTLY TWO vertical columns reading right column FIRST, then left column. RIGHT COLUMN top-to-bottom: 巴 / 黎 / 茶 / 花. LEFT COLUMN top-to-bottom: 女 / 遗 / 事. Thus the title correctly reads 巴黎茶花女遗事. Seven characters total. Use same enormous pale pink high contrast Song type, adjust sizing to fit4right3left, no added character, all fullyvisible. Author remains bottomright. Change nothing else.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-28a46f86-2295-4b45-ac6f-6f48a8400974.png"
+  }
+]

@@ -107,6 +107,7 @@ fun SettingsScreen(
     bottomChromeInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
+    val highlightUnlimited = com.foliore.android.billing.UnlimitedReminder.highlightInSettings(bookCount, billingState.unlimited)
     val context = androidx.compose.ui.platform.LocalContext.current
     var showReport by rememberSaveable { mutableStateOf(false) }
     if (showReport) ContentReportDialog { showReport = false }
@@ -156,6 +157,11 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         Column(modifier = Modifier.padding(horizontal = 28.dp)) {
+        if (highlightUnlimited) {
+            UnlimitedSettingsEntry(billingState, bookCount, onRefreshPurchases, onRestorePurchase,
+                onPurchaseUnlimited, highlighted = true)
+            Spacer(modifier = Modifier.height(28.dp))
+        }
         SectionTitle(text = stringResource(R.string.settings_appearance))
         Spacer(modifier = Modifier.height(8.dp))
         CompactSettingsRow(
@@ -399,8 +405,10 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(20.dp))
-        UnlimitedSettingsEntry(billingState, bookCount, onRefreshPurchases, onRestorePurchase, onPurchaseUnlimited)
-        Spacer(modifier = Modifier.height(20.dp))
+        if (!highlightUnlimited) {
+            UnlimitedSettingsEntry(billingState, bookCount, onRefreshPurchases, onRestorePurchase, onPurchaseUnlimited)
+            Spacer(modifier = Modifier.height(20.dp))
+        }
         Text(
             text = stringResource(R.string.settings_preserve_original_description),
             modifier = Modifier.fillMaxWidth(),

@@ -1,0 +1,12 @@
+{
+  "id": "takekurabe",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "title": "たけくらべ",
+  "author": "樋口一葉",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/takekurabe.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-257e81aa-8380-44e2-85d7-837b7fb5deeb.png",
+  "prompt": "Use case: illustration-story. Asset type: original Japanese literary ebook front cover; flat full-bleed portrait image in 2:3 aspect ratio. A refined Meiji-era Japanese urban woodblock print: quiet lanes, wooden facades and city details, layered flat colors, visible print texture, restrained but rich ink contrasts, nuanced mature editorial atmosphere. A vertical brush-lettered title is the dominant typographic gesture, with a smaller separate vertical author line. Exact Japanese title only: \"たけくらべ\" (characters た け く ら べ, in that order). Exact author only: \"樋口一葉\" (characters 樋 口 一 葉). Faithful Japanese brush characters, fully legible and no pseudo-writing. No incidental text on storefronts or signs. Distinct clear composition that remains recognizable in a small bookshelf thumbnail. Keep the whole title and author inside safe margins. No translations, subtitles, logos, publisher imprint, credits, watermark, border, spine, or 3D mockup. This is a completely original cover illustration, not a reproduction of an existing book cover. Produce one finished cover.",
+  "quality_review": "Visually inspected generated title and author against requested characters. Original composition and requested medium confirmed; no publisher logo or invented credits."
+}

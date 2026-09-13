@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_reminder_title">More room for your books</string>
+    <string name="billing_reminder_count">Your catalog has %1$d books. The free version allows up to %2$d.</string>
+    <string name="billing_reminder_view">Explore Unlimited</string>
+    <string name="billing_reminder_later">Remind me in 1 week</string>
+    <string name="billing_reminder_dismiss">Do not show again</string>
+    <string name="billing_settings_limit_title">Free limit reached</string>
+    <string name="billing_settings_limit_body">Unlock to add more than %1$d books. One-time purchase, no subscription.</string>
+</resources>

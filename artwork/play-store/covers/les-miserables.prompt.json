@@ -1,0 +1,25 @@
+{
+  "id": "les-miserables",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "blocked_by_generation_output_filter",
+  "image": null,
+  "prompts": [
+    "Use case: illustration-story. Asset type: original literary ebook front cover, flat full-bleed portrait image in 2:3 aspect ratio, not a physical book mockup. Create a French social woodcut cover for Les Misérables: strong black ink and earthy ochre paper, rough hand-cut relief-print marks; a dense nineteenth-century French city and a gathering of ordinary people form a forceful social scene. Dark expressive silhouettes and architectural forms, detailed but clear at bookshelf size. Composition decisively asymmetrical. A restrained diagonal ochre band crossing part of the black scene carries a relatively small but crisp and clearly legible title; illustration occupies most of the cover. Exact French title text: \"LES MISÉRABLES\", including the accented É. Exact author text: \"VICTOR HUGO\". Integrate author separately in small clear print. Do not imitate any existing published cover. No extra text, no invented credits, no publisher, no logos, no watermarks, no mockup, no spine. All text fully within a safe margin. Produce only one finished original cover image.",
+    "Use case: illustration-story. Asset type: original literary ebook front cover, flat full-bleed portrait image in 2:3 aspect ratio. A peaceful everyday nineteenth-century French city street, with small ordinary adult pedestrians walking among buildings. Hand-carved woodcut illustration in black ink on earthy ochre paper, traditional relief-print marks and expressive architectural silhouettes. Strong asymmetric composition. A diagonal ochre banner crosses part of the picture and contains the book title in relatively small but crisp readable print. The illustration is the main element. Exact text: \"LES MISÉRABLES\" and author \"VICTOR HUGO\". Make the accented É accurate. Keep all text fully inside the image with safe margins. A new, original cover; not a reproduction of an existing published design. No publisher, no extra words, no logos, no watermark, no 3D book, no spine. One finished cover only."
+  ],
+  "errors": [
+    {
+      "code": "moderation_blocked",
+      "category": "other",
+      "stage": "output",
+      "request_id": "74d11175-8e39-4384-9d83-e11362cc5fe0"
+    },
+    {
+      "code": "moderation_blocked",
+      "category": "other",
+      "stage": "output",
+      "request_id": "f304b41b-272c-4737-abc9-d8b86c66bd20"
+    }
+  ]
+}

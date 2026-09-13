@@ -9,7 +9,7 @@
 - O app usa o preço e o token da oferta retornados pelo Google Play; não calcula câmbio nem fixa texto de preço no APK.
 - Nome pt-BR: **Foliore ilimitado**. Descrição: **Remova o limite de 50 livros do catálogo com uma compra única. Sem assinatura.**
 - Nome en-US: **Foliore unlimited**. Descrição: **Remove the 50-book catalog limit with a one-time purchase. No subscription.**
-- Compra acessível por um botão discreto nas configurações; nenhum anúncio, banner ou oferta automática. O diálogo do limite aponta para Configurações.
+- Compra acessível nas configurações, sem anúncios. A partir de 45 livros, um lembrete pode ser dispensado definitivamente ou adiado por sete dias. Aos 50 livros, um aviso discreto no topo das configurações substitui a entrada de compra do rodapé, sem duplicação. O diálogo do limite aponta para Configurações.
 
 ## Dados e casos de limite
 

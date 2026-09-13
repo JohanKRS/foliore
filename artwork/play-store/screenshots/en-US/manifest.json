@@ -1,0 +1,50 @@
+[
+  {
+    "file": "phone-01-library-light.png",
+    "sha256": "ecb248d584e8ac85f2d82e1ea57a189fe6154ace8e406bd43ad6506d53192764",
+    "width": 1080,
+    "height": 1920,
+    "mode": "RGB",
+    "ui_tree": "phone-01-library-light.xml"
+  },
+  {
+    "file": "phone-02-library-dark.png",
+    "sha256": "d7b6298290b1da2c190b7f3467026b8d6a3c44cf1ab9d5f5cc27ddcf862e92c8",
+    "width": 1080,
+    "height": 1920,
+    "mode": "RGB",
+    "ui_tree": "phone-02-library-dark.xml"
+  },
+  {
+    "file": "phone-03-book-details.png",
+    "sha256": "6b8a0599c8dcc4f7fe1723e5eddfe2c942083823ab31035033203c73db7055c0",
+    "width": 1080,
+    "height": 1920,
+    "mode": "RGB",
+    "ui_tree": "phone-03-book-details.xml"
+  },
+  {
+    "file": "phone-04-metadata.png",
+    "sha256": "ae6655ed5c783aa53a21c80b0fde034190ff2505e5c6399aa83def90b9e7e6f7",
+    "width": 1080,
+    "height": 1920,
+    "mode": "RGB",
+    "ui_tree": "phone-04-metadata.xml"
+  },
+  {
+    "file": "phone-05-book-details-dark.png",
+    "sha256": "ab571f694df1a25bd876113f2f21bcfe00f3418e370cfc2bf047b5bf91197a89",
+    "width": 1080,
+    "height": 1920,
+    "mode": "RGB",
+    "ui_tree": "phone-05-book-details-dark.xml"
+  },
+  {
+    "file": "phone-06-metadata-dark.png",
+    "sha256": "ef717e32c3f5f1da97d96466d87109f5886cdd87efd5843d8af5bc9f5030d67a",
+    "width": 1080,
+    "height": 1920,
+    "mode": "RGB",
+    "ui_tree": "phone-06-metadata-dark.xml"
+  }
+]

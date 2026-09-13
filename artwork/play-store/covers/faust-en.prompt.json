@@ -1,0 +1,11 @@
+{
+  "id": "faust-en",
+  "date": "2026-09-13",
+  "mode": "authorized_byte_identical_copy",
+  "language": "en",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/faust-en.png",
+  "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/faust.png",
+  "generation_performed": false,
+  "prompt": null,
+  "justification": "Byte-identical reuse of the original artwork because FAUST and JOHANN WOLFGANG VON GOETHE remain identical for the English edition."
+}

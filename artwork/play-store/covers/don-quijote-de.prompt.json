@@ -1,0 +1,11 @@
+{
+  "id": "don-quijote-de",
+  "date": "2026-09-13",
+  "mode": "authorized_byte_identical_copy",
+  "language": "de",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/don-quijote-de.png",
+  "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/don-quijote.png",
+  "generation_performed": false,
+  "prompt": null,
+  "justification": "Byte-identical reuse of the original artwork. The cover's short title DON QUIJOTE is valid for the German edition. Volume-specific German metadata (Erster Band) is managed separately; this cover does not claim a complete edition."
+}

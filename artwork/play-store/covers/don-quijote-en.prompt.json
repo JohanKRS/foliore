@@ -1,0 +1,11 @@
+{
+  "id": "don-quijote-en",
+  "date": "2026-09-13",
+  "mode": "built-in image_gen edit",
+  "source": "/home/johan/Projetos/foliore/artwork/play-store/covers/don-quijote.png",
+  "generated_source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-396dca88-cda6-411d-8c6d-c1c73b7a06ef.png",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/don-quijote-en.png",
+  "prompt": "Use case: text-localization. Edit target: the attached original Don Quijote cover. Make ONLY an English title localization. Replace the large red blackletter title at the bottom with exact text \"DON QUIXOTE\". Preserve the author line exactly \"MIGUEL DE CERVANTES\". Keep the original engraved illustration unchanged: the two riders seen from behind, landscape, windmills, sky, all linework, aged-paper background, borders, ornaments, palette, proportions, original layout and 2:3 dimensions. Recreate the new title using the same red blackletter character and same bottom panel footprint, with natural fitting and clear spelling. Do not add words, English labels, publisher credits, a volume label, logos or watermarks. Do not alter or redraw the illustration or change the visual style. Return a single flat cover.",
+  "justification": "English title localization: DON QUIXOTE.",
+  "quality_review": "Source image viewed before editing. Title and author visually inspected; original engraving style, composition, palette and portrait format preserved."
+}

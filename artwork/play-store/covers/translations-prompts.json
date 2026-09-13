@@ -1,0 +1,67 @@
+{
+  "tool": "built-in image_gen",
+  "mode": "generate",
+  "date": "2026-09-13",
+  "prompts": [
+    {
+      "id": "hamlet-pt",
+      "prompt": "Use case: ads-marketing. Asset type: original editorial front cover for a public-domain literary EPUB, flat head-on print artwork, portrait aspect ratio 2:3, 1024x1536 pixels. Create an arresting minimalist all-type design for HAMLET. Pure ink black and electric acid-green palette. A gigantic geometric capital H dominates the cover with a dramatic offset shadow; a very small understated crown is the only pictorial symbol. Unusual professional editorial typography and strong hierarchy, spacious and rigorous composition, light paper grain. Title must be easy to read at thumbnail size. Exact visible text only: \"HAMLET\" and \"WILLIAM SHAKESPEARE\". Preserve this spelling verbatim. No publisher name or logo, no other copy, no watermark, no photoreal book object, no spine, no border or surrounding scene. Original design, not a reproduction of any existing edition."
+    },
+    {
+      "id": "terra-lua-pt",
+      "prompt": "Use case: ads-marketing. Asset type: original editorial front cover for a public-domain literary EPUB, flat head-on print artwork, portrait aspect ratio 2:3, 1024x1536 pixels. A retro scientific astronomical diagram for Da Terra à Lua: dark cobalt blue field, luminous burnt-orange Moon and Earth, carefully drawn curved trajectory, orbital drafting lines and vintage screenprint texture. Curved lettering is integrated with the orbit and creates a distinctive playful scientific adventure cover. This is elegant original retro editorial design, not a generic space poster. Title bold and legible at thumbnail scale. Exact visible text only: \"DA TERRA À LUA\" and \"JÚLIO VERNE\". Preserve accented À and Ú exactly. No other written labels or numbers, no publisher name or logo, no watermark, no book mockup, no spine or surrounding scene. Original design, not a reproduction of an existing edition."
+    },
+    {
+      "id": "odisea-es",
+      "prompt": "Use case: ads-marketing. Asset type: original editorial front cover for a public-domain literary EPUB, flat head-on print artwork, portrait aspect ratio 2:3, 1024x1536 pixels. Create a striking cover for LA ODISEA using the visual language of ancient Greek red-figure vase painting: warm terracotta red and matte black, stylized archaic Greek ship and curled waves, confident simplified figures and decorative pottery rhythm, subtle ceramic pigment texture. The large illustration occupies most of the cover. A sophisticated serif title sits in a distinct lower band, with a smaller author credit. Exact visible text only: \"LA ODISEA\" and \"HOMERO\". Highly legible title, unusual but coherent original editorial composition. No publisher name or logo, no other copy or Greek lettering, no watermark, no book mockup, no spine or surrounding scene. Original design, not a reproduction of an existing edition."
+    },
+    {
+      "id": "gulliver-it",
+      "prompt": "Use case: ads-marketing. Asset type: original editorial front cover for a public-domain literary EPUB, flat head-on print artwork, portrait aspect ratio 2:3, 1024x1536 pixels. Original humorous Victorian engraving cover for Viaggi di Gulliver: an intricately engraved sailing ship and tiny detailed cities play with impossible differences of scale, witty and wondrous travel imagery, expressive dense etched linework on aged ivory paper with restrained muted sea-blue accents. The big title is diagonal, energetic hand-lettered calligraphy integrated into the composition, balanced with a clearly readable author name and a smaller edition-part line. Exact visible text only: \"VIAGGI DI GULLIVER\", \"JONATHAN SWIFT\", and \"PARTI I–III\". Keep all spelling exact, including the Roman numerals I–III. Strong thumbnail legibility. No publisher name or logo, no extra copy, no watermark, no book mockup, no spine or surrounding scene. Original design, not a reproduction of an existing edition."
+    }
+  ],
+  "copies": [
+    {
+      "id": "hamlet-es",
+      "source": "hamlet-pt",
+      "reason": "Same exact visible title and author; historical Spanish translation is identified by EPUB metadata and provenance.",
+      "sha256": "cb61612fa6199dbbce1f1a2d2eb11bf725edb1c87a90edc7fb4e2d534022b63f"
+    },
+    {
+      "id": "hamlet-de",
+      "source": "hamlet-pt",
+      "reason": "Same exact visible title and author; complete German edition title is identified by EPUB metadata and provenance.",
+      "sha256": "cb61612fa6199dbbce1f1a2d2eb11bf725edb1c87a90edc7fb4e2d534022b63f"
+    }
+  ],
+  "outputs": [
+    {
+      "id": "hamlet-pt",
+      "source": "/home/johan/.codex/generated_images/01a09be3-94a8-7f30-8f01-e5d919ad63b0/exec-9d8edc36-2a1e-4ddb-b80a-5ee93bc033dc.png",
+      "file": "hamlet-pt.png",
+      "sha256": "cb61612fa6199dbbce1f1a2d2eb11bf725edb1c87a90edc7fb4e2d534022b63f",
+      "visual_check": "Text, composition, palette and clean front-cover crop verified."
+    },
+    {
+      "id": "terra-lua-pt",
+      "source": "/home/johan/.codex/generated_images/01a09be3-94a8-7f30-8f01-e5d919ad63b0/exec-6130630c-ca9a-42e7-b24e-dbf8bab59c9f.png",
+      "file": "terra-lua-pt.png",
+      "sha256": "7e13b89d1c3655dc72e38876a9ca0d9b144652059fa8e0e91ba2584b4c1c39d1",
+      "visual_check": "Text, composition, palette and clean front-cover crop verified."
+    },
+    {
+      "id": "odisea-es",
+      "source": "/home/johan/.codex/generated_images/01a09be3-94a8-7f30-8f01-e5d919ad63b0/exec-2242511c-e7fd-46c6-867b-f0670f19a2d3.png",
+      "file": "odisea-es.png",
+      "sha256": "9aef0b9bfbde8418b4490c73ed601bdd358f2df12a05d28ad2877131e1e1ef43",
+      "visual_check": "Text, composition, palette and clean front-cover crop verified."
+    },
+    {
+      "id": "gulliver-it",
+      "source": "/home/johan/.codex/generated_images/01a09be3-94a8-7f30-8f01-e5d919ad63b0/exec-32340f79-3085-4984-aeae-9de267c6ef4c.png",
+      "file": "gulliver-it.png",
+      "sha256": "63496c269fb3fb6c968967aa4612e60d9ef0026c31c30d426111da4a96fb82ab",
+      "visual_check": "Exact title, author and PARTI I–III verified; diagonal lettering, engraved ship, tiny cities and humorous scale composition verified."
+    }
+  ]
+}

@@ -1,0 +1,485 @@
+{
+  "pathBase": "artwork/play-store",
+  "assets": [
+    {
+      "locale": "pt-BR",
+      "source": "screenshots/pt-BR/phone-01-library-light.png",
+      "upload": "upload-assets/pt-BR-phone-01-library-light.png",
+      "altText": "Biblioteca de demonstração do Foliore no tema claro, com livros organizados pelas capas.",
+      "sha256": "ac5ca84c382c7464d398f87bc6bba9f22cd8d293761aaaadb7694f79e0127855",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "pt-BR",
+      "source": "screenshots/pt-BR/phone-02-library-dark.png",
+      "upload": "upload-assets/pt-BR-phone-02-library-dark.png",
+      "altText": "Biblioteca de demonstração do Foliore no tema escuro, com outra seleção de capas em destaque.",
+      "sha256": "64ea9688bdcefffad999147208f7ac868ecf20b3adff9a9e879ea17abfd6ffe0",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "pt-BR",
+      "source": "screenshots/pt-BR/phone-03-book-details.png",
+      "upload": "upload-assets/pt-BR-phone-03-book-details.png",
+      "altText": "Capa de um livro no tema claro, com as ações Salvar, Exportar e Kindle.",
+      "sha256": "f3b9249a94bf9ff7c48f4de7cddf1bfa0403ab9ba3fe43772bf87b2c79fd49c3",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "pt-BR",
+      "source": "screenshots/pt-BR/phone-04-metadata.png",
+      "upload": "upload-assets/pt-BR-phone-04-metadata.png",
+      "altText": "Editor de metadados no tema claro, com campos de título, autores, série e idioma.",
+      "sha256": "404c5cd6d91a34b8634bf41faefb531bbca6f479f97e750c2eb6f7374b840c20",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "pt-BR",
+      "source": "screenshots/pt-BR/phone-05-book-details-dark.png",
+      "upload": "upload-assets/pt-BR-phone-05-book-details-dark.png",
+      "altText": "Capa de outro livro no tema escuro, com as ações Salvar, Exportar e Kindle.",
+      "sha256": "240c4411fba04bac170b36d0a42d673a9ff549d7a35a6c4516cb88dd6dd7f5ea",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "pt-BR",
+      "source": "screenshots/pt-BR/phone-06-metadata-dark.png",
+      "upload": "upload-assets/pt-BR-phone-06-metadata-dark.png",
+      "altText": "Editor de metadados de outro livro no tema escuro, com campos bibliográficos editáveis.",
+      "sha256": "fb22b32aea8b5956e7322011b676f5de1976ab1f6556df54e62e4b31788422c2",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "en-US",
+      "source": "screenshots/en-US/phone-01-library-light.png",
+      "upload": "upload-assets/en-US-phone-01-library-light.png",
+      "altText": "Foliore demonstration library in the light theme, with books arranged by their covers.",
+      "sha256": "ecb248d584e8ac85f2d82e1ea57a189fe6154ace8e406bd43ad6506d53192764",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "en-US",
+      "source": "screenshots/en-US/phone-02-library-dark.png",
+      "upload": "upload-assets/en-US-phone-02-library-dark.png",
+      "altText": "Foliore demonstration library in the dark theme, highlighting a different selection of covers.",
+      "sha256": "d7b6298290b1da2c190b7f3467026b8d6a3c44cf1ab9d5f5cc27ddcf862e92c8",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "en-US",
+      "source": "screenshots/en-US/phone-03-book-details.png",
+      "upload": "upload-assets/en-US-phone-03-book-details.png",
+      "altText": "A book cover in the light theme, with Save, Export, and Kindle actions.",
+      "sha256": "6b8a0599c8dcc4f7fe1723e5eddfe2c942083823ab31035033203c73db7055c0",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "en-US",
+      "source": "screenshots/en-US/phone-04-metadata.png",
+      "upload": "upload-assets/en-US-phone-04-metadata.png",
+      "altText": "Metadata editor in the light theme, with title, author, series, and language fields.",
+      "sha256": "ae6655ed5c783aa53a21c80b0fde034190ff2505e5c6399aa83def90b9e7e6f7",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "en-US",
+      "source": "screenshots/en-US/phone-05-book-details-dark.png",
+      "upload": "upload-assets/en-US-phone-05-book-details-dark.png",
+      "altText": "A different book cover in the dark theme, with Save, Export, and Kindle actions.",
+      "sha256": "ab571f694df1a25bd876113f2f21bcfe00f3418e370cfc2bf047b5bf91197a89",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "en-US",
+      "source": "screenshots/en-US/phone-06-metadata-dark.png",
+      "upload": "upload-assets/en-US-phone-06-metadata-dark.png",
+      "altText": "Metadata editor for another book in the dark theme, with editable bibliographic fields.",
+      "sha256": "ef717e32c3f5f1da97d96466d87109f5886cdd87efd5843d8af5bc9f5030d67a",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "es-ES",
+      "source": "screenshots/es-ES/phone-01-library-light.png",
+      "upload": "upload-assets/es-ES-phone-01-library-light.png",
+      "altText": "Biblioteca de demostración de Foliore con el tema claro y los libros organizados por sus portadas.",
+      "sha256": "b3dffd73c241f74eaa30571b39b76af78e8050f80456caba99b6d394347328c3",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "es-ES",
+      "source": "screenshots/es-ES/phone-02-library-dark.png",
+      "upload": "upload-assets/es-ES-phone-02-library-dark.png",
+      "altText": "Biblioteca de demostración de Foliore con el tema oscuro y otra selección de portadas destacadas.",
+      "sha256": "d783d1aa9c7f4e2be73a96bddda908c55d022df16a0466bbc81f12f9b03a5a6f",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "es-ES",
+      "source": "screenshots/es-ES/phone-03-book-details.png",
+      "upload": "upload-assets/es-ES-phone-03-book-details.png",
+      "altText": "Portada de un libro con el tema claro y las acciones Guardar, Exportar y Kindle.",
+      "sha256": "e3ea97425ef19298d8e90d0190766b7e4700e4c33e8c9de3637f7071b22c53ca",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "es-ES",
+      "source": "screenshots/es-ES/phone-04-metadata.png",
+      "upload": "upload-assets/es-ES-phone-04-metadata.png",
+      "altText": "Editor de metadatos con el tema claro y campos de título, autores, serie e idioma.",
+      "sha256": "3b72b09047bb598b4b06e1e706cb3891508ad707c8d979d3a56db3495854b6ef",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "es-ES",
+      "source": "screenshots/es-ES/phone-05-book-details-dark.png",
+      "upload": "upload-assets/es-ES-phone-05-book-details-dark.png",
+      "altText": "Portada de otro libro con el tema oscuro y las acciones Guardar, Exportar y Kindle.",
+      "sha256": "e911311e72a9670a860bb1e9ef92830eeb04d0118522e4e6579cea2cd03524c6",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "es-ES",
+      "source": "screenshots/es-ES/phone-06-metadata-dark.png",
+      "upload": "upload-assets/es-ES-phone-06-metadata-dark.png",
+      "altText": "Editor de metadatos de otro libro con el tema oscuro y campos bibliográficos editables.",
+      "sha256": "dcf9384c317ef64c593d97199e3a6be0c3e1a7eadafa4435a9228e4bf9b4eec5",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "fr-FR",
+      "source": "screenshots/fr-FR/phone-01-library-light.png",
+      "upload": "upload-assets/fr-FR-phone-01-library-light.png",
+      "altText": "Bibliothèque de démonstration de Foliore en thème clair, avec les livres présentés par leurs couvertures.",
+      "sha256": "15643db07584081e3e21dff17ad27653583845a4aa08a6a908ad15bd20b8a80a",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "fr-FR",
+      "source": "screenshots/fr-FR/phone-02-library-dark.png",
+      "upload": "upload-assets/fr-FR-phone-02-library-dark.png",
+      "altText": "Bibliothèque de démonstration de Foliore en thème sombre, avec une autre sélection de couvertures.",
+      "sha256": "9b1374579e9ad7e1717eb534f1baa3b2843c1a8fb084167a7c5e5e0e6605fcea",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "fr-FR",
+      "source": "screenshots/fr-FR/phone-03-book-details.png",
+      "upload": "upload-assets/fr-FR-phone-03-book-details.png",
+      "altText": "Couverture d’un livre en thème clair, avec les actions Enregistrer, Exporter et Kindle.",
+      "sha256": "2c4e5afc6e67c61c0acfde3f9ccfb99f35c30d44d9e6c47a3a9b56ed07626760",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "fr-FR",
+      "source": "screenshots/fr-FR/phone-04-metadata.png",
+      "upload": "upload-assets/fr-FR-phone-04-metadata.png",
+      "altText": "Éditeur de métadonnées en thème clair : titre, auteurs, série et langue.",
+      "sha256": "71f95c3d7ee42d718f6a3210f6807055f9cc55fd6c5cc7319de5eca08ab5e08e",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "fr-FR",
+      "source": "screenshots/fr-FR/phone-05-book-details-dark.png",
+      "upload": "upload-assets/fr-FR-phone-05-book-details-dark.png",
+      "altText": "Couverture d’un autre livre en thème sombre, avec les actions Enregistrer, Exporter et Kindle.",
+      "sha256": "eaef5e20ba0db655a23ffcb48bf86a64bf9e3bf4376083cd70403c16b8ea7fee",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "fr-FR",
+      "source": "screenshots/fr-FR/phone-06-metadata-dark.png",
+      "upload": "upload-assets/fr-FR-phone-06-metadata-dark.png",
+      "altText": "Éditeur de métadonnées d’un autre livre en thème sombre, avec les champs bibliographiques modifiables.",
+      "sha256": "24bb20b1a0cb39b27a822a2e03adf7f85cb04e520e9fdfb7684bd46ef3d5924c",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "de-DE",
+      "source": "screenshots/de-DE/phone-01-library-light.png",
+      "upload": "upload-assets/de-DE-phone-01-library-light.png",
+      "altText": "Foliore-Beispielbibliothek im hellen Design, mit Büchern in einer Coverübersicht.",
+      "sha256": "2311995beaaba5c3f1b40c9e6299b41db92f2e833d322025883359a92511bc4e",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "de-DE",
+      "source": "screenshots/de-DE/phone-02-library-dark.png",
+      "upload": "upload-assets/de-DE-phone-02-library-dark.png",
+      "altText": "Foliore-Beispielbibliothek im dunklen Design, mit einer anderen Auswahl von Buchcovern.",
+      "sha256": "336e77e6ffe1efdd4b2afe98dc84cc751f11c54abc1923c0bfd59c46697052ea",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "de-DE",
+      "source": "screenshots/de-DE/phone-03-book-details.png",
+      "upload": "upload-assets/de-DE-phone-03-book-details.png",
+      "altText": "Buchcover im hellen Design mit den Aktionen Speichern, Exportieren und Kindle.",
+      "sha256": "4111e2607239a43d90e1b9a22bf35adb528ad1b86e859e743ee66494d0fe668d",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "de-DE",
+      "source": "screenshots/de-DE/phone-04-metadata.png",
+      "upload": "upload-assets/de-DE-phone-04-metadata.png",
+      "altText": "Metadaten-Editor im hellen Design mit Feldern für Titel, Autoren, Reihe und Sprache.",
+      "sha256": "67814c7fe17dfaf579cd1eab14f254bf9830af862c44f9a4a0ea2794e93b4982",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "de-DE",
+      "source": "screenshots/de-DE/phone-05-book-details-dark.png",
+      "upload": "upload-assets/de-DE-phone-05-book-details-dark.png",
+      "altText": "Ein anderes Buchcover im dunklen Design mit den Aktionen Speichern, Exportieren und Kindle.",
+      "sha256": "9e1883120d3bf9391284c600a994e70edeece53aa46b11a2c3cc25496fbcfaf1",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "de-DE",
+      "source": "screenshots/de-DE/phone-06-metadata-dark.png",
+      "upload": "upload-assets/de-DE-phone-06-metadata-dark.png",
+      "altText": "Metadaten-Editor für ein anderes Buch im dunklen Design mit bearbeitbaren bibliografischen Angaben.",
+      "sha256": "79086f7de61d03e388192c500c6788410198aa232266a0168bfa7a02bb5b30b5",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "it-IT",
+      "source": "screenshots/it-IT/phone-01-library-light.png",
+      "upload": "upload-assets/it-IT-phone-01-library-light.png",
+      "altText": "Biblioteca dimostrativa di Foliore nel tema chiaro, con i libri organizzati per copertina.",
+      "sha256": "1d7ca1b671abb73727cf246709b8b1c5f1a248377b63e5e7ac7c94cf981efde2",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "it-IT",
+      "source": "screenshots/it-IT/phone-02-library-dark.png",
+      "upload": "upload-assets/it-IT-phone-02-library-dark.png",
+      "altText": "Biblioteca dimostrativa di Foliore nel tema scuro, con un’altra selezione di copertine in evidenza.",
+      "sha256": "378884cb3098946457ca87c958fcf4531a0db852f08f8bfbcf8473e2ad34da9b",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "it-IT",
+      "source": "screenshots/it-IT/phone-03-book-details.png",
+      "upload": "upload-assets/it-IT-phone-03-book-details.png",
+      "altText": "Copertina di un libro nel tema chiaro, con le azioni Salva, Esporta e Kindle.",
+      "sha256": "35ebc26e76b6cfdc3710c8d2174bee7a88523facb92552dcaf4a84aedd525a63",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "it-IT",
+      "source": "screenshots/it-IT/phone-04-metadata.png",
+      "upload": "upload-assets/it-IT-phone-04-metadata.png",
+      "altText": "Editor dei metadati nel tema chiaro, con i campi titolo, autori, serie e lingua.",
+      "sha256": "2ad32d8d7f31f36d5834461e37ac81c3b9c1e8fb9853cc77bbd1cf862acb2cc5",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "it-IT",
+      "source": "screenshots/it-IT/phone-05-book-details-dark.png",
+      "upload": "upload-assets/it-IT-phone-05-book-details-dark.png",
+      "altText": "Copertina di un altro libro nel tema scuro, con le azioni Salva, Esporta e Kindle.",
+      "sha256": "1c60bf2282ac00be1212c4cd3e05ef49b3acf952192f0f4284d466202a854405",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "it-IT",
+      "source": "screenshots/it-IT/phone-06-metadata-dark.png",
+      "upload": "upload-assets/it-IT-phone-06-metadata-dark.png",
+      "altText": "Editor dei metadati di un altro libro nel tema scuro, con campi bibliografici modificabili.",
+      "sha256": "892d320f54620a37daaa7b864d358de821014b740bbddd8cbd3d392f5bedd20b",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "ja-JP",
+      "source": "screenshots/ja-JP/phone-01-library-light.png",
+      "upload": "upload-assets/ja-JP-phone-01-library-light.png",
+      "altText": "ライトテーマのFolioreのデモ用ライブラリ。本が表紙で一覧表示されています。",
+      "sha256": "f38785f3d999e6240dc19d792a6f1cd2fba8e7c34f705ea17290ee5cd273eb80",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "ja-JP",
+      "source": "screenshots/ja-JP/phone-02-library-dark.png",
+      "upload": "upload-assets/ja-JP-phone-02-library-dark.png",
+      "altText": "ダークテーマのFolioreのデモ用ライブラリ。別の本の表紙が先頭に表示されています。",
+      "sha256": "e7b0914bace5ec3b13f8112a4e077b99f996ea7b45a94171698ff92e213b0105",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "ja-JP",
+      "source": "screenshots/ja-JP/phone-03-book-details.png",
+      "upload": "upload-assets/ja-JP-phone-03-book-details.png",
+      "altText": "ライトテーマの本の表紙画面。保存、書き出し、Kindle送信の操作があります。",
+      "sha256": "1aed263c0a5f0933fa814322191ebe168e07739e6d48ce0c09b6cdf689fa9da4",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "ja-JP",
+      "source": "screenshots/ja-JP/phone-04-metadata.png",
+      "upload": "upload-assets/ja-JP-phone-04-metadata.png",
+      "altText": "ライトテーマの書誌情報編集画面。タイトル、著者、シリーズ、言語の入力欄があります。",
+      "sha256": "e989ebfcb44bead6f82514bcd3c28041977d487d466d5788228f5e894faf3a50",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "ja-JP",
+      "source": "screenshots/ja-JP/phone-05-book-details-dark.png",
+      "upload": "upload-assets/ja-JP-phone-05-book-details-dark.png",
+      "altText": "ダークテーマで表示した別の本の表紙。保存、書き出し、Kindle送信の操作があります。",
+      "sha256": "8d08afba7ac8ce0f0ba3e040b6c5d8f3d13d6d6cc556d92634283da7c1703ba7",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "ja-JP",
+      "source": "screenshots/ja-JP/phone-06-metadata-dark.png",
+      "upload": "upload-assets/ja-JP-phone-06-metadata-dark.png",
+      "altText": "ダークテーマで別の本の書誌情報を編集する画面。各項目を変更できます。",
+      "sha256": "8d2ff48b63e90c499ac789c95520602483bb345da221f27f1e20b8cf48f41486",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "zh-CN",
+      "source": "screenshots/zh-CN/phone-01-library-light.png",
+      "upload": "upload-assets/zh-CN-phone-01-library-light.png",
+      "altText": "Foliore 浅色主题下的演示书库，以封面展示书籍。",
+      "sha256": "e95880ce2b0df5300ac5ac04d1adc83c87740daa96d3318df4e086366bc907a3",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "zh-CN",
+      "source": "screenshots/zh-CN/phone-02-library-dark.png",
+      "upload": "upload-assets/zh-CN-phone-02-library-dark.png",
+      "altText": "Foliore 深色主题下的演示书库，另一组选定书籍的封面排在前面。",
+      "sha256": "8919e673d6590c200df58ec2844830eae210c3c997951352f2dc5d75d5cfcd00",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "zh-CN",
+      "source": "screenshots/zh-CN/phone-03-book-details.png",
+      "upload": "upload-assets/zh-CN-phone-03-book-details.png",
+      "altText": "浅色主题下的书籍封面，提供保存、导出和发送至 Kindle 的操作。",
+      "sha256": "2c6377cbc000a5b2680bee7e64e21c9969d4bccbf00924ccf38c229762b442ac",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "zh-CN",
+      "source": "screenshots/zh-CN/phone-04-metadata.png",
+      "upload": "upload-assets/zh-CN-phone-04-metadata.png",
+      "altText": "浅色主题下的书籍信息编辑器，包含书名、作者、系列和语言字段。",
+      "sha256": "3c583a83fac125315a6a80a6b88ee4ca81d4f3d65fd4f9bc8a678f3cd5584c69",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "zh-CN",
+      "source": "screenshots/zh-CN/phone-05-book-details-dark.png",
+      "upload": "upload-assets/zh-CN-phone-05-book-details-dark.png",
+      "altText": "深色主题下的另一本书的封面，提供保存、导出和发送至 Kindle 的操作。",
+      "sha256": "9e88f63a30b84f680bfbfec6301a013daad98de36fe1611252b8a46b69ca5366",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    },
+    {
+      "locale": "zh-CN",
+      "source": "screenshots/zh-CN/phone-06-metadata-dark.png",
+      "upload": "upload-assets/zh-CN-phone-06-metadata-dark.png",
+      "altText": "深色主题下编辑另一本书的书目元数据，各个字段均可修改。",
+      "sha256": "9689edcb7926dc4e1f0528c063cc1e27bfed1571d29d0984951885b1e909e7ac",
+      "width": 1080,
+      "height": 1920,
+      "mode": "RGB"
+    }
+  ]
+}

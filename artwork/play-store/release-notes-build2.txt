@@ -1,0 +1,24 @@
+<pt-BR>
+Teste interno com organização de EPUBs, edição de metadados e capas e sincronização opcional. Temas claro e escuro, quatro ícones e lembretes discretos do Ilimitado perto do limite gratuito de 50 livros.
+</pt-BR>
+<de-DE>
+Interner Test mit EPUB-Verwaltung, Bearbeitung von Metadaten und Covern sowie optionaler Synchronisierung. Helles und dunkles Design, vier App-Symbole und dezente Unlimited-Hinweise kurz vor dem kostenlosen Limit von 50 Büchern.
+</de-DE>
+<en-US>
+Internal test with EPUB organization, metadata and cover editing, and optional sync. Light and dark themes, four app icons, and discreet Unlimited reminders as you approach the free limit of 50 books.
+</en-US>
+<es-ES>
+Prueba interna con organización de EPUB, edición de metadatos y portadas y sincronización opcional. Temas claro y oscuro, cuatro iconos y avisos discretos de Unlimited al acercarse al límite gratuito de 50 libros.
+</es-ES>
+<fr-FR>
+Test interne : organisation des EPUB, modification des métadonnées et couvertures, synchronisation facultative. Thèmes clair et sombre, quatre icônes et rappels discrets d’Unlimited à l’approche de la limite gratuite de 50 livres.
+</fr-FR>
+<it-IT>
+Test interno con organizzazione degli EPUB, modifica di metadati e copertine e sincronizzazione facoltativa. Temi chiaro e scuro, quattro icone e avvisi discreti di Unlimited quando ci si avvicina al limite gratuito di 50 libri.
+</it-IT>
+<ja-JP>
+内部テスト版です。EPUBの整理、書誌情報と表紙の編集、任意の同期に対応。ライト・ダークテーマ、4種類のアイコンを用意しています。無料枠の50冊に近づくと、Unlimitedの控えめな案内を表示します。
+</ja-JP>
+<zh-CN>
+内部测试版，支持 EPUB 整理、书籍信息和封面编辑，以及可选同步。提供浅色与深色主题、四种应用图标，并在接近免费版 50 本书的上限时显示简洁的 Unlimited 提醒。
+</zh-CN>

@@ -1,0 +1,10 @@
+{
+  "id": "werther",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/werther.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-85a46c63-807a-4122-bcc2-01323c4081f2.png",
+  "prompt": "Use case: illustration-story. Asset type: original literary ebook front cover, flat full-bleed portrait image in 2:3 aspect ratio, not a physical book mockup. Create a cold romantic watercolor cover for the German public-domain novel. A solitary small figure in an atmospheric riverside landscape, delicate winter-blue washes, cool gray, faded indigo, mist, dissolving edges and visibly translucent handmade watercolor; wistful Romantic-era feeling, generous pale air and irregular organic composition. Free-flowing expressive calligraphic title lettering, not a centered rigid type block, graceful handwritten ink that remains readable in a bookshelf thumbnail. Exact German title text: \"DIE LEIDEN DES JUNGEN WERTHER\". You may use poetic line breaks while preserving all words and spelling. Exact author text: \"JOHANN WOLFGANG VON GOETHE\". Smaller author lettering, completely legible. All words entirely inside the image with safe margins. No extra text, no publisher names or logos, no watermarks, no spine, no mockup. Create an original cover, not a reproduction of any published design. Produce only one image.",
+  "quality_review": "Native title and author inspected; matching requested visual style. No publisher logo or invented credits."
+}

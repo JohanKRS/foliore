@@ -1,0 +1,12 @@
+{
+  "id": "improvisatore-ja",
+  "tool": "built-in image_gen",
+  "date": "2026-09-13",
+  "status": "generated",
+  "title": "即興詩人",
+  "author": "アンデルセン",
+  "image": "/home/johan/Projetos/foliore/artwork/play-store/covers/improvisatore-ja.png",
+  "source": "/home/johan/.codex/generated_images/01a09be3-d56e-7ea1-9c72-8e94404b877f/exec-acfa1299-c059-4f7f-a77c-674a89c47a67.png",
+  "prompt": "Use case: illustration-story. Asset type: original Japanese literary ebook front cover, flat portrait image in 2:3 aspect ratio. A very airy fusion of Italian watercolor and Japanese editorial book design: warm ivory paper with a single modest rectangular watercolor scene of Italy, luminous architecture and pale sky painted loosely and lyrically. Exactly one rectangular scene, surrounded by abundant untouched paper; no multi-panel montage. The overall feeling is a poem on a page, delicate and spacious. Free poetic Japanese calligraphy for the title, spacious purposeful placement, quiet but clear contrast. Exact Japanese title: \"即興詩人\". Characters in order: 即 興 詩 人. Exact author: \"アンデルセン\". Every character must be correct and legible. Title stronger/larger than author, and the rectangle must not overwhelm the open paper. No translations or extra text, no publisher, no logo, no watermark, no spine, no physical book mockup. This is a new original cover, not a copy of an existing published design. Produce one finished image.",
+  "quality_review": "Visually inspected generated title and author against requested characters. Original composition and requested medium confirmed; no publisher logo or invented credits."
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "la-regenta",
+    "prompt": "Create a complete flat front literary book cover, portrait 1024x1536, for \"LA REGENTA\" by \"LEOPOLDO ALAS «CLARÍN»\". Original late nineteenth-century Symbolist pastel drawing: a solitary elegantly dressed adult woman seen from behind under the long shadow of a cathedral arch, misty mauve, antique olive and silvery grey; mysterious provincial Spanish atmosphere, large soft drawing rather than photo or detailed oil landscape. A delicately engraved floral gold ornament on one side only, asymmetrical lots of pale empty sky. Title LA REGENTA in graceful tall Belle Époque serif at lower right; author readable small horizontal upper left. Sophisticated classic edition, no publisher name or invented quote, no book mockup. Every accent and word exact, no extra text.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-0ffe3cd1-4e20-421a-a7e2-48c203a7a980.png"
+  },
+  {
+    "id": "rimas",
+    "prompt": "Create a complete portrait 1024x1536 original book cover for \"RIMAS\" by \"GUSTAVO ADOLFO BÉCQUER\". ALL-TYPE experimental poetic editorial design, absolutely no illustration or scenic background. Ultramarine solid paper with enormous flowing pale-peach italic lettering \"Rimas\" sweeping in a diagonal composition across the entire cover, elegant lowercase i m a s with the uppercase R expressive like a calligraphic gesture. Word remains fully readable, not cropped. Small stacked author name in crisp white serif lower left; one tiny coral-red dash balances upper right. Immaculate modern typographic design, generous blue negative space and subtle ink grain, not a generic title-at-top template, no frame or extra words. Exact accents and spelling.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-60d079b3-f057-4f51-bdb8-154d928d9cd9.png"
+  },
+  {
+    "id": "divina-commedia",
+    "prompt": "Use case illustration-story. Complete original front book cover portrait1024x1536 for \"LA DIVINA COMMEDIA\" and author \"DANTE ALIGHIERI\". A magnificent medieval illuminated manuscript meets restrained contemporary book design: nested celestial circles in lapis blue, red vermilion and muted gold leaf radiate around a tiny ascending human figure, flat fresco tempera style with intricate stars, symbolic luminous architectural arch; no movie poster, no photoreal flames, no horror violence. The upper third is reserved for a single huge red illuminated letter D worked into the title, remaining title in very legible black medieval-inspired uncial on warm parchment; author lower right in compact capitals, offset rather than centered. Gorgeous tactile gold flecks and mineral pigment, title and author only, exact Italian spelling. No publisher logo or fake edition imprint, flat artwork no mockup.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-2dd68a3f-5057-4b27-aec4-b199df575650.png"
+  },
+  {
+    "id": "mattia-pascal",
+    "prompt": "Create a complete flat book cover 1024x1536 portrait for \"IL FU MATTIA PASCAL\" by \"LUIGI PIRANDELLO\". Distinctive original Italian metaphysical modernist collage: two offset silhouettes of the same adult gentleman in bowler hat, one black cut-paper profile and one pale empty silhouette, on a vivid turquoise field with one vermilion geometric doorway and a long impossible shadow. Crisp shapes, dry paper texture, wit and identity ambiguity, no realistic face or busy background. Typography: title in oversized staggered black geometric sans serif integrated down the left: IL FU / MATTIA / PASCAL, with a thin red strike beneath FU (do not cross the words). Author at top right in small white spaced capitals. High thumbnail legibility; big airy surreal shapes, no extra text, no publisher logos, no mockup. Avoid common centered serif title + author bottom layout.",
+    "path": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-ca4f470e-84db-4c30-ad02-c77c4b3fd415.png"
+  }
+]

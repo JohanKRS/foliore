@@ -1,0 +1,6 @@
+{
+  "prompt": "Create the Google Play feature graphic for the Android app Foliore. Requested exact canvas 2048 pixels wide by1000 high, landscape aspect2.048:1. Reference image is the existing approved brand artwork. Extend and recompose this soft antique-paper mountain illustration into a very wide landscape, maintaining its layered sage/olive mountains, tiny detailed forests, delicate warm papergrain and tranquil literary mood. The valley opens across the lower half. Place the single word \"Foliore\" in exquisitely beautiful dark forest green high-contrast book serif typography centered horizontally in the upper-middle, large and immediately legible, with generous space around it. No slogan, no subtitle, no button, no phone, no book covers, no storebadge or publisherlogo. This is an elegant app-brand banner, restrained and mature, using the same visual language as the reference. Only text is Foliore, exact spelling. Keep all vital content centered within the inner80percent to survive crops. Do not generate borders or a presentation mockup.",
+  "source": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-b5314ee3-cc67-4a70-b23c-1bb4107ed068.png",
+  "tool": "image_gen",
+  "export": "1024x500 RGB PNG; resize only, no compositional changes"
+}

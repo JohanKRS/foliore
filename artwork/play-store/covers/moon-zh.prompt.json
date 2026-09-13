@@ -1,0 +1,5 @@
+{
+  "prompt": "Use case text-localization. Edit the attached original astronomical retro book cover. Keep the blue-orange palette, engraved Earth at bottom left, moon upper right, trajectories and sophisticated vintage print aesthetic. Localize title to four exact Chinese characters \"月界旅行\", large cream bold Song lettering flowing along the same rising arc; set author \"儒勒·凡尔纳\" at bottom right in orange with same rules. Add a small clear translator credit \"鲁迅 译\" below author, because this is Lu Xun’s historical translation/adaptation. Replace the anachronistic exhaust-flame rocket with a nineteenth-century bullet-shaped space projectile on the same path, no exhaust plume. Keep dimensions1024x1536, flat cover, no mockup. Preserve other artwork and title legibility. No Portuguese remains and no extra texts.",
+  "source": "/home/johan/.codex/generated_images/01a07c12-59a6-7463-9eab-f8bbd118380d/exec-8bddbb91-2177-4e2e-a2f6-0ae3a5f498bb.png",
+  "tool": "image_gen"
+}
