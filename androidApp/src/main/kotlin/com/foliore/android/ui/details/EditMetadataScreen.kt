@@ -143,6 +143,7 @@ fun EditMetadataScreen(
     ) -> Unit,
     onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
+    onOriginalFiles: () -> Unit,
     isLoading: Boolean,
     progress: SyncProgress?,
     onBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
@@ -420,6 +421,8 @@ fun EditMetadataScreen(
                 isbn = isbn,
                 onIsbnChange = { isbn = it },
                 description = description,
+                onOriginalFiles = onOriginalFiles,
+                originalFilesEnabled = !isLoading,
                 onBack = guardedBack,
                 onReplaceCover = onReplaceCover,
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
@@ -451,6 +454,8 @@ fun EditMetadataScreen(
                 publishedDate = publishedDate,
                 onPublishedDateChange = { publishedDate = it },
                 description = description,
+                onOriginalFiles = onOriginalFiles,
+                originalFilesEnabled = !isLoading,
                 tags = tags,
                 onTagsChange = { tags = it },
                 isbn = isbn,
@@ -615,6 +620,8 @@ private fun TabletEditBookScreen(
     isbn: String,
     onIsbnChange: (String) -> Unit,
     description: String,
+    onOriginalFiles: () -> Unit,
+    originalFilesEnabled: Boolean,
     onBack: () -> Unit,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
@@ -879,6 +886,7 @@ private fun TabletEditBookScreen(
 
                 TabletSyncSection(book = book)
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
+                OriginalFilesFooter(onClick = onOriginalFiles, enabled = originalFilesEnabled)
                 Spacer(modifier = Modifier.height(bottomChromeInset))
             }
         }
@@ -907,6 +915,8 @@ private fun StackedEditBookScreen(
     publishedDate: String,
     onPublishedDateChange: (String) -> Unit,
     description: String,
+    onOriginalFiles: () -> Unit,
+    originalFilesEnabled: Boolean,
     tags: String,
     onTagsChange: (String) -> Unit,
     isbn: String,
@@ -1154,6 +1164,7 @@ private fun StackedEditBookScreen(
 
                 TabletSyncSection(book = book)
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
+                OriginalFilesFooter(onClick = onOriginalFiles, enabled = originalFilesEnabled)
             }
         }
 

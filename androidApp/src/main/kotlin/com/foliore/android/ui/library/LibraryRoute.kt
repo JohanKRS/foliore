@@ -45,7 +45,7 @@ fun LibraryRoute(
         state = state,
         snackbarHostState = snackbarHostState,
         onImportClick = {
-            picker.launch(arrayOf("application/epub+zip", "application/octet-stream"))
+            picker.launch(com.foliore.android.storage.EbookFormat.pickerMimeTypes)
         },
         onSearchClick = { viewModel.setSearchOpen(true) },
         onCloseSearch = { viewModel.setSearchOpen(false) },

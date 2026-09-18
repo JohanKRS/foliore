@@ -9,7 +9,7 @@
     <string name="nav_sync">Sincronización</string>
     <string name="nav_settings">Ajustes</string>
 
-    <string name="action_import_epubs">Importar EPUB</string>
+    <string name="action_import_epubs">Importar libros</string>
     <string name="action_sync_now">Sincronizar ahora</string>
     <string name="action_search">Buscar</string>
     <string name="action_more">Más opciones</string>
@@ -18,12 +18,12 @@
     <string name="action_cancel_batch">Cancelar selección</string>
     <string name="action_cancel">Cancelar</string>
 
-    <string name="empty_library_title">Tu biblioteca de EPUB está vacía.</string>
-    <string name="empty_library_body">Importa archivos EPUB para organizar portadas y metadatos, y preparar copias limpias para tus lectores.</string>
+    <string name="empty_library_title">Tu biblioteca está vacía.</string>
+    <string name="empty_library_body">Importa EPUB, MOBI o AZW3 para organizar portadas y metadatos. MOBI y AZW3 se convierten a EPUB en el dispositivo.</string>
     <string name="empty_library_sync_setup">Configurar sincronización</string>
     <string name="search_placeholder">Buscar por título o autor</string>
     <string name="search_no_results">No se encontraron libros.</string>
-    <string name="importing_epubs">Importando EPUB…</string>
+    <string name="importing_epubs">Importando y convirtiendo libros…</string>
     <string name="action_done">Listo</string>
     <string name="action_close">Cerrar</string>
     <string name="action_organize_library">Organizar biblioteca</string>
@@ -79,9 +79,9 @@
     <string name="cover_placeholder">EPUB</string>
     <string name="cover_content_description">Portada de %1$s</string>
 
-    <string name="import_notice_imported">EPUB importado.</string>
-    <string name="import_notice_duplicates">Este EPUB ya está en la biblioteca.</string>
-    <string name="import_notice_failed">No se pudo importar el EPUB.</string>
+    <string name="import_notice_imported">Libro importado.</string>
+    <string name="import_notice_duplicates">Este libro ya está en la biblioteca.</string>
+    <string name="import_notice_failed">No se pudo importar el libro.</string>
     <string name="import_notice_mixed">La importación terminó con avisos.</string>
     <string name="import_duplicates_dialog_title">Revisar libros duplicados</string>
     <plurals name="import_duplicates_dialog_description">
@@ -195,7 +195,7 @@
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_german">Deutsch</string>
     <string name="settings_language_chinese_simplified">中文（简体）</string>
-    <string name="settings_preserve_original_description">Originales intactos. Los cambios se guardan en copias.</string>
+    <string name="settings_preserve_original_description">Accede a los originales o elimínalos desde los detalles del libro.</string>
     <string name="settings_kindle">Kindle</string>
     <string name="settings_kindle_dialog_title">Configurar Kindle</string>
     <string name="settings_kindle_email">Enviar a Kindle</string>
@@ -381,7 +381,7 @@
     <string name="ai_cover_option_b_alt_style">Pintura suave y literaria, con textura orgánica.</string>
 
     <string name="share_label_use_as_cover">Usar como portada</string>
-    <string name="share_label_import_epub">Importar EPUB</string>
+    <string name="share_label_import_epub">Importar libro</string>
     <string name="share_cover_title">Usar imagen como portada</string>
     <string name="share_cover_subtitle">Elige el libro que recibirá esta portada.</string>
     <string name="share_cover_preview_description">Imagen recibida para la portada</string>
@@ -402,4 +402,22 @@
     <string name="metadata_lookup_identifiers">Identificadores</string>
     <string name="metadata_lookup_cover">Portada</string>
     <string name="metadata_lookup_choose_result">Elegir resultado (%1$d)</string>
+    <string name="import_notice_drm_protected">No se pudieron convertir los archivos protegidos por DRM.</string>
+    <string name="import_notice_conversion_failed">No se pudieron convertir uno o más libros a EPUB.</string>
+    <string name="import_notice_too_large">Uno o más libros superan el límite de tamaño para la conversión.</string>
+    <string name="about_export_source">Exportar código fuente</string>
+    <string name="about_source_exported">Código fuente exportado.</string>
+    <string name="original_files_title">Archivos originales</string>
+    <string name="original_files_description">Copias de los archivos importados en este dispositivo.</string>
+    <string name="original_files_empty">No hay originales guardados en este dispositivo.</string>
+    <string name="original_file_save">Guardar copia</string>
+    <string name="original_file_share">Compartir</string>
+    <string name="original_file_delete_title">¿Eliminar original?</string>
+    <string name="original_file_delete_body">¿Eliminar %1$s de este dispositivo? El libro se conservará.</string>
+    <string name="original_files_load_failed">No se pudieron cargar los originales.</string>
+    <string name="original_file_save_failed">No se pudo guardar la copia.</string>
+    <string name="original_file_share_failed">No se pudo compartir el original.</string>
+    <string name="original_file_delete_failed">No se pudo eliminar el original.</string>
+    <string name="original_file_saved">Copia guardada.</string>
+    <string name="original_files_retry">Reintentar</string>
 </resources>

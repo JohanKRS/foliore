@@ -10,6 +10,9 @@ fun noticeMessage(type: LibraryNoticeType): String {
     return when (type) {
         LibraryNoticeType.IMPORTED -> stringResource(R.string.import_notice_imported)
         LibraryNoticeType.DUPLICATE -> stringResource(R.string.import_notice_duplicates)
+        LibraryNoticeType.IMPORT_DRM_PROTECTED -> stringResource(R.string.import_notice_drm_protected)
+        LibraryNoticeType.IMPORT_CONVERSION_FAILED -> stringResource(R.string.import_notice_conversion_failed)
+        LibraryNoticeType.IMPORT_TOO_LARGE -> stringResource(R.string.import_notice_too_large)
         LibraryNoticeType.FAILED -> stringResource(R.string.import_notice_failed)
         LibraryNoticeType.MIXED -> stringResource(R.string.import_notice_mixed)
         LibraryNoticeType.METADATA_SAVED -> stringResource(R.string.edit_notice_metadata_saved)

@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(foliore_conversion C)
+set(CMAKE_C_STANDARD 99)
+
+# Keep libmobi dynamically linked and independently replaceable (LGPL-3.0-or-later).
+set(MOBI_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/../../../../third-party/libmobi/src)
+set(MOBI_FILES buffer compression debug index memory meta parse_rawml read structure util write opf xmlwriter)
+list(TRANSFORM MOBI_FILES PREPEND "${MOBI_SOURCE}/")
+list(TRANSFORM MOBI_FILES APPEND ".c")
+add_library(mobi SHARED ${MOBI_FILES})
+target_include_directories(mobi PUBLIC ${MOBI_SOURCE})
+target_compile_definitions(mobi PRIVATE USE_XMLWRITER HAVE_STRDUP HAVE_UNISTD_H MOBI_INLINE=inline PACKAGE_VERSION="0.12")
+target_link_libraries(mobi PRIVATE z)
+
+if(NOT ANDROID)
+    find_package(JNI REQUIRED)
+endif()
+add_library(foliore_conversion SHARED mobi_conversion.c mobi_jni.c)
+target_include_directories(foliore_conversion PRIVATE ${JNI_INCLUDE_DIRS})
+target_link_libraries(foliore_conversion PRIVATE mobi)
+target_compile_options(foliore_conversion PRIVATE -Wall -Wextra -Werror)

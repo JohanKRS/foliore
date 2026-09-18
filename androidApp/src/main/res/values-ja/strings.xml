@@ -9,7 +9,7 @@
     <string name="nav_sync">同期</string>
     <string name="nav_settings">設定</string>
 
-    <string name="action_import_epubs">EPUBを読み込む</string>
+    <string name="action_import_epubs">書籍を読み込む</string>
     <string name="action_sync_now">今すぐ同期</string>
     <string name="action_search">検索</string>
     <string name="action_more">その他のオプション</string>
@@ -18,12 +18,12 @@
     <string name="action_cancel_batch">一括操作をキャンセル</string>
     <string name="action_cancel">キャンセル</string>
 
-    <string name="empty_library_title">EPUBライブラリは空です。</string>
-    <string name="empty_library_body">EPUBファイルを読み込んで、表紙やメタデータを整理し、電子書籍リーダー向けのきれいなコピーを作成できます。</string>
+    <string name="empty_library_title">ライブラリは空です。</string>
+    <string name="empty_library_body">EPUB、MOBI、AZW3を読み込んで表紙やメタデータを整理できます。MOBIとAZW3は端末上でEPUBに変換されます。</string>
     <string name="empty_library_sync_setup">同期を設定</string>
     <string name="search_placeholder">タイトルまたは著者を検索</string>
     <string name="search_no_results">本が見つかりませんでした。</string>
-    <string name="importing_epubs">EPUBを読み込み中…</string>
+    <string name="importing_epubs">書籍を読み込み・変換中…</string>
     <string name="action_done">完了</string>
     <string name="action_close">閉じる</string>
     <string name="action_organize_library">ライブラリを整理</string>
@@ -79,9 +79,9 @@
     <string name="cover_placeholder">EPUB</string>
     <string name="cover_content_description">%1$sの表紙</string>
 
-    <string name="import_notice_imported">EPUBを読み込みました。</string>
-    <string name="import_notice_duplicates">このEPUBはすでにライブラリにあります。</string>
-    <string name="import_notice_failed">EPUBを読み込めませんでした。</string>
+    <string name="import_notice_imported">書籍を読み込みました。</string>
+    <string name="import_notice_duplicates">この書籍はすでにライブラリにあります。</string>
+    <string name="import_notice_failed">書籍を読み込めませんでした。</string>
     <string name="import_notice_mixed">警告がありますが、読み込みは完了しました。</string>
     <string name="import_duplicates_dialog_title">重複する本を確認</string>
     <plurals name="import_duplicates_dialog_description">
@@ -195,7 +195,7 @@
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_german">Deutsch</string>
     <string name="settings_language_chinese_simplified">中文（简体）</string>
-    <string name="settings_preserve_original_description">オリジナルは保持され、編集内容はコピーに保存されます。</string>
+    <string name="settings_preserve_original_description">書籍の詳細から元のファイルにアクセス・削除できます。</string>
     <string name="settings_kindle">Kindle</string>
     <string name="settings_kindle_dialog_title">Kindleを設定</string>
     <string name="settings_kindle_email">Kindleに送信</string>
@@ -381,7 +381,7 @@
     <string name="ai_cover_option_b_alt_style">有機的な質感を持つ、柔らかく文学的な絵画。</string>
 
     <string name="share_label_use_as_cover">表紙として使用</string>
-    <string name="share_label_import_epub">EPUBを読み込む</string>
+    <string name="share_label_import_epub">書籍を読み込む</string>
     <string name="share_cover_title">画像を表紙に設定</string>
     <string name="share_cover_subtitle">この表紙を設定する本を選んでください。</string>
     <string name="share_cover_preview_description">表紙用に受信した画像</string>
@@ -402,4 +402,22 @@
     <string name="metadata_lookup_identifiers">識別子</string>
     <string name="metadata_lookup_cover">表紙</string>
     <string name="metadata_lookup_choose_result">結果を選択（%1$d件）</string>
+    <string name="import_notice_drm_protected">DRMで保護されたファイルは変換できませんでした。</string>
+    <string name="import_notice_conversion_failed">一部の書籍をEPUBに変換できませんでした。</string>
+    <string name="import_notice_too_large">一部の書籍が変換可能なサイズの上限を超えています。</string>
+    <string name="about_export_source">ソースコードを書き出す</string>
+    <string name="about_source_exported">ソースコードを書き出しました。</string>
+    <string name="original_files_title">元のファイル</string>
+    <string name="original_files_description">この端末に保存された、読み込み時のファイルのコピー。</string>
+    <string name="original_files_empty">この端末に元のファイルは保存されていません。</string>
+    <string name="original_file_save">コピーを保存</string>
+    <string name="original_file_share">共有</string>
+    <string name="original_file_delete_title">元のファイルを削除？</string>
+    <string name="original_file_delete_body">この端末から%1$sを削除しますか？書籍は保持されます。</string>
+    <string name="original_files_load_failed">元のファイルを読み込めませんでした。</string>
+    <string name="original_file_save_failed">コピーを保存できませんでした。</string>
+    <string name="original_file_share_failed">元のファイルを共有できませんでした。</string>
+    <string name="original_file_delete_failed">元のファイルを削除できませんでした。</string>
+    <string name="original_file_saved">コピーを保存しました。</string>
+    <string name="original_files_retry">再試行</string>
 </resources>

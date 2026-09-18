@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.OpenableColumns
+import com.foliore.android.storage.EbookFormat
 
 class IncomingEpubRepository(context: Context) {
     private val appContext = context.applicationContext
@@ -28,7 +29,7 @@ class IncomingEpubRepository(context: Context) {
 
         return candidates
             .distinct()
-            .filter { uri -> isLikelyEpub(uri, intent.type) }
+            .filter { uri -> isSupportedEbook(uri, intent.type) }
     }
 
     private fun streamUri(intent: Intent): Uri? {
@@ -49,13 +50,11 @@ class IncomingEpubRepository(context: Context) {
         }
     }
 
-    private fun isLikelyEpub(uri: Uri, intentType: String?): Boolean {
+    private fun isSupportedEbook(uri: Uri, intentType: String?): Boolean {
         val resolverType = contentResolver.getType(uri)
         val displayName = displayName(uri)
-        return intentType in EPUB_MIME_TYPES ||
-            resolverType in EPUB_MIME_TYPES ||
-            displayName.endsWith(".epub", ignoreCase = true) ||
-            uri.lastPathSegment?.endsWith(".epub", ignoreCase = true) == true
+        return EbookFormat.from(displayName, resolverType) != null ||
+            EbookFormat.from(uri.lastPathSegment.orEmpty(), intentType) != null
     }
 
     private fun displayName(uri: Uri): String {
@@ -75,10 +74,6 @@ class IncomingEpubRepository(context: Context) {
             Intent.ACTION_SEND,
             Intent.ACTION_SEND_MULTIPLE,
             Intent.ACTION_VIEW,
-        )
-        val EPUB_MIME_TYPES = setOf(
-            "application/epub+zip",
-            "application/x-epub+zip",
         )
     }
 }

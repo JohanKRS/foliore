@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -67,6 +68,7 @@ fun BookDetailsScreen(
     onShareExport: () -> Unit,
     onSendToKindle: () -> Unit,
     onDeleteBook: () -> Unit,
+    onOriginalFiles: () -> Unit,
     onBack: () -> Unit,
     topChromeInset: androidx.compose.ui.unit.Dp = 0.dp,
     bottomChromeInset: androidx.compose.ui.unit.Dp = 0.dp,
@@ -141,6 +143,7 @@ fun BookDetailsScreen(
                     EditorialDivider(modifier = Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(28.dp))
                     AboutBookSection(description = book.metadata.description)
+                    OriginalFilesFooter(onClick = onOriginalFiles, enabled = !isLoading)
                 }
             }
         }

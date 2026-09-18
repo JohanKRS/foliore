@@ -1,0 +1,45 @@
+Foliore uses libmobi 0.12, copyright Bartek Fabiszewski and contributors,
+under LGPL-3.0-or-later. Upstream revision:
+906274205c11944b628da1c553b255acb1af7c55
+https://github.com/bfabiszewski/libmobi
+
+The src directory, AUTHORS, COPYING and README.md are unchanged upstream
+files. Foliore supplies its own CMake build and JNI adapter; those adapter
+files are also distributed under LGPL-3.0-or-later. Encryption support is
+disabled. zlib is supplied by the operating system; miniz is not linked.
+
+The complete corresponding library and adapter source, build instructions
+and licenses are included in every APK as assets/native-conversion-source.zip.
+Export them through Settings > About > Libraries > libmobi > Export source code.
+No Foliore server, source request or network connection is required.
+
+These components are linked as separate libmobi.so and libfoliore_conversion.so
+shared libraries. You may modify or replace the LGPL components for your own
+use, and reverse engineer the combined work to debug those modifications.
+Foliore does not prohibit or check the identity of these shared libraries.
+These permissions cover the LGPL components and the rights necessary to use
+them; they do not assign a license to the rest of the application.
+
+Rebuilding on Linux/macOS (Android SDK, NDK 28.2.13676358, CMake >=3.22.1):
+1. Extract the source ZIP, preserving its directory structure.
+2. For each ABI in your installed APK (arm64-v8a, armeabi-v7a, x86, x86_64), run:
+   cmake -S androidApp/src/main/cpp -B build-ABI \
+     -DCMAKE_TOOLCHAIN_FILE=SDK/ndk/28.2.13676358/build/cmake/android.toolchain.cmake \
+     -DANDROID_ABI=ABI -DANDROID_PLATFORM=android-26 -DCMAKE_BUILD_TYPE=Release
+   cmake --build build-ABI
+   Replace SDK and ABI with the actual SDK path and architecture.
+3. Copy the resulting libmobi.so and libfoliore_conversion.so over the matching
+   lib/ABI/ entries of a copy of the installed APK (obtainable via adb shell pm
+   path com.foliore.android, then adb pull). For split installs, replace these
+   files in the ABI split and retain the other APKs. Remove the old APK signing
+   metadata, align with zipalign -P 16 -f 4, then sign all APKs with the same
+   key of your own using apksigner. Both tools are in Android SDK build-tools.
+4. Android will not install your signature over a differently signed app.
+   Export/synchronize your books first, then uninstall the original app and
+   install your signed APK with adb install (or adb install-multiple for
+   splits). Uninstalling erases local app data. You do not need the developer's
+   signing key. Store billing and Google authorization depend on their own
+   signing configurations; local conversion does not depend on those services.
+
+Keep the exported source tree and these licenses when redistributing modified
+LGPL components, and identify your changes as required by the licenses.

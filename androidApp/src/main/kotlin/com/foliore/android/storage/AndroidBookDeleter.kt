@@ -21,6 +21,7 @@ class AndroidBookDeleter(
             if (bookDir.isSafeBookDirectory(bookId) && bookDir.exists()) {
                 check(bookDir.deleteRecursively()) { "Cannot delete local book files" }
             }
+            OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY)).deleteBook(bookId)
             BookDeleteResult.Deleted(deleted.metadata.title)
         }.getOrDefault(BookDeleteResult.Failed)
     }

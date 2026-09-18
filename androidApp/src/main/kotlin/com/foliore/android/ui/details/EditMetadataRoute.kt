@@ -11,7 +11,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -40,6 +43,7 @@ fun EditMetadataRoute(
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val book = state.books.firstOrNull { it.book.id == bookId }
+    var showOriginalFiles by rememberSaveable(bookId) { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val message = notice?.type?.let { noticeMessage(it) }
     val shareChooserTitle = stringResource(R.string.export_share_chooser)
@@ -130,6 +134,7 @@ fun EditMetadataRoute(
                 )
             },
             onReplaceCover = { coverPicker.launch("image/*") },
+            onOriginalFiles = { showOriginalFiles = true },
             isLoading = state.hasActiveProgress,
             progress = state.activeProgress,
             onBottomBarActionsChange = onBottomBarActionsChange,
@@ -140,5 +145,8 @@ fun EditMetadataRoute(
             onTopChromeContentChange = onTopChromeContentChange,
             modifier = Modifier.padding(paddingValues),
         )
+    }
+    if (showOriginalFiles && book != null) {
+        OriginalFilesDialog(bookId = bookId, viewModel = viewModel, onDismiss = { showOriginalFiles = false })
     }
 }

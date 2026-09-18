@@ -43,6 +43,7 @@ fun BookDetailsRoute(
     val book = state.books.firstOrNull { it.book.id == bookId }
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showOriginalFiles by rememberSaveable(bookId) { mutableStateOf(false) }
     val shareChooserTitle = stringResource(R.string.export_share_chooser)
     val coverPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -87,9 +88,14 @@ fun BookDetailsRoute(
                 viewModel.sendPreparedEpubToKindleEmail(bookId)
             },
             onDeleteBook = { showDeleteDialog = true },
+            onOriginalFiles = { showOriginalFiles = true },
             onBack = onBack,
             modifier = Modifier.padding(paddingValues),
         )
+    }
+
+    if (showOriginalFiles && book != null) {
+        OriginalFilesDialog(bookId = bookId, viewModel = viewModel, onDismiss = { showOriginalFiles = false })
     }
 
     if (showDeleteDialog && book != null) {

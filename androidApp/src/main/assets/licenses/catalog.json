@@ -1006,6 +1006,23 @@
       ]
     },
     {
+      "id": "jsoup",
+      "name": "jsoup",
+      "url": "https://jsoup.org",
+      "license": "MIT",
+      "coordinates": [
+        "org.jsoup:jsoup:1.23.2"
+      ],
+      "notices": [
+        {
+          "title": "LICENSE",
+          "path": "licenses/texts/f5d724c5818010c61bff2e177f5b6452434bc054807522bf241940bca8b1d6b1.txt",
+          "sha256": "f5d724c5818010c61bff2e177f5b6452434bc054807522bf241940bca8b1d6b1",
+          "source": "org.jsoup:jsoup:1.23.2!META-INF/jsoup/LICENSE"
+        }
+      ]
+    },
+    {
       "id": "jspecify",
       "name": "JSpecify",
       "url": "https://github.com/jspecify/jspecify",
@@ -1060,6 +1077,33 @@
           "path": "licenses/texts/apache-2.0.txt",
           "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
           "source": "https://raw.githubusercontent.com/JetBrains/kotlin/v2.3.21/license/LICENSE.txt"
+        }
+      ]
+    },
+    {
+      "id": "libmobi",
+      "name": "libmobi",
+      "url": "https://github.com/bfabiszewski/libmobi",
+      "license": "LGPL-3.0-or-later",
+      "coordinates": [],
+      "notices": [
+        {
+          "title": "GNU General Public License v3",
+          "path": "licenses/texts/3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986.txt",
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "source": "https://www.gnu.org/licenses/gpl-3.0.txt"
+        },
+        {
+          "title": "GNU Lesser General Public License v3",
+          "path": "licenses/texts/da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768.txt",
+          "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+          "source": "libmobi 906274205c11944b628da1c553b255acb1af7c55/COPYING"
+        },
+        {
+          "title": "Source code and library replacement",
+          "path": "licenses/texts/6f13c4ac56a051b3b45fc6c89d6a3276a25b65fd4bca89aa40e2e32a8ae24a0e.txt",
+          "sha256": "6f13c4ac56a051b3b45fc6c89d6a3276a25b65fd4bca89aa40e2e32a8ae24a0e",
+          "source": "Foliore native conversion integration"
         }
       ]
     },

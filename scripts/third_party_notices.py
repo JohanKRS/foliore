@@ -32,7 +32,7 @@ def supplemental(title, path):
 
 apache = supplemental("Apache License 2.0", "licenses/texts/apache-2.0.txt")
 groups = {p["id"]: {k: p[k] for k in ("id", "name", "url", "license")} | {
-    "coordinates": [], "notices": [] if p["id"] in ("google-play", "play-billing") else [apache],
+    "coordinates": [], "notices": [] if p["id"] in ("google-play", "play-billing", "jsoup") else [apache],
 } for p in PROJECTS}
 
 
@@ -57,6 +57,8 @@ for line in sorted(INVENTORY.read_text().splitlines()):
         assert coordinate == "com.google.guava:listenablefuture:1.0", f"Missing POM license: {coordinate}"
     elif group["id"] in ("google-play", "play-billing"):
         assert all("Android Software Development Kit License" == n for n in license_names), (coordinate, license_names)
+    elif group["id"] == "jsoup":
+        assert all("MIT" in n for n in license_names), license_names
     else:
         assert all("Apache" in n for n in license_names), f"Review changed license: {coordinate}: {license_names}"
     if coordinate not in group["coordinates"]:
@@ -100,6 +102,12 @@ for line in sorted(INVENTORY.read_text().splitlines()):
 font = supplemental("SIL Open Font License 1.1", "licenses/cormorant_garamond/OFL.txt")
 groups["cormorant"] = dict(id="cormorant", name="Cormorant Garamond", url="https://github.com/CatharsisFonts/Cormorant",
     license="SIL Open Font License 1.1", coordinates=[], notices=[font])
+groups["libmobi"] = dict(id="libmobi", name="libmobi", url="https://github.com/bfabiszewski/libmobi",
+    license="LGPL-3.0-or-later", coordinates=[], notices=[
+        notice("GNU Lesser General Public License v3", (ROOT / "third-party/libmobi/COPYING").read_bytes(), "libmobi 906274205c11944b628da1c553b255acb1af7c55/COPYING"),
+        notice("GNU General Public License v3", (ROOT / "third-party/libmobi/COPYING.GPL").read_bytes(), "https://www.gnu.org/licenses/gpl-3.0.txt"),
+        notice("Source code and library replacement", (ROOT / "third-party/libmobi/INTEGRATION.txt").read_bytes(), "Foliore native conversion integration"),
+    ])
 for group in groups.values():
     group["coordinates"].sort()
     group["notices"].sort(key=lambda n: (n["title"].casefold(), n["sha256"]))

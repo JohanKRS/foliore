@@ -60,6 +60,7 @@ class LibraryViewModel(
     private val bookEditor: AndroidBookEditor,
     private val bookDeleter: AndroidBookDeleter,
     private val preparedEpubService: AndroidPreparedEpubService,
+    private val originalFilesService: com.foliore.android.storage.AndroidOriginalFilesService,
     private val syncService: SyncService,
     private val syncWorkScheduler: SyncWorkScheduler,
     private val aiPreferenceRepository: AiPreferenceRepository,
@@ -175,7 +176,12 @@ class LibraryViewModel(
                         is EpubImportResult.Imported -> counts = counts.copy(imported = counts.imported + 1)
                         is EpubImportResult.Duplicate -> counts = counts.copy(duplicates = counts.duplicates + 1)
                         EpubImportResult.LimitReached -> counts = counts.copy(limited = counts.limited + 1)
-                        is EpubImportResult.Failed -> counts = counts.copy(failed = counts.failed + 1)
+                        is EpubImportResult.Failed -> counts = counts.copy(
+                            failed = counts.failed + 1,
+                            drmFailed = counts.drmFailed || importResult.reason == com.foliore.android.storage.ImportFailureReason.DRM_PROTECTED,
+                            conversionFailed = counts.conversionFailed || importResult.reason == com.foliore.android.storage.ImportFailureReason.CONVERSION_FAILED,
+                            tooLarge = counts.tooLarge || importResult.reason == com.foliore.android.storage.ImportFailureReason.TOO_LARGE,
+                        )
                         is EpubImportResult.NeedsReview -> {
                             val pendingImport = importResult.pendingImport
                             val duplicatePending = pendingEpubImports.values.any {
@@ -859,6 +865,20 @@ class LibraryViewModel(
         }
     }
 
+    suspend fun originalFiles(bookId: String) = withContext(Dispatchers.IO) { originalFilesService.list(bookId) }
+
+    suspend fun shareOriginalFile(bookId: String, fileId: String) = withContext(Dispatchers.IO) {
+        originalFilesService.share(bookId, fileId)
+    }
+
+    suspend fun saveOriginalFile(bookId: String, fileId: String, destination: Uri) = withContext(Dispatchers.IO) {
+        originalFilesService.save(bookId, fileId, destination)
+    }
+
+    suspend fun deleteOriginalFile(bookId: String, fileId: String) = withContext(Dispatchers.IO) {
+        originalFilesService.delete(bookId, fileId)
+    }
+
     fun sendPreparedEpubToKindleEmail(
         bookId: String,
     ) {
@@ -1471,6 +1491,9 @@ class LibraryViewModel(
         }
         _notice.value = LibraryNotice(
             type = when {
+                counts.drmFailed -> LibraryNoticeType.IMPORT_DRM_PROTECTED
+                counts.tooLarge -> LibraryNoticeType.IMPORT_TOO_LARGE
+                counts.conversionFailed -> LibraryNoticeType.IMPORT_CONVERSION_FAILED
                 counts.imported > 0 && counts.duplicates == 0 && counts.failed == 0 -> {
                     LibraryNoticeType.IMPORTED
                 }
@@ -1605,6 +1628,9 @@ private data class ImportCounts(
     val duplicates: Int = 0,
     val failed: Int = 0,
     val limited: Int = 0,
+    val drmFailed: Boolean = false,
+    val conversionFailed: Boolean = false,
+    val tooLarge: Boolean = false,
 )
 
 private data class SyncStateSnapshot(

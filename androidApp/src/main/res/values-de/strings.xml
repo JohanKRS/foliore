@@ -9,7 +9,7 @@
     <string name="nav_sync">Synchronisierung</string>
     <string name="nav_settings">Einstellungen</string>
 
-    <string name="action_import_epubs">EPUBs importieren</string>
+    <string name="action_import_epubs">Bücher importieren</string>
     <string name="action_sync_now">Jetzt synchronisieren</string>
     <string name="action_search">Suchen</string>
     <string name="action_more">Weitere Optionen</string>
@@ -18,12 +18,12 @@
     <string name="action_cancel_batch">Auswahl abbrechen</string>
     <string name="action_cancel">Abbrechen</string>
 
-    <string name="empty_library_title">Deine EPUB-Bibliothek ist leer.</string>
-    <string name="empty_library_body">Importiere EPUB-Dateien, um Cover und Metadaten zu ordnen und saubere Kopien für deine Lesegeräte vorzubereiten.</string>
+    <string name="empty_library_title">Deine Bibliothek ist leer.</string>
+    <string name="empty_library_body">Importiere EPUB, MOBI oder AZW3, um Cover und Metadaten zu organisieren. MOBI und AZW3 werden auf deinem Gerät in EPUB umgewandelt.</string>
     <string name="empty_library_sync_setup">Synchronisierung einrichten</string>
     <string name="search_placeholder">Titel oder Autor suchen</string>
     <string name="search_no_results">Keine Bücher gefunden.</string>
-    <string name="importing_epubs">EPUBs werden importiert…</string>
+    <string name="importing_epubs">Bücher werden importiert und konvertiert…</string>
     <string name="action_done">Fertig</string>
     <string name="action_close">Schließen</string>
     <string name="action_organize_library">Bibliothek organisieren</string>
@@ -79,9 +79,9 @@
     <string name="cover_placeholder">EPUB</string>
     <string name="cover_content_description">Cover von %1$s</string>
 
-    <string name="import_notice_imported">EPUB importiert.</string>
-    <string name="import_notice_duplicates">Dieses EPUB ist bereits in der Bibliothek.</string>
-    <string name="import_notice_failed">Das EPUB konnte nicht importiert werden.</string>
+    <string name="import_notice_imported">Buch importiert.</string>
+    <string name="import_notice_duplicates">Dieses Buch ist bereits in der Bibliothek.</string>
+    <string name="import_notice_failed">Das Buch konnte nicht importiert werden.</string>
     <string name="import_notice_mixed">Import mit Hinweisen abgeschlossen.</string>
     <string name="import_duplicates_dialog_title">Doppelte Bücher prüfen</string>
     <plurals name="import_duplicates_dialog_description">
@@ -195,7 +195,7 @@
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_german">Deutsch</string>
     <string name="settings_language_chinese_simplified">中文（简体）</string>
-    <string name="settings_preserve_original_description">Originale bleiben erhalten. Änderungen werden in Kopien gespeichert.</string>
+    <string name="settings_preserve_original_description">Originale in den Buchdetails öffnen oder löschen.</string>
     <string name="settings_kindle">Kindle</string>
     <string name="settings_kindle_dialog_title">Kindle einrichten</string>
     <string name="settings_kindle_email">An Kindle senden</string>
@@ -381,7 +381,7 @@
     <string name="ai_cover_option_b_alt_style">Sanfte, literarische Malerei mit organischer Textur.</string>
 
     <string name="share_label_use_as_cover">Als Cover verwenden</string>
-    <string name="share_label_import_epub">EPUB importieren</string>
+    <string name="share_label_import_epub">Buch importieren</string>
     <string name="share_cover_title">Bild als Cover verwenden</string>
     <string name="share_cover_subtitle">Wähle das Buch aus, das dieses Cover erhalten soll.</string>
     <string name="share_cover_preview_description">Für das Cover empfangenes Bild</string>
@@ -402,4 +402,22 @@
     <string name="metadata_lookup_identifiers">Kennungen</string>
     <string name="metadata_lookup_cover">Cover</string>
     <string name="metadata_lookup_choose_result">Ergebnis wählen (%1$d)</string>
+    <string name="import_notice_drm_protected">DRM-geschützte Dateien konnten nicht konvertiert werden.</string>
+    <string name="import_notice_conversion_failed">Mindestens ein Buch konnte nicht in EPUB umgewandelt werden.</string>
+    <string name="import_notice_too_large">Mindestens ein Buch überschreitet die maximale Größe für die Konvertierung.</string>
+    <string name="about_export_source">Quellcode exportieren</string>
+    <string name="about_source_exported">Quellcode exportiert.</string>
+    <string name="original_files_title">Originaldateien</string>
+    <string name="original_files_description">Kopien der importierten Dateien auf diesem Gerät.</string>
+    <string name="original_files_empty">Keine Originale auf diesem Gerät gespeichert.</string>
+    <string name="original_file_save">Kopie speichern</string>
+    <string name="original_file_share">Teilen</string>
+    <string name="original_file_delete_title">Original löschen?</string>
+    <string name="original_file_delete_body">%1$s von diesem Gerät löschen? Das Buch bleibt erhalten.</string>
+    <string name="original_files_load_failed">Originale konnten nicht geladen werden.</string>
+    <string name="original_file_save_failed">Die Kopie konnte nicht gespeichert werden.</string>
+    <string name="original_file_share_failed">Das Original konnte nicht geteilt werden.</string>
+    <string name="original_file_delete_failed">Das Original konnte nicht gelöscht werden.</string>
+    <string name="original_file_saved">Kopie gespeichert.</string>
+    <string name="original_files_retry">Erneut versuchen</string>
 </resources>

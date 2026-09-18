@@ -4,7 +4,7 @@ Revisão: 12/09/2026. O link **Sobre** nas configurações apresenta versão, fo
 
 ## Escopo do inventário
 
-O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **127 coordenadas Maven distintas** resolvidas em `releaseRuntimeClasspath`, agrupadas em 15 projetos, mais a fonte Cormorant Garamond. Inclui dependências transitivas do módulo compartilhado. Não inclui ferramentas de compilação nem dependências exclusivas de testes/debug.
+O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **138 coordenadas Maven distintas** resolvidas em `releaseRuntimeClasspath`, agrupadas em 20 projetos, mais a fonte Cormorant Garamond e a biblioteca nativa libmobi. Inclui dependências transitivas do módulo compartilhado. Não inclui ferramentas de compilação nem dependências exclusivas de testes/debug.
 
 - Os POMs das bibliotecas abertas declaram Apache-2.0. `listenablefuture:1.0` herda essa licença do POM pai do Guava.
 - Os sete artefatos Google Play services declaram a licença do Android SDK. Seus `third_party_licenses.json` e `.txt` fornecem avisos adicionais; o gerador preserva os trechos indicados pelos offsets **em bytes**, incluindo textos diferentes para o mesmo projeto.
@@ -14,6 +14,8 @@ O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **127 co
 - Não foi atribuída uma licença à aplicação Foliore como um todo. As licenças aqui documentadas pertencem aos componentes de terceiros.
 
 ## Atualização
+
+A conversão MOBI/AZW3 acrescenta jsoup (MIT) e libmobi 0.12 (LGPL-3.0-or-later). libmobi é compilada do código em `third-party/libmobi`, ligada dinamicamente e acompanhada dos fontes e instruções de substituição dentro de cada APK, exportáveis em **Sobre > Bibliotecas > libmobi**. O catálogo inclui os textos GPL/LGPL e os direitos de modificação e depuração. Veja [conversão de formatos](../docs/FORMAT_CONVERSION.md).
 
 1. Atualize as dependências e execute `./gradlew :androidApp:exportThirdPartyInventory`.
 2. Confira as versões, POMs, licenças e avisos dos artefatos alterados. Atualize `projects.json` se necessário; não trate um grupo Maven como garantia permanente de licença.

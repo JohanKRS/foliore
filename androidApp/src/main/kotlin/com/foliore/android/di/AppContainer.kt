@@ -73,6 +73,7 @@ class AppContainer(context: Context) {
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,
     )
+    val originalFilesService = com.foliore.android.storage.AndroidOriginalFilesService(appContext, libraryRepository)
     val manualSyncService = ManualSyncService(
         context = appContext,
         libraryRepository = libraryRepository,

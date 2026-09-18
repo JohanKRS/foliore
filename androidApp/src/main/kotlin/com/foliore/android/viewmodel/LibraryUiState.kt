@@ -147,6 +147,9 @@ data class LibraryNotice(
 
 enum class LibraryNoticeType {
     IMPORTED,
+    IMPORT_DRM_PROTECTED,
+    IMPORT_CONVERSION_FAILED,
+    IMPORT_TOO_LARGE,
     DUPLICATE,
     FAILED,
     MIXED,

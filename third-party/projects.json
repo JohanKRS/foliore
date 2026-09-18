@@ -131,5 +131,12 @@
     "prefix": "javax.inject:",
     "url": "https://github.com/javax-inject/javax-inject",
     "license": "Apache License 2.0"
+  },
+  {
+    "id": "jsoup",
+    "name": "jsoup",
+    "prefix": "org.jsoup:",
+    "url": "https://jsoup.org",
+    "license": "MIT"
   }
 ]

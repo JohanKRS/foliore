@@ -17,6 +17,10 @@ class DebugImportReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         Thread {
             try {
+                if (intent.getBooleanExtra("conversionTest", false)) {
+                    ConversionHarness.run(context)
+                    return@Thread
+                }
                 val path = intent.getStringExtra(EXTRA_PATH)
                     ?: File(context.filesDir, DEFAULT_IMPORT_DIR).absolutePath
                 val target = File(path)
@@ -61,10 +65,10 @@ class DebugImportReceiver : BroadcastReceiver() {
         return if (isDirectory) {
             listFiles()
                 .orEmpty()
-                .filter { file -> file.isFile && file.name.endsWith(".epub", ignoreCase = true) }
+                .filter { file -> file.isFile && com.foliore.android.storage.EbookFormat.from(file.name, null) != null }
                 .sortedBy { file -> file.name }
         } else {
-            listOf(this).filter { file -> file.isFile && file.name.endsWith(".epub", ignoreCase = true) }
+            listOf(this).filter { file -> file.isFile && com.foliore.android.storage.EbookFormat.from(file.name, null) != null }
         }
     }
 

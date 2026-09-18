@@ -89,6 +89,7 @@ class MainActivity : ComponentActivity() {
                                 bookEditor = appContainer.bookEditor,
                                 bookDeleter = appContainer.bookDeleter,
                                 preparedEpubService = appContainer.preparedEpubService,
+                                originalFilesService = appContainer.originalFilesService,
                                 syncService = appContainer.syncService,
                                 syncWorkScheduler = appContainer.syncWorkScheduler,
                                 aiPreferenceRepository = appContainer.aiPreferenceRepository,

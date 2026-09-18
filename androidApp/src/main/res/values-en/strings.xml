@@ -9,7 +9,7 @@
     <string name="nav_sync">Sync</string>
     <string name="nav_settings">Settings</string>
 
-    <string name="action_import_epubs">Import EPUBs</string>
+    <string name="action_import_epubs">Import books</string>
     <string name="action_sync_now">Sync now</string>
     <string name="action_search">Search</string>
     <string name="action_more">More options</string>
@@ -18,12 +18,12 @@
     <string name="action_cancel_batch">Cancel batch</string>
     <string name="action_cancel">Cancel</string>
 
-    <string name="empty_library_title">Your EPUB library is empty.</string>
-    <string name="empty_library_body">Import EPUB files to organize covers and metadata and prepare clean copies for your readers.</string>
+    <string name="empty_library_title">Your library is empty.</string>
+    <string name="empty_library_body">Import EPUB, MOBI or AZW3 to organize covers and metadata. MOBI and AZW3 are converted to EPUB on your device.</string>
     <string name="empty_library_sync_setup">Set up sync</string>
     <string name="search_placeholder">Search title or author</string>
     <string name="search_no_results">No books found.</string>
-    <string name="importing_epubs">Importing EPUBs…</string>
+    <string name="importing_epubs">Importing and converting books…</string>
     <string name="action_done">Done</string>
     <string name="action_close">Close</string>
     <string name="action_organize_library">Organize library</string>
@@ -79,9 +79,9 @@
     <string name="cover_placeholder">EPUB</string>
     <string name="cover_content_description">Cover of %1$s</string>
 
-    <string name="import_notice_imported">EPUB imported.</string>
-    <string name="import_notice_duplicates">This EPUB is already in the library.</string>
-    <string name="import_notice_failed">The EPUB could not be imported.</string>
+    <string name="import_notice_imported">Book imported.</string>
+    <string name="import_notice_duplicates">This book is already in the library.</string>
+    <string name="import_notice_failed">The book could not be imported.</string>
     <string name="import_notice_mixed">Import completed with warnings.</string>
     <string name="import_duplicates_dialog_title">Review duplicate books</string>
     <plurals name="import_duplicates_dialog_description">
@@ -195,7 +195,7 @@
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_german">Deutsch</string>
     <string name="settings_language_chinese_simplified">中文（简体）</string>
-    <string name="settings_preserve_original_description">Originals stay intact. Edits are saved in copies.</string>
+    <string name="settings_preserve_original_description">Access or delete originals in the book details.</string>
     <string name="settings_kindle">Kindle</string>
     <string name="settings_kindle_dialog_title">Set up Kindle</string>
     <string name="settings_kindle_email">Send to Kindle</string>
@@ -381,7 +381,7 @@
     <string name="ai_cover_option_b_alt_style">Soft, literary painting with organic texture.</string>
 
     <string name="share_label_use_as_cover">Use as cover</string>
-    <string name="share_label_import_epub">Import EPUB</string>
+    <string name="share_label_import_epub">Import book</string>
     <string name="share_cover_title">Use image as cover</string>
     <string name="share_cover_subtitle">Choose the book that will receive this cover.</string>
     <string name="share_cover_preview_description">Image received for cover</string>
@@ -402,4 +402,22 @@
     <string name="metadata_lookup_identifiers">Identifiers</string>
     <string name="metadata_lookup_cover">Cover</string>
     <string name="metadata_lookup_choose_result">Choose result (%1$d)</string>
+    <string name="import_notice_drm_protected">DRM-protected files could not be converted.</string>
+    <string name="import_notice_conversion_failed">One or more books could not be converted to EPUB.</string>
+    <string name="import_notice_too_large">One or more books exceed the conversion size limit.</string>
+    <string name="about_export_source">Export source code</string>
+    <string name="about_source_exported">Source code exported.</string>
+    <string name="original_files_title">Original files</string>
+    <string name="original_files_description">Copies of imported files on this device.</string>
+    <string name="original_files_empty">No originals saved on this device.</string>
+    <string name="original_file_save">Save a copy</string>
+    <string name="original_file_share">Share</string>
+    <string name="original_file_delete_title">Delete original?</string>
+    <string name="original_file_delete_body">Delete %1$s from this device? The book will be kept.</string>
+    <string name="original_files_load_failed">Could not load the original files.</string>
+    <string name="original_file_save_failed">Could not save the copy.</string>
+    <string name="original_file_share_failed">Could not share the original.</string>
+    <string name="original_file_delete_failed">Could not delete the original.</string>
+    <string name="original_file_saved">Copy saved.</string>
+    <string name="original_files_retry">Try again</string>
 </resources>

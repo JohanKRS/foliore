@@ -1,6 +1,8 @@
 package com.foliore.android.ui.library
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,11 +41,25 @@ import com.foliore.android.R
 import com.foliore.android.licenses.ThirdPartyCatalog
 import com.foliore.android.licenses.ThirdPartyNotice
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
 internal fun AboutDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sourceExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) scope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.assets.open("native-conversion-source.zip").use { source ->
+                        checkNotNull(context.contentResolver.openOutputStream(uri)).use(source::copyTo)
+                    }
+                }.isSuccess
+            }
+            Toast.makeText(context, if (saved) R.string.about_source_exported else R.string.about_load_error, Toast.LENGTH_SHORT).show()
+        }
+    }
     val packageInfo = remember(context) { context.packageManager.getPackageInfo(context.packageName, 0) }
     val catalog by produceState<Result<ThirdPartyCatalog>?>(null) {
         value = withContext(Dispatchers.IO) {
@@ -86,6 +103,11 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
             if (group != null) {
                 Text(group.license, style = MaterialTheme.typography.bodyMedium)
                 ExternalCreditLink(stringResource(R.string.about_project_site), group.url)
+                if (group.id == "libmobi") {
+                    TextButton(onClick = { sourceExporter.launch("foliore-native-conversion-source.zip") }) {
+                        Text(stringResource(R.string.about_export_source))
+                    }
+                }
                 if (group.id in setOf("google-play", "play-billing")) {
                     ExternalCreditLink(stringResource(R.string.about_terms), "https://developer.android.com/studio/terms")
                 }

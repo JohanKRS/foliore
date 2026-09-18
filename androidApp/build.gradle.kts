@@ -36,9 +36,25 @@ if (hasReleaseSigningConfig) {
     }
 }
 
+val nativeConversionSource by tasks.registering(Zip::class) {
+    archiveFileName.set("native-conversion-source.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("generated/nativeSourceAssets"))
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+    from(rootProject.file("third-party/libmobi")) { into("third-party/libmobi") }
+    from(file("src/main/cpp")) { into("androidApp/src/main/cpp") }
+}
+
 android {
     namespace = "com.foliore.android"
     compileSdk = 36
+    ndkVersion = "28.2.13676358"
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.foliore.android"
@@ -91,6 +107,12 @@ android {
 
 }
 
+androidComponents.onVariants { variant ->
+    variant.sources.assets?.addGeneratedSourceDirectory(nativeConversionSource) { it.destinationDirectory }
+}
+// Zip exposes an output file, not an @OutputDirectory; carry the producer explicitly.
+tasks.named("preBuild").configure { dependsOn(nativeConversionSource) }
+
 dependencies {
     implementation(project(":shared"))
 
@@ -106,6 +128,7 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.coil.compose)
     implementation(libs.android.svg)
+    implementation(libs.jsoup)
     implementation(libs.google.play.services.auth)
     implementation(libs.google.play.billing)
     implementation(libs.androidx.work.runtime.ktx)
@@ -158,6 +181,10 @@ tasks.matching { it.name == "bundleRelease" }.configureEach { dependsOn(validate
 
 tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
     inputs.dir(layout.projectDirectory.dir("src/main/assets/licenses"))
+    providers.gradleProperty("conversionNativeLibraryDir").orNull?.let {
+        systemProperty("java.library.path", it)
+        systemProperty("foliore.nativeConversionTests", "true")
+    }
 }
 
 // Keep the in-app notices tied to the artifacts actually shipped, including transitives.

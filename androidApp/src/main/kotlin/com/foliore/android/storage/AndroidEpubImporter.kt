@@ -37,12 +37,14 @@ class AndroidEpubImporter(
     private val appContext = context.applicationContext
     private val contentResolver = appContext.contentResolver
     private val json = Json { prettyPrint = true }
+    private val originals = OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY))
 
     suspend fun import(uri: Uri): EpubImportResult = withContext(Dispatchers.IO) {
         val displayName = displayName(uri)
         val mimeType = contentResolver.getType(uri)
 
-        if (!isLikelyEpub(displayName, mimeType)) {
+        val format = EbookFormat.from(displayName, mimeType)
+        if (format == null) {
             return@withContext EpubImportResult.Failed(ImportFailureReason.NOT_EPUB)
         }
 
@@ -50,12 +52,13 @@ class AndroidEpubImporter(
             return@withContext EpubImportResult.Failed(ImportFailureReason.CANNOT_COPY)
         }
 
-        inspectAndImport(displayName, copied)
+        convertAndImport(displayName, copied, format)
     }
 
     suspend fun importFile(source: File): EpubImportResult = withContext(Dispatchers.IO) {
         val displayName = source.name
-        if (!isLikelyEpub(displayName, mimeType = null)) {
+        val format = EbookFormat.from(displayName, mimeType = null)
+        if (format == null) {
             return@withContext EpubImportResult.Failed(ImportFailureReason.NOT_EPUB)
         }
 
@@ -63,15 +66,18 @@ class AndroidEpubImporter(
             return@withContext EpubImportResult.Failed(ImportFailureReason.CANNOT_COPY)
         }
 
-        inspectAndImport(displayName, copied)
+        convertAndImport(displayName, copied, format)
     }
 
     fun commit(pendingImport: PendingEpubImport): EpubImportResult {
         val copied = CopiedEpub(
             file = File(pendingImport.tempFilePath),
             sha256 = pendingImport.sha256,
+            sourceFile = pendingImport.sourceFilePath?.let(::File),
         )
-        if (!copied.file.isPendingImportFile() || !copied.file.exists()) {
+        if (!copied.file.isPendingImportFile() || !copied.file.exists() ||
+            (copied.sourceFile != null && (!copied.sourceFile.isPendingSourceFor(copied.file) || !copied.sourceFile.isFile))
+        ) {
             return EpubImportResult.Failed(ImportFailureReason.CANNOT_COPY)
         }
 
@@ -90,9 +96,28 @@ class AndroidEpubImporter(
     }
 
     fun discard(pendingImport: PendingEpubImport) {
-        File(pendingImport.tempFilePath)
-            .takeIf { it.isPendingImportFile() }
-            ?.delete()
+        val epub = File(pendingImport.tempFilePath)
+        if (!epub.isPendingImportFile()) return
+        pendingImport.sourceFilePath?.let(::File)?.takeIf { it.isPendingSourceFor(epub) }?.delete()
+        epub.delete()
+    }
+
+    private fun convertAndImport(displayName: String, copied: CopiedEpub, format: EbookFormat): EpubImportResult {
+        if (format == EbookFormat.EPUB) return inspectAndImport(displayName, copied)
+        val source = File(copied.file.parentFile, "${copied.file.nameWithoutExtension}.source.${format.extension}")
+        return try {
+            check(copied.file.renameTo(source))
+            KindleEpubConverter().convert(source, copied.file)
+            inspectAndImport(displayName, CopiedEpub(copied.file, copied.file.sha256(), source))
+        } catch (error: Exception) {
+            copied.delete()
+            source.delete()
+            EpubImportResult.Failed((error as? EbookConversionException)?.reason ?: ImportFailureReason.CONVERSION_FAILED)
+        } catch (_: LinkageError) {
+            copied.delete()
+            source.delete()
+            EpubImportResult.Failed(ImportFailureReason.CONVERSION_FAILED)
+        }
     }
 
     private fun inspectAndImport(
@@ -101,7 +126,7 @@ class AndroidEpubImporter(
     ): EpubImportResult {
         val duplicateBookId = libraryRepository.findBookIdByHash(copied.sha256)
         if (duplicateBookId != null) {
-            copied.file.delete()
+            copied.delete()
             return EpubImportResult.Duplicate(duplicateBookId)
         }
 
@@ -136,6 +161,7 @@ class AndroidEpubImporter(
                     tempFilePath = copied.file.absolutePath,
                     sha256 = copied.sha256,
                     contentFingerprint = contentFingerprint,
+                    sourceFilePath = copied.sourceFile?.absolutePath,
                 ),
             )
         }
@@ -151,12 +177,12 @@ class AndroidEpubImporter(
     ): EpubImportResult = synchronized(importLock) {
         // Repeat checks under a process-wide lock: shares, duplicate reviews and imports can overlap.
         libraryRepository.findBookIdByHash(copied.sha256)?.let { existing ->
-            copied.file.delete()
+            copied.delete()
             return@synchronized EpubImportResult.Duplicate(existing)
         }
         val replacing = replacingBookId?.let { libraryRepository.getBook(it) != null } == true
         if (!com.foliore.android.billing.LibraryLimit.canAdd(libraryRepository.bookCount(), isUnlimited(), replacing)) {
-            copied.file.delete()
+            copied.delete()
             return@synchronized EpubImportResult.LimitReached
         }
         val bookId = UUID.randomUUID().toString()
@@ -165,7 +191,8 @@ class AndroidEpubImporter(
 
         try {
             copied.file.copyTo(originalFile, overwrite = true)
-            copied.file.delete()
+            originals.initialize(bookId, listOf(OriginalFileSource(copied.sourceFile ?: copied.file, displayName)))
+            copied.delete()
 
             val parseResult = AndroidZipEpubArchive(originalFile).use { archive ->
                 val parsed = parser.parse(archive)
@@ -247,8 +274,9 @@ class AndroidEpubImporter(
 
             EpubImportResult.Imported(bookId)
         } catch (_: Exception) {
-            copied.file.delete()
+            copied.delete()
             bookDir.deleteRecursively()
+            runCatching { originals.deleteBook(bookId) }
             EpubImportResult.Failed(ImportFailureReason.CANNOT_OPEN)
         }
     }
@@ -358,14 +386,9 @@ class AndroidEpubImporter(
         return uri.lastPathSegment ?: "book.epub"
     }
 
-    private fun isLikelyEpub(displayName: String, mimeType: String?): Boolean {
-        return displayName.endsWith(".epub", ignoreCase = true) || mimeType == "application/epub+zip"
-    }
-
     private fun String.titleFromFileName(bookId: String): String {
         return substringAfterLast('/')
-            .removeSuffix(".epub")
-            .removeSuffix(".EPUB")
+            .substringBeforeLast('.')
             .ifBlank { bookId }
     }
 
@@ -376,7 +399,13 @@ class AndroidEpubImporter(
     private data class CopiedEpub(
         val file: File,
         val sha256: String,
-    )
+        val sourceFile: File? = null,
+    ) {
+        fun delete() {
+            file.delete()
+            sourceFile?.delete()
+        }
+    }
 
     private data class ParsedWithCover(
         val parsed: com.foliore.shared.epub.EpubParseResult,
@@ -387,6 +416,12 @@ class AndroidEpubImporter(
         val importsDir = File(appContext.cacheDir, "imports").canonicalFile
         val candidate = runCatching { canonicalFile }.getOrNull() ?: return false
         return candidate.parentFile == importsDir && candidate.extension.equals("epub", ignoreCase = true)
+    }
+
+    private fun File.isPendingSourceFor(epub: File): Boolean {
+        val candidate = runCatching { canonicalFile }.getOrNull() ?: return false
+        return epub.isPendingImportFile() && candidate.parentFile == epub.canonicalFile.parentFile &&
+            candidate.name in listOf("${epub.nameWithoutExtension}.source.mobi", "${epub.nameWithoutExtension}.source.azw3")
     }
 
     private companion object {

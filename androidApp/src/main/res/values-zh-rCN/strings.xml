@@ -9,7 +9,7 @@
     <string name="nav_sync">同步</string>
     <string name="nav_settings">设置</string>
 
-    <string name="action_import_epubs">导入 EPUB</string>
+    <string name="action_import_epubs">导入书籍</string>
     <string name="action_sync_now">立即同步</string>
     <string name="action_search">搜索</string>
     <string name="action_more">更多选项</string>
@@ -18,12 +18,12 @@
     <string name="action_cancel_batch">取消批量操作</string>
     <string name="action_cancel">取消</string>
 
-    <string name="empty_library_title">你的 EPUB 书库还是空的。</string>
-    <string name="empty_library_body">导入 EPUB 文件即可整理封面和元数据，并为阅读器准备干净的副本。</string>
+    <string name="empty_library_title">书库为空。</string>
+    <string name="empty_library_body">导入 EPUB、MOBI 或 AZW3 来整理封面和元数据。MOBI 和 AZW3 会在设备上转换为 EPUB。</string>
     <string name="empty_library_sync_setup">设置同步</string>
     <string name="search_placeholder">搜索书名或作者</string>
     <string name="search_no_results">未找到图书。</string>
-    <string name="importing_epubs">正在导入 EPUB…</string>
+    <string name="importing_epubs">正在导入和转换书籍…</string>
     <string name="action_done">完成</string>
     <string name="action_close">关闭</string>
     <string name="action_organize_library">整理书库</string>
@@ -79,9 +79,9 @@
     <string name="cover_placeholder">EPUB</string>
     <string name="cover_content_description">%1$s 的封面</string>
 
-    <string name="import_notice_imported">已导入 EPUB。</string>
-    <string name="import_notice_duplicates">此 EPUB 已在书库中。</string>
-    <string name="import_notice_failed">无法导入 EPUB。</string>
+    <string name="import_notice_imported">书籍已导入。</string>
+    <string name="import_notice_duplicates">此书已在书库中。</string>
+    <string name="import_notice_failed">无法导入书籍。</string>
     <string name="import_notice_mixed">导入完成，但有部分提示。</string>
     <string name="import_duplicates_dialog_title">检查重复图书</string>
     <plurals name="import_duplicates_dialog_description">
@@ -195,7 +195,7 @@
     <string name="settings_language_italian">Italiano</string>
     <string name="settings_language_german">Deutsch</string>
     <string name="settings_language_chinese_simplified">中文（简体）</string>
-    <string name="settings_preserve_original_description">原始文件保持不变，修改保存到副本中。</string>
+    <string name="settings_preserve_original_description">在书籍详情中访问或删除原始文件。</string>
     <string name="settings_kindle">Kindle</string>
     <string name="settings_kindle_dialog_title">设置 Kindle</string>
     <string name="settings_kindle_email">发送到Kindle</string>
@@ -381,7 +381,7 @@
     <string name="ai_cover_option_b_alt_style">柔和、富有文学气息的绘画，带有自然纹理。</string>
 
     <string name="share_label_use_as_cover">设为封面</string>
-    <string name="share_label_import_epub">导入 EPUB</string>
+    <string name="share_label_import_epub">导入书籍</string>
     <string name="share_cover_title">将图像设为封面</string>
     <string name="share_cover_subtitle">选择要使用此封面的图书。</string>
     <string name="share_cover_preview_description">收到的封面图像</string>
@@ -402,4 +402,22 @@
     <string name="metadata_lookup_identifiers">标识符</string>
     <string name="metadata_lookup_cover">封面</string>
     <string name="metadata_lookup_choose_result">选择结果（%1$d）</string>
+    <string name="import_notice_drm_protected">无法转换受 DRM 保护的文件。</string>
+    <string name="import_notice_conversion_failed">一本或多本书籍无法转换为 EPUB。</string>
+    <string name="import_notice_too_large">一本或多本书籍超过转换大小限制。</string>
+    <string name="about_export_source">导出源代码</string>
+    <string name="about_source_exported">源代码已导出。</string>
+    <string name="original_files_title">原始文件</string>
+    <string name="original_files_description">此设备上导入文件的副本。</string>
+    <string name="original_files_empty">此设备上未保存原始文件。</string>
+    <string name="original_file_save">保存副本</string>
+    <string name="original_file_share">分享</string>
+    <string name="original_file_delete_title">删除原始文件？</string>
+    <string name="original_file_delete_body">从此设备删除 %1$s？书籍将保留。</string>
+    <string name="original_files_load_failed">无法加载原始文件。</string>
+    <string name="original_file_save_failed">无法保存副本。</string>
+    <string name="original_file_share_failed">无法分享原始文件。</string>
+    <string name="original_file_delete_failed">无法删除原始文件。</string>
+    <string name="original_file_saved">副本已保存。</string>
+    <string name="original_files_retry">重试</string>
 </resources>

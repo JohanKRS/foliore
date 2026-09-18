@@ -87,6 +87,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/epub+zip" />
                 <data android:mimeType="application/x-epub+zip" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/x-mobi8-ebook" />
+                <data android:mimeType="application/x-azw3" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
             <intent-filter android:label="@string/share_label_import_epub">
@@ -94,6 +98,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/epub+zip" />
                 <data android:mimeType="application/x-epub+zip" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/x-mobi8-ebook" />
+                <data android:mimeType="application/x-azw3" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
             <intent-filter android:label="@string/share_label_import_epub">
@@ -102,6 +110,10 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:mimeType="application/epub+zip" />
                 <data android:mimeType="application/x-epub+zip" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
+                <data android:mimeType="application/vnd.amazon.ebook" />
+                <data android:mimeType="application/x-mobi8-ebook" />
+                <data android:mimeType="application/x-azw3" />
             </intent-filter>
         </activity-alias>
 

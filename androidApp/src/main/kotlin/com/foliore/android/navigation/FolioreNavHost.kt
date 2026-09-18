@@ -368,7 +368,7 @@ fun FolioreNavHost(
                                         state = libraryState,
                                         hazeState = libraryChromeHazeState,
                                         onImportClick = {
-                                            epubPicker.launch(arrayOf("application/epub+zip", "application/octet-stream"))
+                                            epubPicker.launch(com.foliore.android.storage.EbookFormat.pickerMimeTypes)
                                         },
                                         onSearchClick = { libraryViewModel.setSearchOpen(true) },
                                         onCloseSearch = { libraryViewModel.setSearchOpen(false) },

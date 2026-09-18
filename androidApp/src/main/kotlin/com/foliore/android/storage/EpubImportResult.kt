@@ -19,6 +19,7 @@ class PendingEpubImport internal constructor(
     internal val tempFilePath: String,
     internal val sha256: String,
     internal val contentFingerprint: String,
+    internal val sourceFilePath: String? = null,
 )
 
 enum class ImportFailureReason {
@@ -26,4 +27,7 @@ enum class ImportFailureReason {
     CANNOT_OPEN,
     CANNOT_COPY,
     STORAGE_ERROR,
+    DRM_PROTECTED,
+    CONVERSION_FAILED,
+    TOO_LARGE,
 }

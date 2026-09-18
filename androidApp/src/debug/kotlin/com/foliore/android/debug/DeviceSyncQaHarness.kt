@@ -311,7 +311,11 @@ internal object DeviceSyncQaHarness {
             if (mode == "upload" && fired.compareAndSet(false, true)) {
                 val partial = File.createTempFile("qa-partial", ".epub", source.parentFile)
                 try {
-                    partial.outputStream().use { output -> source.inputStream().use { input -> output.write(input.readNBytes(128)) } }
+                    partial.outputStream().use { output -> source.inputStream().use { input ->
+                        val prefix = ByteArray(128)
+                        val count = input.read(prefix)
+                        if (count > 0) output.write(prefix, 0, count)
+                    } }
                     store.replaceFile(path, partial, mimeType)
                     throw IOException("Injected interruption after a partial upload")
                 } finally { partial.delete() }

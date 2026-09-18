@@ -101,6 +101,7 @@ internal class PortableLibrarySyncEngine(
                 check(!deletedDirectory.exists() || deletedDirectory.deleteRecursively()) {
                     "Cannot remove files for deleted book ${tombstone.bookId}"
                 }
+                OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY)).deleteBook(tombstone.bookId)
             }
         }
         val remoteBookList = remoteBooks.values.toList()
@@ -185,7 +186,7 @@ internal class PortableLibrarySyncEngine(
                         missingRemoteBookIds += action.remoteBook.bookId
                     }
                     action.duplicateBookToRemove?.let { duplicateBook ->
-                        removeLocalDuplicateBook(duplicateBook)
+                        removeLocalDuplicateBook(duplicateBook, action.remoteBook.bookId)
                         removedLocalBookId = duplicateBook.book.id
                         pendingStatusUpdates.syncedBookIds += action.remoteBook.bookId
                     }
@@ -488,6 +489,8 @@ internal class PortableLibrarySyncEngine(
             writeRecoveredPortableSnapshots(directory, book, metadata, technical)
             libraryRepository.insertImportedBook(ImportedBookRecord(book, metadata, technical))
         }
+        AndroidOriginalFilesService(appContext, libraryRepository).list(local.book.id)
+        OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY)).copyBook(local.book.id, recoveryId)
     }
 
     private fun planRemoteBookAction(
@@ -559,10 +562,14 @@ internal class PortableLibrarySyncEngine(
             (hasLocalOnlyImport && remoteIsAtLeastAsFresh)
     }
 
-    private fun removeLocalDuplicateBook(duplicateBook: LibraryBook) {
+    private fun removeLocalDuplicateBook(duplicateBook: LibraryBook, retainedBookId: String) {
         val bookDir = File(duplicateBook.book.originalFilePath).parentFile
+        AndroidOriginalFilesService(appContext, libraryRepository).list(duplicateBook.book.id)
+        val originals = OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY))
+        originals.copyBook(duplicateBook.book.id, retainedBookId)
         libraryRepository.deleteBook(duplicateBook.book.id)
         bookDir?.deleteRecursively()
+        originals.deleteBook(duplicateBook.book.id)
     }
 
     private fun downloadRemoteBook(
