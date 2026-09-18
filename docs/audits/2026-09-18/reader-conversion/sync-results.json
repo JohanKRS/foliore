@@ -1,0 +1,132 @@
+[
+  {
+    "run": "final-first-upload",
+    "elapsedMs": 2640,
+    "result": {
+      "type": "Synced",
+      "uploaded": 11,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-mobi-upload",
+    "elapsedMs": 837,
+    "result": {
+      "type": "Synced",
+      "uploaded": 1,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-b-download",
+    "elapsedMs": 1159,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 12,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-reading-upload",
+    "elapsedMs": 1282,
+    "result": {
+      "type": "Synced",
+      "uploaded": 1,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-b-reading-download",
+    "elapsedMs": 645,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 1,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-b-reading-only",
+    "elapsedMs": 1106,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-a-reading-only",
+    "elapsedMs": 610,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-all-prepared-a",
+    "elapsedMs": 3485,
+    "result": {
+      "type": "Synced",
+      "uploaded": 11,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-all-prepared-b",
+    "elapsedMs": 2770,
+    "result": {
+      "type": "Synced",
+      "uploaded": 2,
+      "downloaded": 11,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-converged-a",
+    "elapsedMs": 1127,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 2,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-converged-b",
+    "elapsedMs": 1058,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-noop-a",
+    "elapsedMs": 1059,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  },
+  {
+    "run": "final-noop-b",
+    "elapsedMs": 995,
+    "result": {
+      "type": "Synced",
+      "uploaded": 0,
+      "downloaded": 0,
+      "conflicts": 0
+    }
+  }
+]

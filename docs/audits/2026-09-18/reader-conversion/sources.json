@@ -1,0 +1,86 @@
+[
+  {
+    "file": "alice.epub",
+    "bookPage": "https://www.gutenberg.org/ebooks/11",
+    "download": "https://www.gutenberg.org/ebooks/11.epub3.images",
+    "sha256": "12cbc3610260503383ad7ecf800beb0d885a6011e15900b2bf61cecfc571d6c8",
+    "bytes": 188960
+  },
+  {
+    "file": "alice.azw3",
+    "bookPage": "https://www.gutenberg.org/ebooks/11",
+    "download": "https://www.gutenberg.org/ebooks/11.kf8.images",
+    "sha256": "b3c9067848d28f8c0f36adbb198b306791884319e8b2f8ea7083f844d8876815",
+    "bytes": 255486
+  },
+  {
+    "file": "alice.mobi",
+    "bookPage": "https://www.gutenberg.org/ebooks/11",
+    "download": "https://www.gutenberg.org/ebooks/11.kindle.images",
+    "sha256": "29448cd44f3e6d3db391c6aefc438f53283142d9e8a41ef439718a5d84f36240",
+    "bytes": 241000
+  },
+  {
+    "file": "dom-casmurro.epub",
+    "bookPage": "https://www.gutenberg.org/ebooks/55752",
+    "download": "https://www.gutenberg.org/ebooks/55752.epub3.images",
+    "sha256": "6af63f38babff2631ceff374de2ce9f121372a5a25d10456c4b9f9cf9620d64b",
+    "bytes": 220810
+  },
+  {
+    "file": "dom-casmurro.azw3",
+    "bookPage": "https://www.gutenberg.org/ebooks/55752",
+    "download": "https://www.gutenberg.org/ebooks/55752.kf8.images",
+    "sha256": "82caada9c328d2ef81e6cb9b7c6454672bcdd0d545a15de80bd817eaf7089437",
+    "bytes": 365890
+  },
+  {
+    "file": "dom-casmurro.mobi",
+    "bookPage": "https://www.gutenberg.org/ebooks/55752",
+    "download": "https://www.gutenberg.org/ebooks/55752.kindle.images",
+    "sha256": "44426b98c72cd6626774548b30e329834b5cc8763b704436386161db8ca4f4ae",
+    "bytes": 348410
+  },
+  {
+    "file": "pride-illustrated.epub",
+    "bookPage": "https://www.gutenberg.org/ebooks/1342",
+    "download": "https://www.gutenberg.org/ebooks/1342.epub3.images",
+    "sha256": "bbd82efa5e3e8d8a302a39c5e20d7d6d250804c7003c63378946d85f1176ccb6",
+    "bytes": 24835578
+  },
+  {
+    "file": "pride-epub2.epub",
+    "bookPage": "https://www.gutenberg.org/ebooks/1342",
+    "download": "https://www.gutenberg.org/ebooks/1342.epub.images",
+    "sha256": "0b4598f60646600cf86f437e0d8e7033a619ca723f0eae281a306929e4190619",
+    "bytes": 24846132
+  },
+  {
+    "file": "pride-illustrated.azw3",
+    "bookPage": "https://www.gutenberg.org/ebooks/1342",
+    "download": "https://www.gutenberg.org/ebooks/1342.kf8.images",
+    "sha256": "a32378c2b177ca5752cd6bcb015a7c7cb38cd5f2cad964bedff3266d6481aca0",
+    "bytes": 25335116
+  },
+  {
+    "file": "origin-species.epub",
+    "bookPage": "https://www.gutenberg.org/ebooks/1228",
+    "download": "https://www.gutenberg.org/ebooks/1228.epub3.images",
+    "sha256": "f7fac5a8e8b9cf689b2fade216634c88246b9f4ed841148fad4d0cbaac6f61a3",
+    "bytes": 440248
+  },
+  {
+    "file": "three-kingdoms.epub",
+    "bookPage": "https://www.gutenberg.org/ebooks/23950",
+    "download": "https://www.gutenberg.org/ebooks/23950.epub3.images",
+    "sha256": "18fd6f679da24823391b3a1c76c5965fe8d810d1884fa8231d42ee09aecc1b0e",
+    "bytes": 928554
+  },
+  {
+    "file": "three-kingdoms.azw3",
+    "bookPage": "https://www.gutenberg.org/ebooks/23950",
+    "download": "https://www.gutenberg.org/ebooks/23950.kf8.images",
+    "sha256": "5632a90a5ffa1640799a2aac755414a630f6d45693f15a841271ec432e01cc97",
+    "bytes": 1823582
+  }
+]

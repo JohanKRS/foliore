@@ -7,6 +7,20 @@
   const content = document.createElement('main'); content.id = 'foliore-content';
   [...document.body.childNodes].filter(n => n.nodeName !== 'SCRIPT').forEach(n => content.appendChild(n));
   const viewport = document.createElement('div'); viewport.id = 'foliore-viewport'; viewport.append(content); document.body.prepend(viewport);
+  // Measure a fixed viewport, not the document's transient overflow width while images load.
+  if (!fixed) { viewport.style.setProperty('position', 'fixed', 'important'); viewport.style.setProperty('inset', '0', 'important'); }
+  if (!fixed) content.querySelectorAll('table').forEach(table => {
+    const frame = document.createElement('div'); frame.className = 'foliore-table'; table.replaceWith(frame); frame.append(table);
+  });
+  if (!fixed) content.querySelectorAll('img').forEach(image => {
+    for (let node = image; node && node !== content && /^[\s"'“”‘’«»‹›„‚]*$/.test(node.textContent); node = node.parentElement) {
+      const css = getComputedStyle(node);
+      if (css.float === 'none') continue;
+      // A raised floating initial can start in the previous column even with break-inside:avoid.
+      if (parseFloat(css.marginTop) < 0) node.classList.add('foliore-raised-image');
+      break;
+    }
+  });
   const scroller = () => fixed ? document.scrollingElement : viewport;
   const scrollTo = (x, y, smooth = false) => scroller().scrollTo({left:x, top:y, behavior:smooth ? 'smooth' : 'instant'});
   const style = document.getElementById('foliore-style');
@@ -21,7 +35,8 @@
   function allText() { return cachedText ??= nodes().map(n => n.textContent).join(''); }
   function currentOffset() {
     let range;
-    const x = Math.min(innerWidth - 8, Math.max(options.margin, (innerWidth - 720) / 2) + 8), y = Math.min(innerHeight - 8, options.margin + 8);
+    const inset = Math.max(options.margin, (innerWidth - 720) / 2) + 8;
+    const x = Math.max(8, Math.min(innerWidth - 8, textDirection === 'rtl' ? innerWidth - inset : inset)), y = Math.min(innerHeight - 8, options.margin + 8);
     if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(x, y);
     if (range && range.startContainer.nodeType === Node.TEXT_NODE && content.contains(range.startContainer)) {
       let offset = 0; for (const n of nodes()) { if (n === range.startContainer) {
@@ -34,7 +49,10 @@
     for (const n of nodes()) {
       if (n.textContent.trim()) {
         const r = document.createRange(); r.selectNodeContents(n); const rects = r.getClientRects();
-        if ([...rects].some(r => r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth)) return offset;
+        const table = n.parentElement.closest('.foliore-table')?.getBoundingClientRect();
+        const left = Math.max(0, table?.left || 0), top = Math.max(0, table?.top || 0);
+        const right = Math.min(innerWidth, table?.right ?? innerWidth), bottom = Math.min(innerHeight, table?.bottom ?? innerHeight);
+        if (left < right && top < bottom && [...rects].some(r => r.bottom > top && r.top < bottom && r.right > left && r.left < right)) return offset;
       }
       offset += n.length;
     }
@@ -56,7 +74,12 @@
     }
     let count = 0;
     for (const n of list) {
-      if (count + n.length > offset) { const r = document.createRange(); r.setStart(n, Math.max(0, offset - count)); r.setEnd(n, Math.min(n.length, offset - count + 1)); return r.getBoundingClientRect(); }
+      if (count + n.length > offset) {
+        const r = document.createRange(); r.setStart(n, Math.max(0, offset - count)); r.setEnd(n, Math.min(n.length, offset - count + 1));
+        const table = n.parentElement.closest('.foliore-table');
+        if (table) { const a = r.getBoundingClientRect(), b = table.getBoundingClientRect(); table.scrollTop += a.top - b.top; table.scrollLeft += a.left - b.left; }
+        return r.getBoundingClientRect();
+      }
       count += n.length;
     }
     return null;
@@ -75,14 +98,18 @@
     if (!resizing) resizeAnchor = null;
     const previous = ready ? locator() : null;
     options = settings; suppress = true; ready = false;
+    const width = fixed ? innerWidth : viewport.clientWidth, height = fixed ? innerHeight : viewport.clientHeight;
     const palette = {paper:['#f7f2e8','#302b24'], light:['#ffffff','#202020'], dark:['#191c1b','#e4e3dd']}[options.theme] || ['#f7f2e8','#302b24'];
-    const m = Math.max(options.margin, (innerWidth - 720) / 2), vertical = options.margin;
+    const m = Math.max(options.margin, (width - 720) / 2), vertical = options.margin;
     const colors = `html,body{background:${palette[0]}!important;color:${palette[1]}!important;}`;
     const typography = options.publisherStyles || fixed ? '' : `#foliore-content{font-family:${options.font}!important;font-size:${options.fontSize}px!important;line-height:${options.lineHeight}!important;text-align:${options.justify ? 'justify' : 'start'}!important;}#foliore-content *:not(pre):not(code){font-family:inherit!important;line-height:inherit!important;color:inherit!important;background-color:transparent!important;}#foliore-content :is(p,div,span,section,article,li,td,th,blockquote,a,em,strong){font-size:inherit!important;}#foliore-content h1{font-size:1.5em!important;line-height:1.2!important}#foliore-content h2{font-size:1.3em!important;line-height:1.3!important}#foliore-content h3{font-size:1.15em!important}#foliore-content p{orphans:2;widows:2;}`;
     const layout = fixed ? 'html{overflow:auto}body{margin:0}#foliore-content{padding:0}' : options.mode === 'pages' ?
-      `html,body{overflow:hidden!important;margin:0!important;padding:0!important;height:100%!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow:hidden!important;}#foliore-content{box-sizing:border-box!important;margin:${vertical}px ${m}px!important;padding:0!important;width:${Math.max(80, innerWidth-2*m)}px!important;height:${Math.max(80, innerHeight-2*vertical)}px!important;column-width:${Math.max(80, innerWidth-2*m)}px!important;column-gap:${2*m}px!important;column-fill:auto!important;overflow:visible!important;direction:ltr!important}#foliore-content>*{direction:${textDirection}}` :
+      `html,body{overflow:hidden!important;margin:0!important;padding:0!important;height:100%!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow:hidden!important;direction:ltr!important;}#foliore-content{box-sizing:border-box!important;margin:${vertical}px ${m}px!important;padding:0!important;width:${Math.max(80, width-2*m)}px!important;height:${Math.max(80, height-2*vertical)}px!important;column-width:${Math.max(80, width-2*m)}px!important;column-gap:${2*m}px!important;column-fill:auto!important;overflow:visible!important;direction:ltr!important}#foliore-content>*{direction:${textDirection}}` :
       `html,body{overflow:hidden!important;margin:0!important;padding:0!important;height:100%!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow-x:hidden!important;overflow-y:auto!important;}#foliore-content{box-sizing:border-box!important;padding:${vertical}px!important;max-width:${720 + 2*vertical}px!important;margin:0 auto!important;column-width:auto!important;height:auto!important}`;
-    style.textContent = `${colors}${layout}${typography}#foliore-content img,#foliore-content svg{max-width:100%;object-fit:contain}#foliore-content img{height:auto;max-height:${Math.max(80, innerHeight-2*vertical)}px}#foliore-content table{max-width:100%}#foliore-content pre{white-space:pre-wrap;overflow-wrap:anywhere}#foliore-content a[href]{color:${options.theme === 'dark' ? '#d7b17a' : '#95612c'}!important}::selection{background:#d7b17a66}#foliore-content mark.foliore-match{background:#e7c467!important;color:#211b12!important}`;
+    const mediaWidth = Math.max(80, width - 2*m), mediaHeight = Math.max(80, height - 2*vertical);
+    const media = fixed ? '' : `#foliore-content :is(div,section,article,figure,aside,blockquote){max-width:100%!important;min-width:0!important;box-sizing:border-box!important}#foliore-content img,#foliore-content svg{max-width:100%!important;max-width:min(100%,${mediaWidth}px)!important;object-fit:contain}#foliore-content img{height:auto!important;max-height:${mediaHeight}px!important}#foliore-content .foliore-table{overflow:auto!important;max-height:${mediaHeight}px!important;break-inside:avoid!important}#foliore-content table{max-width:100%}#foliore-content pre{white-space:pre-wrap;overflow-wrap:anywhere}`;
+    const floats = !fixed && options.mode === 'pages' ? '#foliore-content .foliore-raised-image{margin-top:0!important;break-inside:avoid!important}' : '';
+    style.textContent = `${colors}${layout}${typography}${media}${floats}#foliore-content a[href]{color:${options.theme === 'dark' ? '#d7b17a' : '#95612c'}!important}::selection{background:#d7b17a66}#foliore-content mark.foliore-match{background:#e7c467!important;color:#211b12!important}`;
     requestAnimationFrame(() => requestAnimationFrame(() => { ready = true; goPosition(loc || previous || {}, fragment, user); }));
   }
   function step(direction) {
@@ -133,7 +160,7 @@
   document.addEventListener('touchstart', e => {
     if (touch && !touch.endedAt) { touch.blocked = true; return; }
     const t = e.touches[0]; if (!t) return;
-    touch = {x:t.clientX, y:t.clientY, time:Date.now(), endedAt:0, moved:false, long:false, blocked:e.touches.length !== 1};
+    touch = {x:t.clientX, y:t.clientY, time:Date.now(), endedAt:0, moved:false, long:false, blocked:e.touches.length !== 1, table:!!e.target.closest?.('.foliore-table')};
   }, {passive:true});
   document.addEventListener('touchmove', e => {
     if (!touch) return;
@@ -148,7 +175,7 @@
     const t = e.changedTouches[0]; if (!t) { touch.blocked = true; return; }
     const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
     touch.moved ||= Math.hypot(dx, dy) > 12;
-    if (options.mode==='pages' && !fixed && !touch.long && !touch.blocked && Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && getSelection().isCollapsed) { step((dx<0?1:-1)*(options.rtl?-1:1)); e.preventDefault(); }
+    if (options.mode==='pages' && !fixed && !touch.table && !touch.long && !touch.blocked && Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5 && getSelection().isCollapsed) { step((dx<0?1:-1)*(options.rtl?-1:1)); e.preventDefault(); }
   }, {passive:false});
   document.addEventListener('touchcancel', () => { if (touch) { touch.blocked = true; touch.endedAt = Date.now(); } }, {passive:true});
   let resizeTimer;
@@ -156,6 +183,8 @@
     // Reflow can put the passage on a page that starts earlier. Keep the original anchor
     // through consecutive layout changes, until the user actually moves through the book.
     resizeAnchor ??= lastLocator;
+    suppress = true;
+    clearTimeout(timer); timer = 0;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { if (Object.keys(options).length) configure(options, resizeAnchor, null, false, true); }, 100);
   });

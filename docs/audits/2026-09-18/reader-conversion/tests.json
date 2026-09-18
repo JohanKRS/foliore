@@ -1,0 +1,16 @@
+[
+  {
+    "suite": "androidApp/build/test-results/testDebugUnitTest",
+    "tests": 165,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0
+  },
+  {
+    "suite": "shared/build/test-results",
+    "tests": 10,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0
+  }
+]

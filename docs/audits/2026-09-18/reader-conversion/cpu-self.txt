@@ -1,0 +1,601 @@
+Cmdline: /system/bin/simpleperf record --app com.foliore.android --add-meta-info app_type=debuggable --in-app --tracepoint-events /data/local/tmp/tracepoint_events --out-fd 3 --stop-signal-fd 4 -e cpu-clock -f 500 -g --duration 15
+Arch: x86_64
+Event: cpu-clock (type 1, config 0)
+Samples: 2293
+Event count: 4586000000
+
+Overhead  Command              Symbol
+18.32%    RenderThread         read
+14.30%    Chrome_InProcGp      read
+7.72%     com.foliore.android  void art::interpreter::ExecuteSwitchImplCpp<false>(art::interpreter::SwitchImplContext*)
+3.01%     com.foliore.android  bool art::interpreter::DoCall<false>(art::ArtMethod*, art::Thread*, art::ShadowFrame&, art::Instruction const*, unsigned short, bool, art::JValue*)
+2.05%     com.foliore.android  artQuickToInterpreterBridge
+2.01%     com.foliore.android  art::RuntimeCallbacks::HaveLocalsChanged()
+1.53%     RenderThread         write
+1.53%     com.foliore.android  NterpGetMethod
+1.48%     Chrome_InProcGp      write
+0.87%     com.foliore.android  art_jni_trampoline
+0.83%     com.foliore.android  NterpGetInstanceFieldOffset
+0.74%     com.foliore.android  @plt
+0.74%     com.foliore.android  art::interpreter::ArtInterpreterToCompiledCodeBridge(art::Thread*, art::ArtMethod*, art::ShadowFrame*, unsigned short, art::JValue*)
+0.74%     com.foliore.android  art_quick_to_interpreter_bridge
+0.70%     com.foliore.android  art::interpreter::Execute(art::Thread*, art::CodeItemDataAccessor const&, art::ShadowFrame&, art::JValue, bool, bool) (.__uniq.112435418011751916792819755956732575238)
+0.70%     com.foliore.android  art::mirror::Class::FindClassMethod(art::ObjPtr<art::mirror::DexCache>, unsigned int, art::PointerSize)
+0.61%     com.foliore.android  art::ArtMethod* art::FindMethodToCall<(art::InvokeType)2>(art::Thread*, art::ArtMethod*, art::ObjPtr<art::mirror::Object>*, art::Instruction const&, bool, bool*)
+0.48%     com.foliore.android  artQuickGenericJniTrampoline
+0.48%     com.foliore.android  memset_generic
+0.48%     com.foliore.android  std::__1::__tree_iterator<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::__tree_node<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, void*>*, long> std::__1::__tree<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::__map_value_compare<art::jit::JitCodeCache::JniStubKey, std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::less<art::jit::JitCodeCache::JniStubKey>, true>, std::__1::allocator<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>>>::find<art::jit::JitCodeCache::JniStubKey>(art::jit::JitCodeCache::JniStubKey const&)
+0.44%     com.foliore.android  __ioctl
+0.44%     com.foliore.android  __sendto
+0.44%     com.foliore.android  art::ArtMethod* art::FindMethodToCall<(art::InvokeType)4>(art::Thread*, art::ArtMethod*, art::ObjPtr<art::mirror::Object>*, art::Instruction const&, bool, bool*)
+0.44%     com.foliore.android  art::Thread::ObserveAsyncException()
+0.44%     com.foliore.android  kotlinx.serialization.json.internal.StringJsonLexer.getSource
+0.44%     com.foliore.android  write
+0.39%     com.foliore.android  art::BuildQuickShadowFrameVisitor::Visit()
+0.39%     com.foliore.android  art::ClassLinker::FindResolvedMethod(art::ObjPtr<art::mirror::Class>, art::ObjPtr<art::mirror::DexCache>, art::ObjPtr<art::mirror::ClassLoader>, unsigned int)
+0.39%     com.foliore.android  art::instrumentation::Instrumentation::NeedsDexPcEvents(art::ArtMethod*, art::Thread*)
+0.39%     com.foliore.android  art::jit::Jit::MaybeDoOnStackReplacement(art::Thread*, art::ArtMethod*, unsigned int, int, art::JValue*)
+0.35%     Chrome_IOThread      __epoll_pwait
+0.35%     com.foliore.android  art_quick_invoke_stub
+0.35%     queued-work-loo      __openat
+0.31%     com.foliore.android  art::interpreter::ArtInterpreterToInterpreterBridge(art::Thread*, art::CodeItemDataAccessor const&, art::ShadowFrame*, art::JValue*)
+0.31%     com.foliore.android  syscall
+0.31%     queued-work-loo      fsync
+0.31%     queued-work-loo      renameat2
+0.26%     RenderThread         __ioctl
+0.26%     com.foliore.android  art::jit::Jit::PrepareForOsr(art::ArtMethod*, unsigned int, unsigned int*)
+0.26%     com.foliore.android  art::jit::JitCodeCache::ContainsPc(void const*) const
+0.26%     com.foliore.android  memmove
+0.22%     Chrome_IOThread      __recvmsg
+0.22%     HeapTaskDaemon       void art::gc::collector::MarkCompact::ScanObject<true>(art::mirror::Object*)
+0.22%     Jit thread pool      madvise
+0.22%     com.foliore.android  NterpGetStaticField
+0.22%     com.foliore.android  __epoll_pwait
+0.22%     com.foliore.android  art::(anonymous namespace)::ScopedCheck::CheckFieldAccess(art::ScopedObjectAccess&, _jobject*, _jfieldID*, bool, art::Primitive::Type) (.__uniq.99033978352804627313491551960229047428)
+0.22%     com.foliore.android  art::ClassLinker::ResolveType(art::dex::TypeIndex, art::ArtMethod*)
+0.22%     com.foliore.android  art::ClassTable::Lookup(std::__1::basic_string_view<char, std::__1::char_traits<char>>, unsigned long)
+0.22%     com.foliore.android  art::QuickArgumentVisitorImpl<art::QuickArgumentFrameInfoX86_64>::VisitArguments()
+0.22%     com.foliore.android  art::Runtime::UseJitCompilation() const
+0.22%     com.foliore.android  art::Signature::Compare(art::Signature const&) const
+0.22%     com.foliore.android  art::String_charAt(_JNIEnv*, _jobject*, int) (.__uniq.211321754789976184382062795672362477106)
+0.22%     com.foliore.android  art::instrumentation::Instrumentation::NeedsSlowInterpreterForMethod(art::Thread*, art::ArtMethod*)
+0.22%     com.foliore.android  art::interpreter::EnterInterpreterFromEntryPoint(art::Thread*, art::CodeItemDataAccessor const&, art::ShadowFrame*)
+0.22%     com.foliore.android  art::jit::Jit::MethodEntered(art::Thread*, art::ArtMethod*)
+0.22%     com.foliore.android  art::mirror::Class::FindInterfaceMethod(std::__1::basic_string_view<char, std::__1::char_traits<char>>, art::Signature const&, art::PointerSize)
+0.22%     com.foliore.android  scudo::HybridMutex::tryLock()
+0.22%     com.foliore.android  strcmp
+0.17%     VizWebView           write
+0.17%     com.foliore.android  android::Looper::pollOnce(int, int*, int*, void**)
+0.17%     com.foliore.android  art::StackVisitor::StackVisitor(art::Thread*, art::Context*, art::StackVisitor::StackWalkKind, bool)
+0.17%     com.foliore.android  art::instrumentation::Instrumentation::ShouldDeoptimizeCaller(art::Thread*, art::ArtMethod**)
+0.17%     com.foliore.android  art::jit::JitCodeCache::GetJniStubCode(art::ArtMethod*)
+0.17%     com.foliore.android  art_quick_imt_conflict_trampoline
+0.17%     com.foliore.android  art_quick_invoke_static_stub
+0.17%     com.foliore.android  icu_76::RegexCompile::compile(UText*, UParseError&, UErrorCode&)
+0.17%     com.foliore.android  java.util.HashMap.getNode
+0.17%     com.foliore.android  memcmp
+0.17%     com.foliore.android  scudo::Allocator<scudo::AndroidNormalConfig, &scudo_malloc_postinit>::allocate(unsigned long, scudo::Chunk::Origin, unsigned long, bool)
+0.17%     queued-work-loo      unlinkat
+0.13%     Jit thread pool      art::HInstructionBuilder::InitializeBlockLocals()
+0.13%     Jit thread pool      art::RegisterAllocatorLinearScan::ProcessInstruction(art::HInstruction*)
+0.13%     Jit thread pool      art::SsaBuilder::BuildSsa()
+0.13%     Jit thread pool      art::StackMapStream::Encode()
+0.13%     RenderThread         @plt
+0.13%     RenderThread         qemu_pipe_try_again
+0.13%     RenderThread         scudo::Allocator<scudo::AndroidNormalConfig, &scudo_malloc_postinit>::deallocate(void*, scudo::Chunk::Origin, unsigned long, unsigned long)
+0.13%     RenderThread         syscall
+0.13%     VizWebView           syscall
+0.13%     com.foliore.android  android.graphics.Canvas.translate
+0.13%     com.foliore.android  art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)
+0.13%     com.foliore.android  art::(anonymous namespace)::ScopedCheck::CheckPossibleHeapValue(art::ScopedObjectAccess&, char, art::(anonymous namespace)::JniValueType) (.__uniq.99033978352804627313491551960229047428)
+0.13%     com.foliore.android  art::ClassLinker::ResolveString(art::dex::StringIndex, art::ArtMethod*)
+0.13%     com.foliore.android  art::EnsureInitialized(art::Thread*, art::ShadowFrame*)
+0.13%     com.foliore.android  art::Monitor::MonitorEnter(art::Thread*, art::ObjPtr<art::mirror::Object>, bool)
+0.13%     com.foliore.android  art::OatQuickMethodHeader::ToDexPc(art::ArtMethod**, unsigned long, bool) const
+0.13%     com.foliore.android  art_quick_alloc_object_initialized_tlab
+0.13%     com.foliore.android  icu_76::UnicodeSet::contains(int) const
+0.13%     com.foliore.android  java.util.ArrayList.add
+0.13%     com.foliore.android  kotlin.jvm.internal.Intrinsics.areEqual
+0.13%     queued-work-loo      write
+0.09%     Chrome_IOThread      clock_gettime
+0.09%     Chrome_InProcGp      __errno
+0.09%     Chrome_InProcGp      gfxstream::guest::GLClientState::removeFramebuffers(int, unsigned int const*)
+0.09%     Chrome_InProcGp      libmonochrome_64.so[+2e01da0]
+0.09%     Chrome_InProcGp      memmove
+0.09%     Chrome_InProcGp      qemu_pipe_read
+0.09%     HeapTaskDaemon       bool art::gc::collector::MarkCompact::MarkObjectNonNullNoPush<false>(art::mirror::Object*, art::mirror::Object*, art::MemberOffset)
+0.09%     HeapTaskDaemon       void art::ArtMethod::VisitRoots<(art::ReadBarrierOption)0, true, art::gc::collector::MarkCompact::RefFieldsVisitor const>(art::gc::collector::MarkCompact::RefFieldsVisitor const&, art::PointerSize)
+0.09%     Jit thread pool      art::HEnvironment::CopyFrom(art::ArenaAllocator*, art::ArrayRef<art::HInstruction* const>)
+0.09%     Jit thread pool      art::RegisterAllocatorLinearScan::AddSorted(art::dchecked_vector<art::LiveInterval*, art::ScopedArenaAllocatorAdapter<art::LiveInterval*>>*, art::LiveInterval*)
+0.09%     Jit thread pool      art::SsaLivenessAnalysis::Analyze()
+0.09%     Jit thread pool      art::SsaRedundantPhiElimination::Run()
+0.09%     Jit thread pool      art::x86_64::InstructionCodeGeneratorX86_64::GenerateMethodEntryExitHook(art::HInstruction*)
+0.09%     Jit thread pool      memmove
+0.09%     Jit thread pool      memset_generic
+0.09%     Jit thread pool      syscall
+0.09%     RenderThread         (anonymous namespace)::glBufferSubData_enc(void*, unsigned int, long, long, void const*)
+0.09%     RenderThread         QemuPipeStream::commitBufferAndReadFully(unsigned long, void*, unsigned long)
+0.09%     RenderThread         __errno
+0.09%     RenderThread         __tls_get_addr
+0.09%     RenderThread         android::uirenderer::DisplayListData::draw(SkCanvas*) const
+0.09%     RenderThread         gfxstream::guest::ChecksumCalculator::writeChecksum(void*, unsigned long)
+0.09%     RenderThread         gfxstream::guest::GLSharedGroup::getBufferData(unsigned int)
+0.09%     RenderThread         scudo::HybridMutex::tryLock()
+0.09%     RenderThread         skia_private::TArray<int, true>::push_back(int&&)
+0.09%     VizWebView           libmonochrome_64.so[+2d9b925]
+0.09%     binder:14892_5       __ioctl
+0.09%     com.foliore.android  ExecuteSwitchImplAsm
+0.09%     com.foliore.android  SkNoPixelsDevice::~SkNoPixelsDevice()
+0.09%     com.foliore.android  __system_property_serial
+0.09%     com.foliore.android  android.text.TextUtils.packRangeInLong
+0.09%     com.foliore.android  android::IPCThreadState::transact(int, unsigned int, android::Parcel const&, android::Parcel*, unsigned int)
+0.09%     com.foliore.android  androidx.compose.runtime.CompositionImpl.addPendingInvalidationsLocked
+0.09%     com.foliore.android  art::(anonymous namespace)::CheckAttachedThread(char const*) (.__uniq.99033978352804627313491551960229047428)
+0.09%     com.foliore.android  art::GenericJniMethodEnd(art::Thread*, unsigned int, jvalue, unsigned long, art::ArtMethod*)
+0.09%     com.foliore.android  art::Thread::GetCurrentMethod(unsigned int*, bool, bool) const
+0.09%     com.foliore.android  art_quick_lock_object
+0.09%     com.foliore.android  atrace_get_enabled_tags
+0.09%     com.foliore.android  bool art::interpreter::DoCall<true>(art::ArtMethod*, art::Thread*, art::ShadowFrame&, art::Instruction const*, unsigned short, bool, art::JValue*)
+0.09%     com.foliore.android  getuid
+0.09%     com.foliore.android  java.lang.String.equals
+0.09%     com.foliore.android  java.lang.String.indexOf
+0.09%     com.foliore.android  java.lang.String.length
+0.09%     com.foliore.android  java.lang.StringUTF16.checkBoundsBeginEnd
+0.09%     com.foliore.android  java.util.concurrent.atomic.AtomicReference.compareAndSet
+0.09%     com.foliore.android  kotlin.jvm.internal.Intrinsics.checkNotNullParameter
+0.09%     com.foliore.android  kotlinx.serialization.internal.PluginGeneratedSerialDescriptor.getElementIndex
+0.09%     com.foliore.android  kotlinx.serialization.json.internal.JsonNamesMapKt.namingStrategy
+0.09%     com.foliore.android  kotlinx.serialization.json.internal.JsonToStringWriter.writeQuoted
+0.09%     com.foliore.android  kotlinx.serialization.json.internal.StringJsonLexer.canConsumeValue
+0.09%     com.foliore.android  kotlinx.serialization.json.internal.StringJsonLexer.consumeKeyString
+0.09%     com.foliore.android  minikin::adjustGlyphLetterSpacingEdge(minikin::U16StringPiece const&, minikin::MinikinPaint const&, minikin::RunFlag, std::__1::vector<minikin::LayoutGlyph, std::__1::allocator<minikin::LayoutGlyph>>*) (.cfi)
+0.09%     com.foliore.android  pthread_mutex_unlock
+0.09%     com.foliore.android  scudo::HybridMutex::unlock()
+0.09%     com.foliore.android  std::__1::__hash_iterator<std::__1::__hash_node<std::__1::__hash_value_type<art::DexFile const*, art::ClassLinker::DexCacheData>, void*>*> std::__1::__hash_table<std::__1::__hash_value_type<art::DexFile const*, art::ClassLinker::DexCacheData>, std::__1::__unordered_map_hasher<art::DexFile const*, std::__1::__hash_value_type<art::DexFile const*, art::ClassLinker::DexCacheData>, std::__1::hash<art::DexFile const*>, std::__1::equal_to<art::DexFile const*>, true>, std::__1::__unordered_map_equal<art::DexFile const*, std::__1::__hash_value_type<art::DexFile const*, art::ClassLinker::DexCacheData>, std::__1::equal_to<art::DexFile const*>, std::__1::hash<art::DexFile const*>, true>, std::__1::allocator<std::__1::__hash_value_type<art::DexFile const*, art::ClassLinker::DexCacheData>>>::find<art::DexFile const*>(art::DexFile const* const&)
+0.09%     queued-work-loo      __faccessat
+0.09%     queued-work-loo      art_jni_trampoline
+0.09%     queued-work-loo      ucnv_fromUnicode_UTF8_76
+0.04%     Chrome_ChildIOT      __epoll_pwait
+0.04%     Chrome_ChildIOT      libmonochrome_64.so[+2d96820]
+0.04%     Chrome_ChildIOT      libmonochrome_64.so[+2e01f00]
+0.04%     Chrome_ChildIOT      pthread_mutex_trylock
+0.04%     Chrome_ChildIOT      syscall
+0.04%     Chrome_IOThread      @plt
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2d865a0]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2d92b54]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2d9692c]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2d96a7c]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2dde1b9]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2e019b0]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2e1bda1]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+2e96d24]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+5695770]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+712fa80]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+715427d]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+7154a2c]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+7155ad1]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+718af4d]
+0.04%     Chrome_IOThread      libmonochrome_64.so[+718b02b]
+0.04%     Chrome_IOThread      pthread_cond_signal
+0.04%     Chrome_IOThread      pthread_mutex_trylock
+0.04%     Chrome_IOThread      pthread_mutex_unlock
+0.04%     Chrome_IOThread      syscall
+0.04%     Chrome_IOThread      write
+0.04%     Chrome_InProcGp      (anonymous namespace)::glBindFramebuffer_enc(void*, unsigned int, unsigned int)
+0.04%     Chrome_InProcGp      GL2Encoder::s_glGetError(void*)
+0.04%     Chrome_InProcGp      GL2Encoder::s_glUseProgram(void*, unsigned int)
+0.04%     Chrome_InProcGp      __tls_get_addr
+0.04%     Chrome_InProcGp      eglCreateSyncKHR
+0.04%     Chrome_InProcGp      fstat
+0.04%     Chrome_InProcGp      gfxstream::guest::ChecksumCalculator::addBuffer(void const*, unsigned long)
+0.04%     Chrome_InProcGp      gfxstream::guest::FboProps::~FboProps()
+0.04%     Chrome_InProcGp      gfxstream::guest::GLClientState::addFreshFramebuffer(unsigned int)
+0.04%     Chrome_InProcGp      gfxstream::guest::GLSharedGroup::deleteProgramDataLocked(unsigned int)
+0.04%     Chrome_InProcGp      gfxstream::guest::GLSharedGroup::getNextSamplerUniform(unsigned int, int, int*, unsigned int*)
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+28e2560]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+2cc06e0]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+2d81c5f]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+2d9b87a]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+2d9b887]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+2d9b918]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+2ded54f]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+383fd83]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+383fddb]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+386fae7]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+440f9b9]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+4459a0d]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+4463b90]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+44a70bf]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+44a7dd0]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+44dcfd0]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+44e24d4]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+44e2adb]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+44f29a0]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+450171b]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+4501982]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+4502bec]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+4508e83]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+4584127]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+45bcb21]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+45f71ee]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+469bd46]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+469c187]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+46b884d]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+46b9bd5]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7ba2341]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7ba242e]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7ba7ad6]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7bac0a0]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7c33550]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7c34530]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7dc2550]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7e4b850]
+0.04%     Chrome_InProcGp      libmonochrome_64.so[+7e4cf80]
+0.04%     Chrome_InProcGp      qemu_pipe_try_again
+0.04%     Chrome_InProcGp      qemu_pipe_write
+0.04%     Chrome_InProcGp      scudo::Allocator<scudo::AndroidNormalConfig, &scudo_malloc_postinit>::deallocate(void*, scudo::Chunk::Origin, unsigned long, unsigned long)
+0.04%     Chrome_InProcGp      syscall
+0.04%     HeapTaskDaemon       __ioctl
+0.04%     HeapTaskDaemon       art::ClassLinker::VisitRoots(art::RootVisitor*, art::VisitRootFlags, bool)
+0.04%     HeapTaskDaemon       art::gc::collector::MarkCompact::LinearAllocPageUpdater::MultiObjectArena(unsigned char*, unsigned char*)
+0.04%     HeapTaskDaemon       art::jit::JitCodeCache::SweepRootTables(art::IsMarkedVisitor*)
+0.04%     HeapTaskDaemon       void art::mirror::Class::VisitReferences<true, (art::VerifyObjectFlags)0, (art::ReadBarrierOption)0, art::gc::collector::MarkCompact::RefFieldsVisitor>(art::ObjPtr<art::mirror::Class>, art::gc::collector::MarkCompact::RefFieldsVisitor const&)
+0.04%     HeapTaskDaemon       void art::mirror::Object::VisitInstanceFieldsReferences<(art::VerifyObjectFlags)0, (art::ReadBarrierOption)0, art::gc::collector::MarkCompact::RefFieldsVisitor>(art::ObjPtr<art::mirror::Class>, art::gc::collector::MarkCompact::RefFieldsVisitor const&)
+0.04%     JavaBridge           art::JII::GetEnv(_JavaVM*, void**, int)
+0.04%     JavaBridge           art::JNI<true>::NewString(_JNIEnv*, unsigned short const*, int)
+0.04%     JavaBridge           art::Mutex::ExclusiveUnlock(art::Thread*)
+0.04%     JavaBridge           art::jni::LocalReferenceTable::Add(art::ObjPtr<art::mirror::Object>, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>*)
+0.04%     JavaBridge           atrace_get_enabled_tags
+0.04%     JavaBridge           read
+0.04%     JavaBridge           syscall
+0.04%     JavaBridge           void art::interpreter::ExecuteSwitchImplCpp<false>(art::interpreter::SwitchImplContext*)
+0.04%     Jit thread pool      @plt
+0.04%     Jit thread pool      art::Add(art::HInstructionList*, art::HBasicBlock*, art::HInstruction*) (.__uniq.147252545582089978308689827824377933333.llvm.6502609242147652067)
+0.04%     Jit thread pool      art::BitmapTableBuilder::Dedup(void const*, unsigned long)
+0.04%     Jit thread pool      art::BlockNamer::~BlockNamer()
+0.04%     Jit thread pool      art::ClassTable::Lookup(std::__1::basic_string_view<char, std::__1::char_traits<char>>, unsigned long)
+0.04%     Jit thread pool      art::CodeGenerator::CreateCommonInvokeLocationSummary(art::HInvoke*, art::InvokeDexCallingConventionVisitor*)
+0.04%     Jit thread pool      art::ConditionVariable::WaitHoldingLocks(art::Thread*)
+0.04%     Jit thread pool      art::ElfBuilder<art::ElfTypes64>::Section::WriteFully(void const*, unsigned long)
+0.04%     Jit thread pool      art::GVNOptimization::Run()
+0.04%     Jit thread pool      art::HBasicBlock::HBasicBlock(art::HGraph*, unsigned int)
+0.04%     Jit thread pool      art::HDeadCodeElimination::RemoveDeadBlocks(bool, bool)
+0.04%     Jit thread pool      art::HDeadCodeElimination::Run()
+0.04%     Jit thread pool      art::HGraph::SplitEdge(art::HBasicBlock*, art::HBasicBlock*)
+0.04%     Jit thread pool      art::HIf::Accept(art::HGraphVisitor*)
+0.04%     Jit thread pool      art::HInductionVarAnalysis::LookupInfo(art::HLoopInformation const*, art::HInstruction*)
+0.04%     Jit thread pool      art::HInductionVarAnalysis::TryVisitNodes(art::HLoopInformation const*, art::HInstruction*, unsigned long, art::SafeMap<art::HInstruction*, art::HInductionVarAnalysis::NodeInfo, std::__1::less<art::HInstruction*>, art::ScopedArenaAllocatorAdapter<std::__1::pair<art::HInstruction* const, art::HInductionVarAnalysis::NodeInfo>>>*)
+0.04%     Jit thread pool      art::HInstruction::ReplaceInput(art::HInstruction*, unsigned long)
+0.04%     Jit thread pool      art::HInstructionBuilder::InitializeParameters()
+0.04%     Jit thread pool      art::HInstructionBuilder::LoadNullCheckedLocal(unsigned int, unsigned int)
+0.04%     Jit thread pool      art::HVariableInputSizeInstruction::AddInput(art::HInstruction*)
+0.04%     Jit thread pool      art::LiveInterval::FindFirstRegisterHint(unsigned long*, art::SsaLivenessAnalysis const&) const
+0.04%     Jit thread pool      art::MemMapArenaPool::TrimMaps()
+0.04%     Jit thread pool      art::Mutex::ExclusiveLock(art::Thread*)
+0.04%     Jit thread pool      art::OptimizingCompiler::RunOptimizations(art::HGraph*, art::CodeGenerator*, art::DexCompilationUnit const&, art::PassObserver*, art::OptimizationDef const*, unsigned long) const
+0.04%     Jit thread pool      art::ReaderWriterMutex::ExclusiveLock(art::Thread*)
+0.04%     Jit thread pool      art::RegisterAllocatorLinearScan::RegisterAllocatorLinearScan(art::ScopedArenaAllocator*, art::CodeGenerator*, art::SsaLivenessAnalysis const&)
+0.04%     Jit thread pool      art::ScopedArenaAllocator::ScopedArenaAllocator(art::ArenaStack*)
+0.04%     Jit thread pool      art::SsaLivenessAnalysis::ProcessEnvironment(art::HInstruction*, art::HInstruction*, art::BitVectorView<unsigned long>)
+0.04%     Jit thread pool      art::debug::WriteCIE(art::InstructionSet, std::__1::vector<unsigned char, std::__1::allocator<unsigned char>>*) (.__uniq.339465620920129914816466203913438088973)
+0.04%     Jit thread pool      art::jit::JitCodeCache::Commit(art::Thread*, art::jit::JitMemoryRegion*, art::ArtMethod*, art::ArrayRef<unsigned char const>, art::ArrayRef<unsigned char const>, art::ArrayRef<unsigned char const>, std::__1::vector<art::Handle<art::mirror::Object>, std::__1::allocator<art::Handle<art::mirror::Object>>> const&, art::ArrayRef<unsigned char const>, std::__1::vector<unsigned char, std::__1::allocator<unsigned char>> const&, bool, art::CompilationKind, std::__1::set<art::ArtMethod*, std::__1::less<art::ArtMethod*>, art::ArenaAllocatorAdapter<art::ArtMethod*>> const&)
+0.04%     Jit thread pool      art::jit::JitCompiler::CompileMethod(art::Thread*, art::jit::JitMemoryRegion*, art::ArtMethod*, art::CompilationKind)
+0.04%     Jit thread pool      clock_gettime
+0.04%     Jit thread pool      operator delete(void*, unsigned long)
+0.04%     Jit thread pool      std::__1::__tree_iterator<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::__tree_node<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, void*>*, long> std::__1::__tree<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::__map_value_compare<art::jit::JitCodeCache::JniStubKey, std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::less<art::jit::JitCodeCache::JniStubKey>, true>, std::__1::allocator<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>>>::find<art::jit::JitCodeCache::JniStubKey>(art::jit::JitCodeCache::JniStubKey const&)
+0.04%     Jit thread pool      std::__1::__wrap_iter<unsigned char*> std::__1::vector<unsigned char, std::__1::allocator<unsigned char>>::__insert_with_size[abi:nn200000]<unsigned char const*, unsigned char const*>(std::__1::__wrap_iter<unsigned char const*>, unsigned char const*, unsigned char const*, long)
+0.04%     Jit thread pool      std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>>::append(char const*, unsigned long)
+0.04%     Jit thread pool      void std::__1::__tree_remove[abi:nn200000]<std::__1::__tree_node_base<void*>*>(std::__1::__tree_node_base<void*>*, std::__1::__tree_node_base<void*>*)
+0.04%     RenderThread         (anonymous namespace)::FillRectOpImpl::finalize(GrCaps const&, GrAppliedClip const*, GrClampType) (.__uniq.296536696735338101786510625415314891244)
+0.04%     RenderThread         FdTableImpl<128ul>::at(unsigned long)
+0.04%     RenderThread         GL2Encoder::s_glClear(void*, unsigned int)
+0.04%     RenderThread         GL2Encoder::s_glDrawArrays(void*, unsigned int, int, int)
+0.04%     RenderThread         GrBackendFormat::GrBackendFormat(GrBackendFormat const&)
+0.04%     RenderThread         GrDrawingManager::newOpsTask(GrSurfaceProxyView, sk_sp<GrArenas>)
+0.04%     RenderThread         GrGLCaps::onAreColorTypeAndFormatCompatible(GrColorType, GrBackendFormat const&) const
+0.04%     RenderThread         GrGLFunction<void (unsigned int, unsigned int, int)>::GrGLFunction(void (*)(unsigned int, unsigned int, int))::'lambda'(void const*, unsigned int, unsigned int, int)::__invoke(void const*, unsigned int, unsigned int, int)
+0.04%     RenderThread         GrGpuBuffer::updateData(void const*, unsigned long, unsigned long, bool)
+0.04%     RenderThread         GrGpuResource::getContext()
+0.04%     RenderThread         GrMeshDrawOp::createProgramInfo(GrMeshDrawTarget*)
+0.04%     RenderThread         GrPipeline::GrPipeline(GrPipeline::InitArgs const&, GrProcessorSet&&, GrAppliedClip&&)
+0.04%     RenderThread         GrProcessorSet::finalize(GrProcessorAnalysisColor const&, GrProcessorAnalysisCoverage, GrAppliedClip const*, GrUserStencilSettings const*, GrCaps const&, GrClampType, SkRGBA4f<(SkAlphaType)2>*)
+0.04%     RenderThread         GrResourceCache::processFreedGpuResources()
+0.04%     RenderThread         GrSurfaceProxy::GrSurfaceProxy(sk_sp<GrSurface>, SkBackingFit, GrSurfaceProxy::UseAllocator)
+0.04%     RenderThread         GrTextureEffect::Make(GrSurfaceProxyView, SkAlphaType, SkMatrix const&, GrSamplerState, GrCaps const&, float const*)
+0.04%     RenderThread         HostConnection::gl2Encoder()
+0.04%     RenderThread         IndexRangeCache::findRange(unsigned int, unsigned long, unsigned long, bool, int*, int*) const
+0.04%     RenderThread         SkArenaAllocWithReset::reset()
+0.04%     RenderThread         SkAutoDescriptor::reset(unsigned long)
+0.04%     RenderThread         SkBlockAllocator::reset()
+0.04%     RenderThread         SkCanvas::drawTextBlob(SkTextBlob const*, float, float, SkPaint const&)
+0.04%     RenderThread         SkCanvas::internalQuickReject(SkRect const&, SkPaint const&, SkMatrix const*)
+0.04%     RenderThread         SkM44::preTranslate(float, float, float)
+0.04%     RenderThread         SkMessageBus<skgpu::TClientMappedBufferManager<GrGpuBuffer, GrDirectContext::DirectContextID>::BufferFinishedMessage, GrDirectContext::DirectContextID, false>::Inbox::poll(skia_private::TArray<skgpu::TClientMappedBufferManager<GrGpuBuffer, GrDirectContext::DirectContextID>::BufferFinishedMessage, false>*)
+0.04%     RenderThread         SkPaint::~SkPaint()
+0.04%     RenderThread         SkPath::~SkPath()
+0.04%     RenderThread         SkStrikeCache::GlobalStrikeCache()
+0.04%     RenderThread         SkTBlockList<skgpu::ganesh::ClipStack::SaveRecord, 2>::reset()
+0.04%     RenderThread         __close
+0.04%     RenderThread         __epoll_pwait
+0.04%     RenderThread         android.os.Handler.sendMessageDelayed
+0.04%     RenderThread         android.os.PerfettoTrace.counter
+0.04%     RenderThread         android::BBQSurface::setFrameTimelineInfo(unsigned long, android::gui::FrameTimelineInfo const&)
+0.04%     RenderThread         android::BufferQueueProducer::queueBuffer(int, android::IGraphicBufferProducer::QueueBufferInput const&, android::IGraphicBufferProducer::QueueBufferOutput*)
+0.04%     RenderThread         android::IPCThreadState::executeCommand(int)
+0.04%     RenderThread         android::RefBase::decStrong(void const*) const
+0.04%     RenderThread         android::RefBase::incStrong(void const*) const
+0.04%     RenderThread         android::Surface::queueBuffer(ANativeWindowBuffer*, int, android::SurfaceQueueBufferOutput*)
+0.04%     RenderThread         android::uirenderer::WorkQueue::process()
+0.04%     RenderThread         android::uirenderer::renderthread::RenderThread::threadLoop()
+0.04%     RenderThread         android::uirenderer::skiapipeline::SkiaDisplayList::prepareListAndChildren(android::uirenderer::TreeObserver&, android::uirenderer::TreeInfo&, bool, std::__1::function<void (android::uirenderer::RenderNode*, android::uirenderer::TreeObserver&, android::uirenderer::TreeInfo&, bool)>)
+0.04%     RenderThread         android::uirenderer::skiapipeline::SkiaDisplayList::updateChildren(std::__1::function<void (android::uirenderer::RenderNode*)>)
+0.04%     RenderThread         android::uirenderer::skiapipeline::SkiaOpenGLPipeline::draw(android::uirenderer::renderthread::Frame const&, SkRect const&, SkRect const&, android::uirenderer::LightGeometry const&, android::uirenderer::LayerUpdateQueue*, android::uirenderer::Rect const&, bool, android::uirenderer::LightInfo const&, std::__1::vector<android::sp<android::uirenderer::RenderNode>, std::__1::allocator<android::sp<android::uirenderer::RenderNode>>> const&, android::uirenderer::FrameInfoVisualizer*, android::uirenderer::renderthread::HardwareBufferRenderParams const&, std::__1::mutex&)
+0.04%     RenderThread         art::jit::JitCodeCache::GetJniStubCode(art::ArtMethod*)
+0.04%     RenderThread         clock_gettime
+0.04%     RenderThread         gen_fp_key(GrFragmentProcessor const&, GrCaps const&, skgpu::KeyBuilder*) (.__uniq.123849974547839981420196218221699858192)
+0.04%     RenderThread         getEGLThreadInfo()
+0.04%     RenderThread         gfxstream::guest::GLClientState::deleteTextures(int, unsigned int const*)
+0.04%     RenderThread         gfxstream::guest::GLClientState::postDraw()
+0.04%     RenderThread         gfxstream::guest::GLSharedGroup::getNextSamplerUniform(unsigned int, int, int*, unsigned int*)
+0.04%     RenderThread         gfxstream::guest::ProgramData::compileValidationInfo(bool*) const
+0.04%     RenderThread         libmonochrome_64.so[+2d81c3f]
+0.04%     RenderThread         libmonochrome_64.so[+2d9b9a2]
+0.04%     RenderThread         libmonochrome_64.so[+2ded881]
+0.04%     RenderThread         libmonochrome_64.so[+3722241]
+0.04%     RenderThread         libmonochrome_64.so[+38a9960]
+0.04%     RenderThread         libmonochrome_64.so[+3ce9dc3]
+0.04%     RenderThread         libmonochrome_64.so[+442dd10]
+0.04%     RenderThread         libmonochrome_64.so[+44e3139]
+0.04%     RenderThread         libmonochrome_64.so[+456cce0]
+0.04%     RenderThread         libmonochrome_64.so[+4b5c825]
+0.04%     RenderThread         libmonochrome_64.so[+718c357]
+0.04%     RenderThread         libmonochrome_64.so[+89f96d0]
+0.04%     RenderThread         libmonochrome_64.so[+89f9a71]
+0.04%     RenderThread         libmonochrome_64.so[+89f9b10]
+0.04%     RenderThread         libmonochrome_64.so[+8a0bf1e]
+0.04%     RenderThread         libmonochrome_64.so[+8ad6618]
+0.04%     RenderThread         memset_generic
+0.04%     RenderThread         non-virtual thunk to GrOpFlushState::atlasManager() const
+0.04%     RenderThread         pthread_getspecific
+0.04%     RenderThread         pthread_mutex_unlock
+0.04%     RenderThread         qemu_pipe_write
+0.04%     RenderThread         qemu_pipe_write_fully
+0.04%     RenderThread         scudo::Allocator<scudo::AndroidNormalConfig, &scudo_malloc_postinit>::quarantineOrDeallocateChunk(scudo::Options const&, void*, scudo::Chunk::UnpackedHeader*, unsigned long)
+0.04%     RenderThread         skgpu::KeyBuilder::addBits(unsigned int, unsigned int, std::__1::basic_string_view<char, std::__1::char_traits<char>>)
+0.04%     RenderThread         skgpu::ganesh::AtlasTextOp::onCombineIfPossible(GrOp*, SkArenaAlloc*, GrCaps const&)
+0.04%     RenderThread         skgpu::ganesh::ClipStack::restore()
+0.04%     RenderThread         skgpu::ganesh::OpsTask::OpChain::tryConcat(skgpu::ganesh::OpsTask::OpChain::List*, GrProcessorSet::Analysis, GrDstProxyView const&, GrAppliedClip const*, SkRect const&, GrCaps const&, SkArenaAlloc*, GrAuditTrail*)
+0.04%     RenderThread         skgpu::ganesh::SurfaceDrawContext::addDrawOp(GrClip const*, std::__1::unique_ptr<GrOp, std::__1::default_delete<GrOp>>, std::__1::function<void (GrOp*, unsigned int)> const&)
+0.04%     RenderThread         skgpu::ganesh::SurfaceDrawContext::drawShape(GrClip const*, GrPaint&&, GrAA, SkMatrix const&, GrStyledShape&&)
+0.04%     RenderThread         skgpu::ganesh::SurfaceDrawContext::drawStrokedLine(GrClip const*, GrPaint&&, GrAA, SkMatrix const&, SkPoint const*, SkStrokeRec const&)
+0.04%     RenderThread         skia_private::TArray<sk_sp<sktext::gpu::TextBlob>, true>::operator=(skia_private::TArray<sk_sp<sktext::gpu::TextBlob>, true>&&)
+0.04%     RenderThread         sktext::gpu::GlyphVector::regenerateAtlasForGanesh(int, int, skgpu::MaskFormat, int, GrMeshDrawTarget*)
+0.04%     RenderThread         std::__1::__function::__func<android::SurfaceComposerClient::Transaction::setBuffer(android::sp<android::SurfaceControl> const&, android::sp<android::GraphicBuffer> const&, std::__1::optional<android::sp<android::Fence>> const&, std::__1::optional<unsigned long> const&, unsigned int, std::__1::function<void (android::ReleaseCallbackId const&, android::sp<android::Fence> const&, std::__1::optional<unsigned int>)>, long)::$_0, std::__1::allocator<android::SurfaceComposerClient::Transaction::setBuffer(android::sp<android::SurfaceControl> const&, android::sp<android::GraphicBuffer> const&, std::__1::optional<android::sp<android::Fence>> const&, std::__1::optional<unsigned long> const&, unsigned int, std::__1::function<void (android::ReleaseCallbackId const&, android::sp<android::Fence> const&, std::__1::optional<unsigned int>)>, long)::$_0>, void (void*, long, android::sp<android::Fence> const&, std::__1::vector<android::SurfaceControlStats, std::__1::allocator<android::SurfaceControlStats>> const&)>::__clone(std::__1::__function::__base<void (void*, long, android::sp<android::Fence> const&, std::__1::vector<android::SurfaceControlStats, std::__1::allocator<android::SurfaceControlStats>> const&)>*) const (.__uniq.126145741770511930653793138141898047582.097027cc949283e126738839bb18f201)
+0.04%     RenderThread         std::__1::__tree_iterator<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::__tree_node<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, void*>*, long> std::__1::__tree<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::__map_value_compare<art::jit::JitCodeCache::JniStubKey, std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>, std::__1::less<art::jit::JitCodeCache::JniStubKey>, true>, std::__1::allocator<std::__1::__value_type<art::jit::JitCodeCache::JniStubKey, art::jit::JitCodeCache::JniStubData>>>::find<art::jit::JitCodeCache::JniStubKey>(art::jit::JitCodeCache::JniStubKey const&)
+0.04%     VizWebView           NonPI::MutexLockWithTimeout(pthread_mutex_internal_t*, bool, timespec const*)
+0.04%     VizWebView           libmonochrome_64.so[+28d4cf0]
+0.04%     VizWebView           libmonochrome_64.so[+2bd1d50]
+0.04%     VizWebView           libmonochrome_64.so[+2cb1258]
+0.04%     VizWebView           libmonochrome_64.so[+2dcf0d6]
+0.04%     VizWebView           libmonochrome_64.so[+2ddbc8a]
+0.04%     VizWebView           libmonochrome_64.so[+2dde70c]
+0.04%     VizWebView           libmonochrome_64.so[+2ded991]
+0.04%     VizWebView           libmonochrome_64.so[+2e1bd99]
+0.04%     VizWebView           libmonochrome_64.so[+2e29e10]
+0.04%     VizWebView           libmonochrome_64.so[+3b7d3f0]
+0.04%     VizWebView           libmonochrome_64.so[+444e3d0]
+0.04%     VizWebView           libmonochrome_64.so[+44701b7]
+0.04%     VizWebView           libmonochrome_64.so[+4480110]
+0.04%     VizWebView           libmonochrome_64.so[+45a2ac0]
+0.04%     VizWebView           libmonochrome_64.so[+45efc28]
+0.04%     VizWebView           libmonochrome_64.so[+45f0238]
+0.04%     VizWebView           libmonochrome_64.so[+4b6b910]
+0.04%     VizWebView           libmonochrome_64.so[+7155a90]
+0.04%     VizWebView           pthread_cond_signal
+0.04%     binder:14892_3       android::AsyncProducerListener::onBufferReleased()
+0.04%     binder:14892_3       pthread_cond_signal
+0.04%     binder:14892_3       std::__1::__function::__func<std::__1::__bind<std::__1::function<void (void*, long, android::sp<android::Fence> const&, std::__1::vector<android::SurfaceControlStats, std::__1::allocator<android::SurfaceControlStats>> const&)>, void*&, std::__1::placeholders::__ph<1> const&, std::__1::placeholders::__ph<2> const&, std::__1::placeholders::__ph<3> const&>, std::__1::allocator<std::__1::__bind<std::__1::function<void (void*, long, android::sp<android::Fence> const&, std::__1::vector<android::SurfaceControlStats, std::__1::allocator<android::SurfaceControlStats>> const&)>, void*&, std::__1::placeholders::__ph<1> const&, std::__1::placeholders::__ph<2> const&, std::__1::placeholders::__ph<3> const&>>, void (long, android::sp<android::Fence> const&, std::__1::vector<android::SurfaceControlStats, std::__1::allocator<android::SurfaceControlStats>> const&)>::__clone() const
+0.04%     binder:14892_5       @plt
+0.04%     binder:14892_5       android::RefBase::weakref_type::attemptIncStrong(void const*)
+0.04%     binder:14892_6       FdTableImpl<128ul>::at(unsigned long)
+0.04%     binder:14892_6       __ioctl
+0.04%     com.foliore.android  Double_doubleToRawLongBits
+0.04%     com.foliore.android  QuickImtConflictTrampoline
+0.04%     com.foliore.android  SkImageInfo::refColorSpace() const
+0.04%     com.foliore.android  SkRRect::setRectRadii(SkRect const&, SkPoint const*)
+0.04%     com.foliore.android  _jclass* art::JNIEnvExt::AddLocalReference<_jclass*>(art::ObjPtr<art::mirror::Object>)
+0.04%     com.foliore.android  android.graphics.Color.toArgb
+0.04%     com.foliore.android  android.graphics.FrameInfo.setVsync
+0.04%     com.foliore.android  android.os.Handler.dispatchMessage
+0.04%     com.foliore.android  android.os.MessageQueue.incAndTraceMessageCount
+0.04%     com.foliore.android  android.os.MessageQueue.nextLegacy
+0.04%     com.foliore.android  android.os.MessageQueue.removeMessages
+0.04%     com.foliore.android  android.os.PerfettoTrace$Category.isEnabled
+0.04%     com.foliore.android  android.os.PerfettoTrace.-$$Nest$sfgetIS_FLAG_ENABLED
+0.04%     com.foliore.android  android.os.PerfettoTrace.counter
+0.04%     com.foliore.android  android.os.PerfettoTrackEventExtra$Builder.beginProto
+0.04%     com.foliore.android  android.text.Layout.drawText
+0.04%     com.foliore.android  android.text.Layout.getLineForOffset
+0.04%     com.foliore.android  android.text.StaticLayout.getLineCount
+0.04%     com.foliore.android  android.text.StaticLayout.getLineDescent
+0.04%     com.foliore.android  android.text.StaticLayout.getParagraphDirection
+0.04%     com.foliore.android  android.text.StaticLayout.packHyphenEdit
+0.04%     com.foliore.android  android.text.TextLine.obtain
+0.04%     com.foliore.android  android.util.TypedValue.coerceToString
+0.04%     com.foliore.android  android.view.Choreographer.-$$Nest$mobtainCallbackLocked
+0.04%     com.foliore.android  android.view.Choreographer.removeCallbacksInternal
+0.04%     com.foliore.android  android.view.DisplayEventReceiver$VsyncEventData.copyFrom
+0.04%     com.foliore.android  android.view.View.getAnimation
+0.04%     com.foliore.android  android.view.View.getScrollX
+0.04%     com.foliore.android  android.view.animation.AnimationUtils.unlockAnimationClock
+0.04%     com.foliore.android  android.view.flags.Flags.bufferStuffingRecovery
+0.04%     com.foliore.android  android::AssetManager2::FindEntryInternal(android::AssetManager2::PackageGroup const&, unsigned char, unsigned short, android::ResTable_config const&, bool, bool) const
+0.04%     com.foliore.android  android::IPCThreadState::flushCommands()
+0.04%     com.foliore.android  android::IPCThreadState::self()
+0.04%     com.foliore.android  android::Looper::wake()
+0.04%     com.foliore.android  android::MessageQueue::raiseAndClearException(_JNIEnv*, char const*)
+0.04%     com.foliore.android  android::android_view_RenderNode_isValid(long) (.__uniq.317308322416686821681536579661143593440)
+0.04%     com.foliore.android  android::android_view_ThreadedRenderer_notifyFramePending(_JNIEnv*, _jobject*, long) (.__uniq.98142604362848954914070330402921370559)
+0.04%     com.foliore.android  androidx.collection.MutableObjectIntMap.put
+0.04%     com.foliore.android  androidx.compose.material3.SliderDefaults.drawTrack-GVD57ws
+0.04%     com.foliore.android  androidx.compose.runtime.ComposerKt.sourceInformationMarkerEnd
+0.04%     com.foliore.android  androidx.compose.runtime.GapComposer.end
+0.04%     com.foliore.android  androidx.compose.runtime.composer.gapbuffer.SlotTableKt.access$slotAnchor
+0.04%     com.foliore.android  androidx.compose.runtime.composer.gapbuffer.changelist.Operations.pushOp
+0.04%     com.foliore.android  androidx.compose.runtime.internal.SnapshotThreadLocal.get
+0.04%     com.foliore.android  androidx.compose.ui.graphics.layer.GraphicsLayer.draw$ui_graphics
+0.04%     com.foliore.android  androidx.compose.ui.node.InnerNodeCoordinator.getTail
+0.04%     com.foliore.android  androidx.compose.ui.node.LayoutModifierNodeCoordinator.performDraw
+0.04%     com.foliore.android  androidx.compose.ui.node.LayoutNode.draw$ui
+0.04%     com.foliore.android  androidx.compose.ui.node.LayoutNode.getMeasurePassDelegate$ui
+0.04%     com.foliore.android  androidx.compose.ui.node.LayoutNode.getOuterCoordinator$ui
+0.04%     com.foliore.android  androidx.compose.ui.node.NodeCoordinator.draw
+0.04%     com.foliore.android  androidx.compose.ui.node.NodeKind.constructor-impl
+0.04%     com.foliore.android  androidx.compose.ui.platform.Api30Impl.isShowingLayoutBounds
+0.04%     com.foliore.android  androidx.compose.ui.text.AndroidParagraph.paint-LG529CI
+0.04%     com.foliore.android  art::(anonymous namespace)::CheckJNI::SetField(char const*, _JNIEnv*, _jobject*, _jfieldID*, bool, art::Primitive::Type, art::(anonymous namespace)::JniValueType) (.__uniq.99033978352804627313491551960229047428)
+0.04%     com.foliore.android  art::(anonymous namespace)::ScopedCheck::CheckInstance(art::ScopedObjectAccess&, art::(anonymous namespace)::ScopedCheck::InstanceKind, _jobject*, bool) (.__uniq.99033978352804627313491551960229047428)
+0.04%     com.foliore.android  art::(anonymous namespace)::ScopedCheck::CheckNonHeap(art::JavaVMExt*, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)
+0.04%     com.foliore.android  art::ArtField* art::mirror::FindFieldImpl<false>(art::ObjPtr<art::mirror::Class>, art::ObjPtr<art::mirror::DexCache>, unsigned int)::'lambda'(art::ObjPtr<art::mirror::Class>, art::ObjPtr<art::mirror::DexCache>)::operator()(art::ObjPtr<art::mirror::Class>, art::ObjPtr<art::mirror::DexCache>) const
+0.04%     com.foliore.android  art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)
+0.04%     com.foliore.android  art::ArtMethod::ResolveClassFromTypeIndex(art::dex::TypeIndex)
+0.04%     com.foliore.android  art::ClassLinker::DoResolveType(art::dex::TypeIndex, art::Handle<art::mirror::DexCache>, art::Handle<art::mirror::ClassLoader>)
+0.04%     com.foliore.android  art::ClassLinker::IsQuickToInterpreterBridge(void const*) const
+0.04%     com.foliore.android  art::ClassLinker::LookupClass(art::Thread*, std::__1::basic_string_view<char, std::__1::char_traits<char>>, unsigned long, art::ObjPtr<art::mirror::ClassLoader>)
+0.04%     com.foliore.android  art::JNI<true>::CallVoidMethodV(_JNIEnv*, _jobject*, _jmethodID*, __va_list_tag*)
+0.04%     com.foliore.android  art::JNI<true>::ExceptionCheck(_JNIEnv*)
+0.04%     com.foliore.android  art::JNI<true>::ReleaseStringChars(_JNIEnv*, _jstring*, unsigned short const*)
+0.04%     com.foliore.android  art::JniDecodeReferenceResult(_jobject*, art::Thread*)
+0.04%     com.foliore.android  art::LockWord::FromThinLockId(unsigned int, unsigned int, unsigned int)
+0.04%     com.foliore.android  art::Monitor::MonitorExit(art::Thread*, art::ObjPtr<art::mirror::Object>)
+0.04%     com.foliore.android  art::Mutex::ExclusiveUnlock(art::Thread*)
+0.04%     com.foliore.android  art::ObjPtr<art::mirror::Class> art::ClassLinker::DoResolveType<art::ArtMethod*>(art::dex::TypeIndex, art::ArtMethod*)
+0.04%     com.foliore.android  art::ObjPtr<art::mirror::Class> art::GetClassRoot<(art::ReadBarrierOption)0>(art::ClassRoot, art::ClassLinker*)
+0.04%     com.foliore.android  art::ObjPtr<art::mirror::PrimitiveArray<unsigned short>> art::JNI<false>::DecodeAndCheckArrayType<_jcharArray*, unsigned short, art::mirror::PrimitiveArray<unsigned short>>(art::ScopedObjectAccess&, _jcharArray*, char const*, char const*)
+0.04%     com.foliore.android  art::Primitive::Descriptor(art::Primitive::Type)
+0.04%     com.foliore.android  art::Reference_refersTo0(_JNIEnv*, _jobject*, _jobject*) (.__uniq.253148291500730731607008926596911728915)
+0.04%     com.foliore.android  art::StackVisitor::GetMethod() const
+0.04%     com.foliore.android  art::String_getCharsNoCheck(_JNIEnv*, _jobject*, int, int, _jcharArray*, int) (.__uniq.211321754789976184382062795672362477106)
+0.04%     com.foliore.android  art::System_arraycopy(_JNIEnv*, _jclass*, _jobject*, int, _jobject*, int, int) (.__uniq.110717464938643750821353004938495288567)
+0.04%     com.foliore.android  art::Thread::MaybePopDeoptimizedStackedShadowFrame()
+0.04%     com.foliore.android  art::Unsafe_getReferenceVolatile(_JNIEnv*, _jobject*, _jobject*, long) (.__uniq.319429422067363160645159987129209045680)
+0.04%     com.foliore.android  art::gc::space::RegionSpace::Contains(art::mirror::Object const*) const
+0.04%     com.foliore.android  art::jit::Jit::CanInvokeCompiledCode(art::ArtMethod*)
+0.04%     com.foliore.android  art::jit::JitCodeCache::LookupOsrMethodHeader(art::ArtMethod*)
+0.04%     com.foliore.android  art::mirror::Class::FindInterfaceMethod(art::ObjPtr<art::mirror::DexCache>, unsigned int, art::PointerSize)
+0.04%     com.foliore.android  art::mirror::Class::Implements(art::ObjPtr<art::mirror::Class>)
+0.04%     com.foliore.android  art::mirror::Object* art::gc::Heap::AllocObjectWithAllocator<true, true, art::mirror::SetLengthVisitor>(art::Thread*, art::ObjPtr<art::mirror::Class>, unsigned long, art::gc::AllocatorType, art::mirror::SetLengthVisitor const&)
+0.04%     com.foliore.android  art::mirror::Object* art::gc::Heap::AllocObjectWithAllocator<true, true, art::mirror::SetStringCountAndValueVisitorFromCharArray>(art::Thread*, art::ObjPtr<art::mirror::Class>, unsigned long, art::gc::AllocatorType, art::mirror::SetStringCountAndValueVisitorFromCharArray const&)
+0.04%     com.foliore.android  art::mirror::String::GetChars(int, int, art::Handle<art::mirror::PrimitiveArray<unsigned short>>, int)
+0.04%     com.foliore.android  artAllocObjectFromCodeInitializedTLAB
+0.04%     com.foliore.android  artIsAssignableFromCode
+0.04%     com.foliore.android  art_quick_lock_object_no_inline
+0.04%     com.foliore.android  art_quick_unlock_object
+0.04%     com.foliore.android  bool art::WaitBrieflyFor<art::Mutex::ExclusiveLock(art::Thread*)::$_0>(art::Atomic<int>*, art::Thread*, art::Mutex::ExclusiveLock(art::Thread*)::$_0) (.__uniq.55395457626730424248235132913560037531)
+0.04%     com.foliore.android  clock_gettime
+0.04%     com.foliore.android  com.android.icu.util.regex.MatcherNative.<init>
+0.04%     com.foliore.android  com.android.internal.hidden_from_bootclasspath.android.os.Flags.messageQueueTailTracking
+0.04%     com.foliore.android  com.foliore.android.reader.ReadingState.merge
+0.04%     com.foliore.android  hb_ucd_script(hb_unicode_funcs_t*, unsigned int, void*) (.__uniq.59232151634540459760808551162038034331)
+0.04%     com.foliore.android  icu_76::BMPSet::contains(int) const
+0.04%     com.foliore.android  icu_76::RegexCompile::insertOp(int)
+0.04%     com.foliore.android  icu_76::RegexCompile::matchStartType()
+0.04%     com.foliore.android  icu_76::RegexCompile::nextChar(icu_76::RegexCompile::RegexPatternChar&)
+0.04%     com.foliore.android  icu_76::RegexMatcher::MatchChunkAt(int, signed char, UErrorCode&)
+0.04%     com.foliore.android  icu_76::RuleBasedBreakIterator::setText(UText*, UErrorCode&)
+0.04%     com.foliore.android  java.lang.AbstractStringBuilder.append
+0.04%     com.foliore.android  java.lang.Character.isDigit
+0.04%     com.foliore.android  java.lang.Class.isInstance
+0.04%     com.foliore.android  java.lang.Double.isNaN
+0.04%     com.foliore.android  java.lang.Double.parseDouble
+0.04%     com.foliore.android  java.lang.Float.compare
+0.04%     com.foliore.android  java.lang.Long.getChars
+0.04%     com.foliore.android  java.lang.Long.rotateLeft
+0.04%     com.foliore.android  java.lang.Long.toString
+0.04%     com.foliore.android  java.lang.Math.max
+0.04%     com.foliore.android  java.lang.Math.min
+0.04%     com.foliore.android  java.lang.Number.<init>
+0.04%     com.foliore.android  java.lang.Object.<init>
+0.04%     com.foliore.android  java.lang.ThreadLocal.-$$Nest$fgetthreadLocalHashCode
+0.04%     com.foliore.android  java.util.ArrayList.<init>
+0.04%     com.foliore.android  java.util.Formatter$Conversion.isValid
+0.04%     com.foliore.android  java.util.Formatter$FormatSpecifierParser.<init>
+0.04%     com.foliore.android  java.util.HashMap.hash
+0.04%     com.foliore.android  java.util.LinkedHashMap.<init>
+0.04%     com.foliore.android  java.util.LinkedHashMap.get
+0.04%     com.foliore.android  java.util.concurrent.atomic.AtomicLong.incrementAndGet
+0.04%     com.foliore.android  java.util.concurrent.atomic.AtomicReferenceFieldUpdater$AtomicReferenceFieldUpdaterImpl.get
+0.04%     com.foliore.android  jdk.internal.math.FloatToDecimal.append
+0.04%     com.foliore.android  kotlin.text.StringsKt__StringsKt.indexOf
+0.04%     com.foliore.android  kotlinx.coroutines.CancellableContinuationImpl.installParentHandle
+0.04%     com.foliore.android  kotlinx.coroutines.flow.StateFlowImpl.updateState
+0.04%     com.foliore.android  kotlinx.serialization.internal.AbstractCollectionSerializer.merge
+0.04%     com.foliore.android  kotlinx.serialization.internal.CollectionLikeSerializer.readElement
+0.04%     com.foliore.android  kotlinx.serialization.json.Json.getConfiguration
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.AbstractJsonLexer.consumeNumericLiteral
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.AbstractJsonLexer.consumeString
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.AbstractJsonLexer.consumeStringLenient
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.AbstractJsonLexer.tryConsumeComma
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.StreamingJsonDecoder.beginStructure
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.StreamingJsonDecoder.decodeElementIndex
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.StreamingJsonDecoder.decodeSerializableElement
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.StreamingJsonEncoder.encodeElement
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.StreamingJsonEncoder.encodeSerializableValue
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.StringJsonLexer.consumeNextToken
+0.04%     com.foliore.android  kotlinx.serialization.json.internal.WriteModeKt.switchMode
+0.04%     com.foliore.android  libmonochrome_64.so[+23e3cb4]
+0.04%     com.foliore.android  libmonochrome_64.so[+26e57d8]
+0.04%     com.foliore.android  libmonochrome_64.so[+2d817d2]
+0.04%     com.foliore.android  libmonochrome_64.so[+2d968ee]
+0.04%     com.foliore.android  libmonochrome_64.so[+2d9b9a2]
+0.04%     com.foliore.android  libmonochrome_64.so[+2d9bafb]
+0.04%     com.foliore.android  libmonochrome_64.so[+2de1534]
+0.04%     com.foliore.android  libmonochrome_64.so[+2ded881]
+0.04%     com.foliore.android  libmonochrome_64.so[+2e29e10]
+0.04%     com.foliore.android  libmonochrome_64.so[+2e4dc39]
+0.04%     com.foliore.android  libmonochrome_64.so[+38a998e]
+0.04%     com.foliore.android  libmonochrome_64.so[+3b4b93d]
+0.04%     com.foliore.android  libmonochrome_64.so[+3b7dbc0]
+0.04%     com.foliore.android  libmonochrome_64.so[+3ce9c23]
+0.04%     com.foliore.android  libmonochrome_64.so[+5d164e7]
+0.04%     com.foliore.android  libmonochrome_64.so[+714710f]
+0.04%     com.foliore.android  libmonochrome_64.so[+714735f]
+0.04%     com.foliore.android  libmonochrome_64.so[+714a900]
+0.04%     com.foliore.android  minikin::getPrevWordBreakForCache(minikin::U16StringPiece const&, unsigned int) (.cfi)
+0.04%     com.foliore.android  pthread_getspecific
+0.04%     com.foliore.android  pthread_mutex_trylock
+0.04%     com.foliore.android  recvfrom
+0.04%     com.foliore.android  scudo::Allocator<scudo::AndroidNormalConfig, &scudo_malloc_postinit>::deallocate(void*, scudo::Chunk::Origin, unsigned long, unsigned long)
+0.04%     com.foliore.android  skia_private::TArray<float, true>::checkRealloc(int, double)
+0.04%     com.foliore.android  tracing_perfetto::internal::toPerfettoCategory(unsigned long)
+0.04%     com.foliore.android  void art::StackVisitor::WalkStack<(art::StackVisitor::CountTransitions)0>(bool)
+0.04%     queued-work-loo      FileDescriptor_sync
+0.04%     queued-work-loo      __close
+0.04%     queued-work-loo      __epoll_pwait
+0.04%     queued-work-loo      _jclass* art::JNIEnvExt::AddLocalReference<_jclass*>(art::ObjPtr<art::mirror::Object>)
+0.04%     queued-work-loo      android::Looper::pollOnce(int, int*, int*, void**)
+0.04%     queued-work-loo      art::(anonymous namespace)::CheckAttachedThread(char const*) (.__uniq.99033978352804627313491551960229047428)
+0.04%     queued-work-loo      art::(anonymous namespace)::CheckJNI::IsInstanceOf(_JNIEnv*, _jobject*, _jclass*) (.__uniq.99033978352804627313491551960229047428.llvm.6262425906947437964)
+0.04%     queued-work-loo      art::(anonymous namespace)::CheckJNI::Throw(_JNIEnv*, _jthrowable*) (.__uniq.99033978352804627313491551960229047428.llvm.6262425906947437964)
+0.04%     queued-work-loo      art::(anonymous namespace)::ScopedCheck::Check(art::ScopedObjectAccess&, bool, char const*, art::(anonymous namespace)::JniValueType*) (.__uniq.99033978352804627313491551960229047428)
+0.04%     queued-work-loo      art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)
+0.04%     queued-work-loo      art::ArtMethod::ResolveClassFromTypeIndex(art::dex::TypeIndex)
+0.04%     queued-work-loo      art::BuildInternalStackTraceVisitor::AddFrame(art::ArtMethod*, unsigned int)
+0.04%     queued-work-loo      art::ClassTable::Lookup(std::__1::basic_string_view<char, std::__1::char_traits<char>>, unsigned long)
+0.04%     queued-work-loo      art::JNI<true>::GetStringUTFChars(_JNIEnv*, _jstring*, unsigned char*)
+0.04%     queued-work-loo      art::QuickArgumentVisitorImpl<art::QuickArgumentFrameInfoX86_64>::VisitArguments()
+0.04%     queued-work-loo      art::String_charAt(_JNIEnv*, _jobject*, int) (.__uniq.211321754789976184382062795672362477106)
+0.04%     queued-work-loo      art::String_getCharsNoCheck(_JNIEnv*, _jobject*, int, int, _jcharArray*, int) (.__uniq.211321754789976184382062795672362477106)
+0.04%     queued-work-loo      artQuickGenericJniTrampoline
+0.04%     queued-work-loo      com.android.internal.util.FastXmlSerializer.escapeAndAppendString
+0.04%     queued-work-loo      com.android.internal.util.XmlSerializerWrapper.<init>
+0.04%     queued-work-loo      fstatat64
+0.04%     queued-work-loo      java.io.File.getPath
+0.04%     queued-work-loo      java.lang.ThreadLocal.get
+0.04%     queued-work-loo      java.nio.ByteBuffer.allocate
+0.04%     queued-work-loo      java.nio.CharBuffer.limit
+0.04%     queued-work-loo      memset_generic
+0.04%     queued-work-loo      operator new[](unsigned long)
+0.04%     queued-work-loo      scudo::Allocator<scudo::AndroidNormalConfig, &scudo_malloc_postinit>::deallocate(void*, scudo::Chunk::Origin, unsigned long, unsigned long)
+0.04%     queued-work-loo      strcmp
+0.04%     queued-work-loo      void art::StackVisitor::WalkStack<(art::StackVisitor::CountTransitions)0>(bool)

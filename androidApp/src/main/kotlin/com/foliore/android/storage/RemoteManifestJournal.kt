@@ -78,7 +78,7 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
     }
 
     private fun readCommit(entry: RemoteRootEntry): Pair<RemoteRootEntry, Commit>? {
-        val id = entry.name.removePrefix(COMMIT_PREFIX).removeSuffix(".json")
+        val id = commitId(entry.name)
         requireSafeBookId(id)
         val marker = store.readText(entry.name).orEmpty()
         // Only a complete 64-byte checksum publishes a record. Interrupted
@@ -127,13 +127,13 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
         // Remove redundant index records before their unreferenced payloads. A failure
         // leaves extra retained data, never a manifest pointing to a collected file.
         deletePaths(obsolete.map { it.name })
-        deletePaths(obsolete.map { RECORD_PREFIX + it.name.removePrefix(COMMIT_PREFIX) })
+        deletePaths(obsolete.map { "$RECORD_PREFIX${commitId(it.name)}.json" })
         val retained = commits.filterKeys { it !in obsolete }
         val referenced = retained.flatMap { (entry, commit) ->
             if (entry.modifiedAtMillis >= cutoff) references(commit.manifest)
             else commit.manifest.books().filter { it["deleted"]?.jsonPrimitive?.booleanOrNull != true }.flatMap(::references)
         }.toSet()
-        val committedRecordNames = commits.keys.map { RECORD_PREFIX + it.name.removePrefix(COMMIT_PREFIX) }.toSet()
+        val committedRecordNames = commits.keys.map { "$RECORD_PREFIX${commitId(it.name)}.json" }.toSet()
         deletePaths(entries.filter { entry -> !entry.isDirectory && entry.modifiedAtMillis in 1 until cutoff &&
             ((entry.name.startsWith(RECORD_PREFIX) && entry.name !in committedRecordNames) ||
                 (entry.name.startsWith(COMMIT_PREFIX) && entry !in commits.keys))
@@ -147,6 +147,11 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
     private fun deletePaths(paths: List<String>) {
         store.deleteTrees(paths)
     }
+
+    // Older SAF writes could append .txt to a JSON-named, text/plain marker.
+    // Recover those commits with the same checksum validation as correctly named markers.
+    private fun commitId(name: String): String = name.removeSuffix(".json.txt")
+        .removeSuffix(".json").removePrefix(COMMIT_PREFIX)
 
     private fun references(element: JsonElement): List<String> = when (element) {
         is JsonObject -> element.values.flatMap(::references)

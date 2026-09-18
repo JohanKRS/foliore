@@ -48,6 +48,21 @@ class ReadingJournalTest {
             assertEquals(.7,ReadingStateSync.read(merged).positions.single().locator.progression)
         } finally { root.deleteRecursively() }
     }
+    @Test fun recoversProviderRenamedMarkersWithoutLosingTheirRecordsDuringCollection() {
+        val root=kotlin.io.path.createTempDirectory().toFile()
+        try {
+            val store=Store(root)
+            RemoteManifestJournal(store).also { it.read() }.publish(manifest(state(2,.7)).toString())
+            val marker=root.listFiles()!!.single { it.name.startsWith(RemoteManifestJournal.COMMIT_PREFIX) }
+            check(marker.renameTo(File(root, marker.name + ".txt")))
+            root.listFiles()!!.forEach { it.setLastModified(System.currentTimeMillis()-RemoteManifestJournal.RETENTION_MILLIS-100000) }
+            RemoteManifestJournal(store).collectGarbage()
+            val merged=Json.parseToJsonElement(RemoteManifestJournal(store).read()!!).jsonObject
+            assertEquals(.7,ReadingStateSync.read(merged).positions.single().locator.progression)
+            RemoteManifestJournal(store).also { it.read() }.publish(manifest(state(3,.2)).toString())
+            assertEquals(.2,ReadingStateSync.read(Json.parseToJsonElement(RemoteManifestJournal(store).read()!!).jsonObject).positions.single().locator.progression)
+        } finally { root.deleteRecursively() }
+    }
     private class Store(val root:File):RemoteLibraryStore {
         override val label="test"
         override fun listRootEntries()=root.listFiles().orEmpty().map { RemoteRootEntry(it.name,it.isDirectory,it.lastModified()) }

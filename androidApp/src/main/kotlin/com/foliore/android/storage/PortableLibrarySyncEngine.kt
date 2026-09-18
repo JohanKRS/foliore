@@ -136,6 +136,7 @@ internal class PortableLibrarySyncEngine(
                 removedRemoteBookIds += remoteBook.bookId
             } else if (hasCurrentRemoteFiles && localBook != null &&
                 localBook.book.syncStatus in setOf(SyncStatus.PENDING_UPLOAD, SyncStatus.CONFLICT) &&
+                !matchesPublishedVersion(localBook, remoteBook) &&
                 previousBaseById[localBook.book.id]?.let { base ->
                     base.metadataSnapshot != remoteBook.metadataSnapshot || base.coverHash != remoteBook.coverHash
                 } != false
@@ -459,6 +460,15 @@ internal class PortableLibrarySyncEngine(
             book.syncStatus == SyncStatus.LOCAL_ONLY ||
             book.syncStatus == SyncStatus.PENDING_UPLOAD
     }
+
+    private fun matchesPublishedVersion(local: LibraryBook, remote: ManifestBookSnapshot): Boolean =
+        // A commit can reach the provider before its acknowledgement/status update reaches us.
+        // Retrying that exact version must not manufacture an offline-edit conflict.
+        remote.revision == local.book.revision && remote.updatedAt == local.book.updatedAt &&
+            remote.updatedByDeviceId == local.book.updatedByDeviceId &&
+            remote.originalHashSha256 == local.book.originalHashSha256 &&
+            remote.metadataSnapshot == PortableSnapshots.metadata(local.book, local.metadata) &&
+            remote.coverHash == local.book.coverImagePath?.let(::File)?.takeIf { it.isFile }?.sha256()
 
     private fun reconcileOfflineEdit(remote: ManifestBookSnapshot, local: LibraryBook,
         base: ManifestBookSnapshot?, counters: SyncCounters): RemoteDownloadAction = synchronized(repositoryLock) {

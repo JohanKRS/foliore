@@ -6,21 +6,22 @@ import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
 const runtime = readFileSync(new URL('../androidApp/src/main/assets/reader/runtime.js', import.meta.url), 'utf8');
-function reader({ mode = 'pages', fixed = false, rtl = false, visible } = {}) {
+function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowWidth = 400, overflowHeight = 800 } = {}) {
   const listeners = {}, windowListeners = {}, messages = [], selection = { isCollapsed: true }, elements = [], timers = new Map();
   let now = 10000, timerId = 0;
   const flush = () => { while (timers.size) { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); } };
-  const element = () => ({ childNodes: [], scrollWidth: 1200, scrollHeight: 3000, scrollTop: 0, scrollLeft: 0,
-    append() {}, prepend() {}, scrollTo({ left, top }) { this.scrollLeft = left; this.scrollTop = top; } });
+  const stylesheet = {};
+  const element = () => ({ childNodes: [], clientWidth: 400, clientHeight: 800, style: { setProperty() {} }, scrollWidth: 1200, scrollHeight: 3000, scrollTop: 0, scrollLeft: 0,
+    append() {}, prepend() {}, querySelectorAll: () => [], scrollTo({ left, top }) { this.scrollLeft = left; this.scrollTop = top; } });
   const body = { ...element(), dataset: { folioreFixed: String(fixed) } };
   const plain = { closest: () => null };
   const context = {
-    innerWidth: 400, innerHeight: 800, visualViewport: visible,
+    innerWidth: overflowWidth, innerHeight: overflowHeight, visualViewport: visible,
     document: { body, scrollingElement: element(), createElement: () => { const el = element(); elements.push(el); return el; },
-      getElementById: id => id === 'foliore-style' ? {} : null,
+      getElementById: id => id === 'foliore-style' ? stylesheet : null,
       createTreeWalker: () => ({ nextNode: () => null }),
       addEventListener: (type, callback) => { listeners[type] = callback; } },
-    getComputedStyle: () => ({ direction: 'ltr' }), getSelection: () => selection,
+    getComputedStyle: () => ({ direction: rtl ? 'rtl' : 'ltr' }), getSelection: () => selection,
     Date: { now: () => now }, NodeFilter: { SHOW_TEXT: 4 },
     setTimeout: callback => { timers.set(++timerId, callback); return timerId; }, clearTimeout: id => timers.delete(id), requestAnimationFrame: callback => callback(),
     addEventListener: (type, callback) => { windowListeners[type] = callback; }, FolioreBridge: { message: value => messages.push(JSON.parse(value)) },
@@ -34,11 +35,11 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible } = {}) {
     listeners[type](event); return event;
   };
   const point = (x, y) => ({ clientX: x, clientY: y });
-  return { messages, selection, context, flush,
+  return { messages, selection, context, flush, stylesheet,
     resizePages: count => { elements[1].scrollWidth = 400 * count; windowListeners.resize(); flush(); },
     actions: () => messages.filter(m => m.event !== 'position'),
     click: (x = 200, y = 400, extras = {}) => dispatch('click', { ...point(x, y), button: 0, detail: 1, ...extras }),
-    start: (x = 200, y = 400, count = 1) => dispatch('touchstart', { touches: Array(count).fill(point(x, y)) }),
+    start: (x = 200, y = 400, count = 1, target = plain) => dispatch('touchstart', { target, touches: Array(count).fill(point(x, y)) }),
     move: (x, y, count = 1) => dispatch('touchmove', { touches: Array(count).fill(point(x, y)) }),
     end: (x = 200, y = 400, remaining = 0) => dispatch('touchend', { touches: Array(remaining).fill(point(x, y)), changedTouches: [point(x, y)] }),
     cancel: () => dispatch('touchcancel', {}),
@@ -46,6 +47,22 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible } = {}) {
   };
 }
 const link = { closest: selector => selector === 'a[href]' ? { href: 'https://example.org/note' } : null };
+
+test('initial pagination uses the visible frame even when publisher content overflows', () => {
+  const r = reader({ overflowWidth: 1216, overflowHeight: 1972 });
+  assert.match(r.stylesheet.textContent, /width:360px!important;height:760px!important;column-width:360px/);
+  assert.match(r.stylesheet.textContent, /max-height:760px!important/);
+  const fixed = reader({ fixed: true });
+  assert.doesNotMatch(fixed.stylesheet.textContent, /#foliore-content img\{height:auto/);
+});
+
+test('scrolling a wide table does not turn the book page', () => {
+  const r = reader();
+  r.start(300, 400, 1, { closest: selector => selector === '.foliore-table' ? {} : null });
+  r.move(100, 400); r.end(100, 400); r.flush();
+  assert.deepEqual(r.actions(), []);
+  assert.equal(r.messages.length, 0);
+});
 
 for (const config of [{ mode: 'pages' }, { mode: 'scroll' }, { fixed: true }]) {
   test(`center taps toggle chrome in ${JSON.stringify(config)}`, () => {
@@ -114,4 +131,11 @@ test('showing and hiding controls preserves the anchor across repagination', () 
   // Actual reading replaces the anchor; the next toggle must not restore the old passage.
   r.context.FolioreReader.step(1); r.flush(); r.click(); r.resizePages(5);
   assert.equal(r.context.FolioreReader.position().page, 3);
+});
+
+// The viewport scroll coordinates remain LTR; only publication text and gestures are RTL.
+test('RTL text cannot reverse the pagination scroll container', () => {
+  const r = reader({ rtl: true });
+  assert.match(r.stylesheet.textContent, /#foliore-viewport\{[^}]*direction:ltr!important/);
+  assert.match(r.stylesheet.textContent, /#foliore-content>\*\{direction:rtl\}/);
 });

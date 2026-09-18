@@ -1,0 +1,98 @@
+[
+  {
+    "book": "三國志演義",
+    "checks": 72,
+    "sections": 12,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "Entre páginas",
+    "checks": 18,
+    "sections": 3,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "QA: fonte incorporada",
+    "checks": 6,
+    "sections": 1,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "QA: capítulo longo",
+    "checks": 6,
+    "sections": 1,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "QA: layout fixo",
+    "checks": 2,
+    "sections": 2,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "On the Origin of Species By Means of Natural Selection / Or, the Preservation of Favoured Races in the Struggle for Life",
+    "checks": 114,
+    "sections": 19,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "Conversão Foliore",
+    "checks": 18,
+    "sections": 3,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "Dom Casmurro",
+    "checks": 42,
+    "sections": 7,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "Alice's Adventures in Wonderland",
+    "checks": 6,
+    "sections": 1,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "QA: imagens e tabelas",
+    "checks": 12,
+    "sections": 2,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "QA: leitura RTL",
+    "checks": 12,
+    "sections": 2,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  },
+  {
+    "book": "Pride and Prejudice",
+    "checks": 54,
+    "sections": 9,
+    "errors": 0,
+    "brokenImages": 0,
+    "fragmentedImages": 0
+  }
+]

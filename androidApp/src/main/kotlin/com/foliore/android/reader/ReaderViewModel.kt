@@ -77,7 +77,8 @@ internal class ReaderViewModel(context: Context, private val bookId: String) : V
     fun position(locator: ReadingLocator, page: Int, pages: Int, user: Boolean) {
         val state = mutable.value
         if (!locator.valid() || locator.href != state.navigation?.locator?.href) return
-        mutable.value = state.copy(locator = locator, page = page.coerceAtLeast(1), pages = pages.coerceAtLeast(1), navigation = state.navigation?.copy(fragment = null, user = false))
+        mutable.value = state.copy(locator = locator, page = page.coerceAtLeast(1), pages = pages.coerceAtLeast(1),
+            navigation = state.navigation?.let { it.copy(locator = if (user) locator else it.locator, fragment = null, user = false) })
         if (user && state.book != null) {
             repository.savePosition(bookId, state.book.book.originalHashSha256, locator)
             lastPosition = repository.position(bookId, state.book.book.originalHashSha256)

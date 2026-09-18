@@ -17,6 +17,10 @@ class DebugImportReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         Thread {
             try {
+                if (intent.getBooleanExtra("corpusTest", false)) {
+                    ReaderCorpusHarness.run(context)
+                    return@Thread
+                }
                 if (intent.getBooleanExtra("conversionTest", false)) {
                     ConversionHarness.run(context)
                     return@Thread

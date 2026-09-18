@@ -1,0 +1,254 @@
+[
+  {
+    "file": "alice.mobi-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "alice.mobi-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-obfuscated-font.epub-prepared",
+    "exit": 0,
+    "counts": {
+      "INFO": 1
+    }
+  },
+  {
+    "file": "qa-obfuscated-font.epub-converted",
+    "exit": 0,
+    "counts": {
+      "INFO": 1
+    }
+  },
+  {
+    "file": "qa-rtl.epub-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-rtl.epub-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-fixed-layout.epub-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-fixed-layout.epub-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "dom-casmurro.azw3-prepared",
+    "exit": 0,
+    "counts": {
+      "WARNING": 1
+    }
+  },
+  {
+    "file": "dom-casmurro.azw3-converted",
+    "exit": 0,
+    "counts": {
+      "WARNING": 1
+    }
+  },
+  {
+    "file": "three-kingdoms.azw3-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "three-kingdoms.azw3-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "dom-casmurro.epub-prepared",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "dom-casmurro.epub-converted",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "fixture-kindle.azw3-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "fixture-kindle.azw3-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "pride-illustrated.epub-prepared",
+    "exit": 1,
+    "counts": {
+      "ERROR": 2
+    }
+  },
+  {
+    "file": "pride-illustrated.epub-converted",
+    "exit": 1,
+    "counts": {
+      "ERROR": 2
+    }
+  },
+  {
+    "file": "dom-casmurro.mobi-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "dom-casmurro.mobi-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-long-chapter.epub-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-long-chapter.epub-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "pride-illustrated.azw3-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "pride-illustrated.azw3-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "pride-epub2.epub-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "pride-epub2.epub-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "fixture-source.epub-prepared",
+    "exit": 1,
+    "counts": {
+      "ERROR": 2
+    }
+  },
+  {
+    "file": "fixture-source.epub-converted",
+    "exit": 1,
+    "counts": {
+      "ERROR": 2
+    }
+  },
+  {
+    "file": "alice.azw3-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "alice.azw3-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "alice.epub-prepared",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "alice.epub-converted",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "origin-species.epub-prepared",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "origin-species.epub-converted",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "three-kingdoms.epub-prepared",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "three-kingdoms.epub-converted",
+    "exit": 1,
+    "counts": {
+      "ERROR": 1
+    }
+  },
+  {
+    "file": "fixture-legacy.mobi-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "fixture-legacy.mobi-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "reader-features.epub-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "reader-features.epub-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "fixture-hybrid.mobi-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "fixture-hybrid.mobi-converted",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-wide-layout.epub-prepared",
+    "exit": 0,
+    "counts": {}
+  },
+  {
+    "file": "qa-wide-layout.epub-converted",
+    "exit": 0,
+    "counts": {}
+  }
+]

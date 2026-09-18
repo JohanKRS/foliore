@@ -1,0 +1,86 @@
+[
+  {
+    "href": "OPS/chapter0.xhtml",
+    "mode": "pages",
+    "fontSize": 20,
+    "pages": 25,
+    "textOffset": 6846
+  },
+  {
+    "href": "OPS/chapter0.xhtml",
+    "mode": "pages",
+    "fontSize": 36,
+    "pages": 121,
+    "textOffset": 6738
+  },
+  {
+    "href": "OPS/chapter0.xhtml",
+    "mode": "pages",
+    "fontSize": 12,
+    "pages": 17,
+    "textOffset": 6702
+  },
+  {
+    "href": "OPS/chapter0.xhtml",
+    "mode": "scroll",
+    "fontSize": 20,
+    "pages": 1,
+    "textOffset": 6470
+  },
+  {
+    "href": "OPS/chapter0.xhtml",
+    "mode": "scroll",
+    "fontSize": 36,
+    "pages": 1,
+    "textOffset": 6738
+  },
+  {
+    "href": "OPS/chapter0.xhtml",
+    "mode": "scroll",
+    "fontSize": 12,
+    "pages": 1,
+    "textOffset": 6304
+  },
+  {
+    "href": "OPS/chapter1.xhtml",
+    "mode": "pages",
+    "fontSize": 20,
+    "pages": 1,
+    "textOffset": 0
+  },
+  {
+    "href": "OPS/chapter1.xhtml",
+    "mode": "pages",
+    "fontSize": 36,
+    "pages": 1,
+    "textOffset": 0
+  },
+  {
+    "href": "OPS/chapter1.xhtml",
+    "mode": "pages",
+    "fontSize": 12,
+    "pages": 1,
+    "textOffset": 0
+  },
+  {
+    "href": "OPS/chapter1.xhtml",
+    "mode": "scroll",
+    "fontSize": 20,
+    "pages": 1,
+    "textOffset": 0
+  },
+  {
+    "href": "OPS/chapter1.xhtml",
+    "mode": "scroll",
+    "fontSize": 36,
+    "pages": 1,
+    "textOffset": 0
+  },
+  {
+    "href": "OPS/chapter1.xhtml",
+    "mode": "scroll",
+    "fontSize": 12,
+    "pages": 1,
+    "textOffset": 0
+  }
+]

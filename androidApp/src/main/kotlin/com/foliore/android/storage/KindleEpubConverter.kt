@@ -6,9 +6,6 @@ import java.util.UUID
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
-import org.jsoup.nodes.Entities
 
 internal object MobiNative {
     init { System.loadLibrary("foliore_conversion") }
@@ -32,13 +29,16 @@ internal class KindleEpubConverter(
                 4 -> ImportFailureReason.TOO_LARGE
                 else -> ImportFailureReason.CONVERSION_FAILED
             })
+            val extracted = working.listFiles().orEmpty()
+            require(extracted.all { it.isFile && it.length() <= StorageLimits.ENTRY_BYTES })
+            require(extracted.sumOf { it.length() } <= StorageLimits.EXPANDED_BYTES)
+            KindleMarkupNormalizer.normalize(working)
             val parts = working.listFiles()?.sortedBy { it.name }.orEmpty()
             require(parts.size in 1..StorageLimits.ENTRIES - 2)
             require(parts.any { it.name == "content.opf" })
             var expanded = 0L
             parts.forEach { part ->
                 require(part.isFile && part.length() <= StorageLimits.ENTRY_BYTES)
-                if (part.extension == "html") normalizeHtml(part)
                 require(part.length() <= StorageLimits.ENTRY_BYTES)
                 expanded += part.length()
                 require(expanded <= StorageLimits.EXPANDED_BYTES)
@@ -75,20 +75,6 @@ internal class KindleEpubConverter(
         } finally {
             working.deleteRecursively()
         }
-    }
-
-    private fun normalizeHtml(file: File) {
-        // Legacy MOBI contains HTML, including unclosed tags and named entities.
-        // Serialize as UTF-8 XHTML while preserving links, images and KF8 styles.
-        val document = Jsoup.parse(file.readText(Charsets.UTF_8))
-        document.outputSettings().syntax(Document.OutputSettings.Syntax.xml)
-            .escapeMode(Entities.EscapeMode.xhtml).charset(Charsets.UTF_8).prettyPrint(false)
-        document.selectFirst("html")?.attr("xmlns", "http://www.w3.org/1999/xhtml")
-        document.select("meta[http-equiv=Content-Type], meta[charset]").remove()
-        document.getElementsByTag("mbp:pagebreak").forEach {
-            it.tagName("div").attr("style", "page-break-before: always;")
-        }
-        file.writeText(document.outerHtml(), Charsets.UTF_8)
     }
 
     private fun entry(name: String) = ZipEntry(name).apply {

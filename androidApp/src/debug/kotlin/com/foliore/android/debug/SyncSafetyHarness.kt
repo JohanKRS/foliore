@@ -53,6 +53,16 @@ internal object SyncSafetyHarness {
             put("OPS/page.xhtml", """<html xmlns="http://www.w3.org/1999/xhtml"><head><title>QA</title></head><body><p>Preserve this original.</p></body></html>""")
         }
         val imported = runBlocking { a.epubImporter.importFile(epub) } as EpubImportResult.Imported
+        val (ackContext, ackApp) = device("lost-ack")
+        val ackRemote = LocalStore(File(root, "lost-ack-remote").apply { mkdirs() })
+        val ackId = (runBlocking { ackApp.epubImporter.importFile(epub) } as EpubImportResult.Imported).bookId
+        check(ackApp.preparedEpubService.prepare(ackId) is PreparedEpubResult.Prepared)
+        ackRemote.fault = "after-commit"
+        check(runCatching { engine(ackContext, ackApp).sync(ackRemote) }.isFailure)
+        val ackRetry = engine(ackContext, ackApp).sync(ackRemote)
+        check(ackRetry.conflictedBooks == 0 && ackApp.libraryRepository.bookCount() == 1) {
+            "A lost publication acknowledgement created a duplicate conflict"
+        }
         // A locally merged version is not backed up until its own publication commits.
         val (mergeContextA, mergeA) = device("merge-retry-a")
         val (mergeContextB, mergeB) = device("merge-retry-b")
@@ -271,6 +281,7 @@ internal object SyncSafetyHarness {
             val inject = path.startsWith(RemoteManifestJournal.RECORD_PREFIX) && consume("record") || path.startsWith("foliore-v4-commit-") && consume("commit")
             File(root, path).apply { parentFile!!.mkdirs(); writeText(if (inject) "{" else text) }
             if (inject) error("Injected incomplete publication")
+            if (path.startsWith(RemoteManifestJournal.COMMIT_PREFIX) && consume("after-commit")) error("Injected lost publication acknowledgement")
             if (path.startsWith(RemoteManifestJournal.RECORD_PREFIX)) publicationBarrier?.await(20, java.util.concurrent.TimeUnit.SECONDS)
         }
         override fun replaceFile(path: String, source: File, mimeType: String) {

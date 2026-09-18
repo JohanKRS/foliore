@@ -1,0 +1,1907 @@
+{
+  "status": "PASS",
+  "files": [
+    {
+      "file": "alice.azw3",
+      "status": "PASS",
+      "importMs": 393,
+      "prepareMs": 70,
+      "elapsedMs": 878,
+      "result": {
+        "title": "Alice's Adventures in Wonderland",
+        "language": "en",
+        "inputSha256": "b3c9067848d28f8c0f36adbb198b306791884319e8b2f8ea7083f844d8876815",
+        "convertedSha256": "1d2c7260bc6f6b7fea56b90074f3fd9b64187f6a84f7744393d33c1794b63741",
+        "inputBytes": 255486,
+        "epubBytes": 204412,
+        "coverWidth": 800,
+        "coverHeight": 1104,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "1",
+            "characters": 12,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00001.html",
+            "title": "Alice’s Adventures in Wonderland",
+            "characters": 922,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00002.html",
+            "title": "THE MILLENNIUM FULCRUM EDITION 3.0",
+            "characters": 54,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00003.html",
+            "title": "Contents",
+            "characters": 453,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00004.html",
+            "title": "CHAPTER I. Down the Rabbit-Hole",
+            "characters": 11560,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00005.html",
+            "title": "CHAPTER II. The Pool of Tears",
+            "characters": 10976,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00006.html",
+            "title": "CHAPTER III. A Caucus-Race and a Long Tale",
+            "characters": 9597,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00007.html",
+            "title": "CHAPTER IV. The Rabbit Sends in a Little Bill",
+            "characters": 13884,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00008.html",
+            "title": "CHAPTER V. Advice from a Caterpillar",
+            "characters": 12069,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00009.html",
+            "title": "CHAPTER VI. Pig and Pepper",
+            "characters": 13889,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00010.html",
+            "title": "CHAPTER VII. A Mad Tea-Party",
+            "characters": 12769,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00011.html",
+            "title": "CHAPTER VIII. The Queen’s Croquet-Ground",
+            "characters": 13717,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00012.html",
+            "title": "CHAPTER IX. The Mock Turtle’s Story",
+            "characters": 12689,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00013.html",
+            "title": "CHAPTER X. The Lobster Quadrille",
+            "characters": 11503,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00014.html",
+            "title": "CHAPTER XI. Who Stole the Tarts?",
+            "characters": 10436,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00015.html",
+            "title": "CHAPTER XII. Alice’s Evidence",
+            "characters": 11701,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00016.html",
+            "title": "17",
+            "characters": 1376,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00017.html",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 17092,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00018.html",
+            "title": "19",
+            "characters": 552,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "alice.epub",
+      "status": "PASS",
+      "importMs": 46,
+      "prepareMs": 59,
+      "elapsedMs": 242,
+      "result": {
+        "title": "Alice's Adventures in Wonderland",
+        "language": "en",
+        "inputSha256": "12cbc3610260503383ad7ecf800beb0d885a6011e15900b2bf61cecfc571d6c8",
+        "convertedSha256": "12cbc3610260503383ad7ecf800beb0d885a6011e15900b2bf61cecfc571d6c8",
+        "inputBytes": 188960,
+        "epubBytes": 188960,
+        "coverWidth": 800,
+        "coverHeight": 1104,
+        "sections": [
+          {
+            "href": "OEBPS/wrap0000.xhtml",
+            "title": "1",
+            "characters": 24,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-0.htm.xhtml",
+            "title": "Alice’s Adventures in Wonderland",
+            "characters": 1426,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-1.htm.xhtml",
+            "title": "CHAPTER I. Down the Rabbit-Hole",
+            "characters": 11560,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-2.htm.xhtml",
+            "title": "CHAPTER II. The Pool of Tears",
+            "characters": 10976,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-3.htm.xhtml",
+            "title": "CHAPTER III. A Caucus-Race and a Long Tale",
+            "characters": 9597,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-4.htm.xhtml",
+            "title": "CHAPTER IV. The Rabbit Sends in a Little Bill",
+            "characters": 13884,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-5.htm.xhtml",
+            "title": "CHAPTER V. Advice from a Caterpillar",
+            "characters": 12069,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-6.htm.xhtml",
+            "title": "CHAPTER VI. Pig and Pepper",
+            "characters": 13889,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-7.htm.xhtml",
+            "title": "CHAPTER VII. A Mad Tea-Party",
+            "characters": 12769,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-8.htm.xhtml",
+            "title": "CHAPTER VIII. The Queen’s Croquet-Ground",
+            "characters": 13717,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-9.htm.xhtml",
+            "title": "CHAPTER IX. The Mock Turtle’s Story",
+            "characters": 12689,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-10.htm.xhtml",
+            "title": "CHAPTER X. The Lobster Quadrille",
+            "characters": 11503,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-11.htm.xhtml",
+            "title": "CHAPTER XI. Who Stole the Tarts?",
+            "characters": 10436,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-12.htm.xhtml",
+            "title": "CHAPTER XII. Alice’s Evidence",
+            "characters": 11701,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8761230412384829988_11-h-13.htm.xhtml",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 18466,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "alice.mobi",
+      "status": "PASS",
+      "importMs": 140,
+      "prepareMs": 56,
+      "elapsedMs": 401,
+      "result": {
+        "title": "Alice's Adventures in Wonderland",
+        "language": "en",
+        "inputSha256": "29448cd44f3e6d3db391c6aefc438f53283142d9e8a41ef439718a5d84f36240",
+        "convertedSha256": "c552a732c0bc6377430c2c4adf4c56e67b7d97d769278c90896952ee59f08fc8",
+        "inputBytes": 241000,
+        "epubBytes": 184847,
+        "coverWidth": 800,
+        "coverHeight": 1104,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "Alice’s Adventures in Wonderland",
+            "characters": 164353,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "dom-casmurro.azw3",
+      "status": "PASS",
+      "importMs": 219,
+      "prepareMs": 118,
+      "elapsedMs": 710,
+      "result": {
+        "title": "Dom Casmurro",
+        "language": "pt",
+        "inputSha256": "82caada9c328d2ef81e6cb9b7c6454672bcdd0d545a15de80bd817eaf7089437",
+        "convertedSha256": "3c635d43d74fdbf642a5f26b2cf67e45897dc9357f6fda46f9411f4b05aaeb1c",
+        "inputBytes": 365890,
+        "epubBytes": 232883,
+        "coverWidth": 450,
+        "coverHeight": 726,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "1",
+            "characters": 12,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00001.html",
+            "title": "DOM CASMURRO POR MACHADO DE ASSIS",
+            "characters": 194162,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00002.html",
+            "title": "Adiemos a virtude.",
+            "characters": 179845,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00003.html",
+            "title": "4",
+            "characters": 2963,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00004.html",
+            "title": "5",
+            "characters": 1356,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00005.html",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 17092,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00006.html",
+            "title": "7",
+            "characters": 2602,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "dom-casmurro.epub",
+      "status": "PASS",
+      "importMs": 32,
+      "prepareMs": 111,
+      "elapsedMs": 296,
+      "result": {
+        "title": "Dom Casmurro",
+        "language": "pt",
+        "inputSha256": "6af63f38babff2631ceff374de2ce9f121372a5a25d10456c4b9f9cf9620d64b",
+        "convertedSha256": "6af63f38babff2631ceff374de2ce9f121372a5a25d10456c4b9f9cf9620d64b",
+        "inputBytes": 220810,
+        "epubBytes": 220810,
+        "coverWidth": 450,
+        "coverHeight": 726,
+        "sections": [
+          {
+            "href": "OEBPS/wrap0000.xhtml",
+            "title": "1",
+            "characters": 24,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/5349219701180502011_55752-h-0.htm.xhtml",
+            "title": "DOM CASMURRO POR MACHADO DE ASSIS",
+            "characters": 194162,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/5349219701180502011_55752-h-1.htm.xhtml",
+            "title": "Adiemos a virtude.",
+            "characters": 179845,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/5349219701180502011_55752-h-2.htm.xhtml",
+            "title": "4",
+            "characters": 2963,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/5349219701180502011_55752-h-3.htm.xhtml",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 18446,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "dom-casmurro.mobi",
+      "status": "PASS",
+      "importMs": 226,
+      "prepareMs": 239,
+      "elapsedMs": 826,
+      "result": {
+        "title": "Dom Casmurro",
+        "language": "pt",
+        "inputSha256": "44426b98c72cd6626774548b30e329834b5cc8763b704436386161db8ca4f4ae",
+        "convertedSha256": "1a3189a5b0c99e5d5c95b52fc07fbbe7cfa3efe9decd9366f04c8bed7c2b73f8",
+        "inputBytes": 348410,
+        "epubBytes": 226514,
+        "coverWidth": 450,
+        "coverHeight": 726,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "DOM CASMURRO POR MACHADO DE ASSIS",
+            "characters": 395267,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "fixture-hybrid.mobi",
+      "status": "PASS",
+      "importMs": 28,
+      "prepareMs": 19,
+      "elapsedMs": 73,
+      "result": {
+        "title": "Conversão Foliore",
+        "language": "pt",
+        "inputSha256": "b2aa8e7fbb6ae9cf501506c8bca49c58b965887231b16e71e7d419af796a15ec",
+        "convertedSha256": "241b8c4dde8e290d261e8d2ec5ee4abf328c8378059041a8068779bdfe633fd3",
+        "inputBytes": 23132,
+        "epubBytes": 4625,
+        "coverWidth": 16,
+        "coverHeight": 16,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "Primeiro capítulo",
+            "characters": 70,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00001.html",
+            "title": "Segundo capítulo",
+            "characters": 63,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00002.html",
+            "title": "3",
+            "characters": 57,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "fixture-kindle.azw3",
+      "status": "PASS",
+      "importMs": 40,
+      "prepareMs": 15,
+      "elapsedMs": 81,
+      "result": {
+        "title": "Conversão Foliore",
+        "language": "pt",
+        "inputSha256": "f806c4251bc277178fd85d7f0b6f0da6cd2a6ec812c9904ad2b5eaa8b75bbee1",
+        "convertedSha256": "b237f23facdb388d517b2ecc8821c6cd69c5b50720abd36234655e6988eb6f21",
+        "inputBytes": 12807,
+        "epubBytes": 4542,
+        "coverWidth": 16,
+        "coverHeight": 16,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "Primeiro capítulo",
+            "characters": 70,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00001.html",
+            "title": "Segundo capítulo",
+            "characters": 63,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00002.html",
+            "title": "3",
+            "characters": 57,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "fixture-legacy.mobi",
+      "status": "PASS",
+      "importMs": 28,
+      "prepareMs": 11,
+      "elapsedMs": 56,
+      "result": {
+        "title": "Conversão Foliore",
+        "language": "pt",
+        "inputSha256": "2aaf44646e2f18a0c88d670788626fe9425c9b77e5ed5448df1c5ad283e777ca",
+        "convertedSha256": "9397072fb4fb18307a5083135cf933084e38c6e11d66b8c834f25d738ef280e3",
+        "inputBytes": 10696,
+        "epubBytes": 3181,
+        "coverWidth": 16,
+        "coverHeight": 16,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "Primeiro capítulo",
+            "characters": 185,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "fixture-source.epub",
+      "status": "PASS",
+      "importMs": 16,
+      "prepareMs": 11,
+      "elapsedMs": 39,
+      "result": {
+        "title": "Conversão Foliore",
+        "language": "pt",
+        "inputSha256": "2d2a79b11af832e2dc7f0d41f7db76b0facfb1a2286e9b76d78778cbe3015ec4",
+        "convertedSha256": "2d2a79b11af832e2dc7f0d41f7db76b0facfb1a2286e9b76d78778cbe3015ec4",
+        "inputBytes": 2702,
+        "epubBytes": 2702,
+        "coverWidth": 16,
+        "coverHeight": 16,
+        "sections": [
+          {
+            "href": "one.xhtml",
+            "title": "Primeiro capítulo",
+            "characters": 70,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "two.xhtml",
+            "title": "Segundo capítulo",
+            "characters": 63,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "origin-species.epub",
+      "status": "PASS",
+      "importMs": 85,
+      "prepareMs": 278,
+      "elapsedMs": 660,
+      "result": {
+        "title": "On the Origin of Species By Means of Natural Selection / Or, the Preservation of Favoured Races in the Struggle for Life",
+        "language": "en",
+        "inputSha256": "f7fac5a8e8b9cf689b2fade216634c88246b9f4ed841148fad4d0cbaac6f61a3",
+        "convertedSha256": "f7fac5a8e8b9cf689b2fade216634c88246b9f4ed841148fad4d0cbaac6f61a3",
+        "inputBytes": 440248,
+        "epubBytes": 440248,
+        "coverWidth": 1400,
+        "coverHeight": 2100,
+        "sections": [
+          {
+            "href": "OEBPS/wrap0000.xhtml",
+            "title": "1",
+            "characters": 24,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-0.htm.xhtml",
+            "title": "On the Origin of Species",
+            "characters": 10747,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-1.htm.xhtml",
+            "title": "ON THE ORIGIN OF SPECIES.",
+            "characters": 10239,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-2.htm.xhtml",
+            "title": "CHAPTER I. VARIATION UNDER DOMESTICATION.",
+            "characters": 69729,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-3.htm.xhtml",
+            "title": "CHAPTER II. VARIATION UNDER NATURE.",
+            "characters": 29471,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-4.htm.xhtml",
+            "title": "CHAPTER III. STRUGGLE FOR EXISTENCE.",
+            "characters": 35724,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-5.htm.xhtml",
+            "title": "CHAPTER IV. NATURAL SELECTION.",
+            "characters": 94278,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-6.htm.xhtml",
+            "title": "CHAPTER V. LAWS OF VARIATION.",
+            "characters": 72607,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-7.htm.xhtml",
+            "title": "CHAPTER VI. DIFFICULTIES ON THEORY.",
+            "characters": 66516,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-8.htm.xhtml",
+            "title": "CHAPTER VII. INSTINCT.",
+            "characters": 69229,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-9.htm.xhtml",
+            "title": "CHAPTER VIII. HYBRIDISM.",
+            "characters": 61220,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-10.htm.xhtml",
+            "title": "CHAPTER IX. ON THE IMPERFECTION OF THE GEOLOGICAL RECORD.",
+            "characters": 58719,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-11.htm.xhtml",
+            "title": "CHAPTER X. ON THE GEOLOGICAL SUCCESSION OF ORGANIC BEINGS.",
+            "characters": 62184,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-12.htm.xhtml",
+            "title": "CHAPTER XI. GEOGRAPHICAL DISTRIBUTION.",
+            "characters": 67987,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-13.htm.xhtml",
+            "title": "CHAPTER XII. GEOGRAPHICAL DISTRIBUTION—continued.",
+            "characters": 51394,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-14.htm.xhtml",
+            "title": "CHAPTER XIII. MUTUAL AFFINITIES OF ORGANIC BEINGS: MORPHOLOGY: EMBRYOLOGY: RUDIMENTARY ORGANS.",
+            "characters": 87514,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-15.htm.xhtml",
+            "title": "CHAPTER XIV. RECAPITULATION AND CONCLUSION.",
+            "characters": 57848,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-16.htm.xhtml",
+            "title": "INDEX.",
+            "characters": 31030,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4430623232032184087_1228-h-17.htm.xhtml",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 18488,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "pride-epub2.epub",
+      "status": "PASS",
+      "importMs": 449,
+      "prepareMs": 1239,
+      "elapsedMs": 2423,
+      "result": {
+        "title": "Pride and Prejudice",
+        "language": "en",
+        "inputSha256": "0b4598f60646600cf86f437e0d8e7033a619ca723f0eae281a306929e4190619",
+        "convertedSha256": "0b4598f60646600cf86f437e0d8e7033a619ca723f0eae281a306929e4190619",
+        "inputBytes": 24846132,
+        "epubBytes": 24846132,
+        "coverWidth": 1400,
+        "coverHeight": 1973,
+        "sections": [
+          {
+            "href": "OEBPS/wrap0000.html",
+            "title": "1",
+            "characters": 27,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-0.htm.html",
+            "title": "PRIDE. and PREJUDICE",
+            "characters": 30571,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-1.htm.html",
+            "title": "I hope Mr. Bingley will like it. CHAPTER II.",
+            "characters": 46552,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-2.htm.html",
+            "title": "Covering a screen. CHAPTER VIII.",
+            "characters": 38761,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-3.htm.html",
+            "title": "Piling up the fire. CHAPTER XI.",
+            "characters": 42588,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-4.htm.html",
+            "title": "delighted to see their dear friend again. CHAPTER XVII.",
+            "characters": 63973,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-5.htm.html",
+            "title": "CHAPTER XX.",
+            "characters": 54214,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-6.htm.html",
+            "title": "“Will you come and see me.” CHAPTER XXVI.",
+            "characters": 50438,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-7.htm.html",
+            "title": "CHAPTER XXXI.",
+            "characters": 61056,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-8.htm.html",
+            "title": "CHAPTER XXXVI.",
+            "characters": 42346,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-9.htm.html",
+            "title": "“When Colonel Miller’s regiment went.” CHAPTER XLI.",
+            "characters": 57285,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-10.htm.html",
+            "title": "“Engaged by the river.” CHAPTER XLV.",
+            "characters": 54454,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-11.htm.html",
+            "title": "“The Post.” CHAPTER XLVIII.",
+            "characters": 53375,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-12.htm.html",
+            "title": "“Mr. Darcy with him.” CHAPTER LIII.",
+            "characters": 58214,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-13.htm.html",
+            "title": "“But now it comes out.” CHAPTER LVII.",
+            "characters": 54024,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-14.htm.html",
+            "title": "CHAPTER LXI.",
+            "characters": 28486,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "pride-illustrated.azw3",
+      "status": "PASS",
+      "importMs": 1648,
+      "prepareMs": 1328,
+      "elapsedMs": 5529,
+      "result": {
+        "title": "Pride and Prejudice",
+        "language": "en",
+        "inputSha256": "a32378c2b177ca5752cd6bcb015a7c7cb38cd5f2cad964bedff3266d6481aca0",
+        "convertedSha256": "e8588b7e2509b30ca82214dd6086aa403ce917970c1704a8562759a61cc6aed2",
+        "inputBytes": 25335116,
+        "epubBytes": 24734477,
+        "coverWidth": 1400,
+        "coverHeight": 1973,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "1",
+            "characters": 12,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00001.html",
+            "title": "2",
+            "characters": 973,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00002.html",
+            "title": "3",
+            "characters": 520,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00003.html",
+            "title": "PRIDE. and PREJUDICE",
+            "characters": 289,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00004.html",
+            "title": "5",
+            "characters": 7,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00005.html",
+            "title": "6",
+            "characters": 24940,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00006.html",
+            "title": "7",
+            "characters": 3047,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00007.html",
+            "title": "Chapter I.",
+            "characters": 4630,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00008.html",
+            "title": "I hope Mr. Bingley will like it. CHAPTER II.",
+            "characters": 4372,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00009.html",
+            "title": "He rode a black horse. CHAPTER III.",
+            "characters": 9728,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00010.html",
+            "title": "CHAPTER IV.",
+            "characters": 5944,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00011.html",
+            "title": "CHAPTER V.",
+            "characters": 5335,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00012.html",
+            "title": "CHAPTER VI.",
+            "characters": 13087,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00013.html",
+            "title": "A note for Miss Bennet. CHAPTER VII.",
+            "characters": 11273,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00014.html",
+            "title": "Covering a screen. CHAPTER VIII.",
+            "characters": 11028,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00015.html",
+            "title": "Mrs Bennet and her two youngest girls. CHAPTER IX.",
+            "characters": 9806,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00016.html",
+            "title": "CHAPTER X.",
+            "characters": 10931,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00017.html",
+            "title": "18",
+            "characters": 1646,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00018.html",
+            "title": "Piling up the fire. CHAPTER XI.",
+            "characters": 8967,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00019.html",
+            "title": "CHAPTER XII.",
+            "characters": 3946,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00020.html",
+            "title": "CHAPTER XIII",
+            "characters": 9306,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00021.html",
+            "title": "CHAPTER XIV",
+            "characters": 6526,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00022.html",
+            "title": "CHAPTER XV.",
+            "characters": 9789,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00023.html",
+            "title": "CHAPTER XVI.",
+            "characters": 19094,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00024.html",
+            "title": "delighted to see their dear friend again. CHAPTER XVII.",
+            "characters": 7336,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00025.html",
+            "title": "CHAPTER XVIII.",
+            "characters": 29249,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00026.html",
+            "title": "“to assure you in the most animated language.” CHAPTER XIX.",
+            "characters": 10721,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00027.html",
+            "title": "CHAPTER XX.",
+            "characters": 9229,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00028.html",
+            "title": "CHAPTER XXI.",
+            "characters": 11357,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00029.html",
+            "title": "CHAPTER XXII.",
+            "characters": 2808,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00030.html",
+            "title": "31",
+            "characters": 7285,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00031.html",
+            "title": "“Protested he must be entirely mistaken.” CHAPTER XXIII.",
+            "characters": 9423,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00032.html",
+            "title": "CHAPTER XXIV.",
+            "characters": 10840,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00033.html",
+            "title": "CHAPTER XXV.",
+            "characters": 8690,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00034.html",
+            "title": "“Will you come and see me.” CHAPTER XXVI.",
+            "characters": 12808,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00035.html",
+            "title": "“On the Stairs.” CHAPTERXXVII.",
+            "characters": 7241,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00036.html",
+            "title": "“At the door.” CHAPTERXXVIII.",
+            "characters": 8350,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00037.html",
+            "title": "“Lady Catherine, said she, you have given me a treasure.” CHAPTER XXIX.",
+            "characters": 13762,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00038.html",
+            "title": "CHAPTER XXX.",
+            "characters": 7198,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00039.html",
+            "title": "CHAPTER XXXI.",
+            "characters": 8759,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00040.html",
+            "title": "CHAPTER XXXII.",
+            "characters": 8538,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00041.html",
+            "title": "“On looking up.” CHAPTER XXXIII.",
+            "characters": 10415,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00042.html",
+            "title": "CHAPTER XXXIV.",
+            "characters": 12014,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00043.html",
+            "title": "“Hearing herself called.” CHAPTER XXXV.",
+            "characters": 17021,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00044.html",
+            "title": "CHAPTER XXXVI.",
+            "characters": 4148,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00045.html",
+            "title": "46",
+            "characters": 7722,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00046.html",
+            "title": "“His parting obeisance.” CHAPTER XXXVII.",
+            "characters": 7884,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00047.html",
+            "title": "“The elevation of his feelings.” CHAPTER XXXVIII.",
+            "characters": 6065,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00048.html",
+            "title": "“How nicely we are crammed in.” CHAPTER XXXIX.",
+            "characters": 8825,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00049.html",
+            "title": "CHAPTER XL.",
+            "characters": 9262,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00050.html",
+            "title": "“When Colonel Miller’s regiment went.” CHAPTER XLI.",
+            "characters": 13126,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00051.html",
+            "title": "“The arrival of the Gardiners.” CHAPTER XLII.",
+            "characters": 10688,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00052.html",
+            "title": "“Conjecturing as to the date.” CHAPTER XLIII.",
+            "characters": 27546,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00053.html",
+            "title": "CHAPTER XLIV.",
+            "characters": 13462,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00054.html",
+            "title": "“Engaged by the river.” CHAPTER XLV.",
+            "characters": 10143,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00055.html",
+            "title": "Chapter XLVI.",
+            "characters": 16973,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00056.html",
+            "title": "“The first pleasing earnest of their welcome.” CHAPTER XLVII.",
+            "characters": 18264,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00057.html",
+            "title": "58",
+            "characters": 4123,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00058.html",
+            "title": "“The Post.” CHAPTER XLVIII.",
+            "characters": 12681,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00059.html",
+            "title": "CHAPTER XLIX.",
+            "characters": 12346,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00060.html",
+            "title": "“The spiteful old ladies.” CHAPTER L.",
+            "characters": 12536,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00061.html",
+            "title": "“With an affectionate smile.” CHAPTER LI.",
+            "characters": 11281,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00062.html",
+            "title": "“I am sure she did not listen.” CHAPTER LII.",
+            "characters": 16568,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00063.html",
+            "title": "“Mr. Darcy with him.” CHAPTER LIII.",
+            "characters": 16125,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00064.html",
+            "title": "“Jane happened to look round.” CHAPTER LIV.",
+            "characters": 8929,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00065.html",
+            "title": "“Lizzy, my dear, I want to speak to you.” CHAPTER LV.",
+            "characters": 13054,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00066.html",
+            "title": "CHAPTER LVI.",
+            "characters": 15395,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00067.html",
+            "title": "“But now it comes out.” CHAPTER LVII.",
+            "characters": 9424,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00068.html",
+            "title": "“The efforts of his aunt.” CHAPTER LVIII.",
+            "characters": 13694,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00069.html",
+            "title": "“Unable to utter a syllable.” CHAPTER LIX.",
+            "characters": 13594,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00070.html",
+            "title": "“The obsequious civility.” CHAPTER LX.",
+            "characters": 5889,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00071.html",
+            "title": "72",
+            "characters": 2850,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00072.html",
+            "title": "CHAPTER LXI.",
+            "characters": 7185,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00073.html",
+            "title": "74",
+            "characters": 1363,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00074.html",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 17092,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00075.html",
+            "title": "76",
+            "characters": 32,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00076.html",
+            "title": "77",
+            "characters": 1917,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "pride-illustrated.epub",
+      "status": "PASS",
+      "importMs": 486,
+      "prepareMs": 2208,
+      "elapsedMs": 3409,
+      "result": {
+        "title": "Pride and Prejudice",
+        "language": "en",
+        "inputSha256": "bbd82efa5e3e8d8a302a39c5e20d7d6d250804c7003c63378946d85f1176ccb6",
+        "convertedSha256": "bbd82efa5e3e8d8a302a39c5e20d7d6d250804c7003c63378946d85f1176ccb6",
+        "inputBytes": 24835578,
+        "epubBytes": 24835578,
+        "coverWidth": 1400,
+        "coverHeight": 1973,
+        "sections": [
+          {
+            "href": "OEBPS/wrap0000.xhtml",
+            "title": "1",
+            "characters": 24,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-0.htm.xhtml",
+            "title": "PRIDE. and PREJUDICE",
+            "characters": 115884,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-1.htm.xhtml",
+            "title": "Piling up the fire. CHAPTER XI.",
+            "characters": 129950,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-2.htm.xhtml",
+            "title": "“Protested he must be entirely mistaken.” CHAPTER XXIII.",
+            "characters": 146466,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-3.htm.xhtml",
+            "title": "“His parting obeisance.” CHAPTER XXXVII.",
+            "characters": 149938,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-4.htm.xhtml",
+            "title": "“The Post.” CHAPTER XLVIII.",
+            "characters": 165613,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-5.htm.xhtml",
+            "title": "CHAPTER LXI.",
+            "characters": 10033,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/8021792140027773854_1342-h-6.htm.xhtml",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 18453,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/4637764771157681639_cover.jpg.id-8552228903522306944.wrap-0.html.xhtml",
+            "title": "9",
+            "characters": 32,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "qa-fixed-layout.epub",
+      "status": "PASS",
+      "importMs": 14,
+      "prepareMs": 8,
+      "elapsedMs": 32,
+      "result": {
+        "title": "QA: layout fixo",
+        "language": "pt-BR",
+        "inputSha256": "6da535fc20dfb6c3f222284dbff5070ef323c09663e5d75a88cd126a75854a67",
+        "convertedSha256": "6da535fc20dfb6c3f222284dbff5070ef323c09663e5d75a88cd126a75854a67",
+        "inputBytes": 2517,
+        "epubBytes": 2517,
+        "coverWidth": 0,
+        "coverHeight": 0,
+        "sections": [
+          {
+            "href": "OPS/chapter0.xhtml",
+            "title": "Capítulo 1",
+            "characters": 56,
+            "replacementCharacters": 0,
+            "fixed": true
+          },
+          {
+            "href": "OPS/chapter1.xhtml",
+            "title": "Capítulo 2",
+            "characters": 49,
+            "replacementCharacters": 0,
+            "fixed": true
+          }
+        ]
+      }
+    },
+    {
+      "file": "qa-long-chapter.epub",
+      "status": "PASS",
+      "importMs": 16,
+      "prepareMs": 12,
+      "elapsedMs": 180,
+      "result": {
+        "title": "QA: capítulo longo",
+        "language": "pt-BR",
+        "inputSha256": "1f8ccbe951634b00cf6faed57d4590134667885b37b057711e6cfe9bf0c04077",
+        "convertedSha256": "1f8ccbe951634b00cf6faed57d4590134667885b37b057711e6cfe9bf0c04077",
+        "inputBytes": 12772,
+        "epubBytes": 12772,
+        "coverWidth": 0,
+        "coverHeight": 0,
+        "sections": [
+          {
+            "href": "OPS/chapter0.xhtml",
+            "title": "Capítulo 1",
+            "characters": 947904,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "qa-obfuscated-font.epub",
+      "status": "PASS",
+      "importMs": 18,
+      "prepareMs": 26,
+      "elapsedMs": 62,
+      "result": {
+        "title": "QA: fonte incorporada",
+        "language": "pt-BR",
+        "inputSha256": "e3012d7e4944d616154f2c81c7cfd8e74ab804753cfa1e26b1fc1493d5dccb73",
+        "convertedSha256": "e3012d7e4944d616154f2c81c7cfd8e74ab804753cfa1e26b1fc1493d5dccb73",
+        "inputBytes": 215791,
+        "epubBytes": 215791,
+        "coverWidth": 0,
+        "coverHeight": 0,
+        "sections": [
+          {
+            "href": "OPS/chapter0.xhtml",
+            "title": "Capítulo 1",
+            "characters": 25382,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "qa-rtl.epub",
+      "status": "PASS",
+      "importMs": 12,
+      "prepareMs": 8,
+      "elapsedMs": 38,
+      "result": {
+        "title": "QA: leitura RTL",
+        "language": "ar",
+        "inputSha256": "c7edb8709173faa0176dc3fbb6504ead39e5d8914b067684e9d0f951bdec6bc4",
+        "convertedSha256": "c7edb8709173faa0176dc3fbb6504ead39e5d8914b067684e9d0f951bdec6bc4",
+        "inputBytes": 2766,
+        "epubBytes": 2766,
+        "coverWidth": 0,
+        "coverHeight": 0,
+        "sections": [
+          {
+            "href": "OPS/chapter0.xhtml",
+            "title": "Capítulo 1",
+            "characters": 18534,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OPS/chapter1.xhtml",
+            "title": "Capítulo 2",
+            "characters": 27,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "qa-wide-layout.epub",
+      "status": "PASS",
+      "importMs": 13,
+      "prepareMs": 8,
+      "elapsedMs": 46,
+      "result": {
+        "title": "QA: imagens e tabelas",
+        "language": "pt-BR",
+        "inputSha256": "d4cd9d05b738af4bc15f33d763c8357747d065e4d14760a0c080c6796821701c",
+        "convertedSha256": "d4cd9d05b738af4bc15f33d763c8357747d065e4d14760a0c080c6796821701c",
+        "inputBytes": 4573,
+        "epubBytes": 4573,
+        "coverWidth": 0,
+        "coverHeight": 0,
+        "sections": [
+          {
+            "href": "OPS/chapter0.xhtml",
+            "title": "Capítulo 1",
+            "characters": 25403,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OPS/chapter1.xhtml",
+            "title": "Capítulo 2",
+            "characters": 37464,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "reader-features.epub",
+      "status": "PASS",
+      "importMs": 13,
+      "prepareMs": 9,
+      "elapsedMs": 42,
+      "result": {
+        "title": "Entre páginas",
+        "language": "pt-BR",
+        "inputSha256": "683b9a29461116fdffc13871e5210a939d2d49fdc7478e03dea080c88e42bc2b",
+        "convertedSha256": "683b9a29461116fdffc13871e5210a939d2d49fdc7478e03dea080c88e42bc2b",
+        "inputBytes": 4953,
+        "epubBytes": 4953,
+        "coverWidth": 0,
+        "coverHeight": 0,
+        "sections": [
+          {
+            "href": "OPS/chapter1.xhtml",
+            "title": "O começo de uma história",
+            "characters": 14058,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OPS/chapter2.xhtml",
+            "title": "Um caminho entre palavras",
+            "characters": 14059,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OPS/chapter3.xhtml",
+            "title": "O próximo capítulo",
+            "characters": 14052,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "three-kingdoms.azw3",
+      "status": "PASS",
+      "importMs": 376,
+      "prepareMs": 152,
+      "elapsedMs": 1073,
+      "result": {
+        "title": "三國志演義",
+        "language": "zh",
+        "inputSha256": "5632a90a5ffa1640799a2aac755414a630f6d45693f15a841271ec432e01cc97",
+        "convertedSha256": "96b40ea4499deabc9890adeaa3c08892868e22be781dee36a557022d3dbe8ee0",
+        "inputBytes": 1823582,
+        "epubBytes": 939879,
+        "coverWidth": 1399,
+        "coverHeight": 2100,
+        "sections": [
+          {
+            "href": "OEBPS/part00000.html",
+            "title": "1",
+            "characters": 12,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00001.html",
+            "title": "2",
+            "characters": 75537,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00002.html",
+            "title": "3",
+            "characters": 74887,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00003.html",
+            "title": "4",
+            "characters": 74296,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00004.html",
+            "title": "5",
+            "characters": 74730,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00005.html",
+            "title": "6",
+            "characters": 75369,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00006.html",
+            "title": "7",
+            "characters": 75927,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00007.html",
+            "title": "8",
+            "characters": 76051,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00008.html",
+            "title": "9",
+            "characters": 74570,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00009.html",
+            "title": "10",
+            "characters": 21668,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00010.html",
+            "title": "11",
+            "characters": 1357,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/part00011.html",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 17095,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    },
+    {
+      "file": "three-kingdoms.epub",
+      "status": "PASS",
+      "importMs": 87,
+      "prepareMs": 139,
+      "elapsedMs": 482,
+      "result": {
+        "title": "三國志演義",
+        "language": "zh",
+        "inputSha256": "18fd6f679da24823391b3a1c76c5965fe8d810d1884fa8231d42ee09aecc1b0e",
+        "convertedSha256": "18fd6f679da24823391b3a1c76c5965fe8d810d1884fa8231d42ee09aecc1b0e",
+        "inputBytes": 928554,
+        "epubBytes": 928554,
+        "coverWidth": 1400,
+        "coverHeight": 2100,
+        "sections": [
+          {
+            "href": "OEBPS/wrap0000.xhtml",
+            "title": "1",
+            "characters": 24,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-0.txt.xhtml",
+            "title": "2",
+            "characters": 75537,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-1.txt.xhtml",
+            "title": "3",
+            "characters": 74887,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-2.txt.xhtml",
+            "title": "4",
+            "characters": 74296,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-3.txt.xhtml",
+            "title": "5",
+            "characters": 74730,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-4.txt.xhtml",
+            "title": "6",
+            "characters": 75369,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-5.txt.xhtml",
+            "title": "7",
+            "characters": 75927,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-6.txt.xhtml",
+            "title": "8",
+            "characters": 76051,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-7.txt.xhtml",
+            "title": "9",
+            "characters": 74570,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-8.txt.xhtml",
+            "title": "10",
+            "characters": 21668,
+            "replacementCharacters": 0,
+            "fixed": false
+          },
+          {
+            "href": "OEBPS/6805506202936811659_23950-0-9.txt.xhtml",
+            "title": "THE FULL PROJECT GUTENBERG™ LICENSE",
+            "characters": 18447,
+            "replacementCharacters": 0,
+            "fixed": false
+          }
+        ]
+      }
+    }
+  ]
+}

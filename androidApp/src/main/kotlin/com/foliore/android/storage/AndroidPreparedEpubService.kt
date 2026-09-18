@@ -159,12 +159,13 @@ class AndroidPreparedEpubService(
                 val coverEntryName = if (coverFile != null) defaultCoverPath(opfEntryName).removeSuffix(".jpg") + "-${java.util.UUID.randomUUID()}.jpg"
                     else previousCoverEntry ?: defaultCoverPath(opfEntryName)
                 val coverHref = relativeHref(opfEntryName, coverEntryName)
-                val updatedOpf = updateOpf(
+                val updatedOpf = EpubMetadataEditor.update(
                     opfXml = opfXml,
                     metadata = metadata,
                     coverItemId = COVER_ITEM_ID,
                     coverHref = coverHref,
                     needsCoverItem = parsed.coverPath == null && coverFile != null,
+                    modifiedAt = kotlinx.datetime.Instant.fromEpochSeconds(Clock.System.now().epochSeconds).toString(),
                 )
                 val coverBytes = coverFile?.inputStream()?.use { it.readBounded(StorageLimits.ENTRY_BYTES) }
                 var wroteCover = false
@@ -220,119 +221,6 @@ class AndroidPreparedEpubService(
         putNextEntry(ZipEntry(name).apply { method = ZipEntry.DEFLATED })
         write(data)
         closeEntry()
-    }
-
-    private fun updateOpf(
-        opfXml: String,
-        metadata: BookMetadata,
-        coverItemId: String,
-        coverHref: String,
-        needsCoverItem: Boolean,
-    ): String {
-        var updated = opfXml.ensureDcNamespace()
-        updated = updated.upsertSingleDcTag("title", metadata.title)
-        updated = updated.replaceRepeatedDcTag("creator", metadata.authors.ifEmpty { listOf(metadata.title) })
-        updated = updated.upsertSingleDcTag("language", metadata.language ?: "und")
-        updated = updated.upsertOptionalDcTag("publisher", metadata.publisher)
-        updated = updated.upsertOptionalDcTag("date", metadata.publishedDate)
-        updated = updated.upsertOptionalDcTag("description", metadata.description)
-        updated = updated.upsertModifiedMeta()
-
-        if (needsCoverItem) {
-            updated = updated.addCoverManifestItem(coverItemId, coverHref)
-            updated = updated.addLegacyCoverMeta(coverItemId)
-        }
-
-        return updated
-    }
-
-    private fun String.ensureDcNamespace(): String {
-        if (contains("xmlns:dc=")) return this
-        return replaceFirst(
-            Regex("<package\\b", RegexOption.IGNORE_CASE),
-            "<package xmlns:dc=\"http://purl.org/dc/elements/1.1/\"",
-        )
-    }
-
-    private fun String.upsertSingleDcTag(localName: String, value: String): String {
-        val escaped = value.escapeXml()
-        val regex = Regex(
-            "<(?:dc:)?$localName\\b[^>]*>.*?</(?:dc:)?$localName>",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
-        )
-        val replacement = "<dc:$localName>$escaped</dc:$localName>"
-        return if (regex.containsMatchIn(this)) {
-            replaceFirst(regex, Regex.escapeReplacement(replacement))
-        } else {
-            insertIntoMetadata(replacement)
-        }
-    }
-
-    private fun String.upsertOptionalDcTag(localName: String, value: String?): String {
-        val regex = Regex(
-            "<(?:dc:)?$localName\\b[^>]*>.*?</(?:dc:)?$localName>",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
-        )
-        val clean = value?.trim()
-        if (clean.isNullOrEmpty()) return replace(regex, "")
-        return upsertSingleDcTag(localName, clean)
-    }
-
-    private fun String.replaceRepeatedDcTag(localName: String, values: List<String>): String {
-        val regex = Regex(
-            "<(?:dc:)?$localName\\b[^>]*>.*?</(?:dc:)?$localName>",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
-        )
-        val replacements = values
-            .map { "<dc:$localName>${it.escapeXml()}</dc:$localName>" }
-            .joinToString("\n")
-        val withoutExisting = replace(regex, "")
-        return withoutExisting.insertIntoMetadata(replacements)
-    }
-
-    private fun String.upsertModifiedMeta(): String {
-        val now = Clock.System.now().toString()
-        val regex = Regex(
-            "<meta\\s+property=[\"']dcterms:modified[\"'][^>]*>.*?</meta>",
-            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
-        )
-        val replacement = "<meta property=\"dcterms:modified\">$now</meta>"
-        return if (regex.containsMatchIn(this)) {
-            replaceFirst(regex, Regex.escapeReplacement(replacement))
-        } else {
-            insertIntoMetadata(replacement)
-        }
-    }
-
-    private fun String.addCoverManifestItem(itemId: String, href: String): String {
-        if (contains("id=\"$itemId\"") || contains("id='$itemId'")) return this
-        val item = "<item id=\"$itemId\" href=\"${href.escapeXml()}\" media-type=\"image/jpeg\" properties=\"cover-image\"/>"
-        return replaceFirst(
-            Regex("</manifest>", RegexOption.IGNORE_CASE),
-            Regex.escapeReplacement("$item\n</manifest>"),
-        )
-    }
-
-    private fun String.addLegacyCoverMeta(itemId: String): String {
-        if (contains("name=\"cover\"", ignoreCase = true) || contains("name='cover'", ignoreCase = true)) {
-            return this
-        }
-        return insertIntoMetadata("<meta name=\"cover\" content=\"$itemId\"/>")
-    }
-
-    private fun String.insertIntoMetadata(fragment: String): String {
-        return replaceFirst(
-            Regex("</metadata>", RegexOption.IGNORE_CASE),
-            Regex.escapeReplacement("$fragment\n</metadata>"),
-        )
-    }
-
-    private fun String.escapeXml(): String {
-        return replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&apos;")
     }
 
     private fun defaultCoverPath(opfPath: String): String {

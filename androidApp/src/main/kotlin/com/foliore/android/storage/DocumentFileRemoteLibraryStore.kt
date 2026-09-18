@@ -135,7 +135,7 @@ internal class DocumentFileRemoteLibraryStore(
                 if (!existing.delete()) error("Cannot replace $name")
             }
         documentCache.invalidate(this)
-        val created = createFile(mimeType, name) ?: error("Cannot create $name")
+        val created = (createFile(mimeType, name) ?: error("Cannot create $name")).withExactSyncName(name)
         documentCache.invalidate(this)
         return created
     }
@@ -262,6 +262,15 @@ internal class DocumentFileRemoteLibraryStore(
             )
         }
     }
+}
+
+/** SAF providers may append a MIME extension, including .txt to JSON-named commit markers. */
+internal fun DocumentFile.withExactSyncName(expected: String): DocumentFile {
+    if (name != expected && (!renameTo(expected) || name != expected)) {
+        delete()
+        error("Sync provider cannot preserve file name: $expected")
+    }
+    return this
 }
 
 internal fun String?.matchesDocumentName(expected: String): Boolean {

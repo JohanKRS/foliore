@@ -1,0 +1,126 @@
+{
+  "device": "Android 16 API 36 x86_64; debug; 2 GB RAM; 2 virtual CPU cores",
+  "opening": {
+    "book": "Pride and Prejudice, illustrated EPUB 3, 24,835,578 bytes",
+    "firstProcessColdMs": 1086,
+    "warmCount": 19,
+    "warmMedianMs": 431,
+    "warmP95Ms": 560,
+    "warmRangeMs": [
+      390,
+      630
+    ],
+    "includes": "ADB broadcast and WebView readiness observation; prepared EPUB already exists"
+  },
+  "memory": {
+    "baseline": {
+      "TOTAL PSS": 157436,
+      "TOTAL RSS": 262084,
+      "Views": 71,
+      "AppContexts": 6,
+      "Activities": 1,
+      "WebViews": 0
+    },
+    "opens": [
+      1086,
+      630,
+      560,
+      433,
+      486,
+      431,
+      409,
+      462,
+      472,
+      402,
+      411,
+      429,
+      476,
+      450,
+      392,
+      443,
+      430,
+      396,
+      390,
+      428
+    ],
+    "openFirst": {
+      "TOTAL PSS": 219085,
+      "TOTAL RSS": 362980,
+      "Views": 82,
+      "AppContexts": 8,
+      "Activities": 2,
+      "WebViews": 1
+    },
+    "after1": {
+      "TOTAL PSS": 215562,
+      "TOTAL RSS": 360632,
+      "Views": 82,
+      "AppContexts": 8,
+      "Activities": 2,
+      "WebViews": 1
+    },
+    "after5": {
+      "TOTAL PSS": 226724,
+      "TOTAL RSS": 372796,
+      "Views": 93,
+      "AppContexts": 10,
+      "Activities": 3,
+      "WebViews": 2
+    },
+    "after10": {
+      "TOTAL PSS": 223291,
+      "TOTAL RSS": 370128,
+      "Views": 82,
+      "AppContexts": 8,
+      "Activities": 2,
+      "WebViews": 1
+    },
+    "after20": {
+      "TOTAL PSS": 230550,
+      "TOTAL RSS": 377712,
+      "Views": 93,
+      "AppContexts": 10,
+      "Activities": 3,
+      "WebViews": 2
+    },
+    "idle": {
+      "TOTAL PSS": 230771,
+      "TOTAL RSS": 364332,
+      "Views": 82,
+      "AppContexts": 8,
+      "Activities": 2,
+      "WebViews": 1
+    }
+  },
+  "postGcObjects": {
+    "activities": 1,
+    "webViews": 0
+  },
+  "pages": {
+    "book": "QA: capítulo longo",
+    "chapterCharacters": 947904,
+    "turnsPerRun": 50,
+    "framesPerRun": 100,
+    "softwareGpu": {
+      "medianMs": 48,
+      "p95Ms": 65,
+      "jankyFramesBefore": 75,
+      "jankyFramesAfterWindowEffect": 81
+    },
+    "hostGpu": {
+      "model": "NVIDIA GeForce RTX 4070",
+      "medianMs": 16,
+      "p95Ms": 32,
+      "jankyFrames": 54,
+      "legacyJankyFrames": 12,
+      "missedVsync": 0
+    },
+    "warning": "Debug emulation; sampling and graphics configuration strongly affect these numbers. No device/release smoothness approval is inferred."
+  },
+  "cpuCapture": {
+    "samples": 2293,
+    "lost": 0,
+    "seconds": 14.916,
+    "scope": "app process; WebView renderer is a separate process"
+  }
+}

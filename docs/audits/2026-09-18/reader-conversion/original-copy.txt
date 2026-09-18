@@ -1,0 +1,1 @@
+PASS AZW3 exported through Android document picker is byte-identical to the downloaded source.

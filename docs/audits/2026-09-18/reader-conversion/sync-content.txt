@@ -1,0 +1,1 @@
+PASS: 12 IDs, titles and EPUB hashes; all six covers byte-identical across installations.

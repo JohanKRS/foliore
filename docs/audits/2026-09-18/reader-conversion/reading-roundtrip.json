@@ -1,0 +1,33 @@
+{
+  "positions": [
+    {
+      "bookId": "87742c43-1e4b-40e8-9988-1491fe04d550",
+      "contentHash": "683b9a29461116fdffc13871e5210a939d2d49fdc7478e03dea080c88e42bc2b",
+      "locator": {
+        "href": "OPS/chapter2.xhtml",
+        "progression": 0.391304347826087,
+        "textOffset": 5268,
+        "quote": "caminhos e as palavras nos convidam a continuar. Este texto foi criado para conferir a leitura, os a"
+      },
+      "clock": 1789705791479,
+      "deviceId": "android-cc323ab1-ee53-4778-81fc-fb247905854d"
+    }
+  ],
+  "bookmarks": [
+    {
+      "id": "942ef2b7-03f3-4606-b9b3-a33243ca9056",
+      "bookId": "87742c43-1e4b-40e8-9988-1491fe04d550",
+      "contentHash": "683b9a29461116fdffc13871e5210a939d2d49fdc7478e03dea080c88e42bc2b",
+      "locator": {
+        "href": "OPS/chapter2.xhtml",
+        "progression": 0.391304347826087,
+        "textOffset": 5268,
+        "quote": "caminhos e as palavras nos convidam a continuar. Este texto foi criado para conferir a leitura, os a"
+      },
+      "title": "Um caminho entre palavras",
+      "clock": 1789705811689,
+      "deviceId": "android-cc323ab1-ee53-4778-81fc-fb247905854d",
+      "deleted": true
+    }
+  ]
+}

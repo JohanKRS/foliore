@@ -74,7 +74,7 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
             WindowCompat.getInsetsController(activity.window, activity.window.decorView).show(WindowInsetsCompat.Type.systemBars())
         }
     }
-    SideEffect {
+    LaunchedEffect(activity, prefs.keepScreenOn, prefs.brightness, chrome, dark) {
         if (prefs.keepScreenOn) activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) else activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         activity.window.attributes = activity.window.attributes.apply { screenBrightness = prefs.brightness }
         WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
@@ -92,8 +92,8 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
     // effects run, especially when an Activity is recreated with an already loaded ViewModel.
     val activeController = controller
     DisposableEffect(activeController) { onDispose { activeController?.dispose() } }
-    LaunchedEffect(controller, state.navigation?.token) { state.navigation?.let { controller?.navigate(it.copy(locator = state.locator ?: it.locator), prefs, highlight) } }
-    LaunchedEffect(controller, prefs) { controller?.updateSettings(prefs, state.locator) }
+    LaunchedEffect(controller, state.navigation?.token) { state.navigation?.let { controller?.navigate(it, prefs, highlight) } }
+    LaunchedEffect(controller, prefs) { controller?.updateSettings(prefs, state.navigation?.locator) }
 
     FolioreTheme(themeMode = if (dark) com.foliore.android.ui.theme.ThemeMode.DARK else com.foliore.android.ui.theme.ThemeMode.LIGHT) {
         Surface(color = paper, contentColor = MaterialTheme.colorScheme.onBackground, modifier = Modifier.fillMaxSize()) {
