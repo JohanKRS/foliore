@@ -11,6 +11,8 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
+enum class KindleEmailProvider { GMAIL, SMTP }
+
 data class KindleEmailSettings(
     val kindleEmail: String?,
     val senderEmail: String?,
@@ -18,8 +20,12 @@ data class KindleEmailSettings(
     val smtpPort: Int,
     val smtpUsername: String?,
     val hasSmtpPassword: Boolean,
+    val gmailAccount: String? = null,
+    val provider: KindleEmailProvider = KindleEmailProvider.SMTP,
 ) {
     val isReady: Boolean
+        get() = if (provider == KindleEmailProvider.GMAIL) kindleEmail != null && gmailAccount != null else isSmtpReady
+    val isSmtpReady: Boolean
         get() = kindleEmail != null &&
             senderEmail != null &&
             smtpHost.isNotBlank() &&
@@ -48,7 +54,22 @@ class KindleEmailPreferenceRepository(context: Context) {
             smtpPort = preferences.getInt(KEY_SMTP_PORT, DEFAULT_SMTP_PORT),
             smtpUsername = preferences.getString(KEY_SMTP_USERNAME, null)?.trim()?.takeIf { it.isNotEmpty() },
             hasSmtpPassword = hasSmtpPassword(),
+            gmailAccount = readEmail(KEY_GMAIL_ACCOUNT),
+            provider = preferences.getString(KEY_PROVIDER, null)?.let { value ->
+                KindleEmailProvider.entries.firstOrNull { it.name == value }
+            } ?: if (hasSmtpPassword()) KindleEmailProvider.SMTP else KindleEmailProvider.GMAIL,
         )
+
+    fun connectGmail(account: String): Boolean {
+        if (!Patterns.EMAIL_ADDRESS.matcher(account).matches()) return false
+        preferences.edit().putString(KEY_GMAIL_ACCOUNT, account).putString(KEY_PROVIDER, KindleEmailProvider.GMAIL.name).apply()
+        return true
+    }
+
+    fun disconnectGmail() {
+        // Forget this connection only. Google's revokeAccess also revokes Drive scopes.
+        preferences.edit().remove(KEY_GMAIL_ACCOUNT).apply()
+    }
 
     fun saveKindleEmail(email: String): Boolean {
         val clean = email.trim()
@@ -75,6 +96,7 @@ class KindleEmailPreferenceRepository(context: Context) {
         if (!keepExistingPassword && cleanPassword.isBlank()) return false
 
         val editor = preferences.edit()
+            .putString(KEY_PROVIDER, KindleEmailProvider.SMTP.name)
             .putString(KEY_SENDER_EMAIL, cleanSender)
             .putString(KEY_SMTP_HOST, cleanHost)
             .putInt(KEY_SMTP_PORT, smtpPort)
@@ -190,6 +212,8 @@ class KindleEmailPreferenceRepository(context: Context) {
     }
 
     private companion object {
+        const val KEY_GMAIL_ACCOUNT = "gmail_account"
+        const val KEY_PROVIDER = "email_provider"
         const val PREFERENCES_NAME = "foliore_kindle_email_preferences"
         const val KEY_KINDLE_EMAIL = "kindle_email"
         const val KEY_SENDER_EMAIL = "sender_email"

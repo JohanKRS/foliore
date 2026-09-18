@@ -34,6 +34,10 @@ import com.foliore.android.storage.PendingEpubImport
 import com.foliore.android.storage.PreparedEpubResult
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.GoogleDriveBackupStatsResult
+import com.foliore.android.storage.GmailAuthorization
+import com.foliore.android.storage.GmailAuthFailure
+import com.foliore.android.storage.GmailSendResult
+import com.foliore.android.storage.KindleEmailProvider
 import com.foliore.android.storage.GoogleDriveAuthorizationFailure
 import com.foliore.android.storage.GoogleDriveConnectionResult
 import com.foliore.android.storage.GoogleDriveRemoteLibraryRecovery
@@ -66,6 +70,7 @@ class LibraryViewModel(
     private val aiPreferenceRepository: AiPreferenceRepository,
     private val aiCoverPromptRepository: AiCoverPromptRepository,
     private val kindleEmailPreferenceRepository: KindleEmailPreferenceRepository,
+    private val gmailAuthService: com.foliore.android.storage.GmailAuthService,
     private val libraryDisplayPreferenceRepository: LibraryDisplayPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
@@ -383,6 +388,98 @@ class LibraryViewModel(
         aiPreferenceRepository.setProviderMode(AiProviderMode.DISABLED)
         _state.update { it.copy(aiProviderMode = AiProviderMode.DISABLED, hasOpenAiApiKey = false) }
         _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
+    }
+
+    private class GmailOperation(val account: String, val bookId: String? = null, val recipient: String? = null)
+    private var pendingGmailOperation: GmailOperation? = null
+
+    fun connectGmail(account: String, onResolutionRequired: (PendingIntent) -> Unit) {
+        if (_state.value.isGmailConnecting || _state.value.hasActiveProgress) return
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(account).matches()) return
+        val operation = GmailOperation(account)
+        pendingGmailOperation = operation
+        _state.update { it.copy(isGmailConnecting = true) }
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { gmailAuthService.authorize(account) }
+            handleGmailAuthorization(operation, result, onResolutionRequired)
+        }
+    }
+
+    fun completeGmailAuthorization(data: Intent?, onResolutionRequired: (PendingIntent) -> Unit) {
+        val operation = pendingGmailOperation ?: return // Never replay a send after process death.
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { gmailAuthService.complete(data) }
+            handleGmailAuthorization(operation, result, onResolutionRequired)
+        }
+    }
+
+    fun gmailAuthorizationUnavailable() {
+        pendingGmailOperation = null
+        finishGmailOperation()
+        _notice.value = LibraryNotice(LibraryNoticeType.GMAIL_UNAVAILABLE)
+    }
+
+    fun disconnectGmail() {
+        if (_state.value.isGmailConnecting || _state.value.hasActiveProgress) return
+        pendingGmailOperation = null
+        kindleEmailPreferenceRepository.disconnectGmail()
+        _state.update { it.copy(kindleEmailSettings = kindleEmailPreferenceRepository.settings) }
+        _notice.value = LibraryNotice(LibraryNoticeType.GMAIL_DISCONNECTED)
+    }
+
+    private fun finishGmailOperation() {
+        _state.update { it.copy(isGmailConnecting = false,
+            importProgress = it.importProgress.takeUnless { progress -> progress?.phase == SyncProgressPhase.SENDING_TO_KINDLE },
+            kindleEmailSettings = kindleEmailPreferenceRepository.settings) }
+    }
+
+    private suspend fun handleGmailAuthorization(operation: GmailOperation, result: GmailAuthorization, onResolutionRequired: (PendingIntent) -> Unit) {
+        if (pendingGmailOperation !== operation) return
+        when (result) {
+            is GmailAuthorization.NeedsResolution -> {
+                runCatching { onResolutionRequired(result.pendingIntent) }.onFailure { gmailAuthorizationUnavailable() }
+            }
+            is GmailAuthorization.Failed -> {
+                pendingGmailOperation = null
+                finishGmailOperation()
+                val notice = when (result.reason) {
+                    GmailAuthFailure.CANCELLED -> null
+                    GmailAuthFailure.PERMISSION_REQUIRED -> LibraryNoticeType.GMAIL_AUTH_REQUIRED
+                    GmailAuthFailure.CONFIGURATION_REQUIRED -> LibraryNoticeType.GMAIL_CONFIGURATION_REQUIRED
+                    GmailAuthFailure.UNAVAILABLE -> LibraryNoticeType.GMAIL_UNAVAILABLE
+                }
+                if (notice != null) _notice.value = LibraryNotice(notice)
+            }
+            is GmailAuthorization.Authorized -> {
+                pendingGmailOperation = null // Consume the operation before any external side effect.
+                if (operation.bookId == null) {
+                    val saved = kindleEmailPreferenceRepository.connectGmail(operation.account)
+                    finishGmailOperation()
+                    _notice.value = LibraryNotice(if (saved) LibraryNoticeType.GMAIL_CONNECTED else LibraryNoticeType.GMAIL_UNAVAILABLE)
+                } else {
+                    val settings = kindleEmailPreferenceRepository.settings
+                    if (settings.provider != KindleEmailProvider.GMAIL || settings.gmailAccount != operation.account || settings.kindleEmail != operation.recipient) {
+                        finishGmailOperation(); return
+                    }
+                    val sent = withContext(Dispatchers.IO) {
+                        preparedEpubService.sendToKindleGmail(operation.bookId, operation.account, operation.recipient!!, result.token).also {
+                            if (it == GmailSendResult.AUTH_REQUIRED) gmailAuthService.clearToken(result.token)
+                        }
+                    }
+                    refreshBooks()
+                    finishGmailOperation()
+                    _notice.value = LibraryNotice(when (sent) {
+                        GmailSendResult.SENT -> LibraryNoticeType.KINDLE_EMAIL_SENT
+                        GmailSendResult.AUTH_REQUIRED -> LibraryNoticeType.GMAIL_AUTH_REQUIRED
+                        GmailSendResult.CONFIGURATION_REQUIRED -> LibraryNoticeType.GMAIL_CONFIGURATION_REQUIRED
+                        GmailSendResult.TOO_LARGE -> LibraryNoticeType.GMAIL_TOO_LARGE
+                        GmailSendResult.RATE_LIMITED -> LibraryNoticeType.GMAIL_RATE_LIMITED
+                        GmailSendResult.UNKNOWN -> LibraryNoticeType.GMAIL_SEND_UNKNOWN
+                        GmailSendResult.FAILED -> LibraryNoticeType.KINDLE_EMAIL_FAILED
+                    })
+                }
+            }
+        }
     }
 
     fun saveKindleEmail(email: String) {
@@ -881,7 +978,25 @@ class LibraryViewModel(
 
     fun sendPreparedEpubToKindleEmail(
         bookId: String,
+        onResolutionRequired: (PendingIntent) -> Unit,
     ) {
+        if (_state.value.hasActiveProgress || _state.value.isGmailConnecting) return
+        val settings = kindleEmailPreferenceRepository.settings
+        if (settings.provider == KindleEmailProvider.GMAIL) {
+            val account = settings.gmailAccount
+            val recipient = settings.kindleEmail
+            if (account == null || recipient == null) {
+                _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_MISSING); return
+            }
+            val operation = GmailOperation(account, bookId, recipient)
+            pendingGmailOperation = operation
+            _state.update { it.copy(importProgress = SyncProgress(SyncProgressPhase.SENDING_TO_KINDLE)) }
+            viewModelScope.launch {
+                val authorization = withContext(Dispatchers.IO) { gmailAuthService.authorize(account) }
+                handleGmailAuthorization(operation, authorization, onResolutionRequired)
+            }
+            return
+        }
         val credentials = kindleEmailPreferenceRepository.credentials()
         if (credentials == null) {
             _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_MISSING)

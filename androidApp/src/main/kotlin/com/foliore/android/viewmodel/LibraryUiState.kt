@@ -39,6 +39,7 @@ data class LibraryUiState(
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
+    val isGmailConnecting: Boolean = false,
     val kindleEmailSettings: KindleEmailSettings = KindleEmailSettings(
         kindleEmail = null,
         senderEmail = null,
@@ -202,6 +203,14 @@ enum class LibraryNoticeType {
     KINDLE_SMTP_SAVED,
     KINDLE_SMTP_CLEARED,
     KINDLE_SMTP_INVALID,
+    GMAIL_CONNECTED,
+    GMAIL_DISCONNECTED,
+    GMAIL_AUTH_REQUIRED,
+    GMAIL_CONFIGURATION_REQUIRED,
+    GMAIL_UNAVAILABLE,
+    GMAIL_TOO_LARGE,
+    GMAIL_RATE_LIMITED,
+    GMAIL_SEND_UNKNOWN,
     KINDLE_EMAIL_SENT,
     KINDLE_EMAIL_FAILED,
 }

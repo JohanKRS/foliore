@@ -70,6 +70,15 @@ fun SettingsRoute(
             IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
         )
     }
+    val gmailAuthorization = rememberGmailAuthorizationLauncher(viewModel)
+    val gmailAccountPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val account = result.data?.getStringExtra(android.accounts.AccountManager.KEY_ACCOUNT_NAME)
+            val type = result.data?.getStringExtra(android.accounts.AccountManager.KEY_ACCOUNT_TYPE)
+            if (account != null && type == "com.google") viewModel.connectGmail(account, gmailAuthorization)
+            else viewModel.gmailAuthorizationUnavailable()
+        }
+    }
     val message = notice?.type?.let { noticeMessage(it) }
 
     LaunchedEffect(message) {
@@ -149,6 +158,15 @@ fun SettingsRoute(
             onKindleEmailClear = viewModel::clearKindleEmail,
             onKindleSmtpSave = viewModel::saveKindleSmtpSettings,
             onKindleSmtpClear = viewModel::clearKindleSmtpSettings,
+            isGmailConnecting = state.isGmailConnecting || state.hasActiveProgress,
+            onConnectGmail = {
+                runCatching { gmailAccountPicker.launch(com.google.android.gms.common.AccountPicker.newChooseAccountIntent(
+                    com.google.android.gms.common.AccountPicker.AccountChooserOptions.Builder()
+                        .setAllowableAccountsTypes(listOf("com.google")).setAlwaysShowAccountPicker(true).build()))
+                }.onFailure { viewModel.gmailAuthorizationUnavailable() }
+            },
+            onUseGmail = { state.kindleEmailSettings.gmailAccount?.let { viewModel.connectGmail(it, gmailAuthorization) } },
+            onDisconnectGmail = viewModel::disconnectGmail,
             onChooseSyncFolder = { showSyncFolderGuidance = true },
             onConnectGoogleDrive = {
                 viewModel.connectGoogleDrive(launchGoogleDriveResolution)

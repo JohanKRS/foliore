@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -174,8 +175,13 @@ internal fun KindleSettingsDialog(
     onKindleEmailClear: () -> Unit,
     onKindleSmtpSave: (String, String, String, String, String) -> Unit,
     onKindleSmtpClear: () -> Unit,
+    isGmailConnecting: Boolean,
+    onConnectGmail: () -> Unit,
+    onUseGmail: () -> Unit,
+    onDisconnectGmail: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var showSmtp by rememberSaveable { mutableStateOf(false) }
     var kindleEmailInput by rememberSaveable { mutableStateOf("") }
     var senderInput by rememberSaveable(settings.senderEmail) {
         mutableStateOf(settings.senderEmail.orEmpty())
@@ -232,11 +238,44 @@ internal fun KindleSettingsDialog(
                 }
             }
 
-            FolioreDialogSectionCard(label = stringResource(R.string.settings_kindle_sender_label)) {
+            FolioreDialogSectionCard(label = "Gmail") {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(settings.gmailAccount ?: stringResource(R.string.gmail_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (settings.gmailAccount != null) {
+                        Text(stringResource(if (settings.provider == com.foliore.android.storage.KindleEmailProvider.GMAIL)
+                            R.string.gmail_active else R.string.gmail_available), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.gmail_approved_sender), style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    SettingsDialogButtonPair(
+                        primaryLabel = stringResource(when {
+                            isGmailConnecting -> R.string.gmail_connecting
+                            settings.gmailAccount == null -> R.string.gmail_connect
+                            settings.provider == com.foliore.android.storage.KindleEmailProvider.GMAIL -> R.string.gmail_change_account
+                            else -> R.string.gmail_use
+                        }),
+                        primaryEnabled = !isGmailConnecting,
+                        onPrimaryClick = if (settings.gmailAccount != null && settings.provider != com.foliore.android.storage.KindleEmailProvider.GMAIL) onUseGmail else onConnectGmail,
+                        secondaryLabel = stringResource(R.string.gmail_disconnect),
+                        secondaryEnabled = settings.gmailAccount != null && !isGmailConnecting,
+                        onSecondaryClick = onDisconnectGmail,
+                    )
+                }
+            }
+            TextButton(onClick = { showSmtp = !showSmtp }) {
+                Text(stringResource(if (showSmtp) R.string.gmail_hide_smtp else R.string.gmail_show_smtp))
+            }
+            if (!showSmtp && settings.provider == com.foliore.android.storage.KindleEmailProvider.SMTP && settings.isSmtpReady) {
+                Text(stringResource(R.string.settings_kindle_smtp_configured), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (showSmtp) FolioreDialogSectionCard(label = "SMTP") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = when {
-                            settings.isReady -> stringResource(R.string.settings_kindle_smtp_configured)
+                            settings.isSmtpReady -> stringResource(R.string.settings_kindle_smtp_configured)
                             settings.hasSmtpPassword -> stringResource(R.string.settings_kindle_smtp_incomplete)
                             else -> stringResource(R.string.settings_kindle_smtp_missing)
                         },
@@ -304,8 +343,8 @@ internal fun KindleSettingsDialog(
                         shape = RoundedCornerShape(5.dp),
                     )
                     SettingsDialogButtonPair(
-                        primaryLabel = stringResource(R.string.settings_kindle_smtp_save),
-                        primaryEnabled = senderInput.isNotBlank() &&
+                        primaryLabel = stringResource(R.string.gmail_save_smtp),
+                        primaryEnabled = !isGmailConnecting && senderInput.isNotBlank() &&
                             smtpHostInput.isNotBlank() &&
                             smtpPortInput.isNotBlank() &&
                             smtpUserInput.isNotBlank() &&
@@ -321,9 +360,9 @@ internal fun KindleSettingsDialog(
                             smtpPasswordInput = ""
                         },
                         secondaryLabel = stringResource(R.string.settings_kindle_smtp_clear),
-                        secondaryEnabled = settings.senderEmail != null ||
+                        secondaryEnabled = !isGmailConnecting && (settings.senderEmail != null ||
                             settings.smtpUsername != null ||
-                            settings.hasSmtpPassword,
+                            settings.hasSmtpPassword),
                         onSecondaryClick = {
                             onKindleSmtpClear()
                             senderInput = ""

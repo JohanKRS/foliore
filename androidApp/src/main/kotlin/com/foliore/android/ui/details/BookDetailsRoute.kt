@@ -42,6 +42,7 @@ fun BookDetailsRoute(
     val context = LocalContext.current
     val book = state.books.firstOrNull { it.book.id == bookId }
     val snackbarHostState = remember { SnackbarHostState() }
+    val gmailAuthorization = com.foliore.android.ui.library.rememberGmailAuthorizationLauncher(viewModel)
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var showOriginalFiles by rememberSaveable(bookId) { mutableStateOf(false) }
     val shareChooserTitle = stringResource(R.string.export_share_chooser)
@@ -85,7 +86,7 @@ fun BookDetailsRoute(
                 }
             },
             onSendToKindle = {
-                viewModel.sendPreparedEpubToKindleEmail(bookId)
+                viewModel.sendPreparedEpubToKindleEmail(bookId, gmailAuthorization)
             },
             onDeleteBook = { showDeleteDialog = true },
             onOriginalFiles = { showOriginalFiles = true },

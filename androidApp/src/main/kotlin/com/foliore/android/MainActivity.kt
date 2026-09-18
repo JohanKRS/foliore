@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
                                 aiPreferenceRepository = appContainer.aiPreferenceRepository,
                                 aiCoverPromptRepository = appContainer.aiCoverPromptRepository,
                                 kindleEmailPreferenceRepository = appContainer.kindleEmailPreferenceRepository,
+                                gmailAuthService = appContainer.gmailAuthService,
                                 libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
                                 openAiApiService = appContainer.openAiApiService,
                                 openMetadataLookupService = appContainer.openMetadataLookupService,

@@ -319,12 +319,12 @@
     <string name="kindle_notice_email_saved">Kindle 邮箱已保存。</string>
     <string name="kindle_notice_email_cleared">Kindle 邮箱已移除。</string>
     <string name="kindle_notice_email_invalid">请输入有效的 Kindle 邮箱。</string>
-    <string name="kindle_notice_email_missing">请配置 Kindle 邮箱和 SMTP 发件人。</string>
+    <string name="kindle_notice_email_missing">请设置 Kindle 邮箱并连接 Gmail 或其他发件账号。</string>
     <string name="kindle_notice_smtp_saved">Kindle 发件人已保存。</string>
     <string name="kindle_notice_smtp_cleared">Kindle 发件人已移除。</string>
     <string name="kindle_notice_smtp_invalid">请检查发件人、SMTP、端口、用户名和密码。</string>
     <string name="kindle_notice_sent">EPUB 已发送到 Kindle。</string>
-    <string name="kindle_notice_send_failed">无法发送到 Kindle。请检查 SMTP、应用专用密码以及 Amazon 认可的发件人。</string>
+    <string name="kindle_notice_send_failed">无法发送到 Kindle，请检查网络连接和发件账号。</string>
     <string name="kindle_progress_sending">正在发送到 Kindle…</string>
     <string name="kindle_share_chooser">发送到 Kindle</string>
     <string name="kindle_email_subject">发送到 Kindle：%1$s</string>

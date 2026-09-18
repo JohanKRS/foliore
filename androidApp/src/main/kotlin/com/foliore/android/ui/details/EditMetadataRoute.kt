@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.foliore.android.R
 import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.library.noticeMessage
+import com.foliore.android.ui.library.rememberGmailAuthorizationLauncher
 import com.foliore.android.viewmodel.LibraryViewModel
 import dev.chrisbanes.haze.HazeState
 
@@ -42,6 +43,7 @@ fun EditMetadataRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val gmailAuthorization = rememberGmailAuthorizationLauncher(viewModel)
     val book = state.books.firstOrNull { it.book.id == bookId }
     var showOriginalFiles by rememberSaveable(bookId) { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -94,7 +96,7 @@ fun EditMetadataRoute(
                 if (draft != null) viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = export) else export()
             },
             onSendToKindle = { draft ->
-                val send = { viewModel.sendPreparedEpubToKindleEmail(bookId) }
+                val send = { viewModel.sendPreparedEpubToKindleEmail(bookId, gmailAuthorization) }
                 if (draft != null) viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = send) else send()
             },
             onCoverGenerationUnavailable = viewModel::requestCoverGeneration,

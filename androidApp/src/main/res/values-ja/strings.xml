@@ -319,12 +319,12 @@
     <string name="kindle_notice_email_saved">Kindleメールを保存しました。</string>
     <string name="kindle_notice_email_cleared">Kindleメールを削除しました。</string>
     <string name="kindle_notice_email_invalid">有効なKindleメールアドレスを入力してください。</string>
-    <string name="kindle_notice_email_missing">KindleメールとSMTP送信元を設定してください。</string>
+    <string name="kindle_notice_email_missing">Kindleメールを設定し、Gmailまたは別の送信元を接続してください。</string>
     <string name="kindle_notice_smtp_saved">Kindle送信元を保存しました。</string>
     <string name="kindle_notice_smtp_cleared">Kindle送信元を削除しました。</string>
     <string name="kindle_notice_smtp_invalid">送信元、SMTP、ポート、ユーザー名、パスワードを確認してください。</string>
     <string name="kindle_notice_sent">EPUBをKindleへ送信しました。</string>
-    <string name="kindle_notice_send_failed">Kindleへ送信できませんでした。SMTP、アプリパスワード、Amazonで承認済みの送信元を確認してください。</string>
+    <string name="kindle_notice_send_failed">Kindleに送信できませんでした。接続と送信アカウントを確認してください。</string>
     <string name="kindle_progress_sending">Kindleへ送信中…</string>
     <string name="kindle_share_chooser">Kindleへ送信</string>
     <string name="kindle_email_subject">Kindleへ送信：%1$s</string>

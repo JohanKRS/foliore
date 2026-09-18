@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gmail_description">アカウントを接続してGmailで本を送信します。</string>
+    <string name="gmail_active">本の送信に使用します。</string>
+    <string name="gmail_available">アカウント接続済み。</string>
+    <string name="gmail_approved_sender">このメールアドレスをKindleの承認済み送信者に追加してください。</string>
+    <string name="gmail_connecting">接続中…</string>
+    <string name="gmail_connect">Gmailに接続</string>
+    <string name="gmail_change_account">アカウントを変更</string>
+    <string name="gmail_use">Gmailを使用</string>
+    <string name="gmail_disconnect">接続を解除</string>
+    <string name="gmail_hide_smtp">SMTP設定を隠す</string>
+    <string name="gmail_show_smtp">別のメールを設定（SMTP）</string>
+    <string name="gmail_save_smtp">保存してSMTPを使用</string>
+    <string name="gmail_connected_account">Gmail: %1$s</string>
+    <string name="gmail_notice_connected">Gmailに接続しました。</string>
+    <string name="gmail_notice_disconnected">この端末でGmailの接続を解除しました。</string>
+    <string name="gmail_notice_auth_required">Gmailでの送信を再度許可してください。</string>
+    <string name="gmail_notice_configuration_required">このバージョンではGmailへの接続はまだ利用できません。</string>
+    <string name="gmail_notice_unavailable">Gmailに接続できませんでした。もう一度お試しください。</string>
+    <string name="gmail_notice_too_large">Gmailの添付ファイルは25 MBまでです。</string>
+    <string name="gmail_notice_rate_limited">Gmailの送信制限に達しました。後でもう一度お試しください。</string>
+    <string name="gmail_notice_send_unknown">送信を確認できませんでした。再試行する前にGmailの送信済みメールを確認してください。</string>
+</resources>

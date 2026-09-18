@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gmail_description">Conecte sua conta para enviar livros pelo Gmail.</string>
+    <string name="gmail_active">Usado para enviar livros.</string>
+    <string name="gmail_available">Conta conectada.</string>
+    <string name="gmail_approved_sender">Adicione este e-mail aos remetentes aprovados do Kindle.</string>
+    <string name="gmail_connecting">Conectando…</string>
+    <string name="gmail_connect">Conectar Gmail</string>
+    <string name="gmail_change_account">Trocar conta</string>
+    <string name="gmail_use">Usar Gmail</string>
+    <string name="gmail_disconnect">Desconectar</string>
+    <string name="gmail_hide_smtp">Ocultar configuração SMTP</string>
+    <string name="gmail_show_smtp">Configurar outro e-mail (SMTP)</string>
+    <string name="gmail_save_smtp">Salvar e usar SMTP</string>
+    <string name="gmail_connected_account">Gmail: %1$s</string>
+    <string name="gmail_notice_connected">Gmail conectado.</string>
+    <string name="gmail_notice_disconnected">Gmail desconectado deste aparelho.</string>
+    <string name="gmail_notice_auth_required">Autorize o envio pelo Gmail novamente.</string>
+    <string name="gmail_notice_configuration_required">A conexão com o Gmail ainda não está disponível nesta versão.</string>
+    <string name="gmail_notice_unavailable">Não foi possível conectar ao Gmail. Tente novamente.</string>
+    <string name="gmail_notice_too_large">O Gmail aceita anexos de até 25 MB.</string>
+    <string name="gmail_notice_rate_limited">O Gmail atingiu um limite de envio. Tente mais tarde.</string>
+    <string name="gmail_notice_send_unknown">Não foi possível confirmar o envio. Confira os enviados no Gmail antes de tentar novamente.</string>
+</resources>

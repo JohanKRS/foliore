@@ -96,6 +96,10 @@ fun SettingsScreen(
     onKindleEmailClear: () -> Unit,
     onKindleSmtpSave: (String, String, String, String, String) -> Unit,
     onKindleSmtpClear: () -> Unit,
+    isGmailConnecting: Boolean,
+    onConnectGmail: () -> Unit,
+    onUseGmail: () -> Unit,
+    onDisconnectGmail: () -> Unit,
     onChooseSyncFolder: () -> Unit,
     onConnectGoogleDrive: () -> Unit,
     onRefreshGoogleDriveBackupStats: () -> Unit,
@@ -193,6 +197,7 @@ fun SettingsScreen(
             icon = Icons.Outlined.Email,
             title = stringResource(R.string.settings_kindle_email),
             description = when {
+                kindleEmailSettings.provider == com.foliore.android.storage.KindleEmailProvider.GMAIL && kindleEmailSettings.gmailAccount != null -> stringResource(R.string.gmail_connected_account, kindleEmailSettings.gmailAccount)
                 kindleEmailSettings.isReady -> stringResource(R.string.settings_kindle_smtp_configured)
                 kindleEmailSettings.kindleEmail != null -> stringResource(
                     R.string.settings_kindle_email_configured,
@@ -469,6 +474,10 @@ fun SettingsScreen(
             onKindleEmailClear = onKindleEmailClear,
             onKindleSmtpSave = onKindleSmtpSave,
             onKindleSmtpClear = onKindleSmtpClear,
+            isGmailConnecting = isGmailConnecting,
+            onConnectGmail = onConnectGmail,
+            onUseGmail = onUseGmail,
+            onDisconnectGmail = onDisconnectGmail,
             onDismiss = { showKindleSettings = false },
         )
     }

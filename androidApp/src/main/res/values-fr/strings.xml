@@ -319,12 +319,12 @@
     <string name="kindle_notice_email_saved">E-mail Kindle enregistré.</string>
     <string name="kindle_notice_email_cleared">E-mail Kindle supprimé.</string>
     <string name="kindle_notice_email_invalid">Saisissez une adresse e-mail Kindle valide.</string>
-    <string name="kindle_notice_email_missing">Configurez l’e-mail Kindle et l’expéditeur SMTP.</string>
+    <string name="kindle_notice_email_missing">Configurez votre adresse Kindle et connectez Gmail ou un autre expéditeur.</string>
     <string name="kindle_notice_smtp_saved">Expéditeur Kindle enregistré.</string>
     <string name="kindle_notice_smtp_cleared">Expéditeur Kindle supprimé.</string>
     <string name="kindle_notice_smtp_invalid">Vérifiez l’expéditeur, le serveur SMTP, le port, le nom d’utilisateur et le mot de passe.</string>
     <string name="kindle_notice_sent">EPUB envoyé vers Kindle.</string>
-    <string name="kindle_notice_send_failed">Impossible d’envoyer vers Kindle. Vérifiez le serveur SMTP, le mot de passe d’application et l’expéditeur approuvé par Amazon.</string>
+    <string name="kindle_notice_send_failed">Envoi vers Kindle impossible. Vérifiez votre connexion et le compte d’envoi.</string>
     <string name="kindle_progress_sending">Envoi vers Kindle…</string>
     <string name="kindle_share_chooser">Envoyer vers Kindle</string>
     <string name="kindle_email_subject">Envoyer vers Kindle : %1$s</string>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gmail_description">Verbinde dein Konto, um Bücher mit Gmail zu senden.</string>
+    <string name="gmail_active">Wird zum Senden von Büchern verwendet.</string>
+    <string name="gmail_available">Konto verbunden.</string>
+    <string name="gmail_approved_sender">Füge diese E-Mail-Adresse zu den zugelassenen Kindle-Absendern hinzu.</string>
+    <string name="gmail_connecting">Verbindung wird hergestellt…</string>
+    <string name="gmail_connect">Gmail verbinden</string>
+    <string name="gmail_change_account">Konto wechseln</string>
+    <string name="gmail_use">Gmail verwenden</string>
+    <string name="gmail_disconnect">Trennen</string>
+    <string name="gmail_hide_smtp">SMTP-Einstellungen ausblenden</string>
+    <string name="gmail_show_smtp">Andere E-Mail einrichten (SMTP)</string>
+    <string name="gmail_save_smtp">Speichern und SMTP verwenden</string>
+    <string name="gmail_connected_account">Gmail: %1$s</string>
+    <string name="gmail_notice_connected">Gmail verbunden.</string>
+    <string name="gmail_notice_disconnected">Gmail auf diesem Gerät getrennt.</string>
+    <string name="gmail_notice_auth_required">Erlaube das Senden mit Gmail erneut.</string>
+    <string name="gmail_notice_configuration_required">Die Gmail-Verbindung ist in dieser Version noch nicht verfügbar.</string>
+    <string name="gmail_notice_unavailable">Verbindung mit Gmail fehlgeschlagen. Versuche es erneut.</string>
+    <string name="gmail_notice_too_large">Gmail erlaubt Anhänge bis zu 25 MB.</string>
+    <string name="gmail_notice_rate_limited">Gmail hat ein Sendelimit erreicht. Versuche es später erneut.</string>
+    <string name="gmail_notice_send_unknown">Versand nicht bestätigt. Prüfe vor einem erneuten Versuch den Ordner „Gesendet“ in Gmail.</string>
+</resources>

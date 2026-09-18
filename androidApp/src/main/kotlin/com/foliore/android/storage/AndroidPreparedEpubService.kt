@@ -28,6 +28,7 @@ class AndroidPreparedEpubService(
     private val deviceIdProvider: DeviceIdProvider,
     private val parser: EpubParser = EpubParser(),
     private val smtpEmailSender: SmtpEmailSender = SmtpEmailSender(),
+    private val gmailEmailSender: GmailEmailSender = GmailEmailSender(),
 ) {
     private val appContext = context.applicationContext
     private val json = Json { prettyPrint = true }
@@ -101,6 +102,15 @@ class AndroidPreparedEpubService(
             )
             if (sent) PreparedEpubResult.Sent else PreparedEpubResult.Failed
         }.getOrDefault(PreparedEpubResult.Failed)
+    }
+
+    fun sendToKindleGmail(bookId: String, account: String, recipient: String, token: String): GmailSendResult {
+        return runCatching {
+            val exported = exportPreparedEpub(bookId) as? ExportPreparedResult.Ready ?: return GmailSendResult.FAILED
+            gmailEmailSender.send(token, account, recipient,
+                appContext.getString(R.string.kindle_email_subject, exported.file.nameWithoutExtension),
+                appContext.getString(R.string.kindle_email_body), exported.file)
+        }.getOrDefault(GmailSendResult.FAILED)
     }
 
     private fun exportPreparedEpub(bookId: String): ExportPreparedResult = synchronized(SyncOperationCoordinator.localDataLock) {

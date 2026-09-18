@@ -319,12 +319,12 @@
     <string name="kindle_notice_email_saved">Kindle-E-Mail gespeichert.</string>
     <string name="kindle_notice_email_cleared">Kindle-E-Mail entfernt.</string>
     <string name="kindle_notice_email_invalid">Gib eine gültige Kindle-E-Mail-Adresse ein.</string>
-    <string name="kindle_notice_email_missing">Richte die Kindle-E-Mail und den SMTP-Absender ein.</string>
+    <string name="kindle_notice_email_missing">Richte deine Kindle-E-Mail ein und verbinde Gmail oder einen anderen Absender.</string>
     <string name="kindle_notice_smtp_saved">Kindle-Absender gespeichert.</string>
     <string name="kindle_notice_smtp_cleared">Kindle-Absender entfernt.</string>
     <string name="kindle_notice_smtp_invalid">Prüfe Absender, SMTP, Port, Benutzername und Passwort.</string>
     <string name="kindle_notice_sent">EPUB an Kindle gesendet.</string>
-    <string name="kindle_notice_send_failed">Senden an Kindle fehlgeschlagen. Prüfe SMTP, App-Passwort und den von Amazon zugelassenen Absender.</string>
+    <string name="kindle_notice_send_failed">Senden an Kindle fehlgeschlagen. Prüfe die Verbindung und dein Absenderkonto.</string>
     <string name="kindle_progress_sending">Wird an Kindle gesendet…</string>
     <string name="kindle_share_chooser">An Kindle senden</string>
     <string name="kindle_email_subject">An Kindle senden: %1$s</string>

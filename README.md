@@ -10,12 +10,12 @@ The Android app currently includes:
 - Bounded EPUB import, original-file preservation, metadata/cover editing and export.
 - Optional built-in EPUB reader with pagination, search, bookmarks, typography controls and synchronized reading positions.
 - Offline MOBI/AZW3 conversion using libmobi, with retained local source files and explicit DRM errors.
-- Optional metadata lookup, AI cover generation, and TLS-only SMTP delivery.
+- Optional metadata lookup, AI cover generation, Gmail OAuth delivery and TLS-only SMTP delivery.
 - Offline synchronization through hidden Google Drive app data or a selected SAF folder.
 - Immutable remote revisions, causal merging, conflict copies and bounded retention.
 - Light/dark glass surfaces, localization and in-app privacy/reporting entries.
 
-See [built-in reader](docs/READER.md), [sync protocol](docs/SYNC_SPEC.md), [pre-publication audit](docs/audits/2026-09-07/README.md), and [reporting service setup](support/README.md). The public privacy site, reporting endpoint, developer identity, support mailbox, OAuth configuration and release signing must be verified before distribution; `publication.properties.example` records the release confirmations.
+See [Gmail delivery and setup](docs/GMAIL.md), [built-in reader](docs/READER.md), [sync protocol](docs/SYNC_SPEC.md), [pre-publication audit](docs/audits/2026-09-07/README.md), and [reporting service setup](support/README.md). The public privacy site, reporting endpoint, developer identity, support mailbox, OAuth configuration and release signing must be verified before distribution; `publication.properties.example` records the release confirmations.
 
 ## Open In Android Studio
 

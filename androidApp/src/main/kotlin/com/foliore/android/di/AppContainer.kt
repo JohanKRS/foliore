@@ -38,6 +38,7 @@ class AppContainer(context: Context) {
     val aiPreferenceRepository = AiPreferenceRepository(appContext)
     val aiCoverPromptRepository = AiCoverPromptRepository(appContext)
     val kindleEmailPreferenceRepository = KindleEmailPreferenceRepository(appContext)
+    val gmailAuthService = com.foliore.android.storage.GmailAuthService(appContext)
     val libraryDisplayPreferenceRepository = LibraryDisplayPreferenceRepository(appContext)
     val syncSettingsRepository = SyncSettingsRepository(appContext)
     val googleDriveAuthService = GoogleDriveAuthService(
