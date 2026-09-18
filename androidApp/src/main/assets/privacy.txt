@@ -1,7 +1,10 @@
 Foliore — Política de privacidade
-Atualizada em 12 de setembro de 2026
+Atualizada em 13 de setembro de 2026
 
-Esta é a política preparada para o lançamento do Foliore. O endereço público previsto é https://foliore.johankrs.com/privacy e o contato previsto é foliore@johankrs.com. O responsável público e a disponibilidade desse canal precisam ser confirmados antes do lançamento.
+O Foliore é desenvolvido por JohanKRS. Esta política explica como o aplicativo trata seus dados.
+
+Política pública: https://foliore.johankrs.com/privacy/
+Contato: foliore@johankrs.com.
 
 Biblioteca no aparelho
 O Foliore importa os EPUBs que você seleciona e armazena livros, capas, metadados e configurações no armazenamento privado do aplicativo. A preparação e a exportação criam uma cópia editada; o EPUB original é preservado. Remover o aplicativo ou seus dados pode apagar a biblioteca local. Mantenha cópias atualizadas dos seus livros e dados importantes fora do Foliore. A sincronização também propaga alterações e exclusões e não substitui um backup independente.
@@ -28,4 +31,4 @@ Publicidade e solicitações
 Esta versão não inclui anúncios nem SDK próprio de análise de comportamento. O Foliore não vende dados pessoais. Você pode remover chaves, desconectar integrações, excluir livros e apagar o backup nas configurações. Para suporte, correção de dados ou denúncia de conteúdo gerado por IA, use o contato indicado no aplicativo; ao escrever, inclua apenas os dados necessários. O formulário de denúncia envia somente o texto que você preencher ao serviço do Foliore. Nenhum livro, prompt ou imagem é anexado automaticamente. As denúncias recebidas são armazenadas por até 90 dias para análise; os dados técnicos da conexão também podem ser processados pelo provedor de hospedagem.
 
 Alterações
-Mudanças relevantes nos fluxos de dados serão refletidas nesta política e nas divulgações do aplicativo antes de serem disponibilizadas. Esta política deve identificar o mesmo responsável informado na página do aplicativo na Play Store.
+Mudanças relevantes nos fluxos de dados serão refletidas nesta política e nas divulgações do aplicativo antes de serem disponibilizadas.

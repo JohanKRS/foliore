@@ -31,12 +31,24 @@ Sem anúncios; sem função governamental; sem recursos financeiros; sem recurso
 
 ## Pendências reais antes de publicar
 
-1. Colocar `foliore.johankrs.com` em HTTPS e ativar/verificar `foliore@johankrs.com`; cadastrar URLs e contato somente quando operacionais.
+1. Reenviar manualmente o pacote atualizado do site para mostrar `foliore@johankrs.com` nas páginas públicas. Domínio e e-mail foram confirmados ativos pelo proprietário; inicial, privacidade, suporte e termos responderam HTTP 200 em HTTPS em 13/09/2026, e os registros MX apontam para a Hostinger. A entrega de e-mail não foi testada pelo agente.
 2. Hospedar e testar o endpoint de relatos de IA. A pasta estática do site não implementa `/api/content-reports`; o backend existente está em `support/server.mjs`.
 3. Definir público-alvo. A pergunta sobre adaptações para adolescentes foi respondida, mas o usuário ainda não escolheu a faixa. Não foi declarada restrição 18+ por conta própria.
-4. Concluir classificação indicativa, política de privacidade, Segurança dos dados e instruções de acesso para revisão com informações verificáveis.
+4. Concluir classificação indicativa, Segurança dos dados e instruções de acesso para revisão com informações verificáveis. A URL da política de privacidade já foi salva no Console.
 5. Preparar acesso de revisão para integrações opcionais e compras. Validar OAuth externo/assinatura Google Play e compras, restauração e reembolso pelo Play.
 6. A conta mostrou exigência de teste fechado com pelo menos 12 participantes por 14 dias contínuos; o fluxo ainda não foi iniciado.
 7. As verificações de publicação pública continuam bloqueando um release de produção enquanto esses requisitos não estiverem comprovados. O bypass de teste interno não significa que estão concluídos.
+
+## Atualização de domínio e contato
+
+- Site confirmado em `https://foliore.johankrs.com/`; política em `https://foliore.johankrs.com/privacy/`.
+- O proprietário informou que `foliore@johankrs.com` está ativo e que a publicação usa envio manual da pasta.
+- Play Console: e-mail `foliore@johankrs.com` e site `https://foliore.johankrs.com/` salvos nos dados de contato da página de detalhes, com confirmação de alteração salva. Telefone deixado vazio.
+- Play Console: URL `https://foliore.johankrs.com/privacy/` salva no formulário de Política de Privacidade, com confirmação explícita de que a mudança está salva e pronta para envio à revisão. Nenhuma atualização foi enviada à revisão nesta etapa.
+- O pacote local ativa o e-mail nas páginas de suporte e privacidade, nos oito idiomas, inclusive sem JavaScript. O `config.js` público ainda estava com o contato vazio durante a conferência; falta reenviar o pacote atualizado.
+- ZIP atualizado em `/home/johan/Downloads/Foliore-site-2026-09-13.zip`: 40 páginas HTML, contato incorporado nas 16 páginas de suporte/privacidade e integridade do arquivo verificada. Publicar o conteúdo de `foliore-site/dist/` na raiz do site.
+- Identidade e contato deixaram de ser descritos como provisórios no arquivo de privacidade do app. Essa alteração é de código-fonte; nenhum APK/AAB novo foi gerado nesta etapa.
+- A rota de relatos retornou HTTP 404 com HTML em uma consulta GET. O servidor Node implementado recebe apenas POST; por isso, o recebimento de relatos continua **não verificado**. Não foi enviado conteúdo de teste ao serviço nem e-mail a terceiros.
+- Não foram marcados os requisitos de publicação como concluídos nem liberada uma versão de produção.
 
 Não houve commit nem push nesta etapa.
