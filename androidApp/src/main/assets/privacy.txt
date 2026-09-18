@@ -1,5 +1,5 @@
 Foliore — Política de privacidade
-Atualizada em 13 de setembro de 2026
+Atualizada em 17 de setembro de 2026
 
 O Foliore é desenvolvido por JohanKRS. Esta política explica como o aplicativo trata seus dados.
 
@@ -7,13 +7,16 @@ Política pública: https://foliore.johankrs.com/privacy/
 Contato: foliore@johankrs.com.
 
 Biblioteca no aparelho
-O Foliore importa os EPUBs que você seleciona e armazena livros, capas, metadados e configurações no armazenamento privado do aplicativo. A preparação e a exportação criam uma cópia editada; o EPUB original é preservado. Remover o aplicativo ou seus dados pode apagar a biblioteca local. Mantenha cópias atualizadas dos seus livros e dados importantes fora do Foliore. A sincronização também propaga alterações e exclusões e não substitui um backup independente.
+O Foliore importa EPUBs e converte arquivos MOBI e AZW3 sem DRM no próprio aparelho. Livros, capas, metadados, configurações, posições de leitura e marcadores ficam no armazenamento privado do aplicativo. A preparação e a exportação criam uma cópia editada. Os arquivos originais são guardados separadamente no aparelho e podem ser salvos, compartilhados ou excluídos nos detalhes do livro. Remover o aplicativo ou seus dados pode apagar a biblioteca local. Mantenha cópias atualizadas dos seus livros e dados importantes fora do Foliore. A sincronização também propaga alterações e exclusões e não substitui um backup independente.
 
 Sincronização opcional
-Ao conectar o Google Drive, você autoriza o armazenamento de livros, capas, metadados, histórico e instruções de capas de IA na pasta oculta de dados do Foliore, usando o escopo drive.appdata. Nome da conta, identificador aleatório da instalação e modelo do aparelho são usados para identificar conexão e alterações. Se ativar a sincronização automática, as transferências podem ocorrer em segundo plano. A sincronização por pasta usa somente a pasta que você selecionar no Android; seu provedor pode sincronizá-la com outros serviços.
+Ao conectar o Google Drive, você autoriza o armazenamento de livros, capas, metadados, histórico, instruções de capas de IA, posições de leitura e marcadores na pasta oculta de dados do Foliore, usando o escopo drive.appdata. As posições e os marcadores incluem um trecho curto do texto para localizar a passagem. Os arquivos originais guardados separadamente e as preferências visuais do leitor não são sincronizados. Nome da conta, identificador aleatório da instalação e modelo do aparelho são usados para identificar conexão e alterações. Se ativar a sincronização automática, as transferências podem ocorrer em segundo plano. A sincronização por pasta usa somente a pasta que você selecionar no Android; seu provedor pode sincronizá-la com outros serviços.
 
 Retenção e exclusão
 Excluir um livro e sincronizar registra a exclusão nos outros aparelhos. Versões anteriores e arquivos de operações interrompidas são retidos por pelo menos 30 dias antes de poderem ser limpos; a limpeza acontece nas sincronizações seguintes. Conflitos ainda não resolvidos são preservados. Desconectar o Drive interrompe a conexão, mas não equivale a apagar o backup. A opção de excluir o backup remove a biblioteca remota e mantém um marcador técnico com a data e um identificador aleatório da instalação, para impedir que sincronizações antigas restaurem dados apagados. Arquivos que você exportou e mensagens enviadas permanecem nos destinos escolhidos e precisam ser excluídos nesses serviços. Uma operação sem rede só chega aos outros aparelhos depois de sincronizar.
+
+Leitura no aplicativo
+A leitura e a busca no texto funcionam no aparelho, sem enviar o conteúdo do livro a um serviço de leitura. Recursos externos e scripts incluídos nos livros não são carregados. Abrir um link externo exige uma ação sua e usa o aplicativo escolhido no Android.
 
 Busca e inteligência artificial
 Ao solicitar buscas de metadados ou capas, os termos da busca, como título, autor e ISBN, são enviados aos serviços consultados, incluindo Open Library, Internet Archive e Biblioteca Nacional da França (BnF). Ao solicitar geração por OpenAI, seu prompt e os metadados usados na solicitação são enviados diretamente à OpenAI com a chave que você configurou. O provedor pode cobrar pelo uso; o Foliore não inclui créditos. Não inclua informações pessoais ou confidenciais nos prompts. As respostas podem estar incorretas e devem ser revisadas antes de aplicar. O Foliore não envia o conteúdo completo do EPUB para gerar esses resultados. Os provedores recebem também os dados técnicos necessários à conexão, como o endereço IP, e aplicam suas próprias políticas de retenção.

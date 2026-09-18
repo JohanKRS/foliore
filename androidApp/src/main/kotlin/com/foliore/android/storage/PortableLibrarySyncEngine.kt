@@ -1,5 +1,7 @@
 package com.foliore.android.storage
 
+import com.foliore.android.reader.ReadingState
+import com.foliore.android.reader.ReadingStateRepository
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
@@ -102,6 +104,7 @@ internal class PortableLibrarySyncEngine(
                     "Cannot remove files for deleted book ${tombstone.bookId}"
                 }
                 OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY)).deleteBook(tombstone.bookId)
+                ReadingStateRepository(appContext).removeBook(tombstone.bookId)
             }
         }
         val remoteBookList = remoteBooks.values.toList()
@@ -324,10 +327,16 @@ internal class PortableLibrarySyncEngine(
             deviceId = deviceId,
         )
 
+        val readingBookIds = (booksAfterRemote.map { it.book.id } + remoteBooks.keys).toSet() - removedRemoteBookIds - pendingDeletedBookIds
+        val readingState = ReadingStateRepository(appContext)
+            .merge((remoteManifest?.readingState ?: ReadingState()).forBooks(readingBookIds))
+            .forBooks(readingBookIds)
+        val readingChanged = readingState != (remoteManifest?.readingState ?: ReadingState())
+
         if (counters.uploadedBooks > 0 ||
             shouldRewriteRemoteMetadata ||
             cleanedRemoteBooks ||
-            aiCoverPromptSync.shouldWriteRemote
+            aiCoverPromptSync.shouldWriteRemote || readingChanged
         ) {
             onProgress(ManualSyncProgress(ManualSyncPhase.WRITING_MANIFEST))
             journal.publish(
@@ -338,6 +347,7 @@ internal class PortableLibrarySyncEngine(
                         updatedAt = syncedAt,
                         updatedByDeviceId = deviceId,
                         aiCoverPrompts = aiCoverPromptSync.mergedRecords,
+                        readingState = readingState,
                         deviceName = android.os.Build.MODEL,
                         books = mergedManifestBooks(
                             remoteBooks = remoteBooks.mapValues { (id, book) -> if (id in removedRemoteBookIds) book.copy(deleted = true) else book } +
@@ -491,6 +501,7 @@ internal class PortableLibrarySyncEngine(
         }
         AndroidOriginalFilesService(appContext, libraryRepository).list(local.book.id)
         OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY)).copyBook(local.book.id, recoveryId)
+        ReadingStateRepository(appContext).copyBook(local.book.id, recoveryId)
     }
 
     private fun planRemoteBookAction(
@@ -567,6 +578,7 @@ internal class PortableLibrarySyncEngine(
         AndroidOriginalFilesService(appContext, libraryRepository).list(duplicateBook.book.id)
         val originals = OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY))
         originals.copyBook(duplicateBook.book.id, retainedBookId)
+        ReadingStateRepository(appContext).apply { copyBook(duplicateBook.book.id, retainedBookId); removeBook(duplicateBook.book.id) }
         libraryRepository.deleteBook(duplicateBook.book.id)
         bookDir?.deleteRecursively()
         originals.deleteBook(duplicateBook.book.id)
@@ -1530,6 +1542,7 @@ internal class PortableLibrarySyncEngine(
         val updatedAt: String,
         val updatedByDeviceId: String,
         val aiCoverPrompts: List<AiCoverPromptRecord> = emptyList(),
+        val readingState: ReadingState = ReadingState(),
         val deviceName: String? = null,
         val books: List<ManifestBookSnapshot>,
     )

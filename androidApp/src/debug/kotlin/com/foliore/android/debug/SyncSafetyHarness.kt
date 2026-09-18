@@ -88,6 +88,35 @@ internal object SyncSafetyHarness {
         val id = imported.bookId
         check(engineA.sync(remote).uploadedBooks == 1)
         check(engineB.sync(remote).downloadedBooks == 1)
+        // Reading state travels in the journal without changing book revisions or re-uploading EPUBs.
+        val readingA = com.foliore.android.reader.ReadingStateRepository(contextA)
+        val readingB = com.foliore.android.reader.ReadingStateRepository(contextB)
+        val contentHash = a.libraryRepository.getBook(id)!!.book.originalHashSha256
+        val revisionBeforeReading = a.libraryRepository.getBook(id)!!.book.revision
+        val point = com.foliore.android.reader.ReadingLocator("OPS/page.xhtml", .7, 5, "Preserve")
+        readingA.savePosition(id, contentHash, point)
+        readingA.addBookmark(id, contentHash, point, "A bookmark")
+        remote.uploadedPaths.clear()
+        check(engineA.sync(remote).uploadedBooks == 0)
+        check(remote.uploadedPaths.isEmpty()) { "Reading uploaded book payloads" }
+        engineB.sync(remote)
+        check(readingB.position(id, contentHash)?.locator == point)
+        check(readingB.bookmarks(id, contentHash).size == 1)
+        // Deliberately moving backwards is a newer reading choice, not a lower-priority progress value.
+        val rewind = point.copy(progression = .2, textOffset = 1)
+        readingB.savePosition(id, contentHash, rewind)
+        readingB.deleteBookmark(readingB.bookmarks(id, contentHash).single().id)
+        remote.fault = "record"
+        check(runCatching { engineB.sync(remote) }.isFailure)
+        check(readingB.position(id, contentHash)?.locator == rewind)
+        engineB.sync(remote)
+        engineA.sync(remote)
+        check(readingA.position(id, contentHash)?.locator == rewind)
+        check(readingA.bookmarks(id, contentHash).isEmpty())
+        check(a.libraryRepository.getBook(id)!!.book.revision == revisionBeforeReading)
+        val unchangedReadingRemote = remote.bytes()
+        engineA.sync(remote)
+        check(remote.bytes().keys == unchangedReadingRemote.keys) { "No-op reading sync republished a journal" }
         val before = remote.bytes()
         val metadata = a.libraryRepository.getBook(id)!!.metadata
         val draft = BookMetadataDraft("QA Edited \$5 \\ path", metadata.subtitle, metadata.authors, metadata.sortAuthor,
@@ -152,7 +181,9 @@ internal object SyncSafetyHarness {
         check(b.bookEditor.updateMetadata(id, shared.copy(title = "Offline edit during deletion")) is BookEditResult.Success)
         check(a.bookDeleter.delete(id) is BookDeleteResult.Deleted)
         engineA.sync(remote)
+        check(readingA.state().positions.none { it.bookId == id } && readingA.state().bookmarks.none { it.bookId == id }) { "Sync restored reading data for a deleted book" }
         engineB.sync(remote)
+        check(readingB.state().positions.none { it.bookId == id } && readingB.state().bookmarks.none { it.bookId == id }) { "Remote deletion retained reading data" }
         check(b.libraryRepository.getBook(id) == null) { "Explicit deletion was not propagated" }
         check(!File(contextB.filesDir, "books/$id").exists()) { "Remote deletion left local book versions behind" }
         // Simulate files left behind when a process died after removing the database row.
@@ -222,7 +253,7 @@ internal object SyncSafetyHarness {
         engineA.sync(remote)
         engineB.sync(remote)
         check(b.libraryRepository.getBook(faultBookId)!!.metadata.title == "New local edit during upload")
-        File(context.cacheDir, "sync-safety-result.txt").writeText("PASS: import, upload, restore, injected failure, retry, exact original, prepared copy, no-op sync, offline field merge, conflicting edits preserved on both devices, simultaneous publication converges, deletion preserves offline edit, account-scoped deletion, retention, partial upload, partial record, partial commit, corrupt download rollback, local corruption rejected or recovered, in-flight local edit preserved\n")
+        File(context.cacheDir, "sync-safety-result.txt").writeText("PASS: reading position/bookmarks round trip, rewind, interrupted reading publication/retry, reading without EPUB upload or metadata revision, import, upload, restore, injected failure, retry, exact original, prepared copy, no-op sync, offline field merge, conflicting edits preserved on both devices, simultaneous publication converges, deletion preserves offline edit, account-scoped deletion, retention, partial upload, partial record, partial commit, corrupt download rollback, local corruption rejected or recovered, in-flight local edit preserved\n")
     }
 
     private class LocalStore(private val root: File) : RemoteLibraryStore {

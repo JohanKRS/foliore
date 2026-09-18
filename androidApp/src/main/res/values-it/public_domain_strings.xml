@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="public_domain_language">it</string>
+    <string name="public_domain_title">Trova la tua prossima lettura</string>
+    <string name="public_domain_hint">Trova libri di pubblico dominio in EPUB.</string>
+    <string name="public_domain_start_title">Ogni biblioteca inizia con un libro</string>
+    <string name="public_domain_start_hint">Esplora libri di pubblico dominio in EPUB e scegli il primo.</string>
+</resources>

@@ -18,6 +18,12 @@ Campos de metadados diferentes são mesclados quando existe a mesma base e as ve
 
 O processo coordena sincronização manual, tarefas de fundo e exclusão. Edições locais têm bloqueio separado para criar snapshots e publicar transações; alterações feitas durante transferência não podem ser marcadas como sincronizadas por engano.
 
+## Estado de leitura
+
+Posições e marcadores viajam no campo opcional `readingState` do manifesto, separados das revisões do livro. Uma alteração só de leitura publica um registro do diário sem reenviar EPUBs. O estado guarda a passagem de texto e a fração do capítulo; aparência e arquivos originais arquivados separadamente permanecem locais.
+
+A posição usa um registro por livro com relógio lógico e desempate por dispositivo. Voltar a uma página anterior também é uma alteração válida. Cada marcador tem seu próprio registro e tombstone de exclusão. O diário mescla o estado de todos os commits retidos, inclusive quando um cliente antigo publica um manifesto sem esse campo. A coleta só remove um registro de leitura quando um sucessor causal contém seu estado ou o livro foi excluído. Veja [leitor integrado](READER.md).
+
 ## Exclusão e coleta
 
 Ausência local, erro de download ou diretório desconhecido **não** autorizam exclusão remota. A intenção de excluir é persistida antes de remover o registro local e vinculada à conta/pasta e à versão vista. Uma edição remota diferente é preservada. Uma exclusão recebida enquanto há edição local offline preserva essa edição como outra cópia.

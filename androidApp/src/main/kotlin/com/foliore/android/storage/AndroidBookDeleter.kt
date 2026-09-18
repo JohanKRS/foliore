@@ -22,6 +22,7 @@ class AndroidBookDeleter(
                 check(bookDir.deleteRecursively()) { "Cannot delete local book files" }
             }
             OriginalFileArchive(File(appContext.filesDir, OriginalFileArchive.DIRECTORY)).deleteBook(bookId)
+            com.foliore.android.reader.ReadingStateRepository(appContext).removeBook(bookId)
             BookDeleteResult.Deleted(deleted.metadata.title)
         }.getOrDefault(BookDeleteResult.Failed)
     }

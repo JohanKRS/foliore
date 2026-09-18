@@ -144,6 +144,7 @@ fun EditMetadataScreen(
     onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
     onOriginalFiles: () -> Unit,
+    onRead: (BookMetadataDraft?) -> Unit,
     isLoading: Boolean,
     progress: SyncProgress?,
     onBottomBarActionsChange: (EditBottomBarActions?) -> Unit,
@@ -421,6 +422,7 @@ fun EditMetadataScreen(
                 isbn = isbn,
                 onIsbnChange = { isbn = it },
                 description = description,
+                onRead = { onRead(currentDraft().takeIf { it != originalDraft }) },
                 onOriginalFiles = onOriginalFiles,
                 originalFilesEnabled = !isLoading,
                 onBack = guardedBack,
@@ -454,6 +456,7 @@ fun EditMetadataScreen(
                 publishedDate = publishedDate,
                 onPublishedDateChange = { publishedDate = it },
                 description = description,
+                onRead = { onRead(currentDraft().takeIf { it != originalDraft }) },
                 onOriginalFiles = onOriginalFiles,
                 originalFilesEnabled = !isLoading,
                 tags = tags,
@@ -622,6 +625,7 @@ private fun TabletEditBookScreen(
     description: String,
     onOriginalFiles: () -> Unit,
     originalFilesEnabled: Boolean,
+    onRead: () -> Unit,
     onBack: () -> Unit,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
@@ -884,6 +888,11 @@ private fun TabletEditBookScreen(
                     }
                 }
 
+                androidx.compose.material3.TextButton(onClick = onRead, enabled = originalFilesEnabled, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.reader_open))
+                }
                 TabletSyncSection(book = book)
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
                 OriginalFilesFooter(onClick = onOriginalFiles, enabled = originalFilesEnabled)
@@ -917,6 +926,7 @@ private fun StackedEditBookScreen(
     description: String,
     onOriginalFiles: () -> Unit,
     originalFilesEnabled: Boolean,
+    onRead: () -> Unit,
     tags: String,
     onTagsChange: (String) -> Unit,
     isbn: String,
@@ -1162,6 +1172,11 @@ private fun StackedEditBookScreen(
                     }
                 }
 
+                androidx.compose.material3.TextButton(onClick = onRead, enabled = originalFilesEnabled, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.reader_open))
+                }
                 TabletSyncSection(book = book)
                 TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
                 OriginalFilesFooter(onClick = onOriginalFiles, enabled = originalFilesEnabled)

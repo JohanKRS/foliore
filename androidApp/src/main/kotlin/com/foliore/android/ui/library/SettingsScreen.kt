@@ -439,6 +439,10 @@ fun SettingsScreen(
                 Text(stringResource(R.string.about_title))
             }
         }
+        if (bookCount > 0) {
+            Spacer(modifier = Modifier.height(24.dp))
+            PublicDomainBookLinks(modifier = Modifier.fillMaxWidth())
+        }
         Spacer(modifier = Modifier.height(48.dp + bottomChromeInset))
         }
         }

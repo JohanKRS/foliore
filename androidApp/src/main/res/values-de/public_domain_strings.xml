@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="public_domain_language">de</string>
+    <string name="public_domain_title">Entdecke dein nächstes Buch</string>
+    <string name="public_domain_hint">Entdecke gemeinfreie Bücher im EPUB-Format.</string>
+    <string name="public_domain_start_title">Jede Bibliothek beginnt mit einem Buch</string>
+    <string name="public_domain_start_hint">Entdecke gemeinfreie Bücher im EPUB-Format und wähle dein erstes Buch.</string>
+</resources>

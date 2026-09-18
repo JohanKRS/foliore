@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="public_domain_language">ja</string>
+    <string name="public_domain_title">次に読む本を探す</string>
+    <string name="public_domain_hint">著作権の保護期間が満了した作品などをEPUB形式で探せます。</string>
+    <string name="public_domain_start_title">最初の一冊から始めましょう</string>
+    <string name="public_domain_start_hint">著作権の保護期間が満了した作品などから、EPUB形式で最初の一冊を探してみましょう。</string>
+</resources>

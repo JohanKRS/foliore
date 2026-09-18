@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="public_domain_language">en</string>
+    <string name="public_domain_title">Find your next read</string>
+    <string name="public_domain_hint">Find public domain books in EPUB.</string>
+    <string name="public_domain_start_title">Every library starts with a book</string>
+    <string name="public_domain_start_hint">Explore public domain books in EPUB and choose your first read.</string>
+</resources>

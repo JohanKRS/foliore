@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="public_domain_language">zh</string>
+    <string name="public_domain_title">寻找下一本好书</string>
+    <string name="public_domain_hint">寻找 EPUB 格式的公有领域书籍。</string>
+    <string name="public_domain_start_title">每座书库都从一本书开始</string>
+    <string name="public_domain_start_hint">探索 EPUB 格式的公有领域书籍，挑选你的第一本书。</string>
+</resources>

@@ -135,6 +135,10 @@ fun EditMetadataRoute(
             },
             onReplaceCover = { coverPicker.launch("image/*") },
             onOriginalFiles = { showOriginalFiles = true },
+            onRead = { draft ->
+                val open = { context.startActivity(com.foliore.android.reader.ReaderActivity.intent(context, bookId)) }
+                if (draft != null) viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = open) else open()
+            },
             isLoading = state.hasActiveProgress,
             progress = state.activeProgress,
             onBottomBarActionsChange = onBottomBarActionsChange,

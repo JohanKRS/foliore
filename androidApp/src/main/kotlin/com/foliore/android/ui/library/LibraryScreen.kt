@@ -225,6 +225,7 @@ fun LibraryScreen(
                         EmptyLibrary(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .padding(top = resolvedTopChromeInset, bottom = bottomChromeInset)
                                 .padding(horizontal = 28.dp),
                             onImportClick = onImportClick,
                             onSettingsClick = onSettingsClick,
@@ -2194,6 +2195,8 @@ private fun EmptyLibrary(
                 )
             },
         )
+        Spacer(modifier = Modifier.height(28.dp))
+        PublicDomainBookLinks(modifier = Modifier.fillMaxWidth(), isEmptyLibrary = true)
     }
 }
 

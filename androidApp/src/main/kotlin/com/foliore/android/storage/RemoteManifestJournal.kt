@@ -114,8 +114,12 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
         val collectionEpoch = deletionEpoch(refresh = false)
         val commits = readCommitted(entries)
         val newest = commits.values.filter { it.epoch == collectionEpoch }.maxByOrNull { it.manifest["updatedAt"]?.jsonPrimitive?.content.orEmpty() }?.id
+        val liveBookIds = commits.values.filter { it.epoch == collectionEpoch }.takeIf { it.isNotEmpty() }
+            ?.let { merge(it).books().filter { book -> book["deleted"]?.jsonPrimitive?.booleanOrNull != true }.map { book -> book.id() }.toSet() }.orEmpty()
         val obsolete = commits.filter { (entry, candidate) ->
             entry.modifiedAtMillis in 1 until cutoff && candidate.id != newest &&
+                (candidate.epoch != collectionEpoch || ReadingStateSync.read(candidate.manifest).forBooks(liveBookIds) == com.foliore.android.reader.ReadingState() ||
+                    commits.values.any { other -> candidate.id in other.parents && ReadingStateSync.covers(candidate.manifest, other.manifest, liveBookIds) }) &&
                 (candidate.epoch != collectionEpoch || candidate.manifest.books().all { book ->
                     commits.values.any { other -> candidate.id in other.parents && other.manifest.books().any { it.id() == book.id() } }
                 })
@@ -189,7 +193,9 @@ internal class RemoteManifestJournal(private val store: RemoteLibraryStore) {
             val prompts = heads.flatMap { it.manifest["aiCoverPrompts"]?.jsonArray.orEmpty() }
                 .groupBy { it.jsonObject["id"]?.jsonPrimitive?.content }
                 .values.map { group -> group.maxBy { it.jsonObject["selectedAtEpochMillis"]?.jsonPrimitive?.longOrNull ?: 0L } }
-            return JsonObject(latest.manifest + mapOf("books" to JsonArray(books), "aiCoverPrompts" to JsonArray(prompts)))
+            val liveBookIds = books.filter { it["deleted"]?.jsonPrimitive?.booleanOrNull != true }.map { it.id() }.toSet()
+            val reading = ReadingStateSync.merge(commits.map { it.manifest }, liveBookIds)
+            return JsonObject(latest.manifest + mapOf("books" to JsonArray(books), "aiCoverPrompts" to JsonArray(prompts), "readingState" to ReadingStateSync.encode(reading)))
         }
 
         internal fun mergeIndependentMetadata(versions: List<JsonObject>): JsonObject? {
