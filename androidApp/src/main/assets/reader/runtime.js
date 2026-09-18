@@ -24,6 +24,17 @@
   const scroller = () => fixed ? document.scrollingElement : viewport;
   const scrollTo = (x, y, smooth = false) => scroller().scrollTo({left:x, top:y, behavior:smooth ? 'smooth' : 'instant'});
   const style = document.getElementById('foliore-style');
+  FolioreImageTone.observe(content);
+  const illustrations = [...content.querySelectorAll('img,svg image')];
+  illustrations.forEach(image => { image.setAttribute('role', 'button'); image.setAttribute('tabindex', '0'); });
+  function openImage(target) {
+    const image = target.closest?.('img,image'), index = illustrations.indexOf(image);
+    if (index < 0) return false;
+    const source = image.currentSrc || image.src || '';
+    // Data images are recovered from the bounded publication document on the native side.
+    send({event:'image', index, href:source.startsWith('https://') && source.length <= 4096 ? source : ''});
+    return true;
+  }
   function send(value) { if (window.FolioreBridge) window.FolioreBridge.message(JSON.stringify(value)); }
   function nodes() {
     const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {acceptNode(n) {
@@ -98,10 +109,11 @@
     if (!resizing) resizeAnchor = null;
     const previous = ready ? locator() : null;
     options = settings; suppress = true; ready = false;
+    illustrations.forEach(image => image.setAttribute('aria-label', [options.imageOpenLabel, image.getAttribute('alt')].filter(Boolean).join(': ')));
     const width = fixed ? innerWidth : viewport.clientWidth, height = fixed ? innerHeight : viewport.clientHeight;
     const palette = {paper:['#f7f2e8','#302b24'], light:['#ffffff','#202020'], dark:['#191c1b','#e4e3dd']}[options.theme] || ['#f7f2e8','#302b24'];
     const m = Math.max(options.margin, (width - 720) / 2), vertical = options.margin;
-    const colors = `html,body{background:${palette[0]}!important;color:${palette[1]}!important;}`;
+    const colors = `html,body{background:${palette[0]}!important;color:${palette[1]}!important;}#foliore-viewport{background:${palette[0]}!important;}`;
     const typography = options.publisherStyles || fixed ? '' : `#foliore-content{font-family:${options.font}!important;font-size:${options.fontSize}px!important;line-height:${options.lineHeight}!important;text-align:${options.justify ? 'justify' : 'start'}!important;}#foliore-content *:not(pre):not(code){font-family:inherit!important;line-height:inherit!important;color:inherit!important;background-color:transparent!important;}#foliore-content :is(p,div,span,section,article,li,td,th,blockquote,a,em,strong){font-size:inherit!important;}#foliore-content h1{font-size:1.5em!important;line-height:1.2!important}#foliore-content h2{font-size:1.3em!important;line-height:1.3!important}#foliore-content h3{font-size:1.15em!important}#foliore-content p{orphans:2;widows:2;}`;
     const layout = fixed ? 'html{overflow:auto}body{margin:0}#foliore-content{padding:0}' : options.mode === 'pages' ?
       `html,body{overflow:hidden!important;margin:0!important;padding:0!important;height:100%!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow:hidden!important;direction:ltr!important;}#foliore-content{box-sizing:border-box!important;margin:${vertical}px ${m}px!important;padding:0!important;width:${Math.max(80, width-2*m)}px!important;height:${Math.max(80, height-2*vertical)}px!important;column-width:${Math.max(80, width-2*m)}px!important;column-gap:${2*m}px!important;column-fill:auto!important;overflow:visible!important;direction:ltr!important}#foliore-content>*{direction:${textDirection}}` :
@@ -109,7 +121,8 @@
     const mediaWidth = Math.max(80, width - 2*m), mediaHeight = Math.max(80, height - 2*vertical);
     const media = fixed ? '' : `#foliore-content :is(div,section,article,figure,aside,blockquote){max-width:100%!important;min-width:0!important;box-sizing:border-box!important}#foliore-content img,#foliore-content svg{max-width:100%!important;max-width:min(100%,${mediaWidth}px)!important;object-fit:contain}#foliore-content img{height:auto!important;max-height:${mediaHeight}px!important}#foliore-content .foliore-table{overflow:auto!important;max-height:${mediaHeight}px!important;break-inside:avoid!important}#foliore-content table{max-width:100%}#foliore-content pre{white-space:pre-wrap;overflow-wrap:anywhere}`;
     const floats = !fixed && options.mode === 'pages' ? '#foliore-content .foliore-raised-image{margin-top:0!important;break-inside:avoid!important}' : '';
-    style.textContent = `${colors}${layout}${typography}${media}${floats}#foliore-content a[href]{color:${options.theme === 'dark' ? '#d7b17a' : '#95612c'}!important}::selection{background:#d7b17a66}#foliore-content mark.foliore-match{background:#e7c467!important;color:#211b12!important}`;
+    const illustrationStyle = FolioreImageTone.css(options.theme, options.adaptIllustrations !== false);
+    style.textContent = `${colors}${layout}${typography}${media}${floats}${illustrationStyle}#foliore-content a[href]{color:${options.theme === 'dark' ? '#d7b17a' : '#95612c'}!important}::selection{background:#d7b17a66}#foliore-content mark.foliore-match{background:#e7c467!important;color:#211b12!important}`;
     requestAnimationFrame(() => requestAnimationFrame(() => { ready = true; goPosition(loc || previous || {}, fragment, user); }));
   }
   function step(direction) {
@@ -141,6 +154,7 @@
     // A WebView may synthesize a click after a drag, long press or interrupted gesture.
     const recentTouch = e.detail !== 0 && touch && Date.now() - touch.endedAt < 750;
     if (recentTouch && (touch.moved || touch.long || touch.blocked)) { e.preventDefault(); return; }
+    if (openImage(e.target)) { e.preventDefault(); return; }
     const a = e.target.closest?.('a[href]');
     if (a) { e.preventDefault(); send({event:'link', href:a.href}); return; }
     if (e.detail === 0 || e.target.closest?.('button,input,textarea,select,summary,[role="button"],[contenteditable="true"]')) return;
@@ -188,5 +202,8 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => { if (Object.keys(options).length) configure(options, resizeAnchor, null, false, true); }, 100);
   });
-  document.addEventListener('keydown', e => { if (e.key==='ArrowRight' || e.key==='PageDown') {e.preventDefault();step(1)} if (e.key==='ArrowLeft' || e.key==='PageUp') {e.preventDefault();step(-1)} });
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && openImage(e.target)) { e.preventDefault(); return; }
+    if (e.key==='ArrowRight' || e.key==='PageDown') {e.preventDefault();step(1)} if (e.key==='ArrowLeft' || e.key==='PageUp') {e.preventDefault();step(-1)}
+  });
 })();

@@ -456,6 +456,13 @@
     <string name="reader_pages">Seiten</string>
     <string name="reader_scroll">Scrollen</string>
     <string name="reader_publisher_styles">Buchformatierung verwenden</string>
+    <string name="reader_adapt_illustrations">Illustrationen an das Design anpassen</string>
+    <string name="reader_image_original">Originalbild</string>
+    <string name="reader_image_open">Originalbild öffnen</string>
+    <string name="reader_image_failed">Das Bild konnte nicht geöffnet werden.</string>
+    <string name="reader_image_zoom_in">Vergrößern</string>
+    <string name="reader_image_zoom_out">Verkleinern</string>
+    <string name="reader_image_fit">An Bildschirm anpassen</string>
     <string name="reader_fixed_layout">Dieses Buch hat ein festes Layout. Zum Vergrößern zwei Finger auseinanderziehen.</string>
     <string name="reader_font">Schriftart</string>
     <string name="reader_font_serif">Serifenschrift</string>

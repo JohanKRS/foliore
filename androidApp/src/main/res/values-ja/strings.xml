@@ -456,6 +456,13 @@
     <string name="reader_pages">ページ</string>
     <string name="reader_scroll">スクロール</string>
     <string name="reader_publisher_styles">本の書式を使用</string>
+    <string name="reader_adapt_illustrations">挿絵をテーマに合わせる</string>
+    <string name="reader_image_original">元の画像</string>
+    <string name="reader_image_open">元の画像を開く</string>
+    <string name="reader_image_failed">画像を開けませんでした。</string>
+    <string name="reader_image_zoom_in">拡大</string>
+    <string name="reader_image_zoom_out">縮小</string>
+    <string name="reader_image_fit">画面に合わせる</string>
     <string name="reader_fixed_layout">この本は固定レイアウトです。ピンチ操作で拡大できます。</string>
     <string name="reader_font">フォント</string>
     <string name="reader_font_serif">セリフ</string>

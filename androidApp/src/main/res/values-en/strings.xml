@@ -456,6 +456,13 @@
     <string name="reader_pages">Pages</string>
     <string name="reader_scroll">Scroll</string>
     <string name="reader_publisher_styles">Use book formatting</string>
+    <string name="reader_adapt_illustrations">Adapt illustrations to theme</string>
+    <string name="reader_image_original">Original image</string>
+    <string name="reader_image_open">Open original image</string>
+    <string name="reader_image_failed">Could not open the image.</string>
+    <string name="reader_image_zoom_in">Zoom in</string>
+    <string name="reader_image_zoom_out">Zoom out</string>
+    <string name="reader_image_fit">Fit to screen</string>
     <string name="reader_fixed_layout">This book has a fixed layout. Pinch to zoom.</string>
     <string name="reader_font">Font</string>
     <string name="reader_font_serif">Serif</string>

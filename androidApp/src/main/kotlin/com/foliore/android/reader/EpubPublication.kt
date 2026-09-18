@@ -27,6 +27,8 @@ internal class EpubPublication private constructor(private val zip: ZipFile) : C
     private val mediaTypes = mutableMapOf<String, String>()
     private val encryptedPaths = mutableSetOf<String>()
     private val fontKeys = mutableMapOf<String, ByteArray>()
+    private val coverImages = mutableSetOf<String>()
+    private val coverSections = mutableSetOf<String>()
     private val nonce = UUID.randomUUID().toString()
 
     private fun read(path: String, limit: Long = StorageLimits.ENTRY_BYTES): ByteArray? = synchronized(zip) {
@@ -44,6 +46,13 @@ internal class EpubPublication private constructor(private val zip: ZipFile) : C
         val manifest = pkg.local("manifest").firstOrNull() ?: error("Missing manifest")
         val items = manifest.local("item").mapNotNull { item -> resolve(opf, item.attr("href"))?.let { item.attr("id") to (item to it.first) } }.toMap()
         items.values.forEach { (item, path) -> mediaTypes[path] = item.attr("media-type") }
+        val legacyCover = pkg.local("meta").firstOrNull { it.attr("name") == "cover" }?.attr("content")
+        items.forEach { (id, item) ->
+            if (id == legacyCover || "cover-image" in item.first.attr("properties").split(' ')) coverImages += item.second
+        }
+        pkg.local("reference").filter { it.attr("type") == "cover" }.forEach { ref ->
+            resolve(opf, ref.attr("href"))?.let { coverSections += it.first }
+        }
         readFontObfuscation(pkg)
         val spine = pkg.local("spine").firstOrNull() ?: error("Missing spine")
         rtl = spine.attr("page-progression-direction") == "rtl"
@@ -60,6 +69,9 @@ internal class EpubPublication private constructor(private val zip: ZipFile) : C
         require(sections.isNotEmpty() && sections.size <= StorageLimits.ENTRIES)
         toc = items.values.firstOrNull { (item, _) -> "nav" in item.attr("properties").split(' ') }?.let { (_, path) ->
             val navDoc = xml(path)
+            navDoc.local("a").filter { "cover" in it.attr("epub:type").split(' ') }.forEach { link ->
+                resolve(path, link.attr("href"))?.let { coverSections += it.first }
+            }
             val nav = navDoc.local("nav").firstOrNull { "toc" in it.attr("epub:type").split(' ') || it.attr("role") == "doc-toc" }
             nav?.local("a")?.mapNotNull { link -> resolve(path, link.attr("href"))?.let { (href, fragment) ->
                 ReaderTocEntry(link.text().take(240), href, fragment, (link.parents().count { it.normalName() == "ol" } - 1).coerceIn(0, 6))
@@ -132,6 +144,11 @@ internal class EpubPublication private constructor(private val zip: ZipFile) : C
         doc.head().prependElement("meta").attr("http-equiv", "Content-Security-Policy").attr("content",
             "default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'nonce-$nonce'; connect-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'")
         doc.head().appendElement("style").attr("id", "foliore-style")
+        if (path in coverSections) doc.body().attr("data-foliore-cover", "true")
+        doc.allElements.filter { "cover" in it.attr("epub:type").split(' ') || "doc-cover" in it.attr("role").split(' ') }
+            .forEach { it.attr("data-foliore-cover", "true") }
+        doc.select("img[src]").filter { resolve(path, it.attr("src"))?.first in coverImages }
+            .forEach { it.attr("data-foliore-cover", "true") }
         doc.body().attr("data-foliore-fixed", fixed.toString())
         doc.body().appendElement("script").attr("nonce", nonce).attr("src", "$ORIGIN/_reader/runtime.js")
         return doc.outerHtml()
@@ -151,6 +168,28 @@ internal class EpubPublication private constructor(private val zip: ZipFile) : C
         val doc = Jsoup.parse(source)
         doc.select("script,style,noscript,iframe,object").remove()
         return (fragment?.let { doc.getElementById(it) } ?: doc.body()).text().take(16000)
+    }
+
+    fun imageDocument(path: String, index: Int, selectedSource: String = ""): String? {
+        if (!safePath(path) || index !in 0 until StorageLimits.ENTRIES) return null
+        val source = read(path, StorageLimits.XML_BYTES)?.toString(Charsets.UTF_8) ?: return null
+        val image = Jsoup.parse(sanitize(source, path)).select("img,svg image").getOrNull(index) ?: return null
+        val original = listOf("src", "href", "xlink:href").firstNotNullOfOrNull { image.attr(it).takeIf(String::isNotBlank) }
+        fun localImage(value: String): String? {
+            if (value.startsWith("data:image/", true)) return value
+            val uri = runCatching { URI(value.trim().replace(" ", "%20")) }.getOrNull() ?: return null
+            if (!uri.isAbsolute) return resolve(path, value)?.first?.let(::url)
+            return value.takeIf { uri.scheme == "https" && uri.host == "appassets.androidplatform.net" && uri.port == -1 &&
+                uri.path?.startsWith("/publication/") == true && safePath(uri.path.removePrefix("/publication/")) }
+        }
+        val href = selectedSource.takeIf { it.isNotBlank() }?.let(::localImage) ?: original?.let(::localImage) ?: return null
+        val doc = Jsoup.parse("<!doctype html><html><head></head><body></body></html>")
+        doc.head().appendElement("meta").attr("name", "viewport").attr("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
+        doc.head().appendElement("meta").attr("http-equiv", "Content-Security-Policy").attr("content", "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'nonce-$nonce'; base-uri 'none'; form-action 'none'")
+        doc.head().appendElement("style").text("html,body{margin:0;background:transparent;width:100%;height:100vh;overflow:hidden;touch-action:none;overscroll-behavior:contain;user-select:none}img{position:fixed;left:50%;top:50%;visibility:hidden;background:#fff;transform-origin:center;pointer-events:none}")
+        doc.body().appendElement("img").attr("src", href).attr("alt", image.attr("alt"))
+        doc.body().appendElement("script").attr("nonce", nonce).attr("src", "$ORIGIN/_reader/image-viewer.js")
+        return doc.outerHtml()
     }
 
     override fun close() { synchronized(zip) { zip.close() } }

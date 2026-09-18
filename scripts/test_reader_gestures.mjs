@@ -5,14 +5,14 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
-const runtime = readFileSync(new URL('../androidApp/src/main/assets/reader/runtime.js', import.meta.url), 'utf8');
-function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowWidth = 400, overflowHeight = 800 } = {}) {
+const runtime = ['image-tones.js', 'runtime.js'].map(name => readFileSync(new URL(`../androidApp/src/main/assets/reader/${name}`, import.meta.url), 'utf8')).join('\n');
+function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowWidth = 400, overflowHeight = 800, images = [] } = {}) {
   const listeners = {}, windowListeners = {}, messages = [], selection = { isCollapsed: true }, elements = [], timers = new Map();
   let now = 10000, timerId = 0;
   const flush = () => { while (timers.size) { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); } };
   const stylesheet = {};
   const element = () => ({ childNodes: [], clientWidth: 400, clientHeight: 800, style: { setProperty() {} }, scrollWidth: 1200, scrollHeight: 3000, scrollTop: 0, scrollLeft: 0,
-    append() {}, prepend() {}, querySelectorAll: () => [], scrollTo({ left, top }) { this.scrollLeft = left; this.scrollTop = top; } });
+    append() {}, prepend() {}, querySelectorAll: selector => selector === 'img,svg image' ? images : [], scrollTo({ left, top }) { this.scrollLeft = left; this.scrollTop = top; } });
   const body = { ...element(), dataset: { folioreFixed: String(fixed) } };
   const plain = { closest: () => null };
   const context = {
@@ -39,6 +39,7 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowW
     resizePages: count => { elements[1].scrollWidth = 400 * count; windowListeners.resize(); flush(); },
     actions: () => messages.filter(m => m.event !== 'position'),
     click: (x = 200, y = 400, extras = {}) => dispatch('click', { ...point(x, y), button: 0, detail: 1, ...extras }),
+    key: (key, target = plain) => dispatch('keydown', {key, target}),
     start: (x = 200, y = 400, count = 1, target = plain) => dispatch('touchstart', { target, touches: Array(count).fill(point(x, y)) }),
     move: (x, y, count = 1) => dispatch('touchmove', { touches: Array(count).fill(point(x, y)) }),
     end: (x = 200, y = 400, remaining = 0) => dispatch('touchend', { touches: Array(remaining).fill(point(x, y)), changedTouches: [point(x, y)] }),
@@ -47,6 +48,29 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowW
   };
 }
 const link = { closest: selector => selector === 'a[href]' ? { href: 'https://example.org/note' } : null };
+
+const illustration = (src = 'https://appassets.androidplatform.net/publication/art.png') => ({src,
+  setAttribute() {}, getAttribute: () => 'Drawing', closest(selector) { return selector === 'img,image' ? this : null; }});
+test('image taps open the original without turning pages, hiding chrome or following a wrapping link', () => {
+  const image = illustration(), r = reader({images:[image]});
+  for (const x of [10, 200, 390]) r.click(x, 400, {target:image});
+  assert.deepEqual(r.actions(), Array(3).fill({event:'image', index:0, href:image.src}));
+  assert.equal(r.messages.some(m => m.event === 'position'), false);
+  const nestedLink = {closest:selector => selector === 'img,image' ? image : {href:'https://example.org'}};
+  r.click(200, 400, {target:nestedLink}); assert.equal(r.actions().at(-1).event, 'image');
+});
+test('image keyboard activation works and data images are referenced without copying base64 through the bridge', () => {
+  const image = illustration('data:image/png;base64,' + 'A'.repeat(10000)), r = reader({images:[image]});
+  assert.equal(r.key('Enter', image).defaultPrevented, true); r.key(' ', image);
+  r.click(0, 0, {target:image, detail:0});
+  assert.deepEqual(r.actions(), Array(3).fill({event:'image', index:0, href:''}));
+});
+test('image drags, long presses and text selection do not open the viewer', () => {
+  const image = illustration(), r = reader({images:[image]});
+  r.start(); r.move(200, 500); r.end(200, 500); r.click(200, 500, {target:image});
+  r.start(); r.wait(650); r.end(); r.click(200, 400, {target:image});
+  r.selection.isCollapsed = false; r.click(200, 400, {target:image}); assert.deepEqual(r.actions(), []);
+});
 
 test('initial pagination uses the visible frame even when publisher content overflows', () => {
   const r = reader({ overflowWidth: 1216, overflowHeight: 1972 });

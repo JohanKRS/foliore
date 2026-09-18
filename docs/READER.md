@@ -11,6 +11,8 @@ O Foliore continua focado em organizar, preparar e enviar livros. A ação secun
 - Marcadores com trecho de referência e exclusão individual.
 - Temas papel, claro e escuro; três famílias de fontes; tamanho, entrelinha, margens, alinhamento e estilos da editora.
 - Imagens, tabelas, fontes incorporadas (incluindo ofuscação IDPF), layout fixo com zoom e direção de progressão RTL.
+- Adaptação automática de gravuras monocromáticas com fundo claro ao tema papel ou escuro, com opção para desligar. Capas declaradas, imagens coloridas e imagens ambíguas mantêm a aparência original.
+- Toque em uma imagem para abrir o original sobre o leitor levemente escurecido, sem moldura nem botões. Use pinça ou toque duplo para ampliar e arraste para explorar. Deslize verticalmente com a imagem ajustada à tela, toque no fundo ou use Voltar para fechar, mantendo o ponto de leitura. As ações de zoom e fechar também estão disponíveis para acessibilidade.
 - Brilho somente durante a leitura e opção de manter a tela ligada.
 - Retomada por passagem de texto, com progresso proporcional como alternativa, preservando o lugar ao mudar a tipografia.
 
@@ -18,9 +20,13 @@ A busca não envia texto a servidores. Preferências visuais ficam neste aparelh
 
 ## Implementação
 
-`EpubPublication` lê recursos do ZIP sob os limites de `StorageLimits`, sem extrair o livro inteiro. O WebView do sistema renderiza um documento por vez. Não há biblioteca adicional nem serviço de leitura. A interface Compose reutiliza os diálogos do app.
+`EpubPublication` lê recursos do ZIP sob os limites de `StorageLimits`, sem extrair o livro inteiro. O WebView do sistema renderiza um documento por vez. Não há biblioteca adicional nem serviço de leitura. A interface Compose reutiliza os diálogos do app; a visualização de imagens é uma exceção sem moldura, título ou botões.
 
 Os recursos são interceptados em uma origem HTTPS sintética. Acesso à rede, a arquivos locais e a content providers está desativado no WebView. O HTML passa por sanitização; uma CSP libera somente o pequeno runtime do app. Scripts, áudio/vídeo e conteúdo remoto do livro não são executados. Links externos abrem uma opção explícita na interface. O arquivo preparado permanece intacto. A ofuscação de fontes segue [EPUB 3.3 §4.4](https://www.w3.org/TR/epub-33/#sec-font-obfuscation), aplicada somente em memória.
+
+A adaptação de ilustrações analisa amostras de até 96 × 96 pixels das imagens próximas à área de leitura, durante períodos ociosos. Os resultados ficam em um cache limitado por documento; virar páginas ou mudar o tema não repete a análise do mesmo recurso. A detecção é heurística e conservadora. O efeito usa [composição CSS](https://www.w3.org/TR/compositing-1/#blending): multiplicação no papel e inversão com `screen` no escuro. Não modifica os bytes dos livros nem os arquivos exportados.
+
+A visualização original abre um segundo WebView somente enquanto estiver visível, com o recurso local e um runtime de gestos do app. Não carrega estilos ou scripts da editora nem aplica filtros à imagem. Oferece zoom de 1× a 8×, arrasto limitado à imagem, toque duplo e fechamento por deslize vertical no enquadramento inicial, toque no fundo ou Voltar. Ao fechar, libera esse WebView. A imagem permanece aberta e se ajusta novamente quando o aparelho gira.
 
 O leitor não remove DRM. A apresentação depende do WebView instalado e do conteúdo do EPUB; a prévia não garante paginação idêntica em um leitor externo. Busca e marcadores de texto dependem de texto real, não de páginas compostas apenas por imagens. Notas fora do spine são apresentadas em texto; notas dentro do spine seguem o link do livro. Não inclui anotações livres, tradução nem leitura em voz alta.
 
@@ -36,7 +42,7 @@ Posições não alteram metadados, revisão ou status do EPUB. Uma sincronizaç�
 
 ```sh
 ANDROID_HOME=/caminho/do/sdk ./gradlew :androidApp:assembleDebug :androidApp:testDebugUnitTest :androidApp:lintDebug -PconversionNativeLibraryDir=/caminho/das/bibliotecas/host
-node --test scripts/test_reader_gestures.mjs
+node --test scripts/test_reader_gestures.mjs scripts/test_reader_image_tones.mjs scripts/test_reader_image_viewer.mjs
 ```
 
 `ReadingStateTest`, `ReadingJournalTest` e `EpubPublicationTest` verificam localização, navegação EPUB, conteúdo ativo, fontes, mesclagem, tombstones e coleta. O `SyncSafetyHarness` debug exercita dois catálogos isolados com avanço, retorno, marcador, exclusão, falha de publicação e nova tentativa, conferindo ausência de uploads do EPUB e de alterações na revisão do livro.

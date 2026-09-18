@@ -58,6 +58,10 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var highlight by rememberSaveable { mutableStateOf("") }
     var linkText by remember { mutableStateOf<String?>(null) }
+    var imageDocument by remember { mutableStateOf<String?>(null) }
+    var imagePath by rememberSaveable { mutableStateOf<String?>(null) }
+    var imageIndex by rememberSaveable { mutableIntStateOf(-1) }
+    var imageSource by rememberSaveable { mutableStateOf("") }
     var renderingFailed by remember(state.publication) { mutableStateOf(false) }
     var slider by remember { mutableStateOf<Float?>(null) }
     val close = { controller?.flush(onClose) ?: onClose() }
@@ -94,6 +98,14 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
     DisposableEffect(activeController) { onDispose { activeController?.dispose() } }
     LaunchedEffect(controller, state.navigation?.token) { state.navigation?.let { controller?.navigate(it, prefs, highlight) } }
     LaunchedEffect(controller, prefs) { controller?.updateSettings(prefs, state.navigation?.locator) }
+    LaunchedEffect(dialog, state.publication, imagePath, imageIndex, imageSource) {
+        val publication = state.publication
+        val path = imagePath
+        if (dialog == "image" && publication != null && path != null) {
+            imageDocument = null
+            imageDocument = withContext(Dispatchers.IO) { runCatching { publication.imageDocument(path, imageIndex, imageSource) }.getOrNull() } ?: ""
+        }
+    }
 
     FolioreTheme(themeMode = if (dark) com.foliore.android.ui.theme.ThemeMode.DARK else com.foliore.android.ui.theme.ThemeMode.LIGHT) {
         Surface(color = paper, contentColor = MaterialTheme.colorScheme.onBackground, modifier = Modifier.fillMaxSize()) {
@@ -134,6 +146,12 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
                                             if (index >= 0) viewModel.navigate(index, fragment = uri.fragment)
                                             else scope.launch { linkText = withContext(Dispatchers.IO) { runCatching { publication.linkedText(path, uri.fragment) }.getOrNull() }; dialog = "note" }
                                         } else if (uri.scheme in setOf("https", "http", "mailto")) { linkText = target; dialog = "external" }
+                                    }, onImage = { index, source ->
+                                        val path = state.navigation?.locator?.href
+                                        if (path != null) {
+                                            imagePath = path; imageIndex = index; imageSource = source
+                                            imageDocument = null; dialog = "image"
+                                        }
                                     }, onError = { renderingFailed = true; controller = null }).also { it.initialize() }
                             } },
                             modifier = Modifier.fillMaxSize(),
@@ -179,6 +197,7 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
         }
         }
         when (dialog) {
+            "image" -> state.publication?.let { ReaderImageDialog(it, imageDocument) { dialog = null; imageDocument = null } }
             "settings" -> ReaderSettingsDialog(prefs, state.publication?.sections?.getOrNull(state.navigation?.section ?: 0)?.fixedLayout == true, viewModel::settings) { dialog = null }
             "toc" -> FolioreOptionsDialog(stringResource(R.string.reader_contents), onDismiss = { dialog = null }, scrollContent = false) {
                 LazyColumn(Modifier.fillMaxWidth().heightIn(max = 520.dp)) {

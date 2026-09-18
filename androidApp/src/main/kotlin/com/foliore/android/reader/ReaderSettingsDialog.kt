@@ -21,6 +21,7 @@ internal fun ReaderSettingsDialog(value: ReaderPreferences, fixed: Boolean, onCh
     FolioreOptionsDialog(stringResource(R.string.reader_settings), onDismiss) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ReaderChoice(stringResource(R.string.reader_theme), value.theme, listOf("paper" to R.string.reader_theme_paper, "light" to R.string.reader_theme_light, "dark" to R.string.reader_theme_dark)) { onChange(value.copy(theme = it)) }
+            ReaderToggle(stringResource(R.string.reader_adapt_illustrations), value.adaptIllustrations) { onChange(value.copy(adaptIllustrations = it)) }
             ReaderChoice(stringResource(R.string.reader_mode), value.mode, listOf("pages" to R.string.reader_pages, "scroll" to R.string.reader_scroll), !fixed) { onChange(value.copy(mode = it)) }
             ReaderToggle(stringResource(R.string.reader_publisher_styles), value.publisherStyles, !fixed) { onChange(value.copy(publisherStyles = it)) }
             if (fixed) Text(stringResource(R.string.reader_fixed_layout), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

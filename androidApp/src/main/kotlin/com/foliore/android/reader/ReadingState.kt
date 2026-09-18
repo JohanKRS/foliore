@@ -75,6 +75,7 @@ data class ReaderPreferences(
     val justify: Boolean = false,
     val keepScreenOn: Boolean = false,
     val brightness: Float = -1f,
+    val adaptIllustrations: Boolean = true,
 ) {
     fun normalized() = copy(
         theme = theme.takeIf { it in setOf("paper", "light", "dark") } ?: "paper",

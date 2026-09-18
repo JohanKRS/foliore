@@ -456,6 +456,13 @@
     <string name="reader_pages">Pagine</string>
     <string name="reader_scroll">Scorrimento</string>
     <string name="reader_publisher_styles">Usa la formattazione del libro</string>
+    <string name="reader_adapt_illustrations">Adatta le illustrazioni al tema</string>
+    <string name="reader_image_original">Immagine originale</string>
+    <string name="reader_image_open">Apri immagine originale</string>
+    <string name="reader_image_failed">Impossibile aprire l’immagine.</string>
+    <string name="reader_image_zoom_in">Ingrandisci</string>
+    <string name="reader_image_zoom_out">Riduci</string>
+    <string name="reader_image_fit">Adatta allo schermo</string>
     <string name="reader_fixed_layout">Questo libro ha un layout fisso. Allarga le dita per ingrandire.</string>
     <string name="reader_font">Carattere</string>
     <string name="reader_font_serif">Con grazie</string>

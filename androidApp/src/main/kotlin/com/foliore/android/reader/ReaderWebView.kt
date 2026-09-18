@@ -19,6 +19,7 @@ internal class ReaderWebController(
     private val onChapter: (Int) -> Unit,
     private val onToggleChrome: () -> Unit,
     private val onLink: (String) -> Unit,
+    private val onImage: (Int, String) -> Unit,
     private val onError: () -> Unit,
 ) {
     private val handler = Handler(Looper.getMainLooper())
@@ -28,7 +29,9 @@ internal class ReaderWebController(
     private var disposed = false
     private var highlight = ""
     private val json = Json { encodeDefaults = true }
-    private val runtime = view.context.assets.open("reader/runtime.js").use { it.readBytes() }
+    private val runtime = listOf("image-tones.js", "runtime.js").joinToString("\n") { name ->
+        view.context.assets.open("reader/$name").bufferedReader().use { it.readText() }
+    }.toByteArray(Charsets.UTF_8)
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     fun initialize() {
@@ -65,6 +68,7 @@ internal class ReaderWebController(
                             "chapter" -> onChapter(data.optInt("direction").coerceIn(-1, 1))
                             "chrome" -> onToggleChrome()
                             "link" -> onLink(data.optString("href").take(4096))
+                            "image" -> onImage(data.optInt("index", -1), data.optString("href").take(4096))
                         }
                     }
                 }
@@ -113,7 +117,8 @@ internal class ReaderWebController(
     }
     private fun configure() {
         val nav = navigation ?: return
-        val prefs = JSONObject(json.encodeToString(settings)).put("rtl", publication.rtl).toString()
+        val prefs = JSONObject(json.encodeToString(settings)).put("rtl", publication.rtl)
+            .put("imageOpenLabel", view.context.getString(com.foliore.android.R.string.reader_image_open)).toString()
         evaluate("FolioreReader.configure($prefs,${json.encodeToString(nav.locator)},${JSONObject.quote(nav.fragment.orEmpty())},${nav.user});FolioreReader.highlight(${JSONObject.quote(highlight)});")
         navigation = nav.copy(fragment = null, user = false)
     }
