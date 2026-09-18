@@ -38,3 +38,13 @@ The Console confirmed both current/previous per-project per-minute Gmail quotas 
 SHA-256: `f419c1f137f1efa1742028cdc9d352756bee1ba4ce5affd85bba723395d3ffc7`.
 
 Signer SHA-256: `0314c5c1f4540c1cf189a51cc17c39a31e9d9b943a1651ba77ca73776bff46a4`.
+
+## Approved-sender reminder follow-up
+
+The Kindle dialog now always shows a small approved-sender reminder and an inline Amazon settings link, including before connecting Gmail and when using SMTP. All eight translations were updated. Amazon documents this requirement in [Add an Email Address to Receive Documents in Your Kindle Library](https://digprjsurvey.amazon.co.uk/csad/help/node/GX9XLEVV8G4DB28H); existing approved addresses can remain.
+
+`:androidApp:assembleDebug`, `:androidApp:lintDebug` and the signed release build passed. English and Portuguese layouts were checked on a disposable Android 36 emulator (`FolioreReminderQA`). The native link opened Chrome with `https://www.amazon.com/mycd`, confirmed by the activity log. No authenticated Amazon settings were changed or verified. The crash buffer remained empty. `kindle-reminder-pt.png` and its XML capture show the final Portuguese layout.
+
+Updated signed preview: `Foliore-0.1.0-gmail-preview-2026-09-18-v2.apk`.
+
+SHA-256: `8dbabfdedea824dd10ac7d9f29564e886c352ade1255784e953832eca770116a`.

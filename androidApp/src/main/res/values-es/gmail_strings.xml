@@ -3,7 +3,6 @@
     <string name="gmail_description">Conecta tu cuenta para enviar libros con Gmail.</string>
     <string name="gmail_active">Se usa para enviar libros.</string>
     <string name="gmail_available">Cuenta conectada.</string>
-    <string name="gmail_approved_sender">Añade este correo a los remitentes autorizados de Kindle.</string>
     <string name="gmail_connecting">Conectando…</string>
     <string name="gmail_connect">Conectar Gmail</string>
     <string name="gmail_change_account">Cambiar cuenta</string>
@@ -21,4 +20,6 @@
     <string name="gmail_notice_too_large">Gmail admite adjuntos de hasta 25 MB.</string>
     <string name="gmail_notice_rate_limited">Gmail alcanzó un límite de envío. Inténtalo más tarde.</string>
     <string name="gmail_notice_send_unknown">No se pudo confirmar el envío. Revisa Enviados en Gmail antes de reintentarlo.</string>
+    <string name="kindle_sender_approval_hint">En Documentos personales de Amazon, añade tu correo de envío a los remitentes autorizados.</string>
+    <string name="kindle_sender_approval_link">Configurar en Amazon</string>
 </resources>

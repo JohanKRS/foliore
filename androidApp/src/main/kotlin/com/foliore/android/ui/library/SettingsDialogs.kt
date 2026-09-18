@@ -246,8 +246,6 @@ internal fun KindleSettingsDialog(
                     if (settings.gmailAccount != null) {
                         Text(stringResource(if (settings.provider == com.foliore.android.storage.KindleEmailProvider.GMAIL)
                             R.string.gmail_active else R.string.gmail_available), style = MaterialTheme.typography.bodySmall)
-                        Text(stringResource(R.string.gmail_approved_sender), style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     SettingsDialogButtonPair(
                         primaryLabel = stringResource(when {
@@ -264,6 +262,7 @@ internal fun KindleSettingsDialog(
                     )
                 }
             }
+            KindleSenderReminder()
             TextButton(onClick = { showSmtp = !showSmtp }) {
                 Text(stringResource(if (showSmtp) R.string.gmail_hide_smtp else R.string.gmail_show_smtp))
             }

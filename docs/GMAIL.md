@@ -5,7 +5,7 @@ Foliore sends a prepared EPUB directly from the Google account selected by the u
 ## Android flow
 
 1. Settings → Send to Kindle → connect Gmail. Google Play services opens its account picker and requests `https://www.googleapis.com/auth/gmail.send` for that specific account.
-2. Save the destination Kindle email and add the sending address to the approved personal-document senders in Amazon's settings.
+2. Save the destination Kindle email and add the sending address to the approved personal-document senders in Amazon's settings. The dialog always includes a small reminder and an inline link to Amazon's Manage Your Content and Devices page (`/mycd`), for Gmail and SMTP alike. The storefront follows the device region rather than the selected app language. Existing approved senders do not need to be removed.
 3. Send from book details or the metadata editor. Google Play services supplies an access token for the selected account, requesting authorization again when required.
 
 Only the account address and chosen delivery provider are stored in Foliore preferences. Access tokens are held for the current operation; their cache is owned by Google Play services. There is no OAuth client secret in the app, no Foliore mail server and no inbox-reading scope. Gmail settings and tokens are not synchronized with the library.
