@@ -3,7 +3,6 @@ package com.foliore.android.reader
 import android.app.Activity
 import android.net.Uri
 import android.view.WindowManager
-import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -44,7 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -109,92 +108,99 @@ internal fun ReaderScreen(viewModel: ReaderViewModel, onClose: () -> Unit) {
 
     FolioreTheme(themeMode = if (dark) com.foliore.android.ui.theme.ThemeMode.DARK else com.foliore.android.ui.theme.ThemeMode.LIGHT) {
         Surface(color = paper, contentColor = MaterialTheme.colorScheme.onBackground, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-            if (chrome) {
-                Row(Modifier.widthIn(max = 900.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    ReaderIcon(Icons.AutoMirrored.Outlined.ArrowBack, R.string.reader_back, close)
-                    Column(Modifier.weight(1f)) {
-                        Text(state.book?.metadata?.title ?: stringResource(R.string.reader_title), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(stringResource(R.string.reader_title), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    ReaderIcon(Icons.Outlined.Search, R.string.reader_search) { dialog = "search" }
-                    ReaderIcon(Icons.Outlined.TextFields, R.string.reader_settings) { dialog = "settings" }
-                    ReaderIcon(Icons.Outlined.Fullscreen, R.string.reader_fullscreen) { chrome = false }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = .25f))
-            }
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                val publication = state.publication
-                if (state.loading) CircularProgressIndicator(Modifier.size(28.dp))
-                else if (state.failed || renderingFailed || publication == null) {
-                    Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(stringResource(R.string.reader_open_failed))
-                        TextButton(onClick = { renderingFailed = false; controller = null; viewModel.load() }) { Text(stringResource(R.string.original_files_retry)) }
-                        TextButton(onClick = close) { Text(stringResource(R.string.reader_back)) }
-                    }
-                } else {
-                    key(publication) {
-                        AndroidView(
-                            factory = { ctx -> WebView(ctx).also { web ->
-                                controller = ReaderWebController(web, publication, viewModel::position, viewModel::chapter,
-                                    onToggleChrome = { chrome = !chrome },
-                                    onLink = { target ->
-                                        val uri = Uri.parse(target)
-                                        if (uri.scheme == "https" && uri.host == "appassets.androidplatform.net" && uri.path?.startsWith("/publication/") == true) {
-                                            val path = uri.path!!.removePrefix("/publication/")
-                                            val index = publication.sections.indexOfFirst { it.href == path }
-                                            if (index >= 0) viewModel.navigate(index, fragment = uri.fragment)
-                                            else scope.launch { linkText = withContext(Dispatchers.IO) { runCatching { publication.linkedText(path, uri.fragment) }.getOrNull() }; dialog = "note" }
-                                        } else if (uri.scheme in setOf("https", "http", "mailto")) { linkText = target; dialog = "external" }
-                                    }, onImage = { index, source ->
-                                        val path = state.navigation?.locator?.href
-                                        if (path != null) {
-                                            imagePath = path; imageIndex = index; imageSource = source
-                                            imageDocument = null; dialog = "image"
-                                        }
-                                    }, onError = { renderingFailed = true; controller = null }).also { it.initialize() }
-                            } },
-                            modifier = Modifier.fillMaxSize(),
-                        )
+            // Chrome overlays a stable reading surface. Hiding it must not repaginate the book.
+            Box(Modifier.fillMaxSize().windowInsetsPadding(
+                WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout),
+            )) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val publication = state.publication
+                    if (state.loading) CircularProgressIndicator(Modifier.size(28.dp))
+                    else if (state.failed || renderingFailed || publication == null) {
+                        Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(stringResource(R.string.reader_open_failed))
+                            TextButton(onClick = { renderingFailed = false; controller = null; viewModel.load() }) { Text(stringResource(R.string.original_files_retry)) }
+                            TextButton(onClick = close) { Text(stringResource(R.string.reader_back)) }
+                        }
+                    } else {
+                        key(publication) {
+                            AndroidView(
+                                factory = { ctx -> ReaderContentWebView(ctx).also { web ->
+                                    controller = ReaderWebController(web, publication, viewModel::position, viewModel::chapter,
+                                        onToggleChrome = { chrome = !chrome },
+                                        onLink = { target ->
+                                            val uri = Uri.parse(target)
+                                            if (uri.scheme == "https" && uri.host == "appassets.androidplatform.net" && uri.path?.startsWith("/publication/") == true) {
+                                                val path = uri.path!!.removePrefix("/publication/")
+                                                val index = publication.sections.indexOfFirst { it.href == path }
+                                                if (index >= 0) viewModel.navigate(index, fragment = uri.fragment)
+                                                else scope.launch { linkText = withContext(Dispatchers.IO) { runCatching { publication.linkedText(path, uri.fragment) }.getOrNull() }; dialog = "note" }
+                                            } else if (uri.scheme in setOf("https", "http", "mailto")) { linkText = target; dialog = "external" }
+                                        }, onImage = { index, source ->
+                                            val path = state.navigation?.locator?.href
+                                            if (path != null) {
+                                                imagePath = path; imageIndex = index; imageSource = source
+                                                imageDocument = null; dialog = "image"
+                                            }
+                                        }, onError = { renderingFailed = true; controller = null }).also { it.initialize() }
+                                } },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
                 }
-            }
-            if (chrome && state.publication != null && !state.loading) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = .25f))
-                val nav = state.navigation
-                val section = nav?.section ?: 0
-                val publication = state.publication!!
-                val paginated = prefs.mode == "pages" && !publication.sections[section].fixedLayout
-                val loc = state.locator
-                val progressLabel = stringResource(R.string.reader_page_progress)
-                val overall = ((section + (loc?.progression ?: 0.0)) / publication.sections.size * 100).toInt().coerceIn(0,100)
-                Column(Modifier.widthIn(max = 900.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(horizontal = 12.dp, vertical = 6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(publication.sections.getOrNull(section)?.title.orEmpty(), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(stringResource(R.string.reader_percent, overall), style = MaterialTheme.typography.labelSmall)
+                if (chrome) {
+                    Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(paper)) {
+                        Row(Modifier.widthIn(max = 900.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            ReaderIcon(Icons.AutoMirrored.Outlined.ArrowBack, R.string.reader_back, close)
+                            Column(Modifier.weight(1f)) {
+                                Text(state.book?.metadata?.title ?: stringResource(R.string.reader_title), style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(stringResource(R.string.reader_title), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            ReaderIcon(Icons.Outlined.Search, R.string.reader_search) { dialog = "search" }
+                            ReaderIcon(Icons.Outlined.TextFields, R.string.reader_settings) { dialog = "settings" }
+                            ReaderIcon(Icons.Outlined.Fullscreen, R.string.reader_fullscreen) { chrome = false }
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = .25f))
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ReaderIcon(Icons.AutoMirrored.Outlined.NavigateBefore, R.string.reader_previous, enabled = section > 0 || (if (paginated) state.page > 1 else (loc?.progression ?: 0.0) > 0)) { controller?.step(-1) }
-                        Slider(value = slider ?: (loc?.progression?.toFloat() ?: 0f), onValueChange = { slider = it },
-                            onValueChangeFinished = { slider?.let { controller?.seek(it) }; slider = null }, modifier = Modifier.weight(1f).semantics { contentDescription = progressLabel },
-                            thumb = { Box(Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary, CircleShape)) },
-                            colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f)),
-                            track = { sliderState -> SliderDefaults.Track(sliderState, modifier = Modifier.height(3.dp), drawStopIndicator = null, thumbTrackGapSize = 0.dp,
-                                colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f))) })
-                        ReaderIcon(Icons.AutoMirrored.Outlined.NavigateNext, R.string.reader_next, enabled = section < publication.sections.lastIndex || (if (paginated) state.page < state.pages else (loc?.progression ?: 0.0) < 1)) { controller?.step(1) }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { dialog = "toc" }) { Icon(Icons.Outlined.FormatListBulleted, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.reader_contents)) }
-                        Spacer(Modifier.weight(1f))
-                        Text(stringResource(if (prefs.mode == "pages" && !publication.sections[section].fixedLayout) R.string.reader_page else R.string.reader_chapter,
-                            if (prefs.mode == "pages" && !publication.sections[section].fixedLayout) state.page else section + 1,
-                            if (prefs.mode == "pages" && !publication.sections[section].fixedLayout) state.pages else publication.sections.size), style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.weight(1f))
-                        ReaderIcon(Icons.Outlined.Bookmarks, R.string.reader_bookmarks) { dialog = "bookmarks" }
+                }
+                if (chrome && state.publication != null && !state.loading) {
+                    Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(paper)) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = .25f))
+                        val nav = state.navigation
+                        val section = nav?.section ?: 0
+                        val publication = state.publication!!
+                        val paginated = prefs.mode == "pages" && !publication.sections[section].fixedLayout
+                        val loc = state.locator
+                        val progressLabel = stringResource(R.string.reader_page_progress)
+                        val overall = ((section + (loc?.progression ?: 0.0)) / publication.sections.size * 100).toInt().coerceIn(0,100)
+                        Column(Modifier.widthIn(max = 900.dp).fillMaxWidth().align(Alignment.CenterHorizontally).padding(horizontal = 12.dp, vertical = 6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(publication.sections.getOrNull(section)?.title.orEmpty(), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(stringResource(R.string.reader_percent, overall), style = MaterialTheme.typography.labelSmall)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                ReaderIcon(Icons.AutoMirrored.Outlined.NavigateBefore, R.string.reader_previous, enabled = section > 0 || (if (paginated) state.page > 1 else (loc?.progression ?: 0.0) > 0)) { controller?.step(-1) }
+                                Slider(value = slider ?: (loc?.progression?.toFloat() ?: 0f), onValueChange = { slider = it },
+                                    onValueChangeFinished = { slider?.let { controller?.seek(it) }; slider = null }, modifier = Modifier.weight(1f).semantics { contentDescription = progressLabel },
+                                    thumb = { Box(Modifier.size(12.dp).background(MaterialTheme.colorScheme.primary, CircleShape)) },
+                                    colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f)),
+                                    track = { sliderState -> SliderDefaults.Track(sliderState, modifier = Modifier.height(3.dp), drawStopIndicator = null, thumbTrackGapSize = 0.dp,
+                                        colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = .12f))) })
+                                ReaderIcon(Icons.AutoMirrored.Outlined.NavigateNext, R.string.reader_next, enabled = section < publication.sections.lastIndex || (if (paginated) state.page < state.pages else (loc?.progression ?: 0.0) < 1)) { controller?.step(1) }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = { dialog = "toc" }) { Icon(Icons.Outlined.FormatListBulleted, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.reader_contents)) }
+                                Spacer(Modifier.weight(1f))
+                                Text(stringResource(if (prefs.mode == "pages" && !publication.sections[section].fixedLayout) R.string.reader_page else R.string.reader_chapter,
+                                    if (prefs.mode == "pages" && !publication.sections[section].fixedLayout) state.page else section + 1,
+                                    if (prefs.mode == "pages" && !publication.sections[section].fixedLayout) state.pages else publication.sections.size), style = MaterialTheme.typography.labelSmall)
+                                Spacer(Modifier.weight(1f))
+                                ReaderIcon(Icons.Outlined.Bookmarks, R.string.reader_bookmarks) { dialog = "bookmarks" }
+                            }
+                        }
                     }
                 }
             }
-        }
         }
         when (dialog) {
             "image" -> state.publication?.let { ReaderImageDialog(it, imageDocument) { dialog = null; imageDocument = null } }

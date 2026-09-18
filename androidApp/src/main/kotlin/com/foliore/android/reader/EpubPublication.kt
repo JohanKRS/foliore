@@ -4,6 +4,7 @@ import com.foliore.android.storage.StorageLimits
 import com.foliore.android.storage.readBounded
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
+import org.jsoup.nodes.DocumentType
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import java.io.Closeable
@@ -129,6 +130,9 @@ internal class EpubPublication private constructor(private val zip: ZipFile) : C
 
     internal fun sanitize(source: String, path: String): String {
         val doc = Jsoup.parse(source)
+        // The reader renders HTML, including EPUBs without a doctype. Always use standards layout.
+        doc.childNodes().filterIsInstance<DocumentType>().forEach { it.remove() }
+        doc.prependChild(DocumentType("html", "", ""))
         doc.outputSettings().syntax(Document.OutputSettings.Syntax.html).charset(Charsets.UTF_8).prettyPrint(false)
         doc.select("script, iframe, frame, frameset, object, embed, form, input, button, textarea, audio, video, base, meta[http-equiv]").remove()
         doc.allElements.forEach { element ->

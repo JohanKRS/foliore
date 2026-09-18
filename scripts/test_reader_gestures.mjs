@@ -11,13 +11,13 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowW
   let now = 10000, timerId = 0;
   const flush = () => { while (timers.size) { const pending = [...timers.values()]; timers.clear(); pending.forEach(callback => callback()); } };
   const stylesheet = {};
-  const element = () => ({ childNodes: [], clientWidth: 400, clientHeight: 800, style: { setProperty() {} }, scrollWidth: 1200, scrollHeight: 3000, scrollTop: 0, scrollLeft: 0,
+  const element = () => ({ childNodes: [], clientWidth: 400, clientHeight: 800, style: { setProperty(name, value) { this[name] = value; }, removeProperty(name) { delete this[name]; } }, scrollWidth: 1160, scrollHeight: 3000, scrollTop: 0, scrollLeft: 0,
     append() {}, prepend() {}, querySelectorAll: selector => selector === 'img,svg image' ? images : [], scrollTo({ left, top }) { this.scrollLeft = left; this.scrollTop = top; } });
   const body = { ...element(), dataset: { folioreFixed: String(fixed) } };
   const plain = { closest: () => null };
   const context = {
     innerWidth: overflowWidth, innerHeight: overflowHeight, visualViewport: visible,
-    document: { body, scrollingElement: element(), createElement: () => { const el = element(); elements.push(el); return el; },
+    document: { body, documentElement: element(), scrollingElement: element(), createElement: () => { const el = element(); elements.push(el); return el; },
       getElementById: id => id === 'foliore-style' ? stylesheet : null,
       createTreeWalker: () => ({ nextNode: () => null }),
       addEventListener: (type, callback) => { listeners[type] = callback; } },
@@ -35,8 +35,9 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowW
     listeners[type](event); return event;
   };
   const point = (x, y) => ({ clientX: x, clientY: y });
-  return { messages, selection, context, flush, stylesheet,
-    resizePages: count => { elements[1].scrollWidth = 400 * count; windowListeners.resize(); flush(); },
+  return { messages, selection, context, flush, stylesheet, content: elements[0], viewport: elements[1],
+    select: () => dispatch('selectionchange', {}),
+    resizePages: count => { elements[0].scrollWidth = 400 * count - 40; windowListeners.resize(); flush(); },
     actions: () => messages.filter(m => m.event !== 'position'),
     click: (x = 200, y = 400, extras = {}) => dispatch('click', { ...point(x, y), button: 0, detail: 1, ...extras }),
     key: (key, target = plain) => dispatch('keydown', {key, target}),
@@ -95,7 +96,7 @@ for (const config of [{ mode: 'pages' }, { mode: 'scroll' }, { fixed: true }]) {
       r.start(x, y); r.end(x, y); r.click(x, y);
     }
     assert.deepEqual(r.actions(), Array(3).fill({ event: 'chrome' }));
-    assert.equal(r.messages[0].event, 'position', 'capture the passage before resizing');
+    assert.equal(r.messages[0].event, 'position', 'flush the passage before toggling controls');
   });
 }
 test('top and bottom of the page do not hide controls', () => {
@@ -147,14 +148,58 @@ test('pinch and cancelled gestures ignore synthesized clicks', () => {
   const r = reader(); r.start(); r.start(200, 400, 2); r.end(200, 400, 1); r.move(350, 400); r.end(350, 400); r.click();
   r.start(); r.cancel(); r.click(); assert.deepEqual(r.actions(), []);
 });
-test('showing and hiding controls preserves the anchor across repagination', () => {
+test('consecutive viewport resizes preserve the anchor until actual reading resumes', () => {
   const r = reader(); r.resizePages(5); r.context.FolioreReader.step(1); r.flush();
   assert.equal(r.context.FolioreReader.position().page, 2);
   r.click(); r.resizePages(2); assert.equal(r.context.FolioreReader.position().page, 1);
   r.click(); r.resizePages(5); assert.equal(r.context.FolioreReader.position().page, 2);
-  // Actual reading replaces the anchor; the next toggle must not restore the old passage.
+  // Actual reading replaces the anchor; the next resize must not restore the old passage.
   r.context.FolioreReader.step(1); r.flush(); r.click(); r.resizePages(5);
   assert.equal(r.context.FolioreReader.position().page, 3);
+});
+
+test('the final page is independent of the browser scroll range and stays stable on a center tap', () => {
+  const r = reader();
+  r.viewport.scrollTo = () => assert.fail('pagination must not use the clamped scroll range');
+  r.context.FolioreReader.seek(1); r.flush();
+  assert.equal(r.context.FolioreReader.position().page, 3);
+  assert.equal(r.content.style.transform, 'translateX(-800px)');
+  r.click(); r.flush();
+  assert.equal(r.context.FolioreReader.position().page, 3);
+  assert.equal(r.content.style.transform, 'translateX(-800px)');
+});
+
+test('selection cannot pan a paginated page, while scrolling mode preserves vertical progress', () => {
+  for (const mode of ['pages', 'scroll']) {
+    const r = reader({mode});
+    r.selection.isCollapsed = false;
+    r.viewport.scrollLeft = 23; r.viewport.scrollTop = 400;
+    r.context.document.documentElement.scrollLeft = 12;
+    r.context.document.body.scrollTop = 50;
+    r.select();
+    assert.equal(r.viewport.scrollLeft, 0);
+    assert.equal(r.viewport.scrollTop, mode === 'pages' ? 0 : 400);
+    assert.equal(r.context.document.documentElement.scrollLeft, 0);
+    assert.equal(r.context.document.body.scrollTop, 0);
+    assert.equal(r.selection.isCollapsed, false);
+    assert.deepEqual(r.messages, []);
+  }
+  const fixed = reader({fixed:true});
+  fixed.context.document.scrollingElement.scrollTop = 250;
+  fixed.select();
+  assert.equal(fixed.context.document.scrollingElement.scrollTop, 250);
+});
+
+test('switching to scrolling clears the old page translation and obsolete position reports', () => {
+  const r = reader();
+  r.context.FolioreReader.step(1);
+  assert.equal(r.content.style.transform, 'translateX(-400px)');
+  r.context.FolioreReader.configure({mode:'scroll', margin:20, theme:'paper'}, {progression:.5}, null, false);
+  r.flush();
+  assert.equal(r.content.style.transform, undefined);
+  assert.equal(r.viewport.scrollTop, 1100);
+  assert.equal(r.messages.length, 1);
+  assert.equal(r.messages[0].user, false);
 });
 
 // The viewport scroll coordinates remain LTR; only publication text and gestures are RTL.

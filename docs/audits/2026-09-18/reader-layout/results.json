@@ -1,0 +1,536 @@
+{
+  "environment": "Android 36, Pixel 8 disposable emulator, real Android WebView",
+  "layoutChecks": 122,
+  "fullscreenToggles": 66,
+  "errors": [],
+  "toggles": [
+    {
+      "book": "QA: layout fixo",
+      "mode": "pages",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0,
+          "textOffset": 0,
+          "quote": "Página fixa 1Texto à direita. A imagem mantém 400 × 600.",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          900,
+          1834
+        ],
+        "frame": [
+          900,
+          0
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "none",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 500,
+            "right": 820,
+            "top": 332,
+            "bottom": 445.1428527832031
+          }
+        ]
+      }
+    },
+    {
+      "book": "Entre páginas",
+      "mode": "pages",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.5,
+          "textOffset": 6594,
+          "quote": "paisagem se revela: o vento passa pelas árvores, a luz desenha caminhos e as palavras nos convidam a",
+          "page": 10,
+          "pages": 19
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "matrix(1, 0, 0, 1, -3708, 0)",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388,
+            "top": 24,
+            "bottom": 216
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 236,
+            "bottom": 492
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 512,
+            "bottom": 768
+          }
+        ]
+      }
+    },
+    {
+      "book": "Entre páginas",
+      "mode": "scroll",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.49997531487092894,
+          "textOffset": 6489,
+          "quote": "navegação e a retomada no Foliore.Trecho 1.24. Ler é encontrar espaço para as ideias. A cada página,",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          6754.66650390625,
+          0,
+          0
+        ],
+        "transform": "none",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 65.92857360839844,
+            "bottom": 321.92857360839844
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 341.9285888671875,
+            "bottom": 597.9285888671875
+          }
+        ]
+      }
+    },
+    {
+      "book": "QA: imagens e tabelas",
+      "mode": "pages",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.5142857142857142,
+          "textOffset": 12371,
+          "quote": "Trecho 34. Leitura com acentos: ação, coração, café. Cada passagem deve permanecer visível ao mudar ",
+          "page": 19,
+          "pages": 36
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "matrix(1, 0, 0, 1, -7416, 0)",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388,
+            "top": 24,
+            "bottom": 376
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 396,
+            "bottom": 748
+          }
+        ]
+      }
+    },
+    {
+      "book": "QA: imagens e tabelas",
+      "mode": "scroll",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.4999935759881708,
+          "textOffset": 12009,
+          "quote": "Trecho 33. Leitura com acentos: ação, coração, café. Cada passagem deve permanecer visível ao mudar ",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          12997.3330078125,
+          0,
+          0
+        ],
+        "transform": "none",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 50,
+            "bottom": 402
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 422,
+            "bottom": 774
+          }
+        ]
+      }
+    },
+    {
+      "book": "QA: leitura RTL",
+      "mode": "pages",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.5,
+          "textOffset": 8934,
+          "quote": "الكلمات من اليمين إلى اليسار. 38. هذه صفحة للاختبار. نقرأ الكلمات من اليمين إلى اليسار. 39. هذه صفحة",
+          "page": 10,
+          "pages": 19
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "matrix(1, 0, 0, 1, -3708, 0)",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388,
+            "top": 24,
+            "bottom": 88
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 108,
+            "bottom": 268
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 288,
+            "bottom": 448
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 468,
+            "bottom": 628
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 648,
+            "bottom": 808
+          }
+        ]
+      }
+    },
+    {
+      "book": "QA: leitura RTL",
+      "mode": "scroll",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.5,
+          "textOffset": 8702,
+          "quote": "الكلمات من اليمين إلى اليسار. 37. هذه صفحة للاختبار. نقرأ الكلمات من اليمين إلى اليسار. 38. هذه صفحة",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          6848,
+          0,
+          0
+        ],
+        "transform": "none",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 104.19047546386719,
+            "bottom": 264.19049072265625
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 284.19049072265625,
+            "bottom": 444.19049072265625
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 464.19049072265625,
+            "bottom": 624.1904907226562
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 644.1904907226562,
+            "bottom": 804.1904907226562
+          }
+        ]
+      }
+    },
+    {
+      "book": "Pride and Prejudice",
+      "mode": "pages",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.5,
+          "textOffset": 57193,
+          "quote": "“Without once opening his lips”\n\n[Copyright 1894 by George Allen.]\n\n\n“Are you quite sure, ma’am? Is ",
+          "page": 82,
+          "pages": 163
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "matrix(1, 0, 0, 1, -33372, 0)",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 29,
+            "right": 383,
+            "top": 586.6845092773438,
+            "bottom": 618.6845092773438
+          },
+          {
+            "left": 29,
+            "right": 383,
+            "top": 622.6845092773438,
+            "bottom": 654.6845092773438
+          },
+          {
+            "left": 24,
+            "right": 388,
+            "top": 665.6011962890625,
+            "bottom": 793.6011962890625
+          }
+        ]
+      }
+    },
+    {
+      "book": "Pride and Prejudice",
+      "mode": "scroll",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0.4999978363019701,
+          "textOffset": 57372,
+          "quote": "her.”\n\n“Ay, because she asked him at last how he liked Netherfield, and he\ncould not help answering ",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          60479.23828125,
+          0,
+          0
+        ],
+        "transform": "none",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": [
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 61.6726188659668,
+            "bottom": 221.6726188659668
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 225.67262268066406,
+            "bottom": 385.6726379394531
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 389.6726379394531,
+            "bottom": 677.672607421875
+          },
+          {
+            "left": 24,
+            "right": 388.19049072265625,
+            "top": 681.672607421875,
+            "bottom": 777.672607421875
+          }
+        ]
+      }
+    },
+    {
+      "book": "Alice's Adventures in Wonderland",
+      "mode": "pages",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 1,
+          "textOffset": 0,
+          "quote": "\n  \n    \n      \n    \n  \n",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "matrix(1, 0, 0, 1, 0, 0)",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": []
+      }
+    },
+    {
+      "book": "Alice's Adventures in Wonderland",
+      "mode": "scroll",
+      "repeats": 6,
+      "snapshot": {
+        "pos": {
+          "event": "position",
+          "progression": 0,
+          "textOffset": 0,
+          "quote": "\n  \n    \n      \n    \n  \n",
+          "page": 1,
+          "pages": 1
+        },
+        "size": [
+          412,
+          840
+        ],
+        "frame": [
+          412,
+          840
+        ],
+        "scroll": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "transform": "none",
+        "compat": "CSS1Compat",
+        "broken": 0,
+        "rects": []
+      }
+    }
+  ]
+}

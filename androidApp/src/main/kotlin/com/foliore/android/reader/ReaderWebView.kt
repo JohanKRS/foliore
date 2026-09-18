@@ -103,6 +103,9 @@ internal class ReaderWebController(
         navigation = value; settings = preferences; highlight = search
         view.setBackgroundColor(android.graphics.Color.parseColor(when (preferences.theme) { "dark" -> "#191c1b"; "light" -> "#ffffff"; else -> "#f7f2e8" }))
         val fixed = publication.sections[value.section].fixedLayout
+        (view as? ReaderContentWebView)?.reflowable = !fixed
+        view.settings.setSupportZoom(fixed)
+        view.settings.builtInZoomControls = fixed
         view.settings.useWideViewPort = fixed
         view.settings.loadWithOverviewMode = fixed
         if (!changed) return
@@ -137,4 +140,17 @@ internal class ReaderWebController(
     fun dispose() { disposed = true; view.stopLoading(); view.removeJavascriptInterface("FolioreBridge"); view.webViewClient = WebViewClient(); view.destroy() }
     private fun response(mime: String, bytes: ByteArray) = WebResourceResponse(mime, "UTF-8", 200, "OK", mapOf("Cache-Control" to "no-store", "X-Content-Type-Options" to "nosniff"), ByteArrayInputStream(bytes))
     private fun blocked() = WebResourceResponse("text/plain", "UTF-8", 403, "Blocked", emptyMap(), ByteArrayInputStream(ByteArray(0)))
+}
+
+/** Reflowable books scroll inside the document; selection must not pan the native WebView too. */
+@SuppressLint("ViewConstructor")
+internal class ReaderContentWebView(context: android.content.Context) : WebView(context) {
+    var reflowable = true
+    override fun onScrollChanged(left: Int, top: Int, oldLeft: Int, oldTop: Int) {
+        if (reflowable && (left != 0 || top != 0)) {
+            scrollTo(0, 0)
+            return
+        }
+        super.onScrollChanged(left, top, oldLeft, oldTop)
+    }
 }

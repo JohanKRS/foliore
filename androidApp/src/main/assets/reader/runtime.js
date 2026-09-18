@@ -1,6 +1,7 @@
 (() => {
   'use strict';
-  let lastLocator = null, resizeAnchor = null;
+  let lastLocator = null, resizeAnchor = null, layoutVersion = 0;
+  let pageWidth = 1, columnGap = 0;
   let options = {}, page = 0, pages = 1, ready = false, suppress = true, timer = 0, touch = null;
   const fixed = document.body.dataset.folioreFixed === 'true';
   const textDirection = getComputedStyle(document.body).direction;
@@ -21,7 +22,22 @@
       break;
     }
   });
-  const scroller = () => fixed ? document.scrollingElement : viewport;
+  const scroller = () => fixed ? (document.scrollingElement || document.documentElement) : viewport;
+  const paginated = () => options.mode === 'pages' && !fixed;
+  function resetOuterScroll() {
+    if (fixed) return;
+    for (const node of [document.documentElement, document.body]) {
+      if (node.scrollLeft) node.scrollLeft = 0;
+      if (node.scrollTop) node.scrollTop = 0;
+    }
+    if (viewport.scrollLeft) viewport.scrollLeft = 0;
+    if (paginated() && viewport.scrollTop) viewport.scrollTop = 0;
+  }
+  function showPage() {
+    // Translation has no scroll range to clamp the last page or pan during text selection.
+    content.style.setProperty('transform', `translateX(${-page * pageWidth}px)`, 'important');
+    resetOuterScroll();
+  }
   const scrollTo = (x, y, smooth = false) => scroller().scrollTo({left:x, top:y, behavior:smooth ? 'smooth' : 'instant'});
   const style = document.getElementById('foliore-style');
   FolioreImageTone.observe(content);
@@ -70,7 +86,7 @@
     return 0;
   }
   function maxScroll() { return Math.max(0, scroller().scrollHeight - innerHeight); }
-  function measure() { pages = options.mode === 'pages' && !fixed ? Math.max(1, Math.round(viewport.scrollWidth / innerWidth)) : 1; }
+  function measure() { pages = paginated() ? Math.max(1, Math.ceil((content.scrollWidth + columnGap - 1) / pageWidth)) : 1; }
   function locator() {
     measure(); const offset = currentOffset();
     const progression = options.mode === 'pages' && !fixed ? (pages > 1 ? page / (pages - 1) : 1) : (maxScroll() ? scroller().scrollTop / maxScroll() : 0);
@@ -96,41 +112,50 @@
     return null;
   }
   function goPosition(loc, fragment, user) {
+    const version = layoutVersion;
     suppress = true; measure();
     const target = fragment && document.getElementById(fragment);
     const rect = target ? target.getBoundingClientRect() : loc && (loc.textOffset > 0 || loc.quote) ? atOffset(loc.textOffset || 0, loc.quote || '') : null;
     if (options.mode === 'pages' && !fixed) {
-      page = Math.max(0, Math.min(pages - 1, rect ? Math.floor((rect.left + scroller().scrollLeft) / innerWidth) : Math.round((loc?.progression || 0) * (pages - 1))));
-      scrollTo(page * innerWidth, 0);
+      page = Math.max(0, Math.min(pages - 1, rect ? Math.floor((rect.left + page * pageWidth) / pageWidth) : Math.round((loc?.progression || 0) * (pages - 1))));
+      showPage();
     } else scrollTo(0, rect ? Math.max(0, rect.top + scroller().scrollTop - options.margin) : (loc?.progression || 0) * maxScroll());
-    setTimeout(() => { suppress = false; report(user); }, 120);
+    setTimeout(() => { if (version !== layoutVersion) return; suppress = false; report(user); }, 120);
   }
   function configure(settings, loc, fragment, user, resizing = false) {
     if (!resizing) resizeAnchor = null;
     const previous = ready ? locator() : null;
+    const version = ++layoutVersion;
     options = settings; suppress = true; ready = false;
     illustrations.forEach(image => image.setAttribute('aria-label', [options.imageOpenLabel, image.getAttribute('alt')].filter(Boolean).join(': ')));
     const width = fixed ? innerWidth : viewport.clientWidth, height = fixed ? innerHeight : viewport.clientHeight;
     const palette = {paper:['#f7f2e8','#302b24'], light:['#ffffff','#202020'], dark:['#191c1b','#e4e3dd']}[options.theme] || ['#f7f2e8','#302b24'];
     const m = Math.max(options.margin, (width - 720) / 2), vertical = options.margin;
+    pageWidth = width; columnGap = 2 * m;
     const colors = `html,body{background:${palette[0]}!important;color:${palette[1]}!important;}#foliore-viewport{background:${palette[0]}!important;}`;
     const typography = options.publisherStyles || fixed ? '' : `#foliore-content{font-family:${options.font}!important;font-size:${options.fontSize}px!important;line-height:${options.lineHeight}!important;text-align:${options.justify ? 'justify' : 'start'}!important;}#foliore-content *:not(pre):not(code){font-family:inherit!important;line-height:inherit!important;color:inherit!important;background-color:transparent!important;}#foliore-content :is(p,div,span,section,article,li,td,th,blockquote,a,em,strong){font-size:inherit!important;}#foliore-content h1{font-size:1.5em!important;line-height:1.2!important}#foliore-content h2{font-size:1.3em!important;line-height:1.3!important}#foliore-content h3{font-size:1.15em!important}#foliore-content p{orphans:2;widows:2;}`;
     const layout = fixed ? 'html{overflow:auto}body{margin:0}#foliore-content{padding:0}' : options.mode === 'pages' ?
-      `html,body{overflow:hidden!important;margin:0!important;padding:0!important;height:100%!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow:hidden!important;direction:ltr!important;}#foliore-content{box-sizing:border-box!important;margin:${vertical}px ${m}px!important;padding:0!important;width:${Math.max(80, width-2*m)}px!important;height:${Math.max(80, height-2*vertical)}px!important;column-width:${Math.max(80, width-2*m)}px!important;column-gap:${2*m}px!important;column-fill:auto!important;overflow:visible!important;direction:ltr!important}#foliore-content>*{direction:${textDirection}}` :
-      `html,body{overflow:hidden!important;margin:0!important;padding:0!important;height:100%!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow-x:hidden!important;overflow-y:auto!important;}#foliore-content{box-sizing:border-box!important;padding:${vertical}px!important;max-width:${720 + 2*vertical}px!important;margin:0 auto!important;column-width:auto!important;height:auto!important}`;
+      `html,body{overflow:hidden!important;overflow:clip!important;margin:0!important;padding:0!important;width:100%!important;height:100%!important;overscroll-behavior:none!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow:hidden!important;overflow:clip!important;direction:ltr!important;}#foliore-content{box-sizing:border-box!important;margin:${vertical}px ${m}px!important;padding:0!important;width:${Math.max(80, width-2*m)}px!important;height:${Math.max(80, height-2*vertical)}px!important;column-width:${Math.max(80, width-2*m)}px!important;column-gap:${2*m}px!important;column-fill:auto!important;overflow:visible!important;direction:ltr!important;transform:none!important}#foliore-content>*{direction:${textDirection}}` :
+      `html,body{overflow:hidden!important;overflow:clip!important;margin:0!important;padding:0!important;width:100%!important;height:100%!important;overscroll-behavior:none!important}#foliore-viewport{position:fixed!important;inset:0!important;overflow-x:hidden!important;overflow-y:auto!important;}#foliore-content{box-sizing:border-box!important;padding:${vertical}px!important;max-width:${720 + 2*vertical}px!important;margin:0 auto!important;column-width:auto!important;height:auto!important;transform:none!important}`;
     const mediaWidth = Math.max(80, width - 2*m), mediaHeight = Math.max(80, height - 2*vertical);
     const media = fixed ? '' : `#foliore-content :is(div,section,article,figure,aside,blockquote){max-width:100%!important;min-width:0!important;box-sizing:border-box!important}#foliore-content img,#foliore-content svg{max-width:100%!important;max-width:min(100%,${mediaWidth}px)!important;object-fit:contain}#foliore-content img{height:auto!important;max-height:${mediaHeight}px!important}#foliore-content .foliore-table{overflow:auto!important;max-height:${mediaHeight}px!important;break-inside:avoid!important}#foliore-content table{max-width:100%}#foliore-content pre{white-space:pre-wrap;overflow-wrap:anywhere}`;
     const floats = !fixed && options.mode === 'pages' ? '#foliore-content .foliore-raised-image{margin-top:0!important;break-inside:avoid!important}' : '';
     const illustrationStyle = FolioreImageTone.css(options.theme, options.adaptIllustrations !== false);
     style.textContent = `${colors}${layout}${typography}${media}${floats}${illustrationStyle}#foliore-content a[href]{color:${options.theme === 'dark' ? '#d7b17a' : '#95612c'}!important}::selection{background:#d7b17a66}#foliore-content mark.foliore-match{background:#e7c467!important;color:#211b12!important}`;
-    requestAnimationFrame(() => requestAnimationFrame(() => { ready = true; goPosition(loc || previous || {}, fragment, user); }));
+    content.style.removeProperty('transform');
+    page = 0;
+    resetOuterScroll();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (version !== layoutVersion) return;
+      ready = true; goPosition(loc || previous || {}, fragment, user);
+    }));
   }
   function step(direction) {
     if (!ready) return;
     if (options.mode === 'pages' && !fixed) {
       measure(); const next = page + direction;
       if (next < 0 || next >= pages) send({event:'chapter', direction});
-      else { page = next; suppress = true; scrollTo(page * innerWidth, 0); setTimeout(() => { suppress = false; report(true); }, 40); }
+      else { page = next; suppress = true; showPage(); const version = layoutVersion; setTimeout(() => { if (version !== layoutVersion) return; suppress = false; report(true); }, 40); }
     } else {
       const next = scroller().scrollTop + direction * innerHeight * 0.85;
       if ((direction < 0 && scroller().scrollTop <= 2) || (direction > 0 && scroller().scrollTop >= maxScroll() - 2)) send({event:'chapter',direction});
@@ -147,7 +172,13 @@
       }
     }
   };
-  document.addEventListener('scroll', () => { if (suppress || !ready) return; clearTimeout(timer); timer=setTimeout(() => {timer=0;report(true)}, 180); }, {passive:true,capture:true});
+  document.addEventListener('scroll', e => {
+    resetOuterScroll();
+    if (suppress || !ready) return;
+    if (paginated() && !e.target.closest?.('.foliore-table')) return;
+    clearTimeout(timer); timer=setTimeout(() => {timer=0;report(true)}, 180);
+  }, {passive:true,capture:true});
+  document.addEventListener('selectionchange', resetOuterScroll);
   document.addEventListener('click', e => {
     if (!ready || e.defaultPrevented || e.button !== 0) return;
     if (!getSelection().isCollapsed) { e.preventDefault(); return; }
@@ -165,9 +196,8 @@
     if (options.mode === 'pages' && !fixed && x < .2) step(options.rtl ? 1 : -1);
     else if (options.mode === 'pages' && !fixed && x > .8) step(options.rtl ? -1 : 1);
     else if (x >= .25 && x <= .75 && y >= .25 && y <= .75) {
-      // Save the visible passage before hiding/showing controls resizes the page.
+      // Flush the current passage; native chrome overlays this viewport without resizing it.
       const user = !!timer; clearTimeout(timer); timer = 0; report(user);
-      resizeAnchor ??= lastLocator;
       send({event:'chrome'});
     }
   });

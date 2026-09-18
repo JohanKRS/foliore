@@ -6,6 +6,22 @@ import java.util.zip.ZipOutputStream
 import kotlin.test.*
 
 class EpubPublicationTest {
+    @Test fun chaptersAlwaysUseStandardsLayoutWithoutChangingTheirContent() = fixture(true) { file ->
+        EpubPublication.open(file).use { publication ->
+            for (doctype in listOf("", "<!DOCTYPE html>", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">")) {
+                val html = publication.sanitize("$doctype<html><body><p id='passage'>A <em>stable</em> passage.</p></body></html>", "OPS/one.xhtml")
+                val doc = org.jsoup.Jsoup.parse(html)
+                val types = doc.childNodes().filterIsInstance<org.jsoup.nodes.DocumentType>()
+                assertEquals(1, types.size)
+                assertEquals("html", types.single().name())
+                assertEquals("", types.single().publicId())
+                assertEquals("", types.single().systemId())
+                assertTrue(html.trimStart().startsWith("<!doctype html>", ignoreCase = true))
+                assertEquals("A stable passage.", doc.getElementById("passage")!!.text())
+                assertEquals("stable", doc.selectFirst("#passage em")!!.text())
+            }
+        }
+    }
     @Test fun resolvesEncodedPathsAndRejectsExternalOrTraversalResources() {
         assertEquals("OPS/chap 1.xhtml" to "note", EpubPublication.resolve("OPS/book.opf", "chap%201.xhtml#note"))
         assertEquals("images/cover.jpg" to null, EpubPublication.resolve("OPS/ch.xhtml", "../images/cover.jpg"))
