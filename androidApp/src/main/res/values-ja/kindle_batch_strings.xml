@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kindle_batch_send">Kindleに送信</string>
+    <string name="kindle_batch_subject">Foliore：%1$d冊</string>
+    <string name="kindle_batch_summary">送信済み：%2$d冊中%1$d冊 · メール：%3$d通</string>
+    <string name="kindle_batch_unknown_hint">送信が未確認の本を再送する前に、送信済みメールを確認してください。</string>
+    <string name="kindle_batch_delivery_hint">添付ファイルは、この後Amazonで処理されます。</string>
+    <string name="kindle_batch_sent">送信済み</string>
+    <string name="kindle_batch_unknown">送信未確認</string>
+    <string name="kindle_batch_not_sent">未送信</string>
+    <string name="kindle_batch_failed">送信に失敗</string>
+    <string name="kindle_batch_too_large">メールのサイズ制限を超過</string>
+    <string name="kindle_batch_prepare_failed">EPUBを準備できませんでした</string>
+</resources>

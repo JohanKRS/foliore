@@ -153,6 +153,10 @@ fun FolioreNavHost(
 ) {
     val navController = rememberNavController()
     val libraryState by libraryViewModel.state.collectAsStateWithLifecycle()
+    val gmailBatchAuthorization = com.foliore.android.ui.library.rememberGmailAuthorizationLauncher(libraryViewModel)
+    libraryState.kindleBatchReport?.let { report ->
+        com.foliore.android.ui.library.KindleBatchResultDialog(report, libraryState.books, libraryViewModel::dismissKindleBatchReport)
+    }
     com.foliore.android.ui.library.ImportLimitDialogs(libraryState,
         onContinue = libraryViewModel::continueLimitedImport,
         onDismiss = libraryViewModel::dismissImportLimit,
@@ -163,7 +167,7 @@ fun FolioreNavHost(
     val billingState by libraryViewModel.billingState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     UnlimitedReminderHost(
-        canPresent = currentRoute == Routes.LIBRARY && !libraryState.hasActiveProgress &&
+        canPresent = currentRoute == Routes.LIBRARY && libraryState.kindleBatchReport == null && !libraryState.hasActiveProgress &&
             !libraryState.isSearchOpen && !libraryState.isBatchMode &&
             libraryState.pendingImportConflicts.isEmpty() && libraryState.importLimitAvailable == null &&
             libraryState.importLimitSkipped == 0 && libraryState.googleDriveRemoteLibraryRecovery == null,
@@ -384,6 +388,7 @@ fun FolioreNavHost(
                                         onSelectBooks = libraryViewModel::selectBooks,
                                         onBatchUpdate = libraryViewModel::applyBatchMetadata,
                                         onBatchDelete = libraryViewModel::deleteSelectedBooks,
+                                        onBatchSend = { libraryViewModel.sendSelectedBooksToKindle(gmailBatchAuthorization) },
                                         modifier = Modifier.fillMaxWidth(),
                                         drawBackground = false,
                                     )

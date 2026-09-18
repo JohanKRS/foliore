@@ -2,8 +2,6 @@ package com.foliore.android.storage
 
 import java.io.File
 import java.net.ServerSocket
-import java.net.URLEncoder
-import java.util.Base64
 import kotlin.concurrent.thread
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -11,56 +9,14 @@ import kotlin.test.assertTrue
 
 class SmtpEmailSenderTest {
     @Test
-    fun mimeMessageUsesStableLineBreaksAndUtf8Headers() {
-        val attachment = File.createTempFile("Acao espacial", ".epub").apply {
-            writeBytes("epub".toByteArray(Charsets.UTF_8))
-        }
-
-        try {
-            val message = SmtpEmailSender().buildMimeMessage(
-                from = "sender@example.com",
-                to = "reader@kindle.com",
-                subject = "Enviar para Kindle: Acao espacial",
-                body = "Preparado pelo Foliore.\r\n.Line that needs dot stuffing later.",
-                attachment = attachment,
-                boundary = "test-boundary",
-            )
-            val encodedFileName = URLEncoder.encode(attachment.name, Charsets.UTF_8.name())
-                .replace("+", "%20")
-
-            assertFalse(message.contains('\r'), "SMTP data writer owns CRLF conversion")
-            assertTrue(message.contains("Subject: Enviar para Kindle: Acao espacial"))
-            assertTrue(message.contains("Content-Type: multipart/mixed; boundary=\"test-boundary\""))
-            assertTrue(message.contains("Content-Type: application/epub+zip; name=\"${attachment.name}\""))
-            assertTrue(message.contains("filename*=UTF-8''$encodedFileName"))
-            assertTrue(message.contains("ZXB1Yg=="))
-            assertTrue(message.endsWith("--test-boundary--\n"))
-        } finally {
-            attachment.delete()
-        }
-    }
-
-    @Test
-    fun mimeMessageEncodesNonAsciiSubject() {
-        val attachment = File.createTempFile("foliore", ".epub").apply {
-            writeBytes("epub".toByteArray(Charsets.UTF_8))
-        }
-
-        try {
-            val message = SmtpEmailSender().buildMimeMessage(
-                from = "sender@example.com",
-                to = "reader@kindle.com",
-                subject = "Enviar para Kindle: Ação espacial",
-                body = "Preparado pelo Foliore.",
-                attachment = attachment,
-                boundary = "test-boundary",
-            )
-
-            assertTrue(message.contains("Subject: =?UTF-8?B?"))
-            assertFalse(message.contains("Ação"))
-        } finally {
-            attachment.delete()
-        }
+    fun dotStuffingHandlesChunkBoundariesAndLeavesStreamOpen() {
+        val output = java.io.ByteArrayOutputStream()
+        val data = SmtpDataOutputStream(output)
+        data.write("first\r\n".toByteArray())
+        data.write('.'.code)
+        data.write("line\r\n..second\r\nend\r\n".toByteArray())
+        data.flush()
+        kotlin.test.assertEquals("first\r\n..line\r\n...second\r\nend\r\n", output.toString("UTF-8"))
     }
 
     @Test

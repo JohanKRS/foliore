@@ -21,7 +21,7 @@ class GmailEmailSenderTest {
         val subject = "123456789📚 Ação e 日本 — envio"
         val body = "Preparado pelo Foliore.\nOlá! 日本 📚"
         val result = GmailEmailSender { connection }.send("test-token", "sender@example.com", "reader@kindle.com", subject, body, file)
-        assertEquals(GmailSendResult.SENT, result)
+        assertEquals(KindleSendResult.SENT, result)
         assertEquals("POST", connection.requestMethod)
         assertEquals("Bearer test-token", connection.getRequestProperty("Authorization"))
         assertEquals("message/rfc822", connection.getRequestProperty("Content-Type"))
@@ -48,10 +48,10 @@ class GmailEmailSenderTest {
         var opens = 0
         val sender = GmailEmailSender { opens++; FakeConnection() }
         for (address in listOf("sender@example.com\r\nBcc:other@example.com", "a@b,c@d", "a@b\u0000")) {
-            assertEquals(GmailSendResult.FAILED, sender.send("token", address, "reader@kindle.com", "Book", "", file))
-            assertEquals(GmailSendResult.FAILED, sender.send("token", "sender@example.com", address, "Book", "", file))
+            assertEquals(KindleSendResult.FAILED, sender.send("token", address, "reader@kindle.com", "Book", "", file))
+            assertEquals(KindleSendResult.FAILED, sender.send("token", "sender@example.com", address, "Book", "", file))
         }
-        assertEquals(GmailSendResult.FAILED, sender.send("token\r\nX:1", "sender@example.com", "reader@kindle.com", "Book", "", file))
+        assertEquals(KindleSendResult.FAILED, sender.send("token\r\nX:1", "sender@example.com", "reader@kindle.com", "Book", "", file))
         assertEquals(0, opens)
     }
 
@@ -62,21 +62,21 @@ class GmailEmailSenderTest {
     }
 
     @Test fun oversizedAttachmentRejectedWithoutNetwork() = withAttachment { file ->
-        RandomAccessFile(file, "rw").use { it.setLength(GmailMimeMessage.MAX_ATTACHMENT_BYTES + 1) }
+        RandomAccessFile(file, "rw").use { it.setLength(KindleMimeMessage.MAX_ATTACHMENT_BYTES + 1) }
         val sender = GmailEmailSender { error("No request should be made") }
-        assertEquals(GmailSendResult.TOO_LARGE, sender.send("token", "sender@example.com", "reader@kindle.com", "Book", "", file))
+        assertEquals(KindleSendResult.TOO_LARGE, sender.send("token", "sender@example.com", "reader@kindle.com", "Book", "", file))
     }
 
     @Test fun mapsServerResponsesWithoutRetryingOrFollowingRedirects() = withAttachment { file ->
         val cases = listOf(
-            Triple(200, "{}", GmailSendResult.UNKNOWN),
-            Triple(200, "not-json", GmailSendResult.UNKNOWN),
-            Triple(401, "", GmailSendResult.AUTH_REQUIRED),
-            Triple(403, "{\"error\":{\"errors\":[{\"reason\":\"insufficientPermissions\"}]}}", GmailSendResult.AUTH_REQUIRED),
-            Triple(403, "{\"error\":{\"status\":\"SERVICE_DISABLED\"}}", GmailSendResult.CONFIGURATION_REQUIRED),
-            Triple(403, "{\"error\":{\"errors\":[{\"reason\":\"dailyLimitExceeded\"}]}}", GmailSendResult.RATE_LIMITED),
-            Triple(429, "", GmailSendResult.RATE_LIMITED), Triple(413, "", GmailSendResult.TOO_LARGE),
-            Triple(500, "", GmailSendResult.UNKNOWN), Triple(302, "", GmailSendResult.FAILED), Triple(400, "", GmailSendResult.FAILED),
+            Triple(200, "{}", KindleSendResult.UNKNOWN),
+            Triple(200, "not-json", KindleSendResult.UNKNOWN),
+            Triple(401, "", KindleSendResult.AUTH_REQUIRED),
+            Triple(403, "{\"error\":{\"errors\":[{\"reason\":\"insufficientPermissions\"}]}}", KindleSendResult.AUTH_REQUIRED),
+            Triple(403, "{\"error\":{\"status\":\"SERVICE_DISABLED\"}}", KindleSendResult.CONFIGURATION_REQUIRED),
+            Triple(403, "{\"error\":{\"errors\":[{\"reason\":\"dailyLimitExceeded\"}]}}", KindleSendResult.RATE_LIMITED),
+            Triple(429, "", KindleSendResult.RATE_LIMITED), Triple(413, "", KindleSendResult.TOO_LARGE),
+            Triple(500, "", KindleSendResult.UNKNOWN), Triple(302, "", KindleSendResult.FAILED), Triple(400, "", KindleSendResult.FAILED),
         )
         for ((status, body, expected) in cases) {
             var opens = 0
@@ -93,15 +93,42 @@ class GmailEmailSenderTest {
         var opens = 0
         val connection = object : FakeConnection() { override fun getResponseCode(): Int = throw IOException("Lost response") }
         val result = GmailEmailSender { opens++; connection }.send("token", "sender@example.com", "reader@kindle.com", "Book", "", file)
-        assertEquals(GmailSendResult.UNKNOWN, result)
+        assertEquals(KindleSendResult.UNKNOWN, result)
         assertEquals(1, opens)
         assertTrue(connection.output.size() > file.length())
         assertTrue(connection.closed)
     }
 
     @Test fun failureBeforeUploadIsNotReportedAsDelivered() = withAttachment { file ->
-        assertEquals(GmailSendResult.FAILED, GmailEmailSender { throw IOException("Offline") }
+        assertEquals(KindleSendResult.FAILED, GmailEmailSender { throw IOException("Offline") }
             .send("token", "sender@example.com", "reader@kindle.com", "Book", "", file))
+    }
+
+    @Test fun multipleAttachmentsRoundTripIndependentlyAndRespectWireEstimate() = withAttachment { first ->
+        val directory = kotlin.io.path.createTempDirectory("batch-mime").toFile()
+        val second = File(directory, "日本語".repeat(25) + ".epub").apply { writeBytes(ByteArray(100_013) { (it % 239).toByte() }) }
+        try {
+            val connection = FakeConnection()
+            val result = GmailEmailSender { connection }.send("token", "sender@example.com", "reader@kindle.com", "Two books", "Body", listOf(first, second))
+            assertEquals(KindleSendResult.SENT, result)
+            val mime = connection.output.toString("UTF-8")
+            val boundary = Regex("boundary=\"([^\"]+)\"").find(mime)!!.groupValues[1]
+            val parts = mime.split("--$boundary")
+            assertEquals(5, parts.size)
+            listOf(first, second).forEachIndexed { index, file ->
+                assertContentEquals(file.readBytes(), Base64.getMimeDecoder().decode(parts[index + 2].substringAfter("\r\n\r\n").trim()))
+            }
+            assertTrue(mime.contains("filename*0*=UTF-8''"))
+            assertTrue(mime.split("\r\n").all { it.toByteArray().size <= 998 })
+            assertTrue(connection.output.size() <= KindleMessageLimits.estimatedBytes(listOf(first, second)))
+        } finally { directory.deleteRecursively() }
+    }
+
+    @Test fun rejectsExcessCountAndCombinedSizeBeforeOpeningConnection() = withAttachment { file ->
+        val sender = GmailEmailSender { error("No network") }
+        assertEquals(KindleSendResult.TOO_LARGE, sender.send("token", "sender@example.com", "reader@kindle.com", "Books", "", List(26) { file }))
+        RandomAccessFile(file, "rw").use { it.setLength(13_000_000) }
+        assertEquals(KindleSendResult.TOO_LARGE, sender.send("token", "sender@example.com", "reader@kindle.com", "Books", "", listOf(file, file)))
     }
 
     private open class FakeConnection(private val status: Int = 200, private val response: String = "{\"id\":\"message-id\"}") : HttpURLConnection(URL("https://example.invalid/")) {

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kindle_batch_send">发送到 Kindle</string>
+    <string name="kindle_batch_subject">Foliore：%1$d 本书</string>
+    <string name="kindle_batch_summary">已发送：%1$d / %2$d 本 · 邮件：%3$d 封</string>
+    <string name="kindle_batch_unknown_hint">重新发送未确认的书籍前，请先检查已发送邮件。</string>
+    <string name="kindle_batch_delivery_hint">Amazon 仍需处理附件。</string>
+    <string name="kindle_batch_sent">已发送</string>
+    <string name="kindle_batch_unknown">发送未确认</string>
+    <string name="kindle_batch_not_sent">未发送</string>
+    <string name="kindle_batch_failed">发送失败</string>
+    <string name="kindle_batch_too_large">超出邮件大小限制</string>
+    <string name="kindle_batch_prepare_failed">无法准备 EPUB</string>
+</resources>

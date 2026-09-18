@@ -27,6 +27,7 @@ fun LibraryRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val gmailAuthorization = rememberGmailAuthorizationLauncher(viewModel)
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
         onResult = viewModel::importUris,
@@ -63,6 +64,7 @@ fun LibraryRoute(
         onSelectBooks = viewModel::selectBooks,
         onBatchUpdate = viewModel::applyBatchMetadata,
         onBatchDelete = viewModel::deleteSelectedBooks,
+        onBatchSend = { viewModel.sendSelectedBooksToKindle(gmailAuthorization) },
         onSettingsClick = onSettingsClick,
         gridScrollState = gridScrollState,
         chromeHazeState = chromeHazeState,

@@ -6,7 +6,7 @@ Foliore sends a prepared EPUB directly from the Google account selected by the u
 
 1. Settings → Send to Kindle → connect Gmail. Google Play services opens its account picker and requests `https://www.googleapis.com/auth/gmail.send` for that specific account.
 2. Save the destination Kindle email and add the sending address to the approved personal-document senders in Amazon's settings. The dialog always includes a small reminder and an inline link to Amazon's Manage Your Content and Devices page (`/mycd`), for Gmail and SMTP alike. The storefront follows the device region rather than the selected app language. Existing approved senders do not need to be removed.
-3. Send from book details or the metadata editor. Google Play services supplies an access token for the selected account, requesting authorization again when required.
+3. Send from book details, the metadata editor, or the library selection toolbar. Google Play services supplies an access token for the selected account, requesting authorization again when required.
 
 Only the account address and chosen delivery provider are stored in Foliore preferences. Access tokens are held for the current operation; their cache is owned by Google Play services. There is no OAuth client secret in the app, no Foliore mail server and no inbox-reading scope. Gmail settings and tokens are not synchronized with the library.
 
@@ -19,6 +19,16 @@ An authorization result resumes only the pending operation in the current ViewMo
 The sender streams an RFC 822 multipart MIME message to the Gmail API media-upload endpoint, using HTTPS, bounded buffers and a 25,000,000-byte EPUB attachment cap. It does not assemble a second full-size base64/JSON copy of the EPUB. UTF-8 text, attachment names and folded encoded subject headers are supported.
 
 Requests disable redirects and have connection/read timeouts. A `401` clears the cached token for a later explicit attempt. Quota errors and oversize attachments have dedicated notices. A lost response after upload, an invalid success response or a server error is reported as an **unconfirmed send**: check Gmail Sent before trying again. Foliore never automatically repeats the upload, because the first attempt might already have delivered the message.
+
+## Sending selected books
+
+Long-press a book, select the desired books and choose “Send to Kindle”. The app prepares EPUBs and groups them in library order, with at most 25 attachments per email. [Amazon documents the count limit](https://digprjsurvey.amazon.co.uk/csad/help/node/G7NECT4B4ZWHQ8WV); [Gmail limits combined attachments to 25 MB](https://support.google.com/mail/answer/6584).
+
+Batch delivery reserves headroom: Gmail groups have at most 24,000,000 attachment bytes and an estimated MIME size below 34,000,000 bytes. SMTP groups keep the entire encoded message below 24,000,000 bytes; individual SMTP providers may impose lower limits. The estimate includes base64 line wrapping and header allowances without reading files again. Oversized books and preparation errors are reported individually; eligible books continue.
+
+Only one batch plus its next attachment is staged at a time. Files use separate operation/book directories, duplicate attachment names receive numeric suffixes, and staging is removed after sending or cancellation. Gmail and SMTP share a streaming MIME writer. SMTP treats a message accepted with `250` as sent even if `QUIT` fails.
+
+Messages are sent sequentially. A provider error or unconfirmed response stops the remaining messages, with no automatic retry. The summary distinguishes sent, failed, oversized, unconfirmed and unattempted books. Confirmed and uncertain deliveries are removed from selection; only definitely unsent books remain selected. An uncertain delivery requires checking Sent before manually selecting it again. “Sent” means accepted by the email provider, not confirmed Kindle ingestion. Pending sends survive rotation in the ViewModel but are not replayed after process death.
 
 ## Google Cloud configuration — 2026-09-18
 

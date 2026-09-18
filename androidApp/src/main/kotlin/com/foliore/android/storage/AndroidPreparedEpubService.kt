@@ -104,16 +104,53 @@ class AndroidPreparedEpubService(
         }.getOrDefault(PreparedEpubResult.Failed)
     }
 
-    fun sendToKindleGmail(bookId: String, account: String, recipient: String, token: String): GmailSendResult {
+    fun sendToKindleGmail(bookId: String, account: String, recipient: String, token: String): KindleSendResult {
         return runCatching {
-            val exported = exportPreparedEpub(bookId) as? ExportPreparedResult.Ready ?: return GmailSendResult.FAILED
+            val exported = exportPreparedEpub(bookId) as? ExportPreparedResult.Ready ?: return KindleSendResult.FAILED
             gmailEmailSender.send(token, account, recipient,
                 appContext.getString(R.string.kindle_email_subject, exported.file.nameWithoutExtension),
                 appContext.getString(R.string.kindle_email_body), exported.file)
-        }.getOrDefault(GmailSendResult.FAILED)
+        }.getOrDefault(KindleSendResult.FAILED)
     }
 
-    private fun exportPreparedEpub(bookId: String): ExportPreparedResult = synchronized(SyncOperationCoordinator.localDataLock) {
+    suspend fun sendBatchToKindle(
+        bookIds: List<String>,
+        credentials: KindleEmailCredentials? = null,
+        account: String? = null,
+        recipient: String? = null,
+        token: String? = null,
+        onProgress: (Boolean, Int, Int) -> Unit,
+    ): KindleBatchReport {
+        val operationDir = File(appContext.cacheDir, "kindle-send-${java.util.UUID.randomUUID()}")
+        check(operationDir.mkdirs())
+        val names = mutableSetOf<String>()
+        var sequence = 0
+        try {
+            return KindleBatchSender(if (credentials == null) KindleMessageLimits.GMAIL_BATCH else KindleMessageLimits.SMTP_BATCH).send(
+                bookIds = bookIds,
+                prepare = { bookId ->
+                    val directory = File(operationDir, (++sequence).toString()).apply { mkdirs() }
+                    val exported = exportPreparedEpub(bookId, directory) as? ExportPreparedResult.Ready
+                    exported?.file?.let { file ->
+                        var name = file.name
+                        var suffix = 1
+                        while (!names.add(name)) { name = "${file.nameWithoutExtension} (${++suffix}).epub" }
+                        if (name == file.name) file else File(directory, name).also { check(file.renameTo(it)) }
+                    }
+                },
+                deliver = { files ->
+                    val subject = if (files.size == 1) appContext.getString(R.string.kindle_email_subject, files.single().nameWithoutExtension)
+                        else appContext.getString(R.string.kindle_batch_subject, files.size)
+                    val body = appContext.getString(R.string.kindle_email_body)
+                    if (credentials != null) smtpEmailSender.sendEpubs(credentials, subject, body, files)
+                    else gmailEmailSender.send(requireNotNull(token), requireNotNull(account), requireNotNull(recipient), subject, body, files)
+                },
+                onProgress = onProgress,
+            )
+        } finally { operationDir.deleteRecursively() }
+    }
+
+    private fun exportPreparedEpub(bookId: String, destinationDir: File? = null): ExportPreparedResult = synchronized(SyncOperationCoordinator.localDataLock) {
         var current = libraryRepository.getBook(bookId) ?: return ExportPreparedResult.NotFound
         val preparedPath = current.book.preparedFilePath
         val needsPrepare = preparedPath == null ||
@@ -131,7 +168,7 @@ class AndroidPreparedEpubService(
 
         val prepared = current.book.preparedFilePath?.let(::File)?.takeIf { it.exists() }
             ?: return ExportPreparedResult.Failed
-        val exportDir = File(appContext.filesDir, "exports").apply { mkdirs() }
+        val exportDir = destinationDir ?: File(appContext.filesDir, "exports").apply { mkdirs() }
         val exportFile = File(exportDir, current.metadata.exportFileName())
         prepared.copyTo(exportFile, overwrite = true)
 
@@ -140,7 +177,7 @@ class AndroidPreparedEpubService(
             exportedAt = Clock.System.now().toString(),
         )
 
-        val uri = FileProvider.getUriForFile(
+        val uri = if (destinationDir != null) android.net.Uri.fromFile(exportFile) else FileProvider.getUriForFile(
             appContext,
             "${appContext.packageName}.fileprovider",
             exportFile,

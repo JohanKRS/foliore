@@ -39,6 +39,7 @@ data class LibraryUiState(
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
+    val kindleBatchReport: com.foliore.android.storage.KindleBatchReport? = null,
     val isGmailConnecting: Boolean = false,
     val kindleEmailSettings: KindleEmailSettings = KindleEmailSettings(
         kindleEmail = null,

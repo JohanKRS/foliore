@@ -36,7 +36,7 @@ import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.GoogleDriveBackupStatsResult
 import com.foliore.android.storage.GmailAuthorization
 import com.foliore.android.storage.GmailAuthFailure
-import com.foliore.android.storage.GmailSendResult
+import com.foliore.android.storage.KindleSendResult
 import com.foliore.android.storage.KindleEmailProvider
 import com.foliore.android.storage.GoogleDriveAuthorizationFailure
 import com.foliore.android.storage.GoogleDriveConnectionResult
@@ -390,7 +390,7 @@ class LibraryViewModel(
         _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
     }
 
-    private class GmailOperation(val account: String, val bookId: String? = null, val recipient: String? = null)
+    private class GmailOperation(val account: String, val bookId: String? = null, val recipient: String? = null, val batchIds: List<String>? = null)
     private var pendingGmailOperation: GmailOperation? = null
 
     fun connectGmail(account: String, onResolutionRequired: (PendingIntent) -> Unit) {
@@ -452,7 +452,7 @@ class LibraryViewModel(
             }
             is GmailAuthorization.Authorized -> {
                 pendingGmailOperation = null // Consume the operation before any external side effect.
-                if (operation.bookId == null) {
+                if (operation.bookId == null && operation.batchIds == null) {
                     val saved = kindleEmailPreferenceRepository.connectGmail(operation.account)
                     finishGmailOperation()
                     _notice.value = LibraryNotice(if (saved) LibraryNoticeType.GMAIL_CONNECTED else LibraryNoticeType.GMAIL_UNAVAILABLE)
@@ -461,21 +461,30 @@ class LibraryViewModel(
                     if (settings.provider != KindleEmailProvider.GMAIL || settings.gmailAccount != operation.account || settings.kindleEmail != operation.recipient) {
                         finishGmailOperation(); return
                     }
+                    if (operation.batchIds != null) {
+                        runKindleBatch(operation.batchIds) { progress ->
+                            preparedEpubService.sendBatchToKindle(operation.batchIds, account = operation.account,
+                                recipient = operation.recipient, token = result.token, onProgress = progress).also {
+                                if (it.failure == KindleSendResult.AUTH_REQUIRED) gmailAuthService.clearToken(result.token)
+                            }
+                        }
+                        return
+                    }
                     val sent = withContext(Dispatchers.IO) {
-                        preparedEpubService.sendToKindleGmail(operation.bookId, operation.account, operation.recipient!!, result.token).also {
-                            if (it == GmailSendResult.AUTH_REQUIRED) gmailAuthService.clearToken(result.token)
+                        preparedEpubService.sendToKindleGmail(operation.bookId!!, operation.account, operation.recipient!!, result.token).also {
+                            if (it == KindleSendResult.AUTH_REQUIRED) gmailAuthService.clearToken(result.token)
                         }
                     }
                     refreshBooks()
                     finishGmailOperation()
                     _notice.value = LibraryNotice(when (sent) {
-                        GmailSendResult.SENT -> LibraryNoticeType.KINDLE_EMAIL_SENT
-                        GmailSendResult.AUTH_REQUIRED -> LibraryNoticeType.GMAIL_AUTH_REQUIRED
-                        GmailSendResult.CONFIGURATION_REQUIRED -> LibraryNoticeType.GMAIL_CONFIGURATION_REQUIRED
-                        GmailSendResult.TOO_LARGE -> LibraryNoticeType.GMAIL_TOO_LARGE
-                        GmailSendResult.RATE_LIMITED -> LibraryNoticeType.GMAIL_RATE_LIMITED
-                        GmailSendResult.UNKNOWN -> LibraryNoticeType.GMAIL_SEND_UNKNOWN
-                        GmailSendResult.FAILED -> LibraryNoticeType.KINDLE_EMAIL_FAILED
+                        KindleSendResult.SENT -> LibraryNoticeType.KINDLE_EMAIL_SENT
+                        KindleSendResult.AUTH_REQUIRED -> LibraryNoticeType.GMAIL_AUTH_REQUIRED
+                        KindleSendResult.CONFIGURATION_REQUIRED -> LibraryNoticeType.GMAIL_CONFIGURATION_REQUIRED
+                        KindleSendResult.TOO_LARGE -> LibraryNoticeType.GMAIL_TOO_LARGE
+                        KindleSendResult.RATE_LIMITED -> LibraryNoticeType.GMAIL_RATE_LIMITED
+                        KindleSendResult.UNKNOWN -> LibraryNoticeType.GMAIL_SEND_UNKNOWN
+                        KindleSendResult.FAILED -> LibraryNoticeType.KINDLE_EMAIL_FAILED
                     })
                 }
             }
@@ -769,6 +778,7 @@ class LibraryViewModel(
     }
 
     fun setBatchMode(isEnabled: Boolean) {
+        if (_state.value.hasActiveProgress) return
         _state.update {
             it.copy(
                 isBatchMode = isEnabled,
@@ -778,6 +788,7 @@ class LibraryViewModel(
     }
 
     fun toggleBookSelection(bookId: String) {
+        if (_state.value.hasActiveProgress) return
         _state.update { current ->
             val selectedBookIds = current.selectedBookIds.toMutableSet().apply {
                 if (!add(bookId)) remove(bookId)
@@ -790,6 +801,7 @@ class LibraryViewModel(
     }
 
     fun selectBooks(bookIds: List<String>) {
+        if (_state.value.hasActiveProgress) return
         if (bookIds.isEmpty()) return
         _state.update { current ->
             current.copy(
@@ -803,6 +815,7 @@ class LibraryViewModel(
         patch: BatchMetadataPatch,
         onApplied: () -> Unit,
     ) {
+        if (_state.value.hasActiveProgress) return
         viewModelScope.launch {
             val selectedIds = _state.value.selectedBookIds
             val orderedIds = _state.value.books
@@ -828,6 +841,7 @@ class LibraryViewModel(
     }
 
     fun deleteSelectedBooks() {
+        if (_state.value.hasActiveProgress) return
         viewModelScope.launch {
             val selectedIds = _state.value.selectedBookIds
             val orderedIds = _state.value.books
@@ -974,6 +988,67 @@ class LibraryViewModel(
 
     suspend fun deleteOriginalFile(bookId: String, fileId: String) = withContext(Dispatchers.IO) {
         originalFilesService.delete(bookId, fileId)
+    }
+
+    fun dismissKindleBatchReport() {
+        _state.update { it.copy(kindleBatchReport = null) }
+    }
+
+    fun sendSelectedBooksToKindle(onResolutionRequired: (PendingIntent) -> Unit) {
+        if (_state.value.hasActiveProgress || _state.value.isGmailConnecting || _state.value.kindleBatchReport != null) return
+        val ids = _state.value.books.map { it.book.id }.filter { it in _state.value.selectedBookIds }
+        if (ids.isEmpty()) return
+        val settings = kindleEmailPreferenceRepository.settings
+        if (settings.provider == KindleEmailProvider.GMAIL) {
+            val account = settings.gmailAccount
+            val recipient = settings.kindleEmail
+            if (account == null || recipient == null) {
+                _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_MISSING); return
+            }
+            val operation = GmailOperation(account, recipient = recipient, batchIds = ids)
+            pendingGmailOperation = operation
+            _state.update { it.copy(importProgress = SyncProgress(SyncProgressPhase.SENDING_TO_KINDLE)) }
+            viewModelScope.launch {
+                val authorization = withContext(Dispatchers.IO) { gmailAuthService.authorize(account) }
+                handleGmailAuthorization(operation, authorization, onResolutionRequired)
+            }
+        } else {
+            val credentials = kindleEmailPreferenceRepository.credentials()
+            if (credentials == null) {
+                _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_EMAIL_MISSING); return
+            }
+            _state.update { it.copy(importProgress = SyncProgress(SyncProgressPhase.SENDING_TO_KINDLE)) }
+            viewModelScope.launch {
+                runKindleBatch(ids) { progress -> preparedEpubService.sendBatchToKindle(ids, credentials = credentials, onProgress = progress) }
+            }
+        }
+    }
+
+    private suspend fun runKindleBatch(
+        ids: List<String>,
+        send: suspend ((Boolean, Int, Int) -> Unit) -> com.foliore.android.storage.KindleBatchReport,
+    ) {
+        try {
+            val report = withContext(Dispatchers.IO) {
+                send { preparing, completed, total ->
+                    _state.update { it.copy(importProgress = SyncProgress(
+                        if (preparing) SyncProgressPhase.PREPARING else SyncProgressPhase.SENDING_TO_KINDLE, completed, total)) }
+                }
+            }
+            refreshBooks()
+            _state.update { it.copy(kindleBatchReport = report, selectedBookIds = report.retryableIds,
+                isBatchMode = report.retryableIds.isNotEmpty()) }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Unexpected interruption: do not leave the original selection ready for an accidental resend.
+            _state.update { it.copy(selectedBookIds = emptySet(), isBatchMode = false,
+                kindleBatchReport = com.foliore.android.storage.KindleBatchReport(ids.map { id ->
+                    com.foliore.android.storage.KindleBatchItem(id, com.foliore.android.storage.KindleBookDelivery.UNKNOWN)
+                }, 0, KindleSendResult.UNKNOWN)) }
+        } finally {
+            _state.update { it.copy(importProgress = null, isGmailConnecting = false) }
+        }
     }
 
     fun sendPreparedEpubToKindleEmail(

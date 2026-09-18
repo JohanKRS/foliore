@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kindle_batch_send">An Kindle senden</string>
+    <string name="kindle_batch_subject">Foliore: %1$d Bücher</string>
+    <string name="kindle_batch_summary">Bücher gesendet: %1$d von %2$d · E-Mails: %3$d</string>
+    <string name="kindle_batch_unknown_hint">Prüfe deine gesendeten E-Mails, bevor du Bücher ohne Bestätigung erneut sendest.</string>
+    <string name="kindle_batch_delivery_hint">Amazon muss die Anhänge noch verarbeiten.</string>
+    <string name="kindle_batch_sent">Gesendet</string>
+    <string name="kindle_batch_unknown">Versand unbestätigt</string>
+    <string name="kindle_batch_not_sent">Nicht gesendet</string>
+    <string name="kindle_batch_failed">Versand fehlgeschlagen</string>
+    <string name="kindle_batch_too_large">Überschreitet die Größenbegrenzung der E-Mail</string>
+    <string name="kindle_batch_prepare_failed">EPUB konnte nicht vorbereitet werden</string>
+</resources>

@@ -5,26 +5,25 @@ import java.io.BufferedWriter
 import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.net.InetSocketAddress
+import java.io.OutputStream
 import java.net.Socket
-import java.net.URLEncoder
 import java.util.Base64
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
 class SmtpEmailSender {
-    fun sendEpub(
-        credentials: KindleEmailCredentials,
-        subject: String,
-        body: String,
-        attachment: File,
-    ): Boolean {
-        return runCatching {
-            val smtp = SmtpConnection(
-                host = credentials.smtpHost,
-                port = credentials.smtpPort,
-                useImplicitTls = credentials.smtpPort == IMPLICIT_TLS_PORT,
-            )
-            smtp.use {
+    fun sendEpub(credentials: KindleEmailCredentials, subject: String, body: String, attachment: File): Boolean =
+        sendEpubs(credentials, subject, body, listOf(attachment)) == KindleSendResult.SENT
+
+    fun sendEpubs(credentials: KindleEmailCredentials, subject: String, body: String, attachments: List<File>): KindleSendResult {
+        if (!KindleMimeMessage.validAddress(credentials.senderEmail) || !KindleMimeMessage.validAddress(credentials.kindleEmail) ||
+            attachments.isEmpty() || attachments.any { !it.isFile }) return KindleSendResult.FAILED
+        if (!KindleMessageLimits.SMTP_BATCH.accepts(attachments)) return KindleSendResult.TOO_LARGE
+        var uploading = false
+        var accepted = false
+        return try {
+            SmtpConnection(credentials.smtpHost, credentials.smtpPort, credentials.smtpPort == IMPLICIT_TLS_PORT).use { smtp ->
                 smtp.expect(220)
                 smtp.ehlo()
                 if (!smtp.isTlsActive && smtp.supportsStartTls) {
@@ -37,88 +36,24 @@ class SmtpEmailSender {
                 smtp.command("MAIL FROM:<${credentials.senderEmail}>", 250)
                 smtp.command("RCPT TO:<${credentials.kindleEmail}>", 250, 251)
                 smtp.command("DATA", 354)
-                smtp.writeData(
-                    buildMimeMessage(
-                        from = credentials.senderEmail,
-                        to = credentials.kindleEmail,
-                        subject = subject,
-                        body = body,
-                        attachment = attachment,
-                    ),
-                )
+                uploading = true
+                smtp.writeData { output ->
+                    KindleMimeMessage.write(output, credentials.senderEmail, credentials.kindleEmail, subject, body, attachments)
+                }
                 smtp.expect(250)
-                smtp.command("QUIT", 221)
+                accepted = true
+                // A failure while closing an accepted message must not invite a duplicate resend.
+                runCatching { smtp.command("QUIT", 221) }
             }
-            true
-        }.getOrDefault(false)
+            KindleSendResult.SENT
+        } catch (_: SmtpRejected) {
+            if (accepted) KindleSendResult.SENT else KindleSendResult.FAILED
+        } catch (_: Exception) {
+            if (accepted) KindleSendResult.SENT else if (uploading) KindleSendResult.UNKNOWN else KindleSendResult.FAILED
+        }
     }
 
-    internal fun buildMimeMessage(
-        from: String,
-        to: String,
-        subject: String,
-        body: String,
-        attachment: File,
-        boundary: String = "foliore-${System.currentTimeMillis()}",
-    ): String {
-        val safeFileName = attachment.name.sanitizeHeaderValue()
-        val asciiFileName = safeFileName.asciiFallback()
-        val encodedFileName = safeFileName.rfc5987Value()
-        val encodedAttachment = Base64.getMimeEncoder(76, "\n".toByteArray())
-            .encodeToString(attachment.readBytes())
-        val normalizedBody = body.normalizedLines()
-
-        return buildString {
-            appendLine("From: <$from>")
-            appendLine("To: <$to>")
-            appendLine("Subject: ${subject.encodedHeaderValue()}")
-            appendLine("MIME-Version: 1.0")
-            appendLine("Content-Type: multipart/mixed; boundary=\"$boundary\"")
-            appendLine()
-            appendLine("--$boundary")
-            appendLine("Content-Type: text/plain; charset=UTF-8")
-            appendLine("Content-Transfer-Encoding: 8bit")
-            appendLine()
-            appendLine(normalizedBody)
-            appendLine()
-            appendLine("--$boundary")
-            appendLine("Content-Type: application/epub+zip; name=\"$asciiFileName\"")
-            appendLine("Content-Transfer-Encoding: base64")
-            appendLine("Content-Disposition: attachment; filename=\"$asciiFileName\"; filename*=UTF-8''$encodedFileName")
-            appendLine()
-            appendLine(encodedAttachment)
-            appendLine("--$boundary--")
-        }.normalizedLines()
-    }
-
-    private fun String.sanitizeHeaderValue(): String {
-        return replace(Regex("[\\r\\n\"]"), " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-    }
-
-    private fun String.normalizedLines(): String {
-        return replace("\r\n", "\n").replace('\r', '\n')
-    }
-
-    private fun String.asciiFallback(): String {
-        return map { char ->
-            if (char.code in 32..126) char else '_'
-        }.joinToString("")
-    }
-
-    private fun String.rfc5987Value(): String {
-        return URLEncoder.encode(this, Charsets.UTF_8.name())
-            .replace("+", "%20")
-            .replace("%7E", "~")
-    }
-
-    private fun String.encodedHeaderValue(): String {
-        val clean = sanitizeHeaderValue()
-        if (clean.all { it.code in 32..126 }) return clean
-        val encoded = Base64.getEncoder().encodeToString(clean.toByteArray(Charsets.UTF_8))
-        return "=?UTF-8?B?$encoded?="
-    }
+    private class SmtpRejected : Exception()
 
     private class SmtpConnection(
         private val host: String,
@@ -167,13 +102,12 @@ class SmtpEmailSender {
             return expect(*expectedCodes)
         }
 
-        fun writeData(message: String) {
-            message
-                .lineSequence()
-                .forEach { line ->
-                    writer.write(if (line.startsWith(".")) ".$line" else line)
-                    writer.write("\r\n")
-                }
+        fun writeData(writeMessage: (OutputStream) -> Unit) {
+            writer.flush()
+            // MIME body and subject use base64. Dot stuffing also protects any future text parts.
+            val output = SmtpDataOutputStream(socket.getOutputStream())
+            writeMessage(output)
+            output.flush()
             writer.write(".\r\n")
             writer.flush()
         }
@@ -181,7 +115,7 @@ class SmtpEmailSender {
         fun expect(vararg expectedCodes: Int): SmtpResponse {
             val response = readResponse()
             if (response.code !in expectedCodes) {
-                error("Unexpected SMTP response ${response.code}: ${response.text}")
+                throw SmtpRejected()
             }
             return response
         }
@@ -206,17 +140,15 @@ class SmtpEmailSender {
         }
 
         private fun createSocket(): Socket {
-            return if (useImplicitTls) {
-                ((SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(host, port) as SSLSocket)
-                    .apply {
-                        soTimeout = TIMEOUT_MS
-                        verifySmtpPeer()
-                    }
-            } else {
-                Socket(host, port).apply {
-                    soTimeout = TIMEOUT_MS
-                }
-            }
+            val plain = Socket()
+            try {
+                plain.connect(InetSocketAddress(host, port), TIMEOUT_MS)
+                plain.soTimeout = TIMEOUT_MS
+                return if (useImplicitTls) {
+                    ((SSLSocketFactory.getDefault() as SSLSocketFactory).createSocket(plain, host, port, true) as SSLSocket)
+                        .apply { soTimeout = TIMEOUT_MS; verifySmtpPeer() }
+                } else plain
+            } catch (error: Exception) { plain.close(); throw error }
         }
 
         override fun close() {
@@ -242,4 +174,27 @@ class SmtpEmailSender {
 internal fun SSLSocket.verifySmtpPeer() {
     sslParameters = sslParameters.apply { endpointIdentificationAlgorithm = "HTTPS" }
     try { startHandshake() } catch (error: Throwable) { close(); throw error }
+}
+
+/** Does not close the socket; DATA ends only after the MIME writer completes successfully. */
+internal class SmtpDataOutputStream(private val target: OutputStream) : OutputStream() {
+    private var lineStart = true
+    override fun write(value: Int) {
+        if (lineStart && value == '.'.code) target.write('.'.code)
+        target.write(value)
+        lineStart = value == '\n'.code
+    }
+    override fun write(bytes: ByteArray, offset: Int, length: Int) {
+        var start = offset
+        for (index in offset until offset + length) {
+            if (lineStart && bytes[index] == '.'.code.toByte()) {
+                target.write(bytes, start, index - start)
+                target.write('.'.code)
+                start = index
+            }
+            lineStart = bytes[index] == '\n'.code.toByte()
+        }
+        target.write(bytes, start, offset + length - start)
+    }
+    override fun flush() = target.flush()
 }

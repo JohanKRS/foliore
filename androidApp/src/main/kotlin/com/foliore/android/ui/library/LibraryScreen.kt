@@ -20,6 +20,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -173,6 +174,7 @@ fun LibraryScreen(
     onSelectBooks: (List<String>) -> Unit,
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
     onBatchDelete: () -> Unit,
+    onBatchSend: () -> Unit,
     onSettingsClick: () -> Unit,
     gridScrollState: BookGridScrollState,
     chromeHazeState: HazeState? = null,
@@ -287,6 +289,7 @@ fun LibraryScreen(
                     onSelectBooks = onSelectBooks,
                     onBatchUpdate = onBatchUpdate,
                     onBatchDelete = onBatchDelete,
+                    onBatchSend = onBatchSend,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
@@ -316,6 +319,7 @@ fun LibraryTopChromeOverlay(
     onSelectBooks: (List<String>) -> Unit,
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
     onBatchDelete: () -> Unit,
+    onBatchSend: () -> Unit,
     modifier: Modifier = Modifier,
     drawBackground: Boolean = true,
 ) {
@@ -360,6 +364,8 @@ fun LibraryTopChromeOverlay(
                     onSelectBooks(visibleBooks.map { it.book.id })
                 },
                 onEdit = { showBatchDialog = true },
+                onSend = onBatchSend,
+                isWorking = state.hasActiveProgress || state.isGmailConnecting,
                 onDelete = { showBatchDeleteDialog = true },
                 onCancel = {
                     showBatchDialog = false
@@ -773,6 +779,8 @@ private fun BatchActionBar(
     visibleBookCount: Int,
     onSelectVisible: () -> Unit,
     onEdit: () -> Unit,
+    onSend: () -> Unit,
+    isWorking: Boolean,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -785,8 +793,14 @@ private fun BatchActionBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AssistChip(
+            onClick = onSend,
+            enabled = selectedCount > 0 && !isWorking,
+            label = { Text(stringResource(R.string.kindle_batch_send)) },
+            leadingIcon = { Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.Send, contentDescription = null) },
+        )
+        AssistChip(
             onClick = onEdit,
-            enabled = selectedCount > 0,
+            enabled = selectedCount > 0 && !isWorking,
             label = { Text(text = stringResource(R.string.batch_edit_selected)) },
             leadingIcon = {
                 Icon(
@@ -797,7 +811,7 @@ private fun BatchActionBar(
         )
         AssistChip(
             onClick = onDelete,
-            enabled = selectedCount > 0,
+            enabled = selectedCount > 0 && !isWorking,
             label = { Text(text = stringResource(R.string.batch_delete_selected)) },
             leadingIcon = {
                 Icon(
@@ -808,7 +822,7 @@ private fun BatchActionBar(
         )
         AssistChip(
             onClick = onSelectVisible,
-            enabled = visibleBookCount > 0,
+            enabled = visibleBookCount > 0 && !isWorking,
             label = { Text(text = stringResource(R.string.batch_select_visible)) },
             leadingIcon = {
                 Icon(
@@ -819,6 +833,7 @@ private fun BatchActionBar(
         )
         AssistChip(
             onClick = onCancel,
+            enabled = !isWorking,
             label = { Text(text = stringResource(R.string.action_cancel_batch)) },
             leadingIcon = {
                 Icon(
