@@ -196,7 +196,7 @@
     if (options.mode === 'pages' && !fixed && x < .2) step(options.rtl ? 1 : -1);
     else if (options.mode === 'pages' && !fixed && x > .8) step(options.rtl ? -1 : 1);
     else if (x >= .25 && x <= .75 && y >= .25 && y <= .75) {
-      // Flush the current passage; native chrome overlays this viewport without resizing it.
+      // Flush the current passage; native chrome toggles without resizing this viewport.
       const user = !!timer; clearTimeout(timer); timer = 0; report(user);
       send({event:'chrome'});
     }

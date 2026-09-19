@@ -1,0 +1,53 @@
+{
+  "pagedFullscreenToggles": 36,
+  "scrollFullscreenToggles": 6,
+  "profiles": [
+    {
+      "profile": "portrait",
+      "viewportCssPixels": [
+        412,
+        729
+      ],
+      "nativeViewportPixels": [
+        0,
+        251,
+        1080,
+        2163
+      ]
+    },
+    {
+      "profile": "landscape-large",
+      "viewportCssPixels": [
+        864,
+        244
+      ],
+      "nativeViewportPixels": [
+        132,
+        193,
+        2400,
+        833
+      ]
+    },
+    {
+      "profile": "portrait-large",
+      "viewportCssPixels": [
+        412,
+        725
+      ],
+      "nativeViewportPixels": [
+        0,
+        251,
+        1080,
+        2153
+      ]
+    }
+  ],
+  "previousPagedViewportCssPixels": [
+    412,
+    668
+  ],
+  "compactPagedViewportCssPixels": [
+    412,
+    729
+  ]
+}
