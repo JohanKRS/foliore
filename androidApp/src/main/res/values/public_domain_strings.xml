@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="public_domain_language">pt</string>
-    <string name="public_domain_title">Encontre sua próxima leitura</string>
-    <string name="public_domain_hint">Encontre livros de domínio público em EPUB.</string>
+    <string name="public_domain_language">en</string>
+    <string name="public_domain_title">Find your next read</string>
+    <string name="public_domain_hint">Find public domain books in EPUB.</string>
+    <string name="public_domain_start_title">Every library starts with a book</string>
+    <string name="public_domain_start_hint">Explore public domain books in EPUB and choose your first read.</string>
     <string name="public_domain_gutenberg" translatable="false">Project Gutenberg</string>
     <string name="public_domain_liber_liber" translatable="false">Liber Liber</string>
-    <string name="public_domain_start_title">Toda biblioteca começa com um livro</string>
-    <string name="public_domain_start_hint">Explore livros de domínio público em EPUB e escolha o primeiro.</string>
     <string name="public_domain_wikisource" translatable="false">Wikisource · EPUB</string>
     <string name="public_domain_elejandria" translatable="false">Elejandría</string>
     <string name="public_domain_ebooks_gratuits" translatable="false">Ebooks libres et gratuits</string>

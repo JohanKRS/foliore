@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="billing_reminder_title">Mais espaço para seus livros</string>
+    <string name="billing_reminder_count">Seu catálogo tem %1$d livros. A versão gratuita permite até %2$d.</string>
+    <string name="billing_reminder_view">Conhecer o Ilimitado</string>
+    <string name="billing_reminder_later">Lembrar em 1 semana</string>
+    <string name="billing_reminder_dismiss">Não mostrar novamente</string>
+    <string name="billing_settings_limit_title">Limite gratuito atingido</string>
+    <string name="billing_settings_limit_body">Desbloqueie para adicionar mais de %1$d livros. Compra única, sem assinatura.</string>
+</resources>

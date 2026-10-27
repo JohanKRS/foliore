@@ -41,6 +41,8 @@ fun SettingsRoute(
     onThemeModeChange: (ThemeMode) -> Unit,
     appLanguage: AppLanguage,
     onAppLanguageChange: (AppLanguage) -> Unit,
+    shortcut: SettingsShortcut? = null,
+    onShortcutConsumed: () -> Unit = {},
     bottomChromeInset: Dp = 0.dp,
 ) {
     val billingState by viewModel.billingState.collectAsStateWithLifecycle()
@@ -179,6 +181,8 @@ fun SettingsRoute(
             onAutoSyncWifiOnlyChange = viewModel::setAutoSyncWifiOnly,
             onSyncNow = viewModel::syncNow,
             onDisconnectSync = viewModel::disconnectSync,
+            shortcut = shortcut,
+            onShortcutConsumed = onShortcutConsumed,
             modifier = Modifier.padding(paddingValues),
         )
     }

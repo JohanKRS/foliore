@@ -44,6 +44,8 @@
     <string name="library_display_author">作者</string>
     <string name="library_display_series">系列</string>
     <string name="sort_imported_newest">最近导入</string>
+    <string name="sort_recently_read">最近阅读</string>
+    <string name="library_book_progress">已读 %1$d%%</string>
     <string name="sort_title_asc">书名 A–Z</string>
     <string name="sort_title_desc">书名 Z–A</string>
     <string name="sort_author_asc">作者 A–Z</string>
@@ -111,23 +113,15 @@
     <string name="export_notice_failed">无法导出 EPUB。</string>
     <string name="export_share_chooser">分享 EPUB</string>
 
-    <string name="details_series">系列</string>
     <string name="details_published_year">出版日期</string>
-    <string name="details_language">语言</string>
-    <string name="details_publisher">出版社</string>
-    <string name="details_file_format">格式</string>
-    <string name="details_file_format_epub">EPUB</string>
     <string name="details_imported_at">导入日期</string>
     <string name="details_last_synced">上次同步</string>
     <string name="details_status">状态</string>
     <string name="details_not_available">-</string>
     <string name="details_book_not_found">未找到图书。</string>
     <string name="details_about_book">内容简介</string>
-    <string name="details_action_edit_metadata">编辑元数据</string>
     <string name="details_action_replace_cover">更换封面</string>
     <string name="details_action_generate_cover">生成封面</string>
-    <string name="details_action_share_export">分享 / 导出</string>
-    <string name="details_action_send_to_kindle">发送到 Kindle</string>
     <string name="details_action_delete_book">从书库中删除</string>
     <string name="delete_book_dialog_title">删除图书？</string>
     <string name="delete_book_dialog_body">此操作会删除该图书以及 Foliore 保存的本地文件。</string>
@@ -294,7 +288,7 @@
     <string name="sync_notice_existing_library_configured">发现现有书库。同步后即可从此位置导入图书。</string>
     <string name="sync_notice_complete">同步完成。</string>
     <string name="sync_notice_complete_with_conflicts">同步完成，但存在冲突。</string>
-    <string name="sync_notice_not_configured">请先选择文件夹再同步。</string>
+    <string name="sync_notice_not_configured">请选择 Google 云端硬盘或文件夹进行同步。</string>
     <string name="sync_notice_folder_unavailable">所选文件夹不可用。</string>
     <string name="sync_notice_folder_looks_like_subfolder">这似乎是书库的子文件夹。请选择 Foliore Library 或包含它的文件夹。</string>
     <string name="sync_notice_google_drive_connected">已连接专用 Google Drive。</string>
@@ -397,8 +391,9 @@
     <string name="report_content_description">请描述您的疑问、问题或AI生成的不当内容。仅发送您的消息。</string>
     <string name="report_content_message">消息</string>
     <string name="report_content_success">消息已收到，谢谢。</string>
-    <string name="report_content_failure">无法发送。文字已保留，可重试。</string>
+    <string name="report_content_failure">无法发送。文字已保留，可重试或通过电子邮件发送。</string>
     <string name="report_content_send">发送</string>
+    <string name="report_content_email">通过电子邮件发送</string>
     <string name="metadata_lookup_identifiers">标识符</string>
     <string name="metadata_lookup_cover">封面</string>
     <string name="metadata_lookup_choose_result">选择结果（%1$d）</string>
@@ -478,4 +473,10 @@
     <string name="reader_sync_note">阅读位置和书签会随书库一起同步。</string>
     <string name="reader_reset_settings">恢复默认设置</string>
     <string name="reader_page_progress">章节进度</string>
+    <string name="edit_metadata_read_short">阅读</string>
+    <string name="edit_metadata_continue_short">继续阅读</string>
+    <string name="edit_metadata_description_edit">编辑简介</string>
+    <string name="empty_library_kindle_setup">设置 Kindle</string>
+    <string name="library_select_books">选择图书</string>
+    <string name="library_select_books_hint">也可以长按封面进行选择。</string>
 </resources>

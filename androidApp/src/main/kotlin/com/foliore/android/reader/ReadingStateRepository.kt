@@ -44,9 +44,19 @@ class ReadingStateRepository(context: Context) {
         merge(ReadingState(bookmarks = listOf(bookmark.copy(deleted = true, clock = current.nextClock(System.currentTimeMillis()), deviceId = deviceId))))
     }
 
+    fun progress(): Map<String, ReadingProgress> = runCatching {
+        preferences.getString("progress", null)?.let { json.decodeFromString<Map<String, ReadingProgress>>(it) }
+    }.getOrNull().orEmpty()
+
+    fun saveProgress(bookId: String, contentHash: String, fraction: Double) = synchronized(lock) {
+        if (!fraction.isFinite()) return@synchronized
+        val next = progress() + (bookId to ReadingProgress(contentHash, fraction.coerceIn(0.0, 1.0), System.currentTimeMillis()))
+        preferences.edit().putString("progress", json.encodeToString(next)).apply()
+    }
+
     fun removeBook(bookId: String) = synchronized(lock) {
         val next = state().let { it.copy(positions = it.positions.filterNot { p -> p.bookId == bookId }, bookmarks = it.bookmarks.filterNot { b -> b.bookId == bookId }) }
-        preferences.edit().putString("state", json.encodeToString(next)).apply()
+        preferences.edit().putString("state", json.encodeToString(next)).putString("progress", json.encodeToString(progress() - bookId)).apply()
     }
 
     fun copyBook(from: String, to: String) = synchronized(lock) {
@@ -55,6 +65,8 @@ class ReadingStateRepository(context: Context) {
             positions = current.positions.filter { it.bookId == from }.map { it.copy(bookId = to) },
             bookmarks = current.bookmarks.filter { it.bookId == from }.map { it.copy(bookId = to, id = UUID.nameUUIDFromBytes((to + it.id).toByteArray()).toString()) },
         ))
+        val progress = progress()
+        progress[from]?.let { preferences.edit().putString("progress", json.encodeToString(progress + (to to it))).apply() }
     }
 
     fun preferences(): ReaderPreferences = runCatching { preferences.getString("appearance", null)?.let { json.decodeFromString<ReaderPreferences>(it) } }.getOrNull()?.normalized() ?: ReaderPreferences()

@@ -36,6 +36,7 @@ data class LibraryUiState(
     val displayOptions: LibraryDisplayOptions = LibraryDisplayOptions(),
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
+    val readingActivity: Map<String, BookReadingActivity> = emptyMap(),
     val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
@@ -56,6 +57,12 @@ data class LibraryUiState(
     val hasActiveProgress: Boolean
         get() = isSyncing || isImporting || syncProgress != null || importProgress != null
 }
+
+/** [fraction] is null when this device has not opened the current file yet. */
+data class BookReadingActivity(
+    val fraction: Double?,
+    val lastReadAt: Long,
+)
 
 data class ImportDuplicateConflict(
     val token: String,
@@ -81,6 +88,7 @@ enum class BookFilter {
 
 enum class BookSortOrder {
     IMPORTED_NEWEST,
+    RECENTLY_READ,
     TITLE_ASC,
     TITLE_DESC,
     AUTHOR_ASC,

@@ -74,6 +74,7 @@ class LibraryViewModel(
     private val libraryDisplayPreferenceRepository: LibraryDisplayPreferenceRepository,
     private val openAiApiService: OpenAiApiService,
     private val openMetadataLookupService: OpenMetadataLookupService,
+    private val readingStateRepository: com.foliore.android.reader.ReadingStateRepository,
 ) : ViewModel() {
     private val initialSyncProvider = syncService.activeProvider()
     private val _state = MutableStateFlow(
@@ -133,8 +134,30 @@ class LibraryViewModel(
         viewModelScope.launch {
             val (books, recoveredCover) = loadBooksAndRecoverMissingCovers()
             _state.update { it.withBooks(books) }
+            refreshReadingActivity()
             if (recoveredCover) enqueueAutoSync()
         }
+    }
+
+    /** The reader runs in its own activity, so the library reloads this when it comes back to the front. */
+    fun refreshReadingActivity() {
+        viewModelScope.launch {
+            val books = _state.value.books
+            val activity = withContext(Dispatchers.IO) { readingActivity(books) }
+            _state.update { it.copy(readingActivity = activity) }
+        }
+    }
+
+    private fun readingActivity(books: List<LibraryBook>): Map<String, BookReadingActivity> {
+        val progress = readingStateRepository.progress()
+        val positions = readingStateRepository.state().positions.associateBy { it.bookId }
+        return books.mapNotNull { item ->
+            val hash = item.book.originalHashSha256
+            val local = progress[item.book.id]?.takeIf { it.contentHash == hash }
+            val synced = positions[item.book.id]?.takeIf { it.contentHash == hash }
+            val lastReadAt = maxOf(local?.readAt ?: 0L, synced?.clock ?: 0L)
+            if (lastReadAt <= 0L) null else item.book.id to BookReadingActivity(local?.fraction, lastReadAt)
+        }.toMap()
     }
 
     fun importUris(uris: List<Uri>) {
@@ -1191,9 +1214,11 @@ class LibraryViewModel(
             val aiCoverPromptRecords = withContext(Dispatchers.IO) {
                 aiCoverPromptRepository.records()
             }
+            val readingActivity = withContext(Dispatchers.IO) { readingActivity(books) }
             _state.update {
                 it.withBooks(books).copy(
                     books = books,
+                    readingActivity = readingActivity,
                     isSyncing = false,
                     syncProgress = null,
                     syncProvider = syncService.activeProvider(),

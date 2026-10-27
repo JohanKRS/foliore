@@ -44,6 +44,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -64,6 +65,12 @@ import com.foliore.android.storage.LauncherIcon
 import com.foliore.android.ui.theme.ThemeMode
 import com.foliore.android.viewmodel.SyncSummary
 import java.util.Locale
+
+/** A dialog to open on arrival, for entry points outside the settings tab. */
+enum class SettingsShortcut {
+    SYNC_SETUP,
+    KINDLE_SETUP,
+}
 
 @Composable
 fun SettingsScreen(
@@ -108,6 +115,8 @@ fun SettingsScreen(
     onAutoSyncWifiOnlyChange: (Boolean) -> Unit,
     onSyncNow: () -> Unit,
     onDisconnectSync: () -> Unit,
+    shortcut: SettingsShortcut? = null,
+    onShortcutConsumed: () -> Unit = {},
     bottomChromeInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
@@ -134,6 +143,14 @@ fun SettingsScreen(
     var showKindleSettings by rememberSaveable { mutableStateOf(false) }
     var showExperimentalSettings by rememberSaveable { mutableStateOf(false) }
     var showSyncMethodPicker by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(shortcut) {
+        when (shortcut) {
+            SettingsShortcut.SYNC_SETUP -> showSyncMethodPicker = true
+            SettingsShortcut.KINDLE_SETUP -> showKindleSettings = true
+            null -> return@LaunchedEffect
+        }
+        onShortcutConsumed()
+    }
 
     Box(
         modifier = modifier

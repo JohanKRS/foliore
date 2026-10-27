@@ -43,7 +43,9 @@
     <string name="library_display_title">Título</string>
     <string name="library_display_author">Autor</string>
     <string name="library_display_series">Serie</string>
-    <string name="sort_imported_newest">Más recientes</string>
+    <string name="sort_imported_newest">Añadidos recientemente</string>
+    <string name="sort_recently_read">Leídos recientemente</string>
+    <string name="library_book_progress">%1$d%% leído</string>
     <string name="sort_title_asc">Título A–Z</string>
     <string name="sort_title_desc">Título Z–A</string>
     <string name="sort_author_asc">Autor A–Z</string>
@@ -111,23 +113,15 @@
     <string name="export_notice_failed">No se pudo exportar el EPUB.</string>
     <string name="export_share_chooser">Compartir EPUB</string>
 
-    <string name="details_series">Serie</string>
     <string name="details_published_year">Publicación</string>
-    <string name="details_language">Idioma</string>
-    <string name="details_publisher">Editorial</string>
-    <string name="details_file_format">Formato</string>
-    <string name="details_file_format_epub">EPUB</string>
     <string name="details_imported_at">Importado el</string>
     <string name="details_last_synced">Última sincronización</string>
     <string name="details_status">Estado</string>
     <string name="details_not_available">-</string>
     <string name="details_book_not_found">Libro no encontrado.</string>
     <string name="details_about_book">Acerca de este libro</string>
-    <string name="details_action_edit_metadata">Editar metadatos</string>
     <string name="details_action_replace_cover">Cambiar portada</string>
     <string name="details_action_generate_cover">Generar portadas</string>
-    <string name="details_action_share_export">Compartir / exportar</string>
-    <string name="details_action_send_to_kindle">Enviar a Kindle</string>
     <string name="details_action_delete_book">Eliminar de la biblioteca</string>
     <string name="delete_book_dialog_title">¿Eliminar libro?</string>
     <string name="delete_book_dialog_body">Esta acción elimina el libro y los archivos locales guardados por Foliore.</string>
@@ -294,7 +288,7 @@
     <string name="sync_notice_existing_library_configured">Se encontró una biblioteca existente. Sincroniza para importar los libros de esta ubicación.</string>
     <string name="sync_notice_complete">Sincronización completada.</string>
     <string name="sync_notice_complete_with_conflicts">Sincronización completada con conflictos.</string>
-    <string name="sync_notice_not_configured">Elige una carpeta antes de sincronizar.</string>
+    <string name="sync_notice_not_configured">Elige Google Drive o una carpeta para sincronizar.</string>
     <string name="sync_notice_folder_unavailable">La carpeta elegida no está disponible.</string>
     <string name="sync_notice_folder_looks_like_subfolder">Parece una subcarpeta de la biblioteca. Elige Foliore Library o la carpeta que la contiene.</string>
     <string name="sync_notice_google_drive_connected">Google Drive privado conectado.</string>
@@ -397,8 +391,9 @@
     <string name="report_content_description">Describe una duda, problema o contenido inadecuado generado por IA. Solo se envía tu mensaje.</string>
     <string name="report_content_message">Mensaje</string>
     <string name="report_content_success">Mensaje recibido. Gracias.</string>
-    <string name="report_content_failure">No se pudo enviar. El texto sigue aquí para volver a intentarlo.</string>
+    <string name="report_content_failure">No se pudo enviar. El texto sigue aquí para volver a intentarlo o enviarlo por correo.</string>
     <string name="report_content_send">Enviar</string>
+    <string name="report_content_email">Enviar por correo</string>
     <string name="metadata_lookup_identifiers">Identificadores</string>
     <string name="metadata_lookup_cover">Portada</string>
     <string name="metadata_lookup_choose_result">Elegir resultado (%1$d)</string>
@@ -478,4 +473,10 @@
     <string name="reader_sync_note">La posición de lectura y los marcadores se sincronizan con la biblioteca.</string>
     <string name="reader_reset_settings">Restaurar valores predeterminados</string>
     <string name="reader_page_progress">Progreso del capítulo</string>
+    <string name="edit_metadata_read_short">Leer</string>
+    <string name="edit_metadata_continue_short">Seguir</string>
+    <string name="edit_metadata_description_edit">Editar descripción</string>
+    <string name="empty_library_kindle_setup">Configurar Kindle</string>
+    <string name="library_select_books">Seleccionar libros</string>
+    <string name="library_select_books_hint">También puedes mantener pulsada una portada.</string>
 </resources>

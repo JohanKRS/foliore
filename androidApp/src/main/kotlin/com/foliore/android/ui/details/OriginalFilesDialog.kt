@@ -44,22 +44,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun OriginalFilesFooter(onClick: () -> Unit, enabled: Boolean) {
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        TextButton(onClick = onClick, enabled = enabled) {
-            Text(
-                text = stringResource(R.string.original_files_title),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
 internal fun OriginalFilesDialog(bookId: String, viewModel: LibraryViewModel, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

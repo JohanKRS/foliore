@@ -67,6 +67,7 @@ internal class ReaderViewModel(context: Context, private val bookId: String) : V
                 mutable.value.publication?.close()
                 mutable.value = mutable.value.copy(book = book, publication = publication, loading = false, navigation = ReaderNavigation(section, loc), locator = loc,
                     bookmarks = repository.bookmarks(bookId, book.book.originalHashSha256))
+                saveProgress(book, publication, section, loc)
                 opened = null
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { mutable.value = mutable.value.copy(loading = false, failed = true) }
@@ -82,7 +83,16 @@ internal class ReaderViewModel(context: Context, private val bookId: String) : V
         if (user && state.book != null) {
             repository.savePosition(bookId, state.book.book.originalHashSha256, locator)
             lastPosition = repository.position(bookId, state.book.book.originalHashSha256)
+            val publication = state.publication
+            val section = state.navigation?.section
+            if (publication != null && section != null) saveProgress(state.book, publication, section, locator)
         }
+    }
+
+    /** Same whole-book fraction the reader footer shows, kept for the library grid. */
+    private fun saveProgress(book: LibraryBook, publication: EpubPublication, section: Int, locator: ReadingLocator) {
+        if (publication.sections.isEmpty()) return
+        repository.saveProgress(bookId, book.book.originalHashSha256, (section + locator.progression) / publication.sections.size)
     }
 
     fun navigate(section: Int, locator: ReadingLocator? = null, fragment: String? = null) {

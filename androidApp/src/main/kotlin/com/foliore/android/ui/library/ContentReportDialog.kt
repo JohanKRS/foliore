@@ -1,5 +1,7 @@
 package com.foliore.android.ui.library
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -7,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -24,6 +27,9 @@ internal fun ContentReportDialog(onDismiss: () -> Unit) {
     var sending by remember { mutableStateOf(false) }
     var outcome by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val supportEmail = stringResource(R.string.support_email)
+    val emailSubject = stringResource(R.string.app_name) + " · " + stringResource(R.string.report_ai_content)
     FolioreOptionsDialog(
         title = stringResource(R.string.report_ai_content),
         onDismiss = { if (!sending) onDismiss() },
@@ -38,6 +44,16 @@ internal fun ContentReportDialog(onDismiss: () -> Unit) {
                 label = { Text(stringResource(R.string.report_content_message)) })
             outcome?.let { Text(stringResource(if (it) R.string.report_content_success else R.string.report_content_failure)) }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                // The endpoint can be down; the user's own mail app still reaches the same inbox.
+                if (outcome == false) {
+                    TextButton(enabled = !sending, onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:$supportEmail"))
+                            .putExtra(Intent.EXTRA_EMAIL, arrayOf(supportEmail))
+                            .putExtra(Intent.EXTRA_SUBJECT, emailSubject)
+                            .putExtra(Intent.EXTRA_TEXT, message)
+                        runCatching { context.startActivity(intent) }
+                    }) { Text(stringResource(R.string.report_content_email)) }
+                }
                 TextButton(enabled = message.isNotBlank() && !sending && outcome != true, onClick = {
                     sending = true
                     scope.launch {
