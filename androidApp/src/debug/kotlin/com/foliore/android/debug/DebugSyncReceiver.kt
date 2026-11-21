@@ -17,11 +17,6 @@ class DebugSyncReceiver : BroadcastReceiver() {
             context.startActivity(com.foliore.android.reader.ReaderActivity.intent(context, bookId).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             return
         }
-        if (intent.getBooleanExtra("billingLimitSafetyTest", false)) {
-            Thread { runCatching { BillingLimitHarness.run(context.applicationContext) }
-                .onFailure { Log.e(TAG, "Isolated billing QA failed", it) } }.start()
-            return
-        }
         if (intent.hasExtra("qaAction")) {
             Thread {
                 runCatching { DeviceSyncQaHarness.run(context.applicationContext, intent) }

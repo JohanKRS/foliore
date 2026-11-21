@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Only while the optional ChatGPT sign-in waits for the browser redirect. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="false"
@@ -128,6 +130,26 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ai.ChatGptReturnActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="foliore" android:host="chatgpt-signed-in" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".ai.ChatGptSignInForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

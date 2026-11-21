@@ -1,6 +1,6 @@
 # On-device format conversion
 
-The existing **Import books** action accepts EPUB, MOBI and AZW3, including files shared into the app. MOBI/AZW3 conversion is automatic and offline; the result enters the same metadata, cover, duplicate-review and EPUB export flow. There is no conversion service, API key or extra purchase requirement. The existing library capacity limit applies to imported books.
+The existing **Import books** action accepts EPUB, MOBI and AZW3, including files shared into the app. MOBI/AZW3 conversion is automatic and offline; the result enters the same metadata, cover, duplicate-review and EPUB export flow. There is no conversion service, API key or purchase requirement.
 
 The native engine is libmobi 0.12, pinned to `906274205c11944b628da1c553b255acb1af7c55`. It reconstructs MOBI6 and KF8 resources and selects KF8 in hybrid MOBI files. jsoup serializes legacy HTML as UTF-8 XHTML; Java writes the EPUB ZIP with an uncompressed first `mimetype` entry and stable timestamps. The existing EPUB parser validates the result before insertion. Conversion reconstructs the book; it does not guarantee pixel-identical layout in every reader.
 
@@ -44,4 +44,4 @@ adb shell am broadcast -n com.foliore.android/.debug.DebugImportReceiver \
 adb exec-out run-as com.foliore.android cat cache/conversion-result.txt
 ```
 
-The harness uses isolated databases, preferences and book directories. It covers MOBI6, AZW3, hybrid MOBI, existing EPUB import, covers, immutable source bytes, exact duplicates, review/discard/commit cleanup, EPUB preparation, DRM and corrupt input. It does not contact sync or billing services.
+The harness uses isolated databases, preferences and book directories. It covers MOBI6, AZW3, hybrid MOBI, existing EPUB import, covers, immutable source bytes, exact duplicates, review/discard/commit cleanup, EPUB preparation, DRM and corrupt input. It does not contact sync services.

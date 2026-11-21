@@ -22,7 +22,6 @@
     <string name="about_font_credit">Cormorant Garamond, di Christian Thalmann (Catharsis Fonts) e collaboratori. Carattere incluso nell’app.</string>
     <string name="about_icons_credit">Material Icons, di Google, tramite la libreria Jetpack Compose. Gli altri testi usano il carattere di sistema.</string>
     <string name="about_drive">Connessione all’account Google e sincronizzazione facoltativa nella cartella nascosta di Foliore. Il SDK Google Play services ha condizioni proprie e include componenti aperti.</string>
-    <string name="about_openai">Generazione facoltativa di metadati e copertine con la chiave configurata. Si applicano le condizioni del servizio OpenAI.</string>
     <string name="about_kindle">Invio di EPUB via e-mail tramite il server configurato. Kindle è un marchio Amazon; l’app non include un SDK Kindle.</string>
     <string name="about_independent">Nomi e marchi appartengono ai rispettivi titolari. Foliore è indipendente da questi servizi.</string>
     <string name="about_load_error">Impossibile aprire i riconoscimenti.</string>

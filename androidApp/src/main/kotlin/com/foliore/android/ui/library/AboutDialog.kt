@@ -69,9 +69,9 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
         }
     }
     var section by rememberSaveable { mutableStateOf(AboutSection.HOME) }
-    var showPurchaseTerms by rememberSaveable { mutableStateOf(false) }
-    if (showPurchaseTerms) {
-        PurchaseTermsDialog { showPurchaseTerms = false }
+    var showTerms by rememberSaveable { mutableStateOf(false) }
+    if (showTerms) {
+        TermsOfUseDialog { showTerms = false }
         return
     }
     var groupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -108,7 +108,7 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
                         Text(stringResource(R.string.about_export_source))
                     }
                 }
-                if (group.id in setOf("google-play", "play-billing")) {
+                if (group.id == "google-play") {
                     ExternalCreditLink(stringResource(R.string.about_terms), "https://developer.android.com/studio/terms")
                 }
                 if (group.coordinates.isNotEmpty()) {
@@ -133,8 +133,10 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(stringResource(R.string.about_open_source), style = MaterialTheme.typography.bodyMedium)
+                    ExternalCreditLink(stringResource(R.string.about_source_code), FOLIORE_SOURCE_URL)
                     Text(stringResource(R.string.about_thanks), style = MaterialTheme.typography.bodyMedium)
-                    TextButton(onClick = { showPurchaseTerms = true }) { Text(stringResource(R.string.billing_terms)) }
+                    TextButton(onClick = { showTerms = true }) { Text(stringResource(R.string.about_terms)) }
                     AboutSection.entries.filter { it != AboutSection.HOME }.forEach { entry ->
                         AboutRow(stringResource(entry.title), stringResource(entry.description)) { section = entry }
                     }
@@ -179,6 +181,21 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
             if (section != AboutSection.HOME || group != null) {
                 TextButton(onClick = goBack) { Text(stringResource(R.string.action_back)) }
             }
+        }
+    }
+}
+
+/** Public repository with the app's source code, as the GPL-3.0 requires. */
+internal const val FOLIORE_SOURCE_URL = "https://github.com/JohanKRS/Foliore"
+
+@Composable
+private fun TermsOfUseDialog(onDismiss: () -> Unit) {
+    FolioreOptionsDialog(title = stringResource(R.string.about_terms), onDismiss = onDismiss) {
+        SelectionContainer {
+            Text(
+                stringResource(R.string.terms_body, stringResource(R.string.support_email), FOLIORE_SOURCE_URL),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

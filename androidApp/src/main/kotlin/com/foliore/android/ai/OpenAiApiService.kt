@@ -1,28 +1,37 @@
 package com.foliore.android.ai
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.util.Base64
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.shared.domain.BookMetadataDraft
 import com.foliore.shared.domain.LibraryBook
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlinx.serialization.SerialName
+import java.security.MessageDigest
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
+/**
+ * Optional AI features. Text requests go to the Responses API, either through the user's
+ * ChatGPT plan ("Sign in with ChatGPT") or an OpenAI API key. Cover generation uses the API key
+ * until ChatGPT plan usage supports image generation (see [AiFeatureFlags]).
+ */
 class OpenAiApiService(
     context: Context,
     private val aiPreferenceRepository: AiPreferenceRepository,
+    private val chatGptAuthService: ChatGptAuthService,
 ) {
     private val appContext = context.applicationContext
     private val json = Json {
@@ -30,29 +39,73 @@ class OpenAiApiService(
         encodeDefaults = false
     }
 
-    fun generateMetadataPreview(
+    suspend fun generateMetadataPreview(
+        provider: AiProvider,
         book: LibraryBook,
         draft: BookMetadataDraft,
         prompt: String,
     ): OpenAiResult<BookMetadataDraft> {
-        val apiKey = aiPreferenceRepository.openAiApiKey()
-            ?: return OpenAiResult.Failure("Missing API key")
-        val response = postJson(
-            endpoint = RESPONSES_ENDPOINT,
-            apiKey = apiKey,
-            body = metadataRequestBody(book, draft, prompt),
-        )
-        val responseBody = response.body ?: return OpenAiResult.Failure(response.errorMessage)
-        val outputText = responseBody.extractOutputText()
-            ?: return OpenAiResult.Failure("Empty metadata response")
-
+        val response = createResponse(provider, metadataRequestBody(provider, draft, prompt))
+        val responseBody = when (response) {
+            is OpenAiResult.Success -> response.value
+            is OpenAiResult.Failure -> return response
+        }
+        val outputText = responseBody.outputText() ?: return OpenAiResult.Failure("Empty metadata response")
         return runCatching {
             val payload = json.decodeFromString(MetadataPayload.serializer(), outputText.cleanJsonPayload())
             OpenAiResult.Success(payload.toDraft(draft))
         }.getOrElse { OpenAiResult.Failure(it.message) }
     }
 
-    fun generateCoverOptions(
+    /** Uses web search to find existing covers for this book, then downloads and checks each one. */
+    suspend fun findCovers(
+        provider: AiProvider,
+        book: LibraryBook,
+        draft: BookMetadataDraft,
+        onProgress: (Int, Int) -> Unit = { _, _ -> },
+    ): OpenAiResult<List<AiGeneratedCoverOption>> {
+        val response = createResponse(provider, coverSearchRequestBody(provider, book, draft))
+        val responseBody = when (response) {
+            is OpenAiResult.Success -> response.value
+            is OpenAiResult.Failure -> return response
+        }
+        val outputText = responseBody.outputText() ?: return OpenAiResult.Success(emptyList())
+        val candidates = runCatching {
+            json.decodeFromString(CoverSearchPayload.serializer(), outputText.cleanJsonPayload()).covers
+        }.getOrElse { return OpenAiResult.Failure(it.message) }
+            .filter { it.imageUrl.startsWith("https://") }
+            .distinctBy { it.imageUrl }
+            .take(MAX_FOUND_COVERS)
+
+        val searchId = System.currentTimeMillis().toString()
+        val outputDir = File(appContext.cacheDir, "generated-covers/${book.book.id}/found-$searchId").apply { mkdirs() }
+        val seen = mutableSetOf<String>()
+        val options = mutableListOf<AiGeneratedCoverOption>()
+        candidates.forEachIndexed { index, candidate ->
+            onProgress(index, candidates.size)
+            val downloaded = runCatching {
+                OpenAiHttp.downloadBytes(candidate.imageUrl, MAX_COVER_BYTES, COVER_ACCEPT)
+            }.getOrNull() ?: return@forEachIndexed
+            val bytes = downloaded.second
+            val digest = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            if (!seen.add(digest) || !bytes.looksLikeUsableCover()) return@forEachIndexed
+            val file = File(outputDir, "${index + 1}.img").apply { writeBytes(bytes) }
+            options += AiGeneratedCoverOption(
+                id = "found-$searchId-${index + 1}",
+                label = listOfNotNull(candidate.source.cleanOptional(), candidate.edition.cleanOptional())
+                    .joinToString(" · ")
+                    .ifBlank { candidate.imageUrl.substringAfter("://").substringBefore('/') },
+                style = AiGeneratedCoverOption.STYLE_FOUND,
+                prompt = candidate.pageUrl ?: candidate.imageUrl,
+                imagePath = file.absolutePath,
+            )
+        }
+        onProgress(candidates.size, candidates.size)
+        return OpenAiResult.Success(options)
+    }
+
+    suspend fun generateCoverOptions(
+        provider: AiProvider,
         book: LibraryBook,
         draft: BookMetadataDraft,
         prompt: String,
@@ -60,8 +113,6 @@ class OpenAiApiService(
         styles: List<AiCoverStyleRequest>,
         onProgress: (Int, Int) -> Unit = { _, _ -> },
     ): OpenAiResult<List<AiGeneratedCoverOption>> {
-        val apiKey = aiPreferenceRepository.openAiApiKey()
-            ?: return OpenAiResult.Failure("Missing API key")
         val generationId = System.currentTimeMillis().toString()
         val outputDir = File(appContext.cacheDir, "generated-covers/${book.book.id}/$generationId").apply {
             mkdirs()
@@ -76,17 +127,10 @@ class OpenAiApiService(
                 reference = reference,
                 style = style,
             )
-            val response = postJson(
-                endpoint = IMAGES_ENDPOINT,
-                apiKey = apiKey,
-                body = imageRequestBody(finalPrompt),
-            )
-            val responseBody = response.body ?: return OpenAiResult.Failure(response.errorMessage)
-            val imagePayload = runCatching {
-                json.decodeFromString(ImageGenerationResponse.serializer(), responseBody)
-            }.getOrElse { return OpenAiResult.Failure(it.message) }
-            val b64 = imagePayload.data.firstOrNull()?.b64Json
-                ?: return OpenAiResult.Failure("Empty cover response")
+            val b64 = when (val image = generateImage(provider, finalPrompt)) {
+                is OpenAiResult.Success -> image.value
+                is OpenAiResult.Failure -> return image
+            }
             val imageBytes = runCatching {
                 Base64.decode(b64, Base64.DEFAULT)
             }.getOrElse { return OpenAiResult.Failure(it.message) }
@@ -105,12 +149,145 @@ class OpenAiApiService(
         return OpenAiResult.Success(options)
     }
 
+    /** Returns base64 image data for [prompt]. */
+    private suspend fun generateImage(provider: AiProvider, prompt: String): OpenAiResult<String> {
+        if (provider == AiProvider.CHATGPT) {
+            if (!AiFeatureFlags.CHATGPT_IMAGE_GENERATION) return OpenAiResult.Failure(code = AiErrorCodes.PROVIDER_DISABLED)
+            val body = buildJsonObject {
+                putJsonArray("input") { addMessage(role = "user", text = prompt) }
+                putJsonArray("tools") {
+                    add(
+                        buildJsonObject {
+                            put("type", "image_generation")
+                            put("size", IMAGE_SIZE)
+                        },
+                    )
+                }
+                put("tool_choice", "required")
+            }
+            val response = when (val result = createResponse(provider, body)) {
+                is OpenAiResult.Success -> result.value
+                is OpenAiResult.Failure -> return result
+            }
+            val image = (response["output"] as? JsonArray).orEmpty()
+                .mapNotNull { it as? JsonObject }
+                .firstOrNull { it.string("type") == "image_generation_call" }
+                ?.string("result")
+            return image?.let { OpenAiResult.Success(it) } ?: OpenAiResult.Failure("Empty cover response")
+        }
+
+        val apiKey = aiPreferenceRepository.openAiApiKey()
+            ?: return OpenAiResult.Failure(code = AiErrorCodes.PROVIDER_DISABLED)
+        val response = runCatching {
+            OpenAiHttp.postJson(IMAGES_ENDPOINT, apiKey, json.encodeToString(JsonObject.serializer(), imageRequestBody(prompt)))
+        }.getOrElse { return OpenAiResult.Failure(it.message) }
+        if (!response.isSuccess) return AiErrorCodes.failure(response.status, response.body, AiProvider.OPENAI_API)
+        val b64 = runCatching {
+            val data = json.parseToJsonElement(response.body).jsonObject["data"] as? JsonArray
+            (data?.firstOrNull() as? JsonObject)?.string("b64_json")
+        }.getOrNull()
+        return b64?.let { OpenAiResult.Success(it) } ?: OpenAiResult.Failure("Empty cover response")
+    }
+
+    /** Sends a Responses API request through [provider] and returns the completed response object. */
+    private suspend fun createResponse(provider: AiProvider, body: JsonObject): OpenAiResult<JsonObject> {
+        return when (provider) {
+            AiProvider.OPENAI_API -> {
+                val apiKey = aiPreferenceRepository.openAiApiKey()
+                    ?: return OpenAiResult.Failure(code = AiErrorCodes.PROVIDER_DISABLED)
+                val request = JsonObject(body + ("model" to JsonPrimitive(API_TEXT_MODEL)))
+                val response = runCatching {
+                    OpenAiHttp.postJson(RESPONSES_ENDPOINT, apiKey, json.encodeToString(JsonObject.serializer(), request))
+                }.getOrElse { return OpenAiResult.Failure(it.message) }
+                if (!response.isSuccess) return AiErrorCodes.failure(response.status, response.body, AiProvider.OPENAI_API)
+                runCatching { OpenAiResult.Success(json.parseToJsonElement(response.body).jsonObject) }
+                    .getOrElse { OpenAiResult.Failure(it.message) }
+            }
+            AiProvider.CHATGPT -> createChatGptResponse(body)
+        }
+    }
+
+    /**
+     * ChatGPT plan usage requires store=false and stream=true, and only accepts a subset of the
+     * Responses fields. Fields the route rejects as unsupported are dropped and the request is
+     * retried, so new limitations degrade features instead of breaking them.
+     */
+    private suspend fun createChatGptResponse(body: JsonObject): OpenAiResult<JsonObject> {
+        var model = chatGptAuthService.account.value?.model
+        if (model == null) {
+            chatGptAuthService.refreshModels()
+            model = chatGptAuthService.account.value?.model
+        }
+        if (model == null) return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_UNAVAILABLE)
+
+        var request = JsonObject(
+            body + mapOf(
+                "model" to JsonPrimitive(model),
+                "store" to JsonPrimitive(false),
+                "stream" to JsonPrimitive(true),
+            ),
+        )
+        var retriedAuth = false
+        repeat(MAX_CHATGPT_ATTEMPTS) {
+            val token = when (val access = chatGptAuthService.accessToken(forceRefresh = retriedAuth)) {
+                is ChatGptAccessToken.Ready -> access.token
+                ChatGptAccessToken.SignInRequired -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_SIGN_IN_REQUIRED)
+                ChatGptAccessToken.Unavailable -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_UNAVAILABLE)
+            }
+            var completed: JsonObject? = null
+            var streamFailure: OpenAiResult.Failure? = null
+            val response = runCatching {
+                OpenAiHttp.postJsonStream(
+                    url = RESPONSES_ENDPOINT,
+                    bearer = token,
+                    body = json.encodeToString(JsonObject.serializer(), request),
+                    maxStreamBytes = MAX_STREAM_BYTES,
+                ) { data ->
+                    val event = runCatching { json.parseToJsonElement(data).jsonObject }.getOrNull() ?: return@postJsonStream false
+                    when (event.string("type")) {
+                        "response.completed" -> {
+                            completed = event["response"] as? JsonObject
+                            true
+                        }
+                        "response.failed", "response.incomplete", "error" -> {
+                            streamFailure = AiErrorCodes.streamFailure(event)
+                            true
+                        }
+                        else -> false
+                    }
+                }
+            }.getOrElse { return OpenAiResult.Failure(it.message) }
+
+            if (response.isSuccess) {
+                completed?.let { return OpenAiResult.Success(it) }
+                return streamFailure ?: OpenAiResult.Failure("Incomplete response stream")
+            }
+            val failure = AiErrorCodes.failure(response.status, response.body)
+            when {
+                failure.code == AiErrorCodes.CHATGPT_SIGN_IN_REQUIRED && !retriedAuth -> retriedAuth = true
+                failure.code == AiErrorCodes.UNSUPPORTED_CAPABILITY -> {
+                    request = request.withoutUnsupported(failure.param) ?: return failure
+                }
+                else -> return failure
+            }
+        }
+        return OpenAiResult.Failure("Request failed")
+    }
+
+    /** Drops the top-level field named by an unsupported-capability error, when it is optional. */
+    private fun JsonObject.withoutUnsupported(param: String?): JsonObject? {
+        val field = param?.substringBefore('.')?.substringBefore('[')?.takeIf { it in DROPPABLE_FIELDS } ?: return null
+        if (field !in this) return null
+        val dropped = if (field == "tools") setOf("tools", "tool_choice") else setOf(field)
+        return JsonObject(filterKeys { it !in dropped })
+    }
+
     private fun metadataRequestBody(
-        book: LibraryBook,
+        provider: AiProvider,
         draft: BookMetadataDraft,
         prompt: String,
     ): JsonObject {
-        val systemPrompt = """
+        val instructions = """
             You help Foliore prepare clean EPUB metadata.
             Return only JSON matching the schema.
             Do not invent bibliographic facts. If a field is unknown, preserve the current value or return null.
@@ -122,53 +299,79 @@ class OpenAiApiService(
             publishedDate must be only a four-digit year when known.
             Generate natural-language fields in the EPUB language, especially description/about and tags. If the language field is present, use that language. If it is missing, infer it and return an ISO 639 language code.
             Inspect isbn and every identifier. If any identifier is an ISBN-10 or ISBN-13, return it in isbn.
+            Answer with a single JSON object with these keys: title, subtitle, authors, sortAuthor, language, publisher, publishedDate, description, tags, isbn, seriesName, seriesIndex.
         """.trimIndent()
         val userPrompt = buildString {
             appendLine(prompt)
             appendLine()
             appendLine("Current EPUB metadata:")
-            appendLine("Title: ${draft.title}")
-            appendLine("Subtitle: ${draft.subtitle.orEmpty()}")
-            appendLine("Authors: ${draft.authors.joinToString(", ")}")
-            appendLine("Sort author: ${draft.sortAuthor.orEmpty()}")
-            appendLine("Series: ${draft.seriesName.orEmpty()}")
-            appendLine("Series number: ${draft.seriesIndex.formatSeriesIndex()}")
-            appendLine("Language: ${draft.language.orEmpty()}")
-            appendLine("Publisher: ${draft.publisher.orEmpty()}")
-            appendLine("Published year/date: ${draft.publishedDate.orEmpty()}")
-            appendLine("ISBN: ${draft.isbn.orEmpty()}")
-            appendLine("ISBN candidates from identifiers: ${draft.isbnCandidates().joinToString(", ")}")
-            appendLine("Tags: ${draft.tags.joinToString(", ")}")
-            appendLine("About: ${draft.description.orEmpty()}")
-            appendLine("Identifiers: ${draft.identifiers.entries.joinToString { "${it.key}=${it.value}" }}")
+            appendLine(draft.describe())
         }
+        return responsesBody(provider, instructions, userPrompt, "foliore_metadata", metadataSchema())
+    }
 
-        return buildJsonObject {
-            put("model", METADATA_MODEL)
-            putJsonObject("reasoning") {
-                put("effort", "low")
-            }
-            putJsonArray("tools") {
-                add(
-                    buildJsonObject {
-                        put("type", "web_search")
-                    },
-                )
-            }
-            put("tool_choice", "auto")
-            putJsonArray("input") {
-                addMessage(role = "system", text = systemPrompt)
-                addMessage(role = "user", text = userPrompt)
-            }
-            putJsonObject("text") {
-                putJsonObject("format") {
-                    put("type", "json_schema")
-                    put("name", "foliore_metadata")
-                    put("strict", true)
-                    put("schema", metadataSchema())
-                }
+    private fun coverSearchRequestBody(
+        provider: AiProvider,
+        book: LibraryBook,
+        draft: BookMetadataDraft,
+    ): JsonObject {
+        val instructions = """
+            You help Foliore find existing front-cover images for one specific book, for the reader's personal library.
+            Use web search. Return only JSON matching the schema, with at most $MAX_FOUND_COVERS covers, best first.
+            Each imageUrl must be a direct HTTPS link to a JPEG, PNG or WebP image of the front cover, not a web page.
+            Prefer large images (at least 600 pixels tall) over thumbnails.
+            Prefer the edition that matches the title, author, language, publisher and ISBN; then other editions in the same language; then the original edition.
+            Prefer publisher, author, library, Open Library, Wikimedia Commons and established bookseller sources.
+            Only return URLs that appeared in your search results or the pages you opened. Never guess or construct URLs.
+            source is the site name. edition briefly names the edition, publisher or year when known.
+            Answer with a single JSON object: {"covers":[{"imageUrl":"...","pageUrl":"...","source":"...","edition":"..."}]}.
+        """.trimIndent()
+        val userPrompt = buildString {
+            appendLine("Find cover images for this book.")
+            appendLine(draft.describe(fallbackAuthors = book.metadata.authors))
+        }
+        return responsesBody(provider, instructions, userPrompt, "foliore_cover_search", coverSearchSchema())
+    }
+
+    private fun responsesBody(
+        provider: AiProvider,
+        instructions: String,
+        userPrompt: String,
+        schemaName: String,
+        schema: JsonObject,
+    ): JsonObject = buildJsonObject {
+        put("instructions", instructions)
+        putJsonArray("input") { addMessage(role = "user", text = userPrompt) }
+        putJsonArray("tools") { add(buildJsonObject { put("type", "web_search") }) }
+        put("tool_choice", "auto")
+        if (provider == AiProvider.OPENAI_API) {
+            putJsonObject("reasoning") { put("effort", "low") }
+        }
+        putJsonObject("text") {
+            putJsonObject("format") {
+                put("type", "json_schema")
+                put("name", schemaName)
+                put("strict", true)
+                put("schema", schema)
             }
         }
+    }
+
+    private fun BookMetadataDraft.describe(fallbackAuthors: List<String> = emptyList()): String = buildString {
+        appendLine("Title: $title")
+        appendLine("Subtitle: ${subtitle.orEmpty()}")
+        appendLine("Authors: ${authors.ifEmpty { fallbackAuthors }.joinToString(", ")}")
+        appendLine("Sort author: ${sortAuthor.orEmpty()}")
+        appendLine("Series: ${seriesName.orEmpty()}")
+        appendLine("Series number: ${seriesIndex.formatSeriesIndex()}")
+        appendLine("Language: ${language.orEmpty()}")
+        appendLine("Publisher: ${publisher.orEmpty()}")
+        appendLine("Published year/date: ${publishedDate.orEmpty()}")
+        appendLine("ISBN: ${isbn.orEmpty()}")
+        appendLine("ISBN candidates from identifiers: ${isbnCandidates().joinToString(", ")}")
+        appendLine("Tags: ${tags.joinToString(", ")}")
+        appendLine("About: ${description.orEmpty()}")
+        appendLine("Identifiers: ${identifiers.entries.joinToString { "${it.key}=${it.value}" }}")
     }
 
     private fun imageRequestBody(prompt: String): JsonObject {
@@ -208,51 +411,60 @@ class OpenAiApiService(
         }
     }
 
-    private fun postJson(
-        endpoint: String,
-        apiKey: String,
-        body: JsonObject,
-    ): HttpResult {
-        return runCatching {
-            val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = 30_000
-                readTimeout = 180_000
-                doOutput = true
-                setRequestProperty("Authorization", "Bearer $apiKey")
-                setRequestProperty("Content-Type", "application/json")
-            }
-            connection.outputStream.use { output ->
-                output.write(json.encodeToString(JsonObject.serializer(), body).toByteArray(Charsets.UTF_8))
-            }
-            val responseCode = connection.responseCode
-            val responseText = if (responseCode in 200..299) {
-                connection.inputStream.bufferedReader().use { it.readText() }
-            } else {
-                connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-            }
-            connection.disconnect()
-
-            if (responseCode in 200..299) {
-                HttpResult(body = responseText)
-            } else {
-                val message = runCatching {
-                    json.decodeFromString(OpenAiErrorResponse.serializer(), responseText).error?.message
-                }.getOrNull()
-                HttpResult(errorMessage = message ?: "OpenAI request failed: HTTP $responseCode")
-            }
-        }.getOrElse { HttpResult(errorMessage = it.message ?: "OpenAI request failed") }
+    /** The first message text in a Responses object (the SDK's output_text is not in raw JSON). */
+    private fun JsonObject.outputText(): String? {
+        string("output_text")?.let { return it }
+        return (this["output"] as? JsonArray).orEmpty()
+            .asSequence()
+            .mapNotNull { it as? JsonObject }
+            .flatMap { (it["content"] as? JsonArray).orEmpty().asSequence() }
+            .mapNotNull { (it as? JsonObject)?.string("text") }
+            .firstOrNull { it.isNotBlank() }
     }
 
-    private fun String.extractOutputText(): String? {
-        return runCatching {
-            val parsed = json.decodeFromString(ResponsesApiResponse.serializer(), this)
-            parsed.outputText ?: parsed.output
-                .asSequence()
-                .flatMap { it.content.asSequence() }
-                .firstNotNullOfOrNull { it.text }
-        }.getOrNull()
+    private fun ByteArray.looksLikeUsableCover(): Boolean {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(this, 0, size, bounds)
+        val width = bounds.outWidth
+        val height = bounds.outHeight
+        if (width < MIN_COVER_WIDTH || height < MIN_COVER_HEIGHT) return false
+        val ratio = height.toFloat() / width
+        return ratio in 1.15f..2.0f
     }
+
+    private fun coverSearchSchema(): JsonObject = buildJsonObject {
+        put("type", "object")
+        put("additionalProperties", false)
+        putJsonObject("properties") {
+            putJsonObject("covers") {
+                put("type", "array")
+                putJsonObject("items") {
+                    put("type", "object")
+                    put("additionalProperties", false)
+                    putJsonObject("properties") {
+                        putJsonObject("imageUrl") { put("type", "string") }
+                        putJsonObject("pageUrl") { nullable("string") }
+                        putJsonObject("source") { nullable("string") }
+                        putJsonObject("edition") { nullable("string") }
+                    }
+                    put(
+                        "required",
+                        buildJsonArray {
+                            add("imageUrl")
+                            add("pageUrl")
+                            add("source")
+                            add("edition")
+                        },
+                    )
+                }
+            }
+        }
+        put("required", buildJsonArray { add("covers") })
+    }
+
+    private fun JsonObject.string(name: String): String? = (this[name] as? JsonPrimitive)?.contentOrNull
+
+    private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
 
     private fun MetadataPayload.toDraft(current: BookMetadataDraft): BookMetadataDraft {
         val cleanAuthors = authors.mapNotNull { it.cleanOptional() }
@@ -361,49 +573,6 @@ class OpenAiApiService(
         }
     }
 
-    private data class HttpResult(
-        val body: String? = null,
-        val errorMessage: String? = null,
-    )
-
-    @Serializable
-    private data class ResponsesApiResponse(
-        @SerialName("output_text") val outputText: String? = null,
-        val output: List<ResponseOutputItem> = emptyList(),
-        val error: OpenAiError? = null,
-    )
-
-    @Serializable
-    private data class ResponseOutputItem(
-        val content: List<ResponseContent> = emptyList(),
-    )
-
-    @Serializable
-    private data class ResponseContent(
-        val text: String? = null,
-    )
-
-    @Serializable
-    private data class ImageGenerationResponse(
-        val data: List<ImageData> = emptyList(),
-        val error: OpenAiError? = null,
-    )
-
-    @Serializable
-    private data class ImageData(
-        @SerialName("b64_json") val b64Json: String? = null,
-    )
-
-    @Serializable
-    private data class OpenAiErrorResponse(
-        val error: OpenAiError? = null,
-    )
-
-    @Serializable
-    private data class OpenAiError(
-        val message: String? = null,
-    )
-
     @Serializable
     private data class MetadataPayload(
         val title: String,
@@ -478,11 +647,31 @@ class OpenAiApiService(
         }
     }
 
+
+    @Serializable
+    private data class CoverSearchPayload(val covers: List<CoverCandidate> = emptyList())
+
+    @Serializable
+    private data class CoverCandidate(
+        val imageUrl: String,
+        val pageUrl: String? = null,
+        val source: String? = null,
+        val edition: String? = null,
+    )
+
     private companion object {
         const val RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses"
         const val IMAGES_ENDPOINT = "https://api.openai.com/v1/images/generations"
-        const val METADATA_MODEL = "gpt-5.5"
+        const val API_TEXT_MODEL = "gpt-5.5"
         const val IMAGE_MODEL = "gpt-image-1.5"
         const val IMAGE_SIZE = "1024x1536"
+        const val MAX_CHATGPT_ATTEMPTS = 4
+        const val MAX_STREAM_BYTES = 48L * 1024 * 1024
+        const val MAX_FOUND_COVERS = 6
+        const val MAX_COVER_BYTES = 12L * 1024 * 1024
+        const val MIN_COVER_WIDTH = 240
+        const val MIN_COVER_HEIGHT = 340
+        const val COVER_ACCEPT = "image/jpeg,image/png,image/webp;q=0.9,image/*;q=0.5"
+        val DROPPABLE_FIELDS = setOf("reasoning", "text", "tools", "tool_choice", "instructions")
     }
 }

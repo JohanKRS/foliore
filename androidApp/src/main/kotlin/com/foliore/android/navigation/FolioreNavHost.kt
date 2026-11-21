@@ -110,8 +110,6 @@ import com.foliore.android.ui.library.GoogleDriveRemoteLibraryDialog
 import com.foliore.android.ui.library.SettingsRoute
 import com.foliore.android.ui.library.SettingsShortcut
 import com.foliore.android.storage.SyncProvider
-import com.foliore.android.ui.library.UnlimitedReminderHost
-import com.foliore.android.ui.library.findActivity
 import com.foliore.android.ui.library.SyncProgressDivider
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.TopChromeContent
@@ -164,26 +162,9 @@ fun FolioreNavHost(
     libraryState.kindleBatchReport?.let { report ->
         com.foliore.android.ui.library.KindleBatchResultDialog(report, libraryState.books, libraryViewModel::dismissKindleBatchReport)
     }
-    com.foliore.android.ui.library.ImportLimitDialogs(libraryState,
-        onContinue = libraryViewModel::continueLimitedImport,
-        onDismiss = libraryViewModel::dismissImportLimit,
-        onSettings = { libraryViewModel.dismissImportLimit(); navController.navigateTopLevel(Routes.SETTINGS) })
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentRoute = currentDestination?.route
-    val billingState by libraryViewModel.billingState.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
-    UnlimitedReminderHost(
-        canPresent = currentRoute == Routes.LIBRARY && libraryState.kindleBatchReport == null && !libraryState.hasActiveProgress &&
-            !libraryState.isSearchOpen && !libraryState.isBatchMode &&
-            libraryState.pendingImportConflicts.isEmpty() && libraryState.importLimitAvailable == null &&
-            libraryState.importLimitSkipped == 0 && libraryState.googleDriveRemoteLibraryRecovery == null,
-        bookCount = libraryState.books.size,
-        billing = billingState,
-        onRefresh = libraryViewModel::refreshPurchases,
-        onRestore = libraryViewModel::restorePurchase,
-        onPurchase = { context.findActivity()?.let(libraryViewModel::purchaseUnlimited) },
-    )
     val currentBookId = backStackEntry?.arguments?.getString(Routes.ARG_BOOK_ID)
     var settingsShortcut by rememberSaveable { mutableStateOf<SettingsShortcut?>(null) }
     var editBottomBarState by remember { mutableStateOf<EditBottomBarState?>(null) }
@@ -233,6 +214,7 @@ fun FolioreNavHost(
         val topChromeMode = when (currentRoute) {
             Routes.LIBRARY -> TopChromeMode.Library
             Routes.EDIT -> TopChromeMode.Edit
+            Routes.SETTINGS -> TopChromeMode.Settings
             else -> TopChromeMode.None
         }
         val tuning = LocalVisualTuning.current
@@ -240,6 +222,7 @@ fun FolioreNavHost(
         val activeChromeHazeState = when (topChromeMode) {
             TopChromeMode.Edit -> editChromeHazeState
             TopChromeMode.Library -> libraryChromeHazeState
+            TopChromeMode.Settings,
             TopChromeMode.None -> otherChromeHazeState
         }
         val topSystemBarInset = with(density) { WindowInsets.safeDrawing.getTop(this).toDp() }
@@ -306,7 +289,7 @@ fun FolioreNavHost(
             Box(modifier = Modifier.fillMaxSize()) {
                 NavContent(
                     modifier = Modifier.fillMaxSize().then(
-                        if (topChromeMode == TopChromeMode.None) {
+                        if (topChromeMode == TopChromeMode.None || topChromeMode == TopChromeMode.Settings) {
                             Modifier.hazeSource(otherChromeHazeState)
                         } else Modifier,
                     ).windowInsetsPadding(horizontalSafeInsets),
@@ -425,6 +408,9 @@ fun FolioreNavHost(
                                                 .height(topChromeHeaderHeight),
                                         )
                                 }
+                                TopChromeMode.Settings -> {
+                                    com.foliore.android.ui.library.SettingsTopChromeOverlay(modifier = Modifier.fillMaxWidth())
+                                }
                                 TopChromeMode.None -> Unit
                             }
                         }
@@ -503,6 +489,7 @@ private fun NavContent(
                 onAppLanguageChange = onAppLanguageChange,
                 shortcut = settingsShortcut,
                 onShortcutConsumed = onSettingsShortcutConsumed,
+                topChromeInset = topChromeInset,
                 bottomChromeInset = bottomChromeInset,
             )
         }
@@ -1332,6 +1319,7 @@ private enum class TopChromeMode {
     None,
     Library,
     Edit,
+    Settings,
 }
 
 private data class EditBottomBarState(

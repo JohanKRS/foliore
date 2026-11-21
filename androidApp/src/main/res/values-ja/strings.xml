@@ -213,13 +213,9 @@
     <string name="settings_kindle_smtp_password_keep_label">新しいパスワード（変更しない場合は空欄）</string>
     <string name="settings_kindle_smtp_save">送信元を保存</string>
     <string name="settings_kindle_smtp_clear">送信元を消去</string>
-    <string name="settings_experimental">試験的な機能</string>
-    <string name="settings_experimental_description">OpenAI</string>
-    <string name="settings_experimental_dialog_title">試験的な機能</string>
     <string name="settings_metadata_sources">公開データソース</string>
     <string name="settings_ai">AI</string>
     <string name="settings_ai_openai_api">OpenAI API</string>
-    <string name="settings_ai_openai_api_description">AIによる自動入力と表紙生成に使用します。公開検索はキーなしでも利用できます。</string>
     <string name="settings_sync">同期</string>
     <string name="settings_sync_method">同期先</string>
     <string name="settings_sync_method_dialog_title">同期方法を選択</string>
@@ -303,8 +299,6 @@
     <string name="ai_notice_settings_updated">AI設定を更新しました。</string>
     <string name="ai_notice_api_key_saved">APIキーをアプリに保存しました。</string>
     <string name="ai_notice_api_key_cleared">APIキーを削除しました。</string>
-    <string name="ai_notice_provider_required">AIを使う前にAPIキーを設定してください。</string>
-    <string name="ai_notice_provider_not_ready">AIを使う前にAPIキーを設定してください。</string>
     <string name="ai_notice_request_failed">AIリクエストを完了できませんでした。</string>
     <string name="ai_notice_metadata_preview_ready">メタデータのプレビューを生成しました。</string>
     <string name="metadata_lookup_notice_ready">公開データソースで結果が見つかりました。</string>

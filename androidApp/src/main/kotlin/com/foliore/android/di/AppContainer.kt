@@ -30,7 +30,6 @@ class AppContainer(context: Context) {
     private val driver = DatabaseDriverFactory(appContext).createDriver()
     private val deviceIdProvider = DeviceIdProvider(appContext)
 
-    val billingRepository = com.foliore.android.billing.PlayBillingRepository.get(appContext)
     val libraryRepository = LibraryRepository(driver)
     val launcherIconRepository by lazy {
         com.foliore.android.storage.LauncherIconRepository(appContext)
@@ -47,9 +46,11 @@ class AppContainer(context: Context) {
         context = appContext,
         syncSettingsRepository = syncSettingsRepository,
     )
+    val chatGptAuthService = com.foliore.android.ai.ChatGptAuthService.get(appContext)
     val openAiApiService = OpenAiApiService(
         context = appContext,
         aiPreferenceRepository = aiPreferenceRepository,
+        chatGptAuthService = chatGptAuthService,
     )
     val openLibraryMetadataService = OpenLibraryMetadataService(appContext)
     val openMetadataLookupService = OpenMetadataLookupService(
@@ -57,7 +58,6 @@ class AppContainer(context: Context) {
         cacheDir = appContext.cacheDir,
     )
     val epubImporter = AndroidEpubImporter(
-        isUnlimited = { billingRepository.state.value.unlimited },
         context = appContext,
         libraryRepository = libraryRepository,
         deviceIdProvider = deviceIdProvider,

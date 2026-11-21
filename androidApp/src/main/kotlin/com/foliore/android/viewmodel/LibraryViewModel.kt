@@ -8,10 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.foliore.android.ai.AiCoverPromptRecord
 import com.foliore.android.ai.AiCoverStyleRequest
 import com.foliore.android.ai.AiGeneratedCoverOption
-import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.ai.AiErrorCodes
+import com.foliore.android.ai.AiProvider
+import com.foliore.android.ai.ChatGptAuthService
+import com.foliore.android.ai.ChatGptSignInFailure
+import com.foliore.android.ai.ChatGptSignInStatus
 import com.foliore.android.ai.OpenAiApiService
 import com.foliore.android.ai.OpenAiResult
-import com.foliore.android.ai.isEnabled
 import com.foliore.android.metadata.MetadataLookupResult
 import com.foliore.android.metadata.MetadataLookupCandidate
 import com.foliore.android.metadata.OpenMetadataLookupService
@@ -58,7 +61,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class LibraryViewModel(
-    private val billingRepository: com.foliore.android.billing.PlayBillingRepository,
+    private val chatGptAuthService: ChatGptAuthService,
     private val libraryRepository: LibraryRepository,
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
@@ -95,8 +98,8 @@ class LibraryViewModel(
                 },
             isAutoSyncEnabled = syncService.autoSyncEnabled(),
             isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
-            aiProviderMode = aiPreferenceRepository.providerMode.value,
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
+            chatGptAccount = chatGptAuthService.account.value,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
             kindleEmailSettings = kindleEmailPreferenceRepository.settings,
             gridColumns = libraryDisplayPreferenceRepository.gridColumns().toBookGridColumns(),
@@ -112,12 +115,6 @@ class LibraryViewModel(
     private val _notice = MutableStateFlow<LibraryNotice?>(null)
     val notice: StateFlow<LibraryNotice?> = _notice.asStateFlow()
     private val pendingEpubImports = linkedMapOf<String, PendingEpubImport>()
-    private var limitedImportUris: List<Uri> = emptyList()
-    val billingState = billingRepository.state
-
-    fun refreshPurchases() = billingRepository.refresh()
-    fun restorePurchase() = billingRepository.refresh(restore = true)
-    fun purchaseUnlimited(activity: android.app.Activity) = billingRepository.purchase(activity)
 
     private var pendingImportCounts = ImportCounts()
     private var isResolvingImportConflicts = false
@@ -128,6 +125,12 @@ class LibraryViewModel(
         refresh()
         refreshSyncState()
         syncWorkScheduler.refreshPeriodicSync()
+        viewModelScope.launch {
+            chatGptAuthService.account.collect { account -> _state.update { it.copy(chatGptAccount = account) } }
+        }
+        viewModelScope.launch {
+            chatGptAuthService.status.collect(::onChatGptStatus)
+        }
     }
 
     fun refresh() {
@@ -161,27 +164,6 @@ class LibraryViewModel(
     }
 
     fun importUris(uris: List<Uri>) {
-        if (uris.isEmpty() || pendingEpubImports.isNotEmpty() || _state.value.isImporting || limitedImportUris.isNotEmpty()) return
-        val available = com.foliore.android.billing.LibraryLimit.remaining(_state.value.books.size, billingState.value.unlimited)
-        if (uris.size > available) {
-            limitedImportUris = uris
-            _state.update { it.copy(importLimitAvailable = available) }
-        } else startImport(uris)
-    }
-
-    fun continueLimitedImport() {
-        val uris = limitedImportUris
-        limitedImportUris = emptyList()
-        _state.update { it.copy(importLimitAvailable = null) }
-        startImport(uris)
-    }
-
-    fun dismissImportLimit() {
-        limitedImportUris = emptyList()
-        _state.update { it.copy(importLimitAvailable = null, importLimitSkipped = 0) }
-    }
-
-    private fun startImport(uris: List<Uri>) {
         if (uris.isEmpty() || pendingEpubImports.isNotEmpty() || _state.value.isImporting) return
 
         viewModelScope.launch {
@@ -203,7 +185,6 @@ class LibraryViewModel(
                     when (val importResult = epubImporter.import(uri)) {
                         is EpubImportResult.Imported -> counts = counts.copy(imported = counts.imported + 1)
                         is EpubImportResult.Duplicate -> counts = counts.copy(duplicates = counts.duplicates + 1)
-                        EpubImportResult.LimitReached -> counts = counts.copy(limited = counts.limited + 1)
                         is EpubImportResult.Failed -> counts = counts.copy(
                             failed = counts.failed + 1,
                             drmFailed = counts.drmFailed || importResult.reason == com.foliore.android.storage.ImportFailureReason.DRM_PROTECTED,
@@ -296,7 +277,6 @@ class LibraryViewModel(
                                 is EpubImportResult.Duplicate -> {
                                     counts = counts.copy(duplicates = counts.duplicates + 1)
                                 }
-                                EpubImportResult.LimitReached -> counts = counts.copy(limited = counts.limited + 1)
                                 is EpubImportResult.Failed,
                                 is EpubImportResult.NeedsReview -> {
                                     counts = counts.copy(failed = counts.failed + 1)
@@ -376,10 +356,55 @@ class LibraryViewModel(
         _state.update { it.copy(displayOptions = it.displayOptions.copy(showSeries = enabled)) }
     }
 
-    fun setAiProviderMode(providerMode: AiProviderMode) {
-        aiPreferenceRepository.setProviderMode(providerMode)
-        _state.update { it.copy(aiProviderMode = providerMode) }
-        _notice.value = LibraryNotice(LibraryNoticeType.AI_SETTINGS_UPDATED)
+    /** Opens the browser for the optional ChatGPT sign-in; [openBrowser] returns false without a browser. */
+    fun startChatGptSignIn(openBrowser: (android.net.Uri) -> Boolean) {
+        chatGptAuthService.startSignIn(openBrowser)
+    }
+
+    fun cancelChatGptSignIn() {
+        chatGptAuthService.cancelSignIn()
+    }
+
+    fun signOutChatGpt() {
+        viewModelScope.launch {
+            chatGptAuthService.signOut()
+            _notice.value = LibraryNotice(LibraryNoticeType.CHATGPT_SIGNED_OUT)
+        }
+    }
+
+    fun selectChatGptModel(model: String) {
+        chatGptAuthService.selectModel(model)
+    }
+
+    fun refreshChatGptModels() {
+        viewModelScope.launch { chatGptAuthService.refreshModels() }
+    }
+
+    fun dismissChatGptWelcome() {
+        chatGptAuthService.markWelcomeShown()
+        _state.update { it.copy(showChatGptWelcome = false) }
+    }
+
+    private fun onChatGptStatus(status: ChatGptSignInStatus) {
+        _state.update { it.copy(chatGptSignIn = status) }
+        when (status) {
+            ChatGptSignInStatus.SignedIn -> {
+                _state.update { it.copy(showChatGptWelcome = !chatGptAuthService.repository.welcomeShown) }
+                _notice.value = LibraryNotice(LibraryNoticeType.CHATGPT_SIGNED_IN)
+                chatGptAuthService.clearStatus()
+            }
+            is ChatGptSignInStatus.Failed -> {
+                _notice.value = when (status.reason) {
+                    ChatGptSignInFailure.CANCELLED -> null
+                    ChatGptSignInFailure.DENIED -> LibraryNotice(LibraryNoticeType.CHATGPT_SIGN_IN_DENIED)
+                    ChatGptSignInFailure.BROWSER_UNAVAILABLE -> LibraryNotice(LibraryNoticeType.CHATGPT_BROWSER_UNAVAILABLE)
+                    ChatGptSignInFailure.TIMED_OUT,
+                    ChatGptSignInFailure.FAILED -> LibraryNotice(LibraryNoticeType.CHATGPT_SIGN_IN_FAILED)
+                } ?: _notice.value
+                chatGptAuthService.clearStatus()
+            }
+            else -> Unit
+        }
     }
 
     fun saveOpenAiApiKey(apiKey: String) {
@@ -387,14 +412,8 @@ class LibraryViewModel(
             val saved = withContext(Dispatchers.IO) {
                 aiPreferenceRepository.saveOpenAiApiKey(apiKey)
             }
-            if (saved) {
-                aiPreferenceRepository.setProviderMode(AiProviderMode.OPENAI_API)
-            }
             _state.update {
-                it.copy(
-                    aiProviderMode = aiPreferenceRepository.providerMode.value,
-                    hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
-                )
+                it.copy(hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value)
             }
             _notice.value = LibraryNotice(
                 if (saved) {
@@ -408,8 +427,7 @@ class LibraryViewModel(
 
     fun clearOpenAiApiKey() {
         aiPreferenceRepository.clearOpenAiApiKey()
-        aiPreferenceRepository.setProviderMode(AiProviderMode.DISABLED)
-        _state.update { it.copy(aiProviderMode = AiProviderMode.DISABLED, hasOpenAiApiKey = false) }
+        _state.update { it.copy(hasOpenAiApiKey = false) }
         _notice.value = LibraryNotice(LibraryNoticeType.AI_API_KEY_CLEARED)
     }
 
@@ -568,23 +586,11 @@ class LibraryViewModel(
     }
 
     fun requestMetadataAutofill() {
-        _notice.value = LibraryNotice(
-            if (!_state.value.aiProviderMode.isEnabled) {
-                LibraryNoticeType.AI_PROVIDER_REQUIRED
-            } else {
-                LibraryNoticeType.AI_PROVIDER_NOT_READY
-            },
-        )
+        _notice.value = LibraryNotice(LibraryNoticeType.AI_PROVIDER_REQUIRED)
     }
 
     fun requestCoverGeneration() {
-        _notice.value = LibraryNotice(
-            if (!_state.value.aiProviderMode.isEnabled) {
-                LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED
-            } else {
-                LibraryNoticeType.AI_PROVIDER_NOT_READY
-            },
-        )
+        _notice.value = LibraryNotice(LibraryNoticeType.AI_COVER_PROVIDER_REQUIRED)
     }
 
     fun lookupMetadataCandidates(
@@ -651,7 +657,8 @@ class LibraryViewModel(
         draft: BookMetadataDraft,
         onPreviewReady: (BookMetadataDraft) -> Unit,
     ) {
-        if (!hasUsableAiMetadataProvider()) {
+        val provider = _state.value.aiCapabilities.textProvider
+        if (provider == null) {
             requestMetadataAutofill()
             return
         }
@@ -670,14 +677,12 @@ class LibraryViewModel(
                 OpenAiResult.Failure("Book not found")
             } else {
                 withContext(Dispatchers.IO) {
-                    when (_state.value.aiProviderMode) {
-                        AiProviderMode.OPENAI_API -> openAiApiService.generateMetadataPreview(
-                            book = book,
-                            draft = draft,
-                            prompt = prompt,
-                        )
-                        AiProviderMode.DISABLED -> OpenAiResult.Failure(code = "provider_disabled")
-                    }
+                    openAiApiService.generateMetadataPreview(
+                        provider = provider,
+                        book = book,
+                        draft = draft,
+                        prompt = prompt,
+                    )
                 }
             }
             _state.update { it.copy(importProgress = null) }
@@ -701,7 +706,8 @@ class LibraryViewModel(
         styles: List<AiCoverStyleRequest>,
         onOptionsReady: (List<AiGeneratedCoverOption>) -> Unit,
     ) {
-        if (!hasUsableAiCoverProvider()) {
+        val provider = _state.value.aiCapabilities.imageProvider
+        if (provider == null) {
             requestCoverGeneration()
             return
         }
@@ -724,27 +730,25 @@ class LibraryViewModel(
                 OpenAiResult.Failure("Book not found")
             } else {
                 withContext(Dispatchers.IO) {
-                    when (_state.value.aiProviderMode) {
-                        AiProviderMode.OPENAI_API -> openAiApiService.generateCoverOptions(
-                            book = book,
-                            draft = draft,
-                            prompt = prompt,
-                            reference = reference,
-                            styles = styles,
-                            onProgress = { current, total ->
-                                _state.update {
-                                    it.copy(
-                                        importProgress = SyncProgress(
-                                            phase = SyncProgressPhase.GENERATING_COVERS,
-                                            current = current,
-                                            total = total,
-                                        ),
-                                    )
-                                }
-                            },
-                        )
-                        AiProviderMode.DISABLED -> OpenAiResult.Failure(code = "provider_disabled")
-                    }
+                    openAiApiService.generateCoverOptions(
+                        provider = provider,
+                        book = book,
+                        draft = draft,
+                        prompt = prompt,
+                        reference = reference,
+                        styles = styles,
+                        onProgress = { current, total ->
+                            _state.update {
+                                it.copy(
+                                    importProgress = SyncProgress(
+                                        phase = SyncProgressPhase.GENERATING_COVERS,
+                                        current = current,
+                                        total = total,
+                                    ),
+                                )
+                            }
+                        },
+                    )
                 }
             }
             _state.update { it.copy(importProgress = null) }
@@ -756,6 +760,49 @@ class LibraryViewModel(
                 is OpenAiResult.Failure -> {
                     _notice.value = LibraryNotice(result.toAiFailureNoticeType())
                 }
+            }
+        }
+    }
+
+    /** Searches the web for existing covers through the text provider (ChatGPT plan or API key). */
+    fun findCovers(
+        bookId: String,
+        draft: BookMetadataDraft,
+        onOptionsReady: (List<AiGeneratedCoverOption>) -> Unit,
+    ) {
+        val provider = _state.value.aiCapabilities.textProvider
+        if (provider == null) {
+            requestCoverGeneration()
+            return
+        }
+        if (_state.value.hasActiveProgress) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(importProgress = SyncProgress(SyncProgressPhase.FINDING_COVERS)) }
+            val result = try {
+                withContext(Dispatchers.IO) {
+                    val book = libraryRepository.getBook(bookId)
+                    if (book == null) {
+                        OpenAiResult.Failure("Book not found")
+                    } else {
+                        openAiApiService.findCovers(provider = provider, book = book, draft = draft) { current, total ->
+                            _state.update {
+                                it.copy(importProgress = SyncProgress(SyncProgressPhase.FINDING_COVERS, current, total))
+                            }
+                        }
+                    }
+                }
+            } finally {
+                _state.update { it.copy(importProgress = null) }
+            }
+            when (result) {
+                is OpenAiResult.Success -> {
+                    onOptionsReady(result.value)
+                    _notice.value = LibraryNotice(
+                        if (result.value.isEmpty()) LibraryNoticeType.AI_COVERS_NOT_FOUND else LibraryNoticeType.AI_COVERS_FOUND,
+                    )
+                }
+                is OpenAiResult.Failure -> _notice.value = LibraryNotice(result.toAiFailureNoticeType())
             }
         }
     }
@@ -1700,10 +1747,6 @@ class LibraryViewModel(
     }
 
     private fun publishImportNotice(counts: ImportCounts) {
-        if (counts.limited > 0) {
-            _state.update { it.copy(importLimitSkipped = counts.limited) }
-            if (counts.imported == 0 && counts.duplicates == 0 && counts.failed == 0) return
-        }
         _notice.value = LibraryNotice(
             type = when {
                 counts.drmFailed -> LibraryNoticeType.IMPORT_DRM_PROTECTED
@@ -1730,22 +1773,14 @@ class LibraryViewModel(
         super.onCleared()
     }
 
-    private fun hasUsableOpenAiApiProvider(): Boolean {
-        val current = _state.value
-        return current.aiProviderMode == AiProviderMode.OPENAI_API && current.hasOpenAiApiKey
-    }
-
-    private fun hasUsableAiMetadataProvider(): Boolean {
-        return hasUsableOpenAiApiProvider()
-    }
-
-    private fun hasUsableAiCoverProvider(): Boolean {
-        return hasUsableOpenAiApiProvider()
-    }
-
     private fun OpenAiResult.Failure.toAiFailureNoticeType(): LibraryNoticeType {
         return when (code) {
-            "provider_disabled" -> LibraryNoticeType.AI_PROVIDER_NOT_READY
+            AiErrorCodes.PROVIDER_DISABLED -> LibraryNoticeType.AI_PROVIDER_NOT_READY
+            AiErrorCodes.CHATGPT_USAGE_LIMIT -> LibraryNoticeType.CHATGPT_USAGE_LIMIT
+            AiErrorCodes.CHATGPT_NOT_ELIGIBLE -> LibraryNoticeType.CHATGPT_NOT_ELIGIBLE
+            AiErrorCodes.CHATGPT_SIGN_IN_REQUIRED -> LibraryNoticeType.CHATGPT_SIGN_IN_REQUIRED
+            AiErrorCodes.CHATGPT_UNAVAILABLE -> LibraryNoticeType.CHATGPT_UNAVAILABLE
+            AiErrorCodes.RATE_LIMITED -> LibraryNoticeType.AI_RATE_LIMITED
             else -> LibraryNoticeType.AI_REQUEST_FAILED
         }
     }
@@ -1842,7 +1877,6 @@ private data class ImportCounts(
     val imported: Int = 0,
     val duplicates: Int = 0,
     val failed: Int = 0,
-    val limited: Int = 0,
     val drmFailed: Boolean = false,
     val conversionFailed: Boolean = false,
     val tooLarge: Boolean = false,

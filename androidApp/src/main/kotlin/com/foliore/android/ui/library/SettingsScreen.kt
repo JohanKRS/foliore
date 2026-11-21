@@ -8,18 +8,14 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -74,16 +70,12 @@ enum class SettingsShortcut {
 
 @Composable
 fun SettingsScreen(
-    billingState: com.foliore.android.billing.BillingState,
     bookCount: Int,
-    onRefreshPurchases: () -> Unit,
-    onRestorePurchase: () -> Unit,
-    onPurchaseUnlimited: () -> Unit,
     launcherIcon: LauncherIcon,
     onLauncherIconChange: (LauncherIcon) -> Boolean,
     themeMode: ThemeMode,
     appLanguage: AppLanguage,
-    hasOpenAiApiKey: Boolean,
+    aiSettings: AiSettingsState,
     kindleEmailSettings: KindleEmailSettings,
     syncProvider: SyncProvider,
     syncFolderLabel: String?,
@@ -99,6 +91,10 @@ fun SettingsScreen(
     onChooseAppLanguage: () -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
+    onChatGptSignIn: () -> Unit,
+    onChatGptCancelSignIn: () -> Unit,
+    onChatGptSignOut: () -> Unit,
+    onChatGptModelSelect: (String) -> Unit,
     onKindleEmailSave: (String) -> Unit,
     onKindleEmailClear: () -> Unit,
     onKindleSmtpSave: (String, String, String, String, String) -> Unit,
@@ -117,10 +113,10 @@ fun SettingsScreen(
     onDisconnectSync: () -> Unit,
     shortcut: SettingsShortcut? = null,
     onShortcutConsumed: () -> Unit = {},
+    topChromeInset: Dp = 0.dp,
     bottomChromeInset: Dp = 0.dp,
     modifier: Modifier = Modifier,
 ) {
-    val highlightUnlimited = com.foliore.android.billing.UnlimitedReminder.highlightInSettings(bookCount, billingState.unlimited)
     val context = androidx.compose.ui.platform.LocalContext.current
     var showReport by rememberSaveable { mutableStateOf(false) }
     if (showReport) ContentReportDialog { showReport = false }
@@ -141,7 +137,7 @@ fun SettingsScreen(
     var showIconPicker by rememberSaveable { mutableStateOf(false) }
     var showThemePicker by rememberSaveable { mutableStateOf(false) }
     var showKindleSettings by rememberSaveable { mutableStateOf(false) }
-    var showExperimentalSettings by rememberSaveable { mutableStateOf(false) }
+    var showAiSettings by rememberSaveable { mutableStateOf(false) }
     var showSyncMethodPicker by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(shortcut) {
         when (shortcut) {
@@ -164,25 +160,10 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState()),
         ) {
-        Box(
-            modifier = Modifier.windowInsetsPadding(
-                WindowInsets.systemBars.only(WindowInsetsSides.Top),
-            ),
-        ) {
-            FolioreTopLevelHeader(title = stringResource(R.string.settings_title))
-        }
-        EditorialDivider(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalPadding = 0.dp,
-        )
-        Spacer(modifier = Modifier.height(28.dp))
+        // The header is drawn by the shared top chrome so it stays fixed, as in the library.
+        Spacer(modifier = Modifier.height(topChromeInset + 28.dp))
 
         Column(modifier = Modifier.padding(horizontal = 28.dp)) {
-        if (highlightUnlimited) {
-            UnlimitedSettingsEntry(billingState, bookCount, onRefreshPurchases, onRestorePurchase,
-                onPurchaseUnlimited, highlighted = true)
-            Spacer(modifier = Modifier.height(28.dp))
-        }
         SectionTitle(text = stringResource(R.string.settings_appearance))
         Spacer(modifier = Modifier.height(8.dp))
         CompactSettingsRow(
@@ -229,13 +210,20 @@ fun SettingsScreen(
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(28.dp))
 
-        SectionTitle(text = stringResource(R.string.settings_experimental))
+        SectionTitle(text = stringResource(R.string.settings_ai_section))
         Spacer(modifier = Modifier.height(8.dp))
         CompactSettingsRow(
             icon = Icons.Outlined.AutoAwesome,
-            title = stringResource(R.string.settings_experimental),
-            description = stringResource(R.string.settings_experimental_description),
-            onClick = { showExperimentalSettings = true },
+            title = stringResource(R.string.settings_ai_features),
+            description = aiSettings.chatGptAccount?.let { account ->
+                account.label?.let { stringResource(R.string.settings_ai_row_chatgpt, it) }
+                    ?: stringResource(R.string.settings_ai_chatgpt)
+            } ?: if (aiSettings.hasOpenAiApiKey) {
+                stringResource(R.string.settings_ai_api_key_only)
+            } else {
+                stringResource(R.string.settings_ai_not_configured)
+            },
+            onClick = { showAiSettings = true },
         )
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
@@ -427,10 +415,6 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(20.dp))
-        if (!highlightUnlimited) {
-            UnlimitedSettingsEntry(billingState, bookCount, onRefreshPurchases, onRestorePurchase, onPurchaseUnlimited)
-            Spacer(modifier = Modifier.height(20.dp))
-        }
         Text(
             text = stringResource(R.string.settings_preserve_original_description),
             modifier = Modifier.fillMaxWidth(),
@@ -498,12 +482,16 @@ fun SettingsScreen(
             onDismiss = { showKindleSettings = false },
         )
     }
-    if (showExperimentalSettings) {
-        ExperimentalSettingsDialog(
-            hasOpenAiApiKey = hasOpenAiApiKey,
+    if (showAiSettings) {
+        AiSettingsDialog(
+            aiSettings = aiSettings,
             onOpenAiApiKeySave = onOpenAiApiKeySave,
             onOpenAiApiKeyClear = onOpenAiApiKeyClear,
-            onDismiss = { showExperimentalSettings = false },
+            onChatGptSignIn = onChatGptSignIn,
+            onChatGptCancelSignIn = onChatGptCancelSignIn,
+            onChatGptSignOut = onChatGptSignOut,
+            onChatGptModelSelect = onChatGptModelSelect,
+            onDismiss = { showAiSettings = false },
         )
     }
     if (showSyncMethodPicker) {
@@ -741,5 +729,28 @@ private fun AppLanguage.labelResource(): Int {
         AppLanguage.ITALIAN -> R.string.settings_language_italian
         AppLanguage.GERMAN -> R.string.settings_language_german
         AppLanguage.CHINESE_SIMPLIFIED -> R.string.settings_language_chinese_simplified
+    }
+}
+
+/** What the AI settings show; ChatGPT and the API key are both optional. */
+data class AiSettingsState(
+    val hasOpenAiApiKey: Boolean,
+    val chatGptAccount: com.foliore.android.storage.ChatGptAccount?,
+    val isChatGptSigningIn: Boolean,
+)
+
+/** The settings title drawn in the shared top chrome, matching the library header. */
+@Composable
+fun SettingsTopChromeOverlay(modifier: Modifier = Modifier) {
+    val tuning = com.foliore.android.ui.tuning.LocalVisualTuning.current
+    Box(modifier = modifier) {
+        FolioreTopLevelHeader(title = stringResource(R.string.settings_title))
+        EditorialDivider(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(y = tuning.topChromeDividerHalfHeight.dp)
+                .fillMaxWidth(),
+            horizontalPadding = 0.dp,
+        )
     }
 }

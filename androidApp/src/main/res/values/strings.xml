@@ -213,13 +213,9 @@
     <string name="settings_kindle_smtp_password_keep_label">New password, or leave empty</string>
     <string name="settings_kindle_smtp_save">Save sender</string>
     <string name="settings_kindle_smtp_clear">Clear sender</string>
-    <string name="settings_experimental">Experimental features</string>
-    <string name="settings_experimental_description">OpenAI</string>
-    <string name="settings_experimental_dialog_title">Experimental features</string>
     <string name="settings_metadata_sources">Open sources</string>
     <string name="settings_ai">AI</string>
     <string name="settings_ai_openai_api">OpenAI API</string>
-    <string name="settings_ai_openai_api_description">Used for AI auto-fill and cover generation. Open search works even without a key.</string>
     <string name="settings_sync">Sync</string>
     <string name="settings_sync_method">Sync with</string>
     <string name="settings_sync_method_dialog_title">Choose sync method</string>
@@ -303,8 +299,6 @@
     <string name="ai_notice_settings_updated">AI preference updated.</string>
     <string name="ai_notice_api_key_saved">API key saved in the app.</string>
     <string name="ai_notice_api_key_cleared">API key removed.</string>
-    <string name="ai_notice_provider_required">Set up an API key before using AI.</string>
-    <string name="ai_notice_provider_not_ready">Set up an API key before using AI.</string>
     <string name="ai_notice_request_failed">The AI request could not be completed.</string>
     <string name="ai_notice_metadata_preview_ready">Metadata preview generated.</string>
     <string name="metadata_lookup_notice_ready">Results found in open sources.</string>

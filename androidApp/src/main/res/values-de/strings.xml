@@ -213,13 +213,9 @@
     <string name="settings_kindle_smtp_password_keep_label">Neues Passwort oder leer lassen</string>
     <string name="settings_kindle_smtp_save">Absender speichern</string>
     <string name="settings_kindle_smtp_clear">Absender löschen</string>
-    <string name="settings_experimental">Experimentelle Funktionen</string>
-    <string name="settings_experimental_description">OpenAI</string>
-    <string name="settings_experimental_dialog_title">Experimentelle Funktionen</string>
     <string name="settings_metadata_sources">Offene Quellen</string>
     <string name="settings_ai">KI</string>
     <string name="settings_ai_openai_api">OpenAI API</string>
-    <string name="settings_ai_openai_api_description">Wird zum automatischen Ausfüllen mit KI und zum Erstellen von Covern verwendet. Die offene Suche funktioniert auch ohne Schlüssel.</string>
     <string name="settings_sync">Synchronisierung</string>
     <string name="settings_sync_method">Synchronisieren mit</string>
     <string name="settings_sync_method_dialog_title">Synchronisierungsmethode auswählen</string>
@@ -303,8 +299,6 @@
     <string name="ai_notice_settings_updated">KI-Einstellung aktualisiert.</string>
     <string name="ai_notice_api_key_saved">API-Schlüssel in der App gespeichert.</string>
     <string name="ai_notice_api_key_cleared">API-Schlüssel entfernt.</string>
-    <string name="ai_notice_provider_required">Richte vor der Verwendung der KI einen API-Schlüssel ein.</string>
-    <string name="ai_notice_provider_not_ready">Richte vor der Verwendung der KI einen API-Schlüssel ein.</string>
     <string name="ai_notice_request_failed">Die KI-Anfrage konnte nicht abgeschlossen werden.</string>
     <string name="ai_notice_metadata_preview_ready">Metadatenvorschau erstellt.</string>
     <string name="metadata_lookup_notice_ready">Ergebnisse in offenen Quellen gefunden.</string>

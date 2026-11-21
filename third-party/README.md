@@ -1,17 +1,17 @@
 # Créditos e licenças distribuídos no Android
 
-Revisão: 12/09/2026. O link **Sobre** nas configurações apresenta versão, fontes de metadados, integrações, tipografia e licenças. O conteúdo jurídico dos componentes é legível offline; os links dos serviços abrem seus termos atuais.
+Revisão: 21/11/2026. O link **Sobre** nas configurações apresenta versão, fontes de metadados, integrações, tipografia e licenças. O conteúdo jurídico dos componentes é legível offline; os links dos serviços abrem seus termos atuais.
 
 ## Escopo do inventário
 
-O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **138 coordenadas Maven distintas** resolvidas em `releaseRuntimeClasspath`, agrupadas em 20 projetos, mais a fonte Cormorant Garamond e a biblioteca nativa libmobi. Inclui dependências transitivas do módulo compartilhado. Não inclui ferramentas de compilação nem dependências exclusivas de testes/debug.
+O catálogo em `androidApp/src/main/assets/licenses/catalog.json` cobre **128 coordenadas Maven distintas** resolvidas em `releaseRuntimeClasspath`, agrupadas em 16 projetos, mais a fonte Cormorant Garamond e a biblioteca nativa libmobi. Inclui dependências transitivas do módulo compartilhado. Não inclui ferramentas de compilação nem dependências exclusivas de testes/debug.
 
 - Os POMs das bibliotecas abertas declaram Apache-2.0. `listenablefuture:1.0` herda essa licença do POM pai do Guava.
 - Os sete artefatos Google Play services declaram a licença do Android SDK. Seus `third_party_licenses.json` e `.txt` fornecem avisos adicionais; o gerador preserva os trechos indicados pelos offsets **em bytes**, incluindo textos diferentes para o mesmo projeto.
 - Os arquivos LICENSE/NOTICE presentes nos JARs/AARs e em `classes.jar` são extraídos sem alteração. Textos idênticos são deduplicados por SHA-256, mantendo os títulos e as origens no catálogo.
 - O NOTICE do OkHttp inclui a Public Suffix List sob MPL-2.0. Distribuímos essa licença e os dados legíveis das regras/exceções correspondentes ao arquivo comprimido do artefato utilizado.
 - A fonte empacotada mantém seu copyright e a SIL Open Font License 1.1 já distribuídos pelo projeto. Os ícones vêm de Material Icons/Jetpack Compose; a fonte dos demais textos é fornecida pelo Android.
-- Não foi atribuída uma licença à aplicação Foliore como um todo. As licenças aqui documentadas pertencem aos componentes de terceiros.
+- O Foliore como um todo é distribuído sob a GPL-3.0 (veja `LICENSE` na raiz). As licenças aqui documentadas pertencem aos componentes de terceiros, que continuam sob suas próprias licenças.
 
 ## Atualização
 
@@ -29,10 +29,9 @@ A conversão MOBI/AZW3 acrescenta jsoup (MIT) e libmobi 0.12 (LGPL-3.0-or-later)
 - [Open Library — condições do catálogo](https://openlibrary.org/developers/licensing): não presume que capas ou contribuições individuais estejam livres de direitos. Crédito ao Internet Archive e à comunidade.
 - [Internet Archive — termos](https://archive.org/about/terms): direitos e condições podem variar por item. O app consulta registros e imagens; não incorpora o código do servidor Open Library/Internet Archive.
 - [BnF — reutilização de metadados](https://www.bnf.fr/fr/conditions-de-reutilisations-des-donnees-de-la-bnf): Licence Ouverte / Open Licence (Etalab), com identificação da fonte e data de recuperação. A licença dos metadados não deve ser confundida com as condições de digitalizações Gallica.
-- [Google Play Billing](https://developer.android.com/google/play/billing): SDK de compras, com termos Android SDK e avisos dos componentes incorporados. Incluído no catálogo offline.
 - [Google Play services — avisos de terceiros](https://developers.google.com/android/guides/opensource) e [Android SDK — termos](https://developer.android.com/studio/terms).
 - [Google APIs — termos](https://developers.google.com/terms), para a integração Drive.
-- [OpenAI — contrato de serviços de API](https://openai.com/policies/services-agreement/).
+- [OpenAI — contrato de serviços de API](https://openai.com/policies/services-agreement/), para a chave de API, e o login com ChatGPT (Sign in with ChatGPT), opcional, para preencher detalhes e buscar capas.
 - [Send to Kindle](https://www.amazon.com/sendtokindle): envio de arquivo pelo servidor SMTP escolhido pelo usuário, sem SDK Kindle incorporado.
 
 ## Pendências de uso dos provedores antes da publicação
@@ -44,4 +43,4 @@ O conteúdo de “Sobre” foi concluído; estes pontos dependem do fluxo de bus
 
 Esses pontos foram identificados nas páginas oficiais consultadas, não constituem uma conclusão de conformidade global do produto.
 
-Google Books foi removido em 12/09/2026: serviço, configurações, armazenamento de chave, créditos e domínios de capas. Não existe busca ou enriquecimento por essa API no app monetizado. As fontes restantes são Open Library, Internet Archive e BnF.
+Google Books foi removido em 12/09/2026: serviço, configurações, armazenamento de chave, créditos e domínios de capas. Não existe busca ou enriquecimento por essa API no app. As fontes restantes são Open Library, Internet Archive e BnF.

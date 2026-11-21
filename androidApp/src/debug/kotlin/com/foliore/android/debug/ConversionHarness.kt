@@ -26,7 +26,7 @@ internal object ConversionHarness {
                 val isolated = IsolatedContext(context, File(root, name))
                 val repository = LibraryRepository(DatabaseDriverFactory(isolated).createDriver())
                 val device = DeviceIdProvider(isolated)
-                val importer = AndroidEpubImporter(isolated, repository, device, { true })
+                val importer = AndroidEpubImporter(isolated, repository, device)
                 val originals = AndroidOriginalFilesService(isolated, repository)
                 val archive = OriginalFileArchive(File(isolated.filesDir, OriginalFileArchive.DIRECTORY))
                 val source = File(fixtures, name)
@@ -86,7 +86,7 @@ internal object ConversionHarness {
             protected.writeBytes(bytes)
             val isolated = IsolatedContext(context, File(root, "rejections"))
             val repository = LibraryRepository(DatabaseDriverFactory(isolated).createDriver())
-            val importer = AndroidEpubImporter(isolated, repository, DeviceIdProvider(isolated), { true })
+            val importer = AndroidEpubImporter(isolated, repository, DeviceIdProvider(isolated))
             check(runBlocking { importer.importFile(protected) } == EpubImportResult.Failed(ImportFailureReason.DRM_PROTECTED))
             val invalid = File(root, "invalid.azw3").apply { writeText("Not a book") }
             check(runBlocking { importer.importFile(invalid) } == EpubImportResult.Failed(ImportFailureReason.CONVERSION_FAILED))
