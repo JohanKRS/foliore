@@ -22,6 +22,8 @@ See [Gmail delivery and setup](docs/GMAIL.md), [built-in reader](docs/READER.md)
 
 Foliore is free software released under the [GNU General Public License v3.0](LICENSE). There are no purchases, plans or library limits, and no account is required: Google Drive, Gmail, Kindle, ChatGPT and the OpenAI API are all optional. Third-party components keep their own licenses; see [third-party notices](third-party/README.md).
 
+Signed APKs are published on [GitHub Releases](https://github.com/JohanKRS/Foliore/releases). See the [changelog](CHANGELOG.md) and [how releases are made](docs/RELEASING.md).
+
 ### Sign in with ChatGPT
 
 The optional ChatGPT connection uses OpenAI’s [Sign in with ChatGPT](https://developers.openai.com/siwc) program for open source projects: OAuth 2.0 with PKCE, a dynamically registered client and a loopback redirect served by the app on `127.0.0.1` while the browser sign-in is open. Requests go straight from the device to the OpenAI Responses API and count toward the user’s ChatGPT plan (Plus or Pro). Tokens are encrypted with the Android Keystore and never leave the device except in requests to OpenAI. Image generation is not available through this connection yet, so new covers still use an OpenAI API key; the code path is ready behind `AiFeatureFlags.CHATGPT_IMAGE_GENERATION`.
