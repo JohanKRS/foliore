@@ -65,6 +65,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -566,6 +567,7 @@ private fun FolioreNavigationBar(
     val tuning = LocalVisualTuning.current
     val bottomBarHeight = tuning.bottomBarHeight.dp
     val bottomEditActionStripHeight = tuning.bottomEditActionStripHeight.dp
+    val stripActions = rememberStripActions(editActions, showing = stackedEditMode)
     val chromeModifier = Modifier
         .fillMaxWidth()
         .then(
@@ -642,7 +644,7 @@ private fun FolioreNavigationBar(
                         ),
                 ) {
                     EditActionsSlot(
-                        editActions = editActions,
+                        editActions = stripActions,
                         isLoading = isLoading,
                         compact = true,
                         delayMillis = 0,
@@ -1000,6 +1002,35 @@ private fun AnimatedNavigationItem(
         labelSpacing = labelSpacing,
     )
 }
+
+/**
+ * Leaving the book page clears its actions at once, but the phone's action strip still slides
+ * away for another 320 ms. Without them, Read/Continue turned grey and fell back to "Read"
+ * mid-slide. While the strip is leaving, keep drawing the book's last actions, with taps off.
+ */
+@Composable
+private fun rememberStripActions(
+    actions: EditBottomBarActions?,
+    showing: Boolean,
+): EditBottomBarActions? {
+    val lastShown = remember { LastShownEditActions() }
+    SideEffect {
+        if (showing && actions != null) lastShown.actions = actions
+    }
+    return if (showing) actions else lastShown.actions?.inert()
+}
+
+private class LastShownEditActions {
+    var actions: EditBottomBarActions? = null
+}
+
+private fun EditBottomBarActions.inert(): EditBottomBarActions = copy(
+    onSave = {},
+    onRead = {},
+    onRequestNavigate = {},
+    onShareExport = {},
+    onSendToKindle = {},
+)
 
 @Composable
 private fun EditActionsSlot(

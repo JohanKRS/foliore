@@ -119,8 +119,6 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var showReport by rememberSaveable { mutableStateOf(false) }
-    if (showReport) ContentReportDialog { showReport = false }
     var showPrivacy by rememberSaveable { mutableStateOf(false) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
     if (showAbout) AboutDialog { showAbout = false }
@@ -432,12 +430,6 @@ fun SettingsScreen(
                 contentPadding = PaddingValues(vertical = 8.dp),
             ) {
                 Text(stringResource(R.string.privacy_title))
-            }
-            TextButton(
-                onClick = { showReport = true },
-                contentPadding = PaddingValues(vertical = 8.dp),
-            ) {
-                Text(stringResource(R.string.report_ai_content))
             }
             TextButton(
                 onClick = { showAbout = true },
