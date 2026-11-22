@@ -2652,7 +2652,7 @@ private fun PreviewValueRow(
             modifier = Modifier.width(118.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
