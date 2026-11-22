@@ -7,7 +7,9 @@ import java.net.URL
 
 /** Small HTTPS helper shared by the OpenAI API key and ChatGPT sign-in paths. */
 internal object OpenAiHttp {
-    private const val MAX_BODY_BYTES = 4L * 1024 * 1024
+    internal const val MAX_BODY_BYTES = 4L * 1024 * 1024
+    // A single 1024 x 1536 RGBA PNG can occupy over 8 MiB once base64-encoded in JSON.
+    internal const val MAX_IMAGE_RESPONSE_BYTES = 16L * 1024 * 1024
     private const val USER_AGENT = "Foliore (Android; open source)"
 
     data class Response(val status: Int, val body: String, val requestId: String?) {
@@ -19,8 +21,8 @@ internal object OpenAiHttp {
     fun postForm(url: String, form: Map<String, String>): Response =
         request(url, "POST", null, "application/x-www-form-urlencoded", ChatGptOAuth.formBody(form))
 
-    fun postJson(url: String, bearer: String, body: String): Response =
-        request(url, "POST", bearer, "application/json", body)
+    fun postJson(url: String, bearer: String, body: String, maxResponseBytes: Long = MAX_BODY_BYTES): Response =
+        request(url, "POST", bearer, "application/json", body, maxResponseBytes)
 
     /**
      * Posts [body] and, on success, hands each server-sent event's data to [onEvent] until it
@@ -85,14 +87,17 @@ internal object OpenAiHttp {
         }
     }
 
-    private fun request(url: String, method: String, bearer: String?, contentType: String?, body: String?): Response {
+    private fun request(
+        url: String, method: String, bearer: String?, contentType: String?, body: String?,
+        maxResponseBytes: Long = MAX_BODY_BYTES,
+    ): Response {
         val connection = open(url, method, bearer, contentType, readTimeoutMillis = 180_000)
         try {
             connection.setRequestProperty("Accept", "application/json")
             if (body != null) connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
             val status = connection.responseCode
             val text = if (status in 200..299) {
-                connection.inputStream.use { it.readBounded(MAX_BODY_BYTES) }.toString(Charsets.UTF_8)
+                connection.inputStream.use { it.readBounded(maxResponseBytes) }.toString(Charsets.UTF_8)
             } else {
                 errorBody(connection)
             }

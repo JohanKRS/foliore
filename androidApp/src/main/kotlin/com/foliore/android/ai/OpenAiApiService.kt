@@ -179,7 +179,10 @@ class OpenAiApiService(
         val apiKey = aiPreferenceRepository.openAiApiKey()
             ?: return OpenAiResult.Failure(code = AiErrorCodes.PROVIDER_DISABLED)
         val response = runCatching {
-            OpenAiHttp.postJson(IMAGES_ENDPOINT, apiKey, json.encodeToString(JsonObject.serializer(), imageRequestBody(prompt)))
+            OpenAiHttp.postJson(
+                IMAGES_ENDPOINT, apiKey, json.encodeToString(JsonObject.serializer(), imageRequestBody(prompt)),
+                maxResponseBytes = OpenAiHttp.MAX_IMAGE_RESPONSE_BYTES,
+            )
         }.getOrElse { return OpenAiResult.Failure(it.message) }
         if (!response.isSuccess) return AiErrorCodes.failure(response.status, response.body, AiProvider.OPENAI_API)
         val b64 = runCatching {
@@ -213,6 +216,9 @@ class OpenAiApiService(
      * retried, so new limitations degrade features instead of breaking them.
      */
     private suspend fun createChatGptResponse(body: JsonObject): OpenAiResult<JsonObject> {
+        if (chatGptAuthService.account.value?.planUsageGranted == false) {
+            return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_PLAN_NOT_GRANTED)
+        }
         var model = chatGptAuthService.account.value?.model
         if (model == null) {
             chatGptAuthService.refreshModels()
@@ -232,6 +238,7 @@ class OpenAiApiService(
             val token = when (val access = chatGptAuthService.accessToken(forceRefresh = retriedAuth)) {
                 is ChatGptAccessToken.Ready -> access.token
                 ChatGptAccessToken.SignInRequired -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_SIGN_IN_REQUIRED)
+                ChatGptAccessToken.PlanNotGranted -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_PLAN_NOT_GRANTED)
                 ChatGptAccessToken.Unavailable -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_UNAVAILABLE)
             }
             var completed: JsonObject? = null

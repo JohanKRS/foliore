@@ -39,6 +39,7 @@ data class LibraryUiState(
     val readingActivity: Map<String, BookReadingActivity> = emptyMap(),
     val hasOpenAiApiKey: Boolean = false,
     val chatGptAccount: ChatGptAccount? = null,
+    val hasChatGptRegistration: Boolean = false,
     val chatGptSignIn: ChatGptSignInStatus = ChatGptSignInStatus.Idle,
     val showChatGptWelcome: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
@@ -60,7 +61,7 @@ data class LibraryUiState(
         get() = isSyncing || isImporting || syncProgress != null || importProgress != null
 
     val aiCapabilities: AiCapabilities
-        get() = AiCapabilities.from(chatGptSignedIn = chatGptAccount != null, hasApiKey = hasOpenAiApiKey)
+        get() = AiCapabilities.from(chatGptPlanGranted = chatGptAccount?.planUsageGranted == true, hasApiKey = hasOpenAiApiKey)
 
     val isChatGptSigningIn: Boolean
         get() = chatGptSignIn == ChatGptSignInStatus.WaitingForBrowser || chatGptSignIn == ChatGptSignInStatus.Completing
@@ -220,6 +221,8 @@ enum class LibraryNoticeType {
     CHATGPT_SIGNED_IN,
     CHATGPT_SIGNED_OUT,
     CHATGPT_SIGN_IN_FAILED,
+    CHATGPT_SIGN_IN_TIMED_OUT,
+    CHATGPT_PLAN_NOT_GRANTED,
     CHATGPT_SIGN_IN_DENIED,
     CHATGPT_BROWSER_UNAVAILABLE,
     CHATGPT_SIGN_IN_REQUIRED,

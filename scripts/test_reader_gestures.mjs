@@ -48,6 +48,19 @@ function reader({ mode = 'pages', fixed = false, rtl = false, visible, overflowW
     wait: ms => { now += ms; },
   };
 }
+test('initial pagination reports the measured fraction even without a page turn', () => {
+  for (const pages of [1, 3]) {
+    const r = reader();
+    r.content.scrollWidth = 400 * pages - 40;
+    r.context.FolioreReader.configure({ mode: 'pages', margin: 20, theme: 'paper' }, { progression: 0 }, null, false);
+    r.flush();
+    const position = r.messages.find(m => m.event === 'position');
+    assert.equal(position.user, false);
+    assert.equal(position.pages, pages);
+    assert.equal(position.progression, pages === 1 ? 1 : 0);
+  }
+});
+
 const link = { closest: selector => selector === 'a[href]' ? { href: 'https://example.org/note' } : null };
 
 const illustration = (src = 'https://appassets.androidplatform.net/publication/art.png') => ({src,

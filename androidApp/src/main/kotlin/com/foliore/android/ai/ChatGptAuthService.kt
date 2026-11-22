@@ -8,10 +8,12 @@ import com.foliore.android.storage.AppLanguagePreferenceRepository
 import com.foliore.android.storage.ChatGptAccount
 import com.foliore.android.storage.ChatGptAccountRepository
 import com.foliore.android.storage.ChatGptTokens
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,12 +21,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
 
 sealed interface ChatGptSignInStatus {
     data object Idle : ChatGptSignInStatus
@@ -39,6 +35,7 @@ enum class ChatGptSignInFailure { CANCELLED, DENIED, BROWSER_UNAVAILABLE, TIMED_
 sealed interface ChatGptAccessToken {
     data class Ready(val token: String) : ChatGptAccessToken
     data object SignInRequired : ChatGptAccessToken
+    data object PlanNotGranted : ChatGptAccessToken
     data object Unavailable : ChatGptAccessToken
 }
 
@@ -49,10 +46,12 @@ sealed interface ChatGptAccessToken {
 class ChatGptAuthService private constructor(context: Context) {
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val json = Json { ignoreUnknownKeys = true }
+    private val attempts = ChatGptSignInAttempts()
     private val tokenMutex = Mutex()
     private val _status = MutableStateFlow<ChatGptSignInStatus>(ChatGptSignInStatus.Idle)
     private var signInJob: Job? = null
+    // Accessed only under tokenMutex. Retry the replacement before ever using the old refresh token.
+    private var pendingRotation: ChatGptTokens? = null
 
     val repository = ChatGptAccountRepository(appContext)
     val account: StateFlow<ChatGptAccount?> = repository.account
@@ -62,30 +61,75 @@ class ChatGptAuthService private constructor(context: Context) {
      * Starts the browser sign-in. [openBrowser] must start an activity for the URL and return
      * false when no browser can handle it.
      */
-    fun startSignIn(openBrowser: (Uri) -> Boolean) {
-        if (signInJob?.isActive == true) return
+    fun startSignIn(mode: ChatGptSignInMode, openBrowser: (Uri) -> Boolean) = attempts.start { id ->
         _status.value = ChatGptSignInStatus.WaitingForBrowser
         signInJob = scope.launch {
-            val result = runCatching { signIn(openBrowser) }.getOrElse { ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED) }
-            _status.value = result
-            ChatGptSignInForegroundService.stop(appContext)
+            val deadline = launch {
+                delay(SIGN_IN_TIMEOUT_MILLIS)
+                endSignIn(id, ChatGptSignInFailure.TIMED_OUT, cancel = true)
+            }
+            try {
+                val grant = signIn(id, mode, openBrowser)
+                var loadModels = false
+                tokenMutex.withLock {
+                    // Cancellation and publishing credentials share this commit point.
+                    attempts.finish(id) {
+                        val saved = try {
+                            repository.saveSignIn(
+                                grant.clientId, grant.tokens, grant.claims.email, grant.claims.name, grant.claims.subject,
+                            )
+                        } catch (_: Exception) {
+                            false
+                        }
+                        if (saved) {
+                            pendingRotation = null
+                            loadModels = ChatGptOAuth.grantsPlanUsage(grant.tokens.scope)
+                            finishAttempt(ChatGptSignInStatus.SignedIn)
+                        } else {
+                            finishAttempt(ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED))
+                        }
+                    }
+                }
+                if (loadModels) scope.launch { refreshModels() }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: SignInFailure) {
+                endSignIn(id, failure.reason)
+            } catch (_: Exception) {
+                endSignIn(id, ChatGptSignInFailure.FAILED)
+            } finally {
+                deadline.cancel()
+            }
         }
     }
 
-    fun cancelSignIn() {
-        signInJob?.cancel()
+    fun cancelSignIn() = endSignIn(null, ChatGptSignInFailure.CANCELLED, cancel = true)
+
+    internal fun serviceEnded(id: Long, reason: ChatGptSignInFailure) = endSignIn(id, reason, cancel = true)
+
+    private fun endSignIn(id: Long?, reason: ChatGptSignInFailure, cancel: Boolean = false) = attempts.finish(id) {
+        if (cancel) signInJob?.cancel()
+        finishAttempt(ChatGptSignInStatus.Failed(reason))
+    }
+
+    private fun finishAttempt(status: ChatGptSignInStatus) {
         signInJob = null
         ChatGptSignInForegroundService.stop(appContext)
-        _status.value = ChatGptSignInStatus.Failed(ChatGptSignInFailure.CANCELLED)
+        _status.value = status
     }
 
-    fun clearStatus() {
-        if (signInJob?.isActive != true) _status.value = ChatGptSignInStatus.Idle
+    fun clearStatus(current: ChatGptSignInStatus) {
+        if (current is ChatGptSignInStatus.Failed || current == ChatGptSignInStatus.SignedIn) {
+            _status.compareAndSet(current, ChatGptSignInStatus.Idle)
+        }
     }
 
-    private suspend fun signIn(openBrowser: (Uri) -> Boolean): ChatGptSignInStatus {
-        val discovery = fetchDiscovery() ?: return ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
-        val savedClientId = repository.issuedClientId
+    private class SignInFailure(val reason: ChatGptSignInFailure) : Exception()
+    private data class Grant(val clientId: String, val tokens: ChatGptTokens, val claims: ChatGptOAuth.IdTokenClaims)
+
+    private suspend fun signIn(id: Long, mode: ChatGptSignInMode, openBrowser: (Uri) -> Boolean): Grant {
+        val discovery = fetchDiscovery() ?: throw SignInFailure(ChatGptSignInFailure.FAILED)
+        val savedClientId = mode.clientId(repository.issuedClientId)
         val pkce = ChatGptOAuth.newPkce()
         val state = ChatGptOAuth.randomUrlToken()
         val nonce = ChatGptOAuth.randomUrlToken()
@@ -102,11 +146,16 @@ class ChatGptAuthService private constructor(context: Context) {
                     pkce = pkce,
                     hostId = repository.hostId,
                     issuedClientId = savedClientId,
+                    requestConsent = mode == ChatGptSignInMode.ENABLE_PLAN,
                 ),
             )
-            ChatGptSignInForegroundService.start(appContext)
-            val opened = withContext(Dispatchers.Main) { openBrowser(Uri.parse(url)) }
-            if (!opened) return ChatGptSignInStatus.Failed(ChatGptSignInFailure.BROWSER_UNAVAILABLE)
+            withContext(Dispatchers.Main) {
+                val active = attempts.whileActive(id) {
+                    if (!ChatGptSignInForegroundService.start(appContext, id)) throw SignInFailure(ChatGptSignInFailure.FAILED)
+                    if (!openBrowser(Uri.parse(url))) throw SignInFailure(ChatGptSignInFailure.BROWSER_UNAVAILABLE)
+                }
+                if (!active) throw CancellationException("Sign-in ended")
+            }
 
             val successPage = ChatGptLoopbackServer.CallbackPage(
                 title = localized.getString(R.string.chatgpt_callback_title),
@@ -122,12 +171,14 @@ class ChatGptAuthService private constructor(context: Context) {
                 if (path != ChatGptOAuth.CALLBACK_PATH) return@awaitCallback null
                 val result = ChatGptOAuth.parseCallback(query, state, savedClientId) ?: return@awaitCallback null
                 result to if (result is ChatGptOAuth.CallbackResult.Code) successPage else failurePage
-            } ?: return ChatGptSignInStatus.Failed(ChatGptSignInFailure.TIMED_OUT)
+            } ?: throw SignInFailure(ChatGptSignInFailure.TIMED_OUT)
 
-            _status.value = ChatGptSignInStatus.Completing
+            if (!attempts.whileActive(id) { _status.value = ChatGptSignInStatus.Completing }) {
+                throw CancellationException("Sign-in ended")
+            }
             return when (callback) {
-                ChatGptOAuth.CallbackResult.Denied -> ChatGptSignInStatus.Failed(ChatGptSignInFailure.DENIED)
-                is ChatGptOAuth.CallbackResult.Failed -> ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
+                ChatGptOAuth.CallbackResult.Denied -> throw SignInFailure(ChatGptSignInFailure.DENIED)
+                is ChatGptOAuth.CallbackResult.Failed -> throw SignInFailure(ChatGptSignInFailure.FAILED)
                 is ChatGptOAuth.CallbackResult.Code -> completeSignIn(discovery, callback, pkce, nonce, redirectUri)
             }
         }
@@ -139,17 +190,16 @@ class ChatGptAuthService private constructor(context: Context) {
         pkce: ChatGptOAuth.Pkce,
         nonce: String,
         redirectUri: String,
-    ): ChatGptSignInStatus {
+    ): Grant {
         val response = OpenAiHttp.postForm(
             discovery.tokenEndpoint,
             ChatGptOAuth.authorizationCodeForm(callback.code, callback.clientId, pkce.verifier, redirectUri),
         )
-        if (!response.isSuccess) return ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
+        if (!response.isSuccess) throw SignInFailure(ChatGptSignInFailure.FAILED)
         val tokens = ChatGptOAuth.parseTokenResponse(response.body)
-        val refreshToken = tokens.refreshToken ?: return ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
-        val idToken = tokens.idToken ?: return ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
+        val idToken = tokens.idToken ?: throw SignInFailure(ChatGptSignInFailure.FAILED)
         val jwks = OpenAiHttp.get(discovery.jwksUri).takeIf { it.isSuccess }?.body
-            ?: return ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
+            ?: throw SignInFailure(ChatGptSignInFailure.FAILED)
         val claims = ChatGptOAuth.validateIdToken(
             idToken = idToken,
             jwks = jwks,
@@ -157,30 +207,34 @@ class ChatGptAuthService private constructor(context: Context) {
             nonce = nonce,
             nowEpochSeconds = System.currentTimeMillis() / 1000,
         )
-        val saved = repository.saveSignIn(
-            clientId = callback.clientId,
-            tokens = tokens.toLocalTokens(refreshToken),
-            email = claims.email,
-            name = claims.name,
-            subject = claims.subject,
-        )
-        if (!saved) return ChatGptSignInStatus.Failed(ChatGptSignInFailure.FAILED)
-        refreshModelsBlocking(tokens.accessToken)
-        return ChatGptSignInStatus.SignedIn
+        return Grant(callback.clientId, tokens.toLocalTokens(tokens.refreshToken, tokens.scope), claims)
     }
 
     /** Returns a valid access token, refreshing it at most once at a time. */
     internal suspend fun accessToken(forceRefresh: Boolean = false): ChatGptAccessToken = tokenMutex.withLock {
         val clientId = repository.issuedClientId ?: return ChatGptAccessToken.SignInRequired
+        pendingRotation?.let { replacement ->
+            if (!repository.saveTokens(replacement)) return ChatGptAccessToken.Unavailable
+            pendingRotation = null
+        }
         val current = repository.tokens() ?: return ChatGptAccessToken.SignInRequired
+        if (!ChatGptOAuth.grantsPlanUsage(current.scope)) return ChatGptAccessToken.PlanNotGranted
         val now = System.currentTimeMillis()
-        val fresh = current.accessExpiresAtMillis - now > REFRESH_MARGIN_MILLIS
-        if (fresh && !forceRefresh) return ChatGptAccessToken.Ready(current.accessToken)
-        if (fresh && now < current.earliestRefreshAtMillis) return ChatGptAccessToken.Ready(current.accessToken)
+        val remaining = current.accessExpiresAtMillis - now
+        if ((!forceRefresh && remaining > REFRESH_MARGIN_MILLIS) ||
+            (remaining > 0 && now < current.earliestRefreshAtMillis)) {
+            return ChatGptAccessToken.Ready(current.accessToken)
+        }
+        val refreshToken = current.refreshToken
+        if (refreshToken == null || repository.refreshInFlight) {
+            return if (remaining > 0 && !forceRefresh) ChatGptAccessToken.Ready(current.accessToken)
+            else ChatGptAccessToken.SignInRequired
+        }
 
         val discovery = fetchDiscovery() ?: return ChatGptAccessToken.Unavailable
+        if (!repository.setRefreshInFlight(true)) return ChatGptAccessToken.Unavailable
         val response = runCatching {
-            OpenAiHttp.postForm(discovery.tokenEndpoint, ChatGptOAuth.refreshForm(clientId, current.refreshToken))
+            OpenAiHttp.postForm(discovery.tokenEndpoint, ChatGptOAuth.refreshForm(clientId, refreshToken))
         }.getOrNull() ?: return ChatGptAccessToken.Unavailable
         if (!response.isSuccess) {
             val code = ChatGptOAuth.oauthErrorCode(response.body)
@@ -188,26 +242,31 @@ class ChatGptAuthService private constructor(context: Context) {
                 repository.signOut()
                 ChatGptAccessToken.SignInRequired
             } else {
+                // A definite OAuth rejection has not issued a replacement. An ambiguous response
+                // leaves the marker in place, just like a lost response or an interrupted process.
+                if (code != null || response.status == 429) repository.setRefreshInFlight(false)
                 ChatGptAccessToken.Unavailable
             }
         }
         val tokens = runCatching { ChatGptOAuth.parseTokenResponse(response.body) }.getOrNull()
             ?: return ChatGptAccessToken.Unavailable
-        repository.saveTokens(tokens.toLocalTokens(tokens.refreshToken ?: current.refreshToken))
-        ChatGptAccessToken.Ready(tokens.accessToken)
+        val replacement = tokens.toLocalTokens(tokens.refreshToken ?: refreshToken, tokens.scope ?: current.scope)
+        if (!repository.saveTokens(replacement)) {
+            pendingRotation = replacement
+            return ChatGptAccessToken.Unavailable
+        }
+        if (ChatGptOAuth.grantsPlanUsage(replacement.scope)) ChatGptAccessToken.Ready(replacement.accessToken)
+        else ChatGptAccessToken.PlanNotGranted
     }
 
-    /** Loads the models this account may use (GET /v1/models, visibility == "list"). */
-    suspend fun refreshModels() = withContext(Dispatchers.IO) {
+    suspend fun refreshModels(): Unit = withContext(Dispatchers.IO) {
         val token = (accessToken() as? ChatGptAccessToken.Ready)?.token ?: return@withContext
-        refreshModelsBlocking(token)
-    }
-
-    private fun refreshModelsBlocking(accessToken: String) {
-        val response = runCatching { OpenAiHttp.get(MODELS_ENDPOINT, accessToken) }.getOrNull() ?: return
-        if (!response.isSuccess) return
-        val models = runCatching { parseListedModels(response.body) }.getOrNull().orEmpty()
-        if (models.isNotEmpty()) repository.saveModels(models)
+        val response = runCatching { OpenAiHttp.get(MODELS_ENDPOINT, token) }.getOrNull() ?: return@withContext
+        if (!response.isSuccess) return@withContext
+        val models = runCatching { ChatGptOAuth.listedModels(response.body) }.getOrNull() ?: return@withContext
+        tokenMutex.withLock {
+            if (repository.tokens()?.accessToken == token) repository.saveModels(models)
+        }
     }
 
     fun selectModel(model: String) = repository.selectModel(model)
@@ -215,20 +274,22 @@ class ChatGptAuthService private constructor(context: Context) {
     fun markWelcomeShown() = repository.markWelcomeShown()
 
     /** Revokes the refresh token (best effort) and forgets the account on this device. */
-    suspend fun signOut() = withContext(Dispatchers.IO) {
-        tokenMutex.withLock {
-            val clientId = repository.issuedClientId
-            val refreshToken = repository.tokens()?.refreshToken
+    suspend fun signOut(): Unit = withContext(Dispatchers.IO) {
+        cancelSignIn()
+        val (clientId, refreshToken) = tokenMutex.withLock {
+            val registration = repository.issuedClientId
+            val token = (pendingRotation ?: repository.tokens())?.refreshToken
+            pendingRotation = null
             repository.signOut()
-            _status.value = ChatGptSignInStatus.Idle
-            if (clientId != null && refreshToken != null) {
-                runCatching {
-                    fetchDiscovery()?.revocationEndpoint?.let { endpoint ->
-                        repeat(3) { attempt ->
-                            val response = OpenAiHttp.postForm(endpoint, ChatGptOAuth.revocationForm(clientId, refreshToken))
-                            if (response.status < 500) return@runCatching
-                            Thread.sleep(1_000L shl attempt)
-                        }
+            registration to token
+        }
+        if (clientId != null && refreshToken != null) {
+            runCatching {
+                fetchDiscovery()?.revocationEndpoint?.let { endpoint ->
+                    repeat(3) { attempt ->
+                        val response = OpenAiHttp.postForm(endpoint, ChatGptOAuth.revocationForm(clientId, refreshToken))
+                        if (response.status < 500) return@runCatching
+                        delay(1_000L shl attempt)
                     }
                 }
             }
@@ -241,30 +302,22 @@ class ChatGptAuthService private constructor(context: Context) {
         ChatGptOAuth.parseDiscovery(response.body)
     }.getOrNull()
 
-    private fun ChatGptOAuth.TokenResponse.toLocalTokens(refreshToken: String): ChatGptTokens {
+    private fun ChatGptOAuth.TokenResponse.toLocalTokens(refreshToken: String?, grantedScope: String?): ChatGptTokens {
         val now = System.currentTimeMillis()
         return ChatGptTokens(
             accessToken = accessToken,
             accessExpiresAtMillis = now + expiresIn.coerceAtLeast(60) * 1000,
             refreshToken = refreshToken,
+            scope = grantedScope,
             earliestRefreshAtMillis = earliestRefreshAtEpochSeconds()?.times(1000) ?: 0L,
         )
-    }
-
-    private fun parseListedModels(body: String): List<String> {
-        val data = json.parseToJsonElement(body).jsonObject["data"] as? JsonArray ?: return emptyList()
-        return data.mapNotNull { element ->
-            val model = element as? JsonObject ?: return@mapNotNull null
-            val visibility = (model["visibility"] as? JsonPrimitive)?.contentOrNull
-            if (visibility != null && visibility != "list") return@mapNotNull null
-            (model["id"] as? JsonPrimitive)?.contentOrNull ?: (model["slug"] as? JsonPrimitive)?.contentOrNull
-        }.distinct()
     }
 
     companion object {
         const val MODELS_ENDPOINT = "${ChatGptOAuth.RESOURCE}/models"
         const val RETURN_URL = "intent://chatgpt-signed-in#Intent;scheme=foliore;package=com.foliore.android;end"
-        private const val SIGN_IN_TIMEOUT_MILLIS = 10 * 60 * 1000L
+        // Finish before Android 14’s three-minute short-service budget, including code exchange.
+        private const val SIGN_IN_TIMEOUT_MILLIS = 150_000L
         private const val REFRESH_MARGIN_MILLIS = 2 * 60 * 1000L
 
         @Volatile private var instance: ChatGptAuthService? = null

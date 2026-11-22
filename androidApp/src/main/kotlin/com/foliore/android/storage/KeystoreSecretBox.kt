@@ -18,16 +18,18 @@ internal class KeystoreSecretBox(
     private val preferences: SharedPreferences,
     private val keyAlias: String,
 ) {
-    fun write(name: String, value: String, editor: SharedPreferences.Editor = preferences.edit()): Boolean {
-        return runCatching {
-            val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, secretKey()) }
-            val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
-            editor
-                .putString(ivKey(name), Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
-                .putString(ciphertextKey(name), Base64.encodeToString(encrypted, Base64.NO_WRAP))
-                .apply()
-            true
-        }.getOrDefault(false)
+    fun write(name: String, value: String): Boolean = runCatching {
+        val editor = preferences.edit()
+        put(editor, name, value)
+        editor.commit()
+    }.getOrDefault(false)
+
+    /** Stage encryption in the caller's transaction. Nothing is published until the editor commits. */
+    fun put(editor: SharedPreferences.Editor, name: String, value: String) {
+        val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, secretKey()) }
+        val encrypted = cipher.doFinal(value.toByteArray(Charsets.UTF_8))
+        editor.putString(ivKey(name), Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+            .putString(ciphertextKey(name), Base64.encodeToString(encrypted, Base64.NO_WRAP))
     }
 
     fun read(name: String): String? {
@@ -46,7 +48,12 @@ internal class KeystoreSecretBox(
     }
 
     fun remove(name: String, editor: SharedPreferences.Editor = preferences.edit()) {
-        editor.remove(ivKey(name)).remove(ciphertextKey(name)).apply()
+        discard(editor, name)
+        editor.apply()
+    }
+
+    fun discard(editor: SharedPreferences.Editor, name: String) {
+        editor.remove(ivKey(name)).remove(ciphertextKey(name))
     }
 
     private fun ivKey(name: String) = "${name}_iv"

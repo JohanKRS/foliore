@@ -61,4 +61,8 @@
     <string name="about_open_source">Foliore 是采用 GPL-3.0 许可证的自由开源软件。</string>
     <string name="about_source_code">源代码</string>
     <string name="terms_body">免费且开源\nFoliore 是依据 GNU 通用公共许可证第 3 版（GPL-3.0）发布的自由软件。没有购买、订阅或图书数量限制。您可以按照该许可证使用、研究、修改和分享本应用。源代码和许可证全文见 %2$s。\n\n不提供担保\n如 GPL-3.0 所述，在适用法律允许的范围内，Foliore 按“原样”提供，不附带任何担保。这不免除法律规定的责任，也不限制您的权利。\n\n文件与备份\n请在 Foliore 之外保留书籍和重要数据的最新副本。同步也会传播修改和删除操作，不能替代独立备份。删除数据、更换设备或卸载应用前，请检查您的副本。能否恢复取决于仍然可用的文件和版本，并非所有情况下都能恢复。本说明不免除法律规定的责任，也不限制您的权利。\n\n可选服务\nGoogle Drive、Gmail、Kindle、ChatGPT 和 OpenAI API 均为可选，不登录其中任何一项也能使用 Foliore。使用某项服务时，适用该服务自己的条款。使用 ChatGPT 账号发出的请求会计入您的套餐用量。使用 OpenAI API 密钥发出的请求由 OpenAI 向该密钥所属账号收费。\n\nAI 建议\nAI 建议的简介、信息和封面可能有误，请在保存前检查。网上找到的封面归其权利人所有，请仅在个人书库中使用。\n\n兼容性与更新\n兼容性信息见 Google Play 应用页面。Foliore 会尽力维护，但不承诺提供新功能，也不承诺在未来所有 Android 版本和所有设备上运行。\n\n支持\n如需帮助，请发送邮件至 %1$s，或在项目代码库中提交 issue。</string>
+    <string name="settings_ai_chatgpt_other_account">使用其他 ChatGPT 账号</string>
+    <string name="settings_ai_chatgpt_enable_plan">授权使用 ChatGPT 套餐</string>
+    <string name="settings_ai_chatgpt_no_plan">账号已连接。请授权使用套餐来查找图书详情和封面，或配置 API 密钥。</string>
+    <string name="chatgpt_notice_timed_out">ChatGPT 登录超时。请在设置中重试。</string>
 </resources>

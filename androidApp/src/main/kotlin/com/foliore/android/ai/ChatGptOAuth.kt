@@ -9,6 +9,7 @@ import java.security.SecureRandom
 import java.security.Signature
 import java.security.spec.RSAPublicKeySpec
 import java.util.Base64
+import java.util.UUID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -19,6 +20,15 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
+
+enum class ChatGptSignInMode {
+    RETURNING, DIFFERENT_ACCOUNT, ENABLE_PLAN;
+
+    fun clientId(saved: String?): String? = if (this == DIFFERENT_ACCOUNT) null else saved
+}
+
+@Serializable
+data class ChatGptModel(val slug: String, @SerialName("display_name") val displayName: String = slug)
 
 /**
  * Protocol pieces of "Sign in with ChatGPT" for open-source apps, kept free of Android types so
@@ -40,6 +50,24 @@ object ChatGptOAuth {
 
     private val random = SecureRandom()
     private val json = Json { ignoreUnknownKeys = true }
+
+    internal fun hostId(stored: String?): String {
+        val uuid = stored?.removePrefix("urn:uuid:")?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        return "urn:uuid:" + (uuid ?: UUID.randomUUID())
+    }
+
+    internal fun grantsPlanUsage(scope: String?): Boolean =
+        scope.orEmpty().split(' ').contains("chatgpt.tokens.use.direct")
+
+    internal fun listedModels(body: String): List<ChatGptModel> {
+        val models = json.parseToJsonElement(body).jsonObject["models"] as? JsonArray ?: error("Missing model catalog")
+        return models.mapNotNull { element ->
+            val model = element as? JsonObject ?: return@mapNotNull null
+            if (model.string("visibility") != "list") return@mapNotNull null
+            val slug = model.string("slug")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            ChatGptModel(slug, model.string("display_name")?.takeIf { it.isNotBlank() } ?: slug)
+        }.distinctBy { it.slug }
+    }
 
     fun randomUrlToken(bytes: Int = 32): String {
         val buffer = ByteArray(bytes).also(random::nextBytes)
@@ -70,6 +98,7 @@ object ChatGptOAuth {
             "ext_agent_host_id" to request.hostId,
         )
         if (request.issuedClientId == null) params["agent_name_hint"] = AGENT_NAME
+        if (request.requestConsent) params["prompt"] = "consent"
         request.loginHint?.let { params["login_hint"] = it }
         val separator = if ('?' in authorizationEndpoint) "&" else "?"
         return authorizationEndpoint + separator + params.entries.joinToString("&") { (key, value) ->
@@ -243,6 +272,7 @@ object ChatGptOAuth {
         val hostId: String,
         val issuedClientId: String?,
         val loginHint: String? = null,
+        val requestConsent: Boolean = false,
     )
 
     sealed interface CallbackResult {

@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 class AiProviderTest {
     @Test
     fun noSignInAndNoKeyLeavesAiOff() {
-        val capabilities = AiCapabilities.from(chatGptSignedIn = false, hasApiKey = false)
+        val capabilities = AiCapabilities.from(chatGptPlanGranted = false, hasApiKey = false)
         assertFalse(capabilities.canFillText)
         assertFalse(capabilities.hasCoverTools)
         assertFalse(capabilities.usesChatGptPlan)
@@ -17,7 +17,7 @@ class AiProviderTest {
 
     @Test
     fun chatGptHandlesTextAndCoverSearchButNotImagesYet() {
-        val capabilities = AiCapabilities.from(chatGptSignedIn = true, hasApiKey = false)
+        val capabilities = AiCapabilities.from(chatGptPlanGranted = true, hasApiKey = false)
         assertEquals(AiProvider.CHATGPT, capabilities.textProvider)
         assertTrue(capabilities.canFindCovers)
         assertEquals(AiFeatureFlags.CHATGPT_IMAGE_GENERATION, capabilities.canGenerateCovers)
@@ -26,14 +26,25 @@ class AiProviderTest {
 
     @Test
     fun apiKeyGeneratesCoversWhileChatGptKeepsText() {
-        val both = AiCapabilities.from(chatGptSignedIn = true, hasApiKey = true)
+        val both = AiCapabilities.from(chatGptPlanGranted = true, hasApiKey = true)
         assertEquals(AiProvider.CHATGPT, both.textProvider)
         if (!AiFeatureFlags.CHATGPT_IMAGE_GENERATION) assertEquals(AiProvider.OPENAI_API, both.imageProvider)
 
-        val keyOnly = AiCapabilities.from(chatGptSignedIn = false, hasApiKey = true)
+        val keyOnly = AiCapabilities.from(chatGptPlanGranted = false, hasApiKey = true)
         assertEquals(AiProvider.OPENAI_API, keyOnly.textProvider)
         assertEquals(AiProvider.OPENAI_API, keyOnly.imageProvider)
         assertFalse(keyOnly.usesChatGptPlan)
+    }
+
+    @Test
+    fun identityOnlyConsentUsesTheConfiguredKeyAndLeavesThePlanOff() {
+        for (scope in listOf(null, "", "openid email offline_access", "chatgpt.tokens.use.direct.extra")) {
+            val granted = ChatGptOAuth.grantsPlanUsage(scope)
+            assertFalse(granted)
+            assertNull(AiCapabilities.from(granted, hasApiKey = false).textProvider)
+            assertEquals(AiProvider.OPENAI_API, AiCapabilities.from(granted, hasApiKey = true).textProvider)
+        }
+        assertTrue(ChatGptOAuth.grantsPlanUsage("openid chatgpt.tokens.use.direct offline_access"))
     }
 
     @Test

@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
+import com.foliore.android.ai.ChatGptSignInMode
 import com.foliore.android.storage.AppLanguage
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.KindleEmailSettings
@@ -91,7 +92,7 @@ fun SettingsScreen(
     onChooseAppLanguage: () -> Unit,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
-    onChatGptSignIn: () -> Unit,
+    onChatGptSignIn: (ChatGptSignInMode) -> Unit,
     onChatGptCancelSignIn: () -> Unit,
     onChatGptSignOut: () -> Unit,
     onChatGptModelSelect: (String) -> Unit,
@@ -215,7 +216,7 @@ fun SettingsScreen(
         CompactSettingsRow(
             icon = Icons.Outlined.AutoAwesome,
             title = stringResource(R.string.settings_ai_features),
-            description = aiSettings.chatGptAccount?.let { account ->
+            description = aiSettings.chatGptAccount?.takeIf { it.planUsageGranted }?.let { account ->
                 account.label?.let { stringResource(R.string.settings_ai_row_chatgpt, it) }
                     ?: stringResource(R.string.settings_ai_chatgpt)
             } ?: if (aiSettings.hasOpenAiApiKey) {
@@ -737,6 +738,7 @@ data class AiSettingsState(
     val hasOpenAiApiKey: Boolean,
     val chatGptAccount: com.foliore.android.storage.ChatGptAccount?,
     val isChatGptSigningIn: Boolean,
+    val hasRegistration: Boolean,
 )
 
 /** The settings title drawn in the shared top chrome, matching the library header. */

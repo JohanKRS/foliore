@@ -36,14 +36,14 @@ data class AiCapabilities(
     val usesChatGptPlan: Boolean get() = textProvider == AiProvider.CHATGPT || imageProvider == AiProvider.CHATGPT
 
     companion object {
-        fun from(chatGptSignedIn: Boolean, hasApiKey: Boolean): AiCapabilities = AiCapabilities(
+        fun from(chatGptPlanGranted: Boolean, hasApiKey: Boolean): AiCapabilities = AiCapabilities(
             textProvider = when {
-                chatGptSignedIn -> AiProvider.CHATGPT
+                chatGptPlanGranted -> AiProvider.CHATGPT
                 hasApiKey -> AiProvider.OPENAI_API
                 else -> null
             },
             imageProvider = when {
-                chatGptSignedIn && AiFeatureFlags.CHATGPT_IMAGE_GENERATION -> AiProvider.CHATGPT
+                chatGptPlanGranted && AiFeatureFlags.CHATGPT_IMAGE_GENERATION -> AiProvider.CHATGPT
                 hasApiKey -> AiProvider.OPENAI_API
                 else -> null
             },
@@ -54,6 +54,7 @@ data class AiCapabilities(
 /** Failure codes shared by the AI service and the screens that explain them. */
 object AiErrorCodes {
     const val PROVIDER_DISABLED = "provider_disabled"
+    const val CHATGPT_PLAN_NOT_GRANTED = "chatgpt_plan_not_granted"
     const val CHATGPT_SIGN_IN_REQUIRED = "chatgpt_sign_in_required"
     const val CHATGPT_NOT_ELIGIBLE = "chatgpt_not_eligible"
     const val CHATGPT_USAGE_LIMIT = "chatgpt_usage_limit"

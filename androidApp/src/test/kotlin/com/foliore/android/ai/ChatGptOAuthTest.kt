@@ -41,7 +41,7 @@ class ChatGptOAuthTest {
         assertEquals("http://127.0.0.1:1455/auth/callback", query["redirect_uri"])
         assertEquals(ChatGptOAuth.SCOPES, query["scope"])
         assertEquals("https://api.openai.com/v1", query["resource"])
-        assertEquals("host", query["ext_agent_host_id"])
+        assertEquals("urn:uuid:544c13db-4ede-4ea9-ba1e-04ac9dcceb53", query["ext_agent_host_id"])
         assertFalse(url.contains('+'), "Spaces must be encoded as %20")
     }
 
@@ -168,12 +168,62 @@ class ChatGptOAuthTest {
         assertEquals("refresh_token", ChatGptOAuth.refreshForm("oaiapp_123", "r")["grant_type"])
     }
 
+    @Test
+    fun legacyAndNewHostIdsAreStableUuidUris() {
+        val legacy = "544c13db-4ede-4ea9-ba1e-04ac9dcceb53"
+        assertEquals("urn:uuid:$legacy", ChatGptOAuth.hostId(legacy))
+        assertEquals("urn:uuid:$legacy", ChatGptOAuth.hostId("urn:uuid:$legacy"))
+        val fresh = ChatGptOAuth.hostId(null)
+        assertTrue(fresh.startsWith("urn:uuid:"))
+        assertEquals(fresh, ChatGptOAuth.hostId(fresh))
+    }
+
+    @Test
+    fun catalogKeepsVisibleSlugsAndDisplayNamesInServerOrder() {
+        val body = """{"models":[{"visibility":"list","slug":"b","id":"wrong","display_name":"Book model"},
+            {"visibility":"hide","slug":"hidden"},{"slug":"unlisted"},{"visibility":"list","slug":"a"},
+            {"visibility":"list","slug":"b"},{"visibility":"list","id":"id-only"}]}"""
+        assertEquals(listOf(ChatGptModel("b", "Book model"), ChatGptModel("a", "a")), ChatGptOAuth.listedModels(body))
+        assertTrue(ChatGptOAuth.listedModels("""{"models":[]}""").isEmpty())
+    }
+
+    @Test
+    fun anotherAccountRegistersFreshAndReconsentReusesTheClient() {
+        val saved = "oaiapp_123"
+        assertNull(ChatGptSignInMode.DIFFERENT_ACCOUNT.clientId(saved))
+        assertEquals(saved, ChatGptSignInMode.RETURNING.clientId(saved))
+        assertEquals(saved, ChatGptSignInMode.ENABLE_PLAN.clientId(saved))
+        val endpoint = "https://auth.openai.com/oauth/authorize"
+        val returning = request(saved)
+        fun query(r: ChatGptOAuth.AuthorizationRequest) =
+            ChatGptOAuth.parseQuery(ChatGptOAuth.authorizationUrl(endpoint, r).substringAfter('?'))
+        assertNull(query(returning)["prompt"])
+        assertEquals("consent", query(returning.copy(requestConsent = true))["prompt"])
+    }
+
+    @Test
+    fun aCancelledAttemptCannotPublishCredentialsOrStopItsSuccessor() {
+        val attempts = ChatGptSignInAttempts()
+        var first = 0L
+        attempts.start { first = it }
+        attempts.finish(null) {}
+        var second = 0L
+        attempts.start { second = it }
+        assertFalse(attempts.whileActive(first) { error("stale browser") })
+        attempts.finish(first) { error("stale timeout or exchange") }
+        assertTrue(attempts.whileActive(second) {})
+        var commits = 0
+        attempts.finish(second) { commits++ }
+        attempts.finish(second) { commits++ }
+        assertEquals(1, commits)
+    }
+
     private fun request(issuedClientId: String?) = ChatGptOAuth.AuthorizationRequest(
         redirectUri = ChatGptOAuth.redirectUri(1455),
         state = "state",
         nonce = "nonce",
         pkce = ChatGptOAuth.Pkce("verifier", "challenge"),
-        hostId = "host",
+        hostId = "urn:uuid:544c13db-4ede-4ea9-ba1e-04ac9dcceb53",
         issuedClientId = issuedClientId,
     )
 
