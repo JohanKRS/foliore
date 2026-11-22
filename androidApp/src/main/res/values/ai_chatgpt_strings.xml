@@ -65,4 +65,7 @@
     <string name="settings_ai_chatgpt_enable_plan">Enable ChatGPT plan usage</string>
     <string name="settings_ai_chatgpt_no_plan">Your account is connected. Allow plan usage to use ChatGPT for book details and covers, or configure an API key.</string>
     <string name="chatgpt_notice_timed_out">ChatGPT sign-in timed out. Start again in Settings.</string>
+    <string name="ai_data_disclosure_chatgpt">Generating sends your prompt and book metadata to OpenAI through your ChatGPT account. Review results before applying.</string>
+    <string name="ai_metadata_generating_hint">The AI checks the details on the web, so this can take up to a minute.</string>
+    <string name="ai_using_api_key">Uses your OpenAI API key</string>
 </resources>

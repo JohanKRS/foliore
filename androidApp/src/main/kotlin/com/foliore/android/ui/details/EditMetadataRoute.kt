@@ -115,12 +115,13 @@ fun EditMetadataRoute(
             },
             onResolveMetadataCandidate = { candidate, onReady -> viewModel.resolveMetadataCandidate(bookId, candidate, onReady) },
             onUseLookupCover = { path -> viewModel.useMetadataLookupCover(bookId, path) },
-            onGenerateMetadataPreview = { prompt, draft, onPreviewReady ->
+            onGenerateMetadataPreview = { prompt, draft, onPreviewReady, onFailure ->
                 viewModel.generateMetadataPreview(
                     bookId = bookId,
                     prompt = prompt,
                     draft = draft,
                     onPreviewReady = onPreviewReady,
+                    onFailure = onFailure,
                 )
             },
             onGenerateCoverImages = { prompt, draft, reference, styles, onOptionsReady ->

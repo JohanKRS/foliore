@@ -65,4 +65,7 @@
     <string name="settings_ai_chatgpt_enable_plan">授权使用 ChatGPT 套餐</string>
     <string name="settings_ai_chatgpt_no_plan">账号已连接。请授权使用套餐来查找图书详情和封面，或配置 API 密钥。</string>
     <string name="chatgpt_notice_timed_out">ChatGPT 登录超时。请在设置中重试。</string>
+    <string name="ai_data_disclosure_chatgpt">生成时，提示词和图书元数据将通过你的 ChatGPT 账户发送给 OpenAI。应用前请检查结果。</string>
+    <string name="ai_metadata_generating_hint">AI 会在网上核对信息，可能需要最多一分钟。</string>
+    <string name="ai_using_api_key">使用您的 OpenAI API 密钥</string>
 </resources>

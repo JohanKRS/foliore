@@ -4,6 +4,21 @@ All notable changes to Foliore are listed here, newest first. Each version match
 
 After 1.0.0, each entry groups its changes under **Added**, **Changed**, **Fixed** and **Removed**, leaving out empty groups.
 
+## [1.0.1] - 2026-11-22
+
+### Changed
+- **Auto-fill with AI.** With ChatGPT or an API key set up, the AI tab opens first. The preview sits at the top, with Generate or Apply right below it. Edit prompt and the note on what is sent to OpenAI moved under the button, and the note names your ChatGPT plan instead of API charges when you use the plan.
+- **Phone bottom bar.** The Read, Export and Kindle buttons line up with the book page, and Library, Sync and Settings sit centred under them.
+- **Book page order.** Phones show the cover and title, then About this book, the details and finally sync.
+
+### Fixed
+- **Generate preview did nothing** while an open-sources search or a sync was running. It now always starts, shows the time so far, and shows any error inside the dialog.
+- The auto-fill buttons no longer get squeezed into a column of letters on narrow screens or with large text, and "Open sources" is no longer cut off.
+- Read/Continue keeps its colour and label while you leave a book.
+
+### Removed
+- The Support link in Settings. For help, open an issue in the project repository (About → Source code).
+
 ## [1.0.0] - 2026-11-22
 
 First public release. It lists the features only, since there is no earlier public version to compare with.
@@ -18,4 +33,5 @@ First public release. It lists the features only, since there is no earlier publ
 - **Your style.** Light and dark themes, four app icons and eight languages.
 - **Free and open source** under the GPL-3.0. No ads, purchases or book limits, and no account required.
 
+[1.0.1]: https://github.com/JohanKRS/Foliore/releases/tag/v1.0.1
 [1.0.0]: https://github.com/JohanKRS/Foliore/releases/tag/v1.0.0
