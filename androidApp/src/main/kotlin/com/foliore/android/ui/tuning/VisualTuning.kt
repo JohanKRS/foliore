@@ -16,7 +16,6 @@ data class VisualTuningValues(
     val libraryHeaderEndPadding: Float = 16f,
     val detailsMobileTopExtra: Float = 16f,
     val detailsMobileHorizontalPadding: Float = 16f,
-    val detailsMobileBottomPadding: Float = 24f,
     val detailsTabletLeftHorizontalPadding: Float = 36f,
     val detailsTabletCoverVerticalPadding: Float = 24f,
     val detailsPaneHorizontalPadding: Float = 28f,
