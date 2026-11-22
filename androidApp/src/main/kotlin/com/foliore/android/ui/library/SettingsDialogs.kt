@@ -91,6 +91,47 @@ internal fun ThemeSettingsDialog(
 }
 
 @Composable
+internal fun AiTextLanguageDialog(
+    textLanguage: com.foliore.android.ai.AiTextLanguage,
+    appLanguageName: String,
+    onTextLanguageChange: (com.foliore.android.ai.AiTextLanguage) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    FolioreOptionsDialog(
+        title = stringResource(R.string.settings_ai_text_language),
+        onDismiss = onDismiss,
+    ) {
+        Column {
+            Text(
+                text = stringResource(R.string.settings_ai_text_language_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FolioreDialogSectionCard(label = stringResource(R.string.edit_metadata_field_language)) {
+                FolioreDialogOptionGrid(
+                    columns = 1,
+                    options = listOf(
+                        com.foliore.android.ai.AiTextLanguage.BOOK to
+                            stringResource(R.string.settings_ai_text_language_book),
+                        com.foliore.android.ai.AiTextLanguage.APP to
+                            stringResource(R.string.settings_ai_text_language_app, appLanguageName),
+                    ).map { (option, label) ->
+                        FolioreDialogOption(
+                            label = label,
+                            selected = textLanguage == option,
+                            onClick = {
+                                onTextLanguageChange(option)
+                                onDismiss()
+                            },
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
 internal fun SyncMethodDialog(
     syncProvider: SyncProvider,
     syncFolderLabel: String?,

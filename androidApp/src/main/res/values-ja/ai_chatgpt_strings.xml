@@ -68,4 +68,8 @@
     <string name="ai_data_disclosure_chatgpt">生成すると、プロンプトと本のメタデータがChatGPTアカウントを通じてOpenAIに送信されます。適用前に結果を確認してください。</string>
     <string name="ai_metadata_generating_hint">AIがウェブで情報を確認するため、最大1分ほどかかることがあります。</string>
     <string name="ai_using_api_key">OpenAI APIキーを使用</string>
+    <string name="settings_ai_text_language">タグと「この本について」の言語</string>
+    <string name="settings_ai_text_language_book">各本の言語</string>
+    <string name="settings_ai_text_language_app">アプリの言語：%1$s</string>
+    <string name="settings_ai_text_language_hint">AIが書くタグと「この本について」に適用されます。タグは出版業界の標準であるThemaのカテゴリーに従います。</string>
 </resources>
