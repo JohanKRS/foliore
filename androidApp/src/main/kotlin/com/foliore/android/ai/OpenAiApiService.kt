@@ -241,8 +241,7 @@ class OpenAiApiService(
                 ChatGptAccessToken.PlanNotGranted -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_PLAN_NOT_GRANTED)
                 ChatGptAccessToken.Unavailable -> return OpenAiResult.Failure(code = AiErrorCodes.CHATGPT_UNAVAILABLE)
             }
-            var completed: JsonObject? = null
-            var streamFailure: OpenAiResult.Failure? = null
+            val collector = ResponseStreamCollector()
             val response = runCatching {
                 OpenAiHttp.postJsonStream(
                     url = RESPONSES_ENDPOINT,
@@ -251,23 +250,15 @@ class OpenAiApiService(
                     maxStreamBytes = MAX_STREAM_BYTES,
                 ) { data ->
                     val event = runCatching { json.parseToJsonElement(data).jsonObject }.getOrNull() ?: return@postJsonStream false
-                    when (event.string("type")) {
-                        "response.completed" -> {
-                            completed = event["response"] as? JsonObject
-                            true
-                        }
-                        "response.failed", "response.incomplete", "error" -> {
-                            streamFailure = AiErrorCodes.streamFailure(event)
-                            true
-                        }
-                        else -> false
-                    }
+                    collector.onEvent(event)
                 }
             }.getOrElse { return OpenAiResult.Failure(it.message) }
 
             if (response.isSuccess) {
-                completed?.let { return OpenAiResult.Success(it) }
-                return streamFailure ?: OpenAiResult.Failure("Incomplete response stream")
+                // Event types only (no content), to diagnose streams that end without an answer.
+                runCatching { android.util.Log.i(LOG_TAG, "ChatGPT stream: ${collector.eventSummary()}") }
+                collector.completed?.let { return OpenAiResult.Success(it) }
+                return collector.failure ?: OpenAiResult.Failure("Incomplete response stream")
             }
             val failure = AiErrorCodes.failure(response.status, response.body)
             when {
@@ -421,12 +412,16 @@ class OpenAiApiService(
     /** The first message text in a Responses object (the SDK's output_text is not in raw JSON). */
     private fun JsonObject.outputText(): String? {
         string("output_text")?.let { return it }
+        // Only the assistant message's output_text parts: reasoning items can carry text too.
         return (this["output"] as? JsonArray).orEmpty()
             .asSequence()
             .mapNotNull { it as? JsonObject }
+            .filter { (it.string("type") ?: "message") == "message" }
             .flatMap { (it["content"] as? JsonArray).orEmpty().asSequence() }
-            .mapNotNull { (it as? JsonObject)?.string("text") }
-            .firstOrNull { it.isNotBlank() }
+            .mapNotNull { it as? JsonObject }
+            .filter { (it.string("type") ?: "output_text") == "output_text" }
+            .mapNotNull { it.string("text") }
+            .lastOrNull { it.isNotBlank() }
     }
 
     private fun ByteArray.looksLikeUsableCover(): Boolean {
@@ -668,6 +663,7 @@ class OpenAiApiService(
 
     private companion object {
         const val RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses"
+        private const val LOG_TAG = "FolioreAi"
         const val IMAGES_ENDPOINT = "https://api.openai.com/v1/images/generations"
         const val API_TEXT_MODEL = "gpt-5.5"
         const val IMAGE_MODEL = "gpt-image-1.5"

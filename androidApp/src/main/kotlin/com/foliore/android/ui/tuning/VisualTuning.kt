@@ -59,7 +59,6 @@ data class VisualTuningValues(
     val bottomTabletCompactActionIconSpacing: Float = 6f,
     val bottomTabletActionIconSize: Float = 20f,
     val detailsTabletCoverMaxWidth: Float = 720f,
-    val detailsTabletCoverButtonTopSpacing: Float = 12f,
     val detailsTabletCoverButtonHeight: Float = 44f,
     val detailsTabletCoverButtonSpacing: Float = 8f,
     val detailsTabletCoverTitleTopSpacing: Float = 16f,

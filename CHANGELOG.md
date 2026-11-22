@@ -4,6 +4,16 @@ All notable changes to Foliore are listed here, newest first. Each version match
 
 After 1.0.0, each entry groups its changes under **Added**, **Changed**, **Fixed** and **Removed**, leaving out empty groups.
 
+## [1.0.2] - 2026-11-22
+
+### Changed
+- **Book page.** Replace cover and Generate or Find covers moved from under the cover to the top of the Metadata section. The page now reads: cover, title, About this book, then Metadata.
+- The title under the cover also shows the series and its number when the book has one.
+
+### Fixed
+- **AI preview with ChatGPT** failed with "Empty metadata response". The app now reads the answer as it streams in, so the preview fills in. Find covers with ChatGPT gets the same fix.
+- The cover buttons no longer cut off their labels with large text. When both don't fit side by side, they stack.
+
 ## [1.0.1] - 2026-11-22
 
 ### Changed
@@ -33,5 +43,6 @@ First public release. It lists the features only, since there is no earlier publ
 - **Your style.** Light and dark themes, four app icons and eight languages.
 - **Free and open source** under the GPL-3.0. No ads, purchases or book limits, and no account required.
 
+[1.0.2]: https://github.com/JohanKRS/Foliore/releases/tag/v1.0.2
 [1.0.1]: https://github.com/JohanKRS/Foliore/releases/tag/v1.0.1
 [1.0.0]: https://github.com/JohanKRS/Foliore/releases/tag/v1.0.0
