@@ -83,6 +83,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -91,6 +92,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -778,29 +780,12 @@ private fun TabletEditBookScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
-                    Text(
-                        text = title.ifBlank { book.metadata.title },
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = CormorantGaramondFamily,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverAuthorSpacing.dp))
-                    Text(
-                        text = authors.splitValues().firstOrNull()
-                            ?: stringResource(R.string.book_unknown_author),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverStatusSpacing.dp))
-                    StatusPill(
-                        status = book.book.status,
-                        syncStatus = book.book.syncStatus,
+                    EditBookHeadline(
+                        book = book,
+                        title = title,
+                        authors = authors,
+                        seriesName = seriesName,
+                        seriesIndex = seriesIndex,
                     )
                 }
             }
@@ -1074,29 +1059,12 @@ private fun StackedEditBookScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
-                    Text(
-                        text = title.ifBlank { book.metadata.title },
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = CormorantGaramondFamily,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverAuthorSpacing.dp))
-                    Text(
-                        text = authors.splitValues().firstOrNull()
-                            ?: stringResource(R.string.book_unknown_author),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverStatusSpacing.dp))
-                    StatusPill(
-                        status = book.book.status,
-                        syncStatus = book.book.syncStatus,
+                    EditBookHeadline(
+                        book = book,
+                        title = title,
+                        authors = authors,
+                        seriesName = seriesName,
+                        seriesIndex = seriesIndex,
                     )
                 }
 
@@ -1596,6 +1564,68 @@ private fun EditBookCover(
 private val CoverActionsBottomGap = 6.dp
 
 @Composable
+private fun EditBookHeadline(
+    book: LibraryBook,
+    title: String,
+    authors: String,
+    seriesName: String,
+    seriesIndex: String,
+) {
+    val tuning = LocalVisualTuning.current
+    Text(
+        text = title.ifBlank { book.metadata.title },
+        style = MaterialTheme.typography.titleLarge.copy(
+            fontFamily = CormorantGaramondFamily,
+            fontWeight = FontWeight.SemiBold,
+        ),
+        color = MaterialTheme.colorScheme.onBackground,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+    )
+    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverAuthorSpacing.dp))
+    Text(
+        text = authors.splitValues().firstOrNull()
+            ?: stringResource(R.string.book_unknown_author),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+    val series = seriesHeadline(seriesName, seriesIndex)
+    if (series != null) {
+        Spacer(modifier = Modifier.height(tuning.detailsTabletCoverAuthorSpacing.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Outlined.BookmarkBorder,
+                contentDescription = stringResource(R.string.edit_metadata_field_series),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = series,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverStatusSpacing.dp))
+    StatusPill(
+        status = book.book.status,
+        syncStatus = book.book.syncStatus,
+    )
+}
+
+// Same "Series #2" form as the library list.
+internal fun seriesHeadline(seriesName: String, seriesIndex: String): String? {
+    val name = seriesName.trim().takeIf { it.isNotEmpty() } ?: return null
+    val index = seriesIndex.trim().takeIf { it.isNotEmpty() } ?: return name
+    return "$name #$index"
+}
+
+@Composable
 private fun CoverActions(
     aiCapabilities: AiCapabilities,
     onReplaceCover: () -> Unit,
@@ -1603,27 +1633,48 @@ private fun CoverActions(
     modifier: Modifier = Modifier,
 ) {
     val tuning = LocalVisualTuning.current
-    Row(
+    // Side by side when both labels fit at equal widths, otherwise one full-width button per row,
+    // so long translations and large font sizes never cut the label off.
+    Layout(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(tuning.detailsTabletCoverButtonSpacing.dp),
-    ) {
-        CoverActionButton(
-            icon = Icons.Outlined.Image,
-            label = stringResource(R.string.details_action_replace_cover),
-            borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
-            onClick = onReplaceCover,
-            modifier = Modifier.weight(1f),
-        )
-        if (aiCapabilities.hasCoverTools) {
+        content = {
             CoverActionButton(
-                icon = Icons.Outlined.AutoAwesome,
-                label = stringResource(
-                    if (aiCapabilities.canGenerateCovers) R.string.details_action_generate_cover else R.string.details_action_find_cover,
-                ),
-                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
-                onClick = onGenerateCoverClick,
-                modifier = Modifier.weight(1f),
+                icon = Icons.Outlined.Image,
+                label = stringResource(R.string.details_action_replace_cover),
+                borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
+                onClick = onReplaceCover,
             )
+            if (aiCapabilities.hasCoverTools) {
+                CoverActionButton(
+                    icon = Icons.Outlined.AutoAwesome,
+                    label = stringResource(
+                        if (aiCapabilities.canGenerateCovers) R.string.details_action_generate_cover else R.string.details_action_find_cover,
+                    ),
+                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
+                    onClick = onGenerateCoverClick,
+                )
+            }
+        },
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val gap = tuning.detailsTabletCoverButtonSpacing.dp.roundToPx()
+        val count = measurables.size
+        val sharedWidth = (width - gap * (count - 1)) / count
+        val sideBySide = measurables.all { it.maxIntrinsicWidth(constraints.maxHeight) <= sharedWidth }
+        val itemWidth = if (sideBySide) sharedWidth else width
+        val placeables = measurables.map { it.measure(Constraints.fixedWidth(itemWidth)) }
+        val height = if (sideBySide) {
+            placeables.maxOf { it.height }
+        } else {
+            placeables.sumOf { it.height } + gap * (count - 1)
+        }
+        layout(width, height) {
+            var x = 0
+            var y = 0
+            placeables.forEach { placeable ->
+                placeable.placeRelative(x, y)
+                if (sideBySide) x += itemWidth + gap else y += placeable.height + gap
+            }
         }
     }
 }
