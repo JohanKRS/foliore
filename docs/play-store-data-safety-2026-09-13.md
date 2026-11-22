@@ -2,6 +2,16 @@
 
 Revisão delimitada em **13/09/2026**. Pacote `com.foliore.android`; responsável público confirmado pelo proprietário: **JohanKRS**. Proposta para revisão e preenchimento do Play Console, não declaração de que o formulário foi enviado ou aprovado. Nenhum código ou configuração do Console foi alterado nesta revisão.
 
+## Atualização de 21/11/2026: app gratuito, sem Billing, com login opcional do ChatGPT
+
+Esta seção prevalece sobre o restante do documento onde houver conflito. Ela descreve a mudança no código; o formulário do Console ainda precisa ser revisado e reenviado pelo proprietário.
+
+- **Billing removido.** Sem `com.android.billingclient:billing`, o app deixa de receber recibos e de enviar ao Google os diagnósticos e o `billingClientSessionId` do SDK. Remover **Histórico de compras** e **Diagnóstico**. Em **Dispositivo ou outros IDs**, permanecem o UUID de instalação da sincronização e o identificador aleatório de instalação enviado à OpenAI no login com ChatGPT (`ext_agent_host_id`), ambos opcionais. Conferir de novo no APK final se nenhuma outra dependência trouxe o transporte CCT (`catalog.json` não lista mais `datatransport` nem `firebase`).
+- **Acesso ao app.** Não existe mais limite de 50 livros. Continuam com requisitos adicionais só Drive, Gmail/SMTP/Kindle e IA. Para a revisão, a IA pode ser testada com uma chave de API; o login com ChatGPT exige uma conta Plus ou Pro.
+- **Login com ChatGPT (opcional).** O login acontece no navegador, na página da OpenAI, com OAuth e PKCE e redirecionamento para `127.0.0.1` no próprio aparelho. O app guarda localmente, com Keystore, os tokens, o e-mail, o nome e o identificador da conta e a lista de modelos. Os pedidos de IA vão direto à OpenAI com `store=false`. Declarar em **IDs de usuários** a conta ChatGPT (e-mail e identificador recebidos no ID token) e manter em **Outros conteúdos gerados pelo usuário** os prompts e metadados enviados. Não há conta Foliore: **Criação de conta no app** continua **Não**.
+- **Busca de capas.** Com ChatGPT ou chave de API, o app usa a pesquisa na web da OpenAI e baixa as imagens diretamente dos sites indicados, expondo o IP a esses sites. Não envia imagem nem EPUB.
+- **Serviço em primeiro plano.** `ChatGptSignInForegroundService` usa o tipo `shortService` só enquanto o login está aberto no navegador, para o Android não congelar o app antes do redirecionamento. Declarar no Console em **Serviços em primeiro plano**.
+
 ## Resultado para o Console
 
 - **Coleta ou compartilhamento dos tipos de dados exigidos: Sim.** Os fluxos opcionais também transmitem dados. A ausência de backend para a biblioteca e a verificação local da compra não justificam responder “Não”.

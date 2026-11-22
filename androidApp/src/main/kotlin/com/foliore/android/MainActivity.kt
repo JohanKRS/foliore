@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                     VisualTuningHost {
                         val factory = remember {
                             LibraryViewModelFactory(
-                                billingRepository = appContainer.billingRepository,
+                                chatGptAuthService = appContainer.chatGptAuthService,
                                 libraryRepository = appContainer.libraryRepository,
                                 epubImporter = appContainer.epubImporter,
                                 bookEditor = appContainer.bookEditor,
@@ -130,11 +130,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        appContainer.billingRepository.refresh()
     }
 
     override fun onNewIntent(intent: Intent) {

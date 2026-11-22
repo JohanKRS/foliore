@@ -22,7 +22,6 @@
     <string name="about_font_credit">Cormorant GaramondはChristian Thalmann（Catharsis Fonts）と貢献者によるフォントです。アプリに同梱されています。</string>
     <string name="about_icons_credit">GoogleのMaterial IconsをJetpack Composeライブラリ経由で使用しています。その他のテキストにはシステムフォントを使用します。</string>
     <string name="about_drive">Googleアカウントとの接続と、Folioreの隠しフォルダへの任意の同期に使用します。Google Play services SDKには独自の規約があり、オープンソースコンポーネントも含まれます。</string>
-    <string name="about_openai">設定したキーを使ってメタデータと表紙を任意で生成します。OpenAIのサービス規約が適用されます。</string>
     <string name="about_kindle">設定したサーバーからメールでEPUBを送信します。KindleはAmazonの商標です。このアプリにはKindle SDKは含まれていません。</string>
     <string name="about_independent">名称と商標は各権利者に帰属します。Folioreはこれらのサービスから独立しています。</string>
     <string name="about_load_error">クレジットを開けませんでした。</string>

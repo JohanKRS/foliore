@@ -32,7 +32,7 @@ def supplemental(title, path):
 
 apache = supplemental("Apache License 2.0", "licenses/texts/apache-2.0.txt")
 groups = {p["id"]: {k: p[k] for k in ("id", "name", "url", "license")} | {
-    "coordinates": [], "notices": [] if p["id"] in ("google-play", "play-billing", "jsoup") else [apache],
+    "coordinates": [], "notices": [] if p["id"] in ("google-play", "jsoup") else [apache],
 } for p in PROJECTS}
 
 
@@ -55,7 +55,7 @@ for line in sorted(INVENTORY.read_text().splitlines()):
     if not license_names:
         # This POM inherits Apache-2.0 from its Guava parent; reviewed explicitly.
         assert coordinate == "com.google.guava:listenablefuture:1.0", f"Missing POM license: {coordinate}"
-    elif group["id"] in ("google-play", "play-billing"):
+    elif group["id"] == "google-play":
         assert all("Android Software Development Kit License" == n for n in license_names), (coordinate, license_names)
     elif group["id"] == "jsoup":
         assert all("MIT" in n for n in license_names), license_names

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.activity.compose.BackHandler
@@ -93,7 +94,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.text.HtmlCompat
 import coil.compose.AsyncImage
 import com.foliore.android.R
+import com.foliore.android.ai.AiCapabilities
 import com.foliore.android.ai.AiCoverPromptRecord
+import com.foliore.android.ai.AiProvider
 import com.foliore.android.ai.AiCoverStyleRequest
 import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.metadata.MetadataLookupCandidate
@@ -127,7 +130,7 @@ import java.io.File
 fun EditMetadataScreen(
     book: LibraryBook?,
     readingStarted: Boolean,
-    hasOpenAiApiKey: Boolean,
+    aiCapabilities: AiCapabilities,
     aiCoverPromptRecords: List<AiCoverPromptRecord>,
     onBack: () -> Unit,
     onSave: (BookMetadataDraft) -> Unit,
@@ -147,6 +150,8 @@ fun EditMetadataScreen(
         (List<AiGeneratedCoverOption>) -> Unit,
     ) -> Unit,
     onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
+    onFindCovers: (BookMetadataDraft, (List<AiGeneratedCoverOption>) -> Unit) -> Unit,
+    onUseFoundCover: (String, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
     onOriginalFiles: () -> Unit,
     onDelete: () -> Unit,
@@ -179,6 +184,7 @@ fun EditMetadataScreen(
         return
     }
 
+    val aiTextAvailable = aiCapabilities.canFillText
     val displayLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     var languageAnchor by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.language) }
     var identifiers by rememberSaveable(book.book.id) { mutableStateOf(book.metadata.identifiers) }
@@ -208,6 +214,8 @@ fun EditMetadataScreen(
     var coverOptions by remember(book.book.id) { mutableStateOf<List<AiGeneratedCoverOption>>(emptyList()) }
     var selectedCoverOptionId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
     var coverGenerationRound by rememberSaveable(book.book.id) { mutableStateOf(0) }
+    var foundCoverOptions by remember(book.book.id) { mutableStateOf<List<AiGeneratedCoverOption>>(emptyList()) }
+    var selectedFoundCoverId by rememberSaveable(book.book.id) { mutableStateOf<String?>(null) }
     val defaultMetadataPrompt = stringResource(R.string.ai_metadata_default_prompt)
     val defaultCoverPrompt = stringResource(R.string.ai_cover_default_prompt)
     var metadataPrompt by rememberSaveable(book.book.id) { mutableStateOf(defaultMetadataPrompt) }
@@ -219,6 +227,7 @@ fun EditMetadataScreen(
     val isLookingUpMetadata = isLoading && progress?.phase == SyncProgressPhase.LOOKING_UP_METADATA
     val isGeneratingMetadata = isLoading && progress?.phase == SyncProgressPhase.GENERATING_METADATA
     val isGeneratingCovers = isLoading && progress?.phase == SyncProgressPhase.GENERATING_COVERS
+    val isFindingCovers = isLoading && progress?.phase == SyncProgressPhase.FINDING_COVERS
     val currentDraft = {
         BookMetadataDraft(
             title = title,
@@ -353,13 +362,13 @@ fun EditMetadataScreen(
         val externalTopChromeContent: TopChromeContent = remember(
             hazeState,
             tabletWorkspace,
-            hasOpenAiApiKey,
+            aiTextAvailable,
         ) {
             { chromeModifier ->
                 EditMetadataTopChromeOverlay(
                     hazeState = hazeState,
                     tabletWorkspace = tabletWorkspace,
-                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    aiTextAvailable = aiTextAvailable,
                     onBack = { currentOnBack() },
                     onAutofillClick = { currentOnAutofillClick() },
                     modifier = chromeModifier,
@@ -446,7 +455,8 @@ fun EditMetadataScreen(
                 onBack = guardedBack,
                 onReplaceCover = onReplaceCover,
                 onGenerateCoverClick = { showCoverGenerationDialog = true },
-                hasOpenAiApiKey = hasOpenAiApiKey,
+                aiTextAvailable = aiTextAvailable,
+                aiCapabilities = aiCapabilities,
                 onAutofillClick = { lookupSession++; lookupCandidates = emptyList(); selectedLookupCandidateId = null; showMetadataAutofillDialog = true },
             )
         } else {
@@ -456,7 +466,8 @@ fun EditMetadataScreen(
                 topChromeInset = topChromeInset,
                 bottomChromeInset = bottomChromeInset,
                 showTopChrome = showTopChrome,
-                hasOpenAiApiKey = hasOpenAiApiKey,
+                aiTextAvailable = aiTextAvailable,
+                aiCapabilities = aiCapabilities,
                 title = title,
                 onTitleChange = {
                     title = it
@@ -513,7 +524,8 @@ fun EditMetadataScreen(
             prompt = metadataPrompt,
             onPromptChange = { metadataPrompt = it },
             preview = metadataPreview,
-            hasOpenAiApiKey = hasOpenAiApiKey,
+            aiTextAvailable = aiTextAvailable,
+            usesChatGptPlan = aiCapabilities.textProvider == AiProvider.CHATGPT,
             lookupCandidates = lookupCandidates,
             selectedLookupCandidateId = selectedLookupCandidateId,
             isLookingUpMetadata = isLookingUpMetadata,
@@ -537,7 +549,7 @@ fun EditMetadataScreen(
             },
             onGeneratePreview = {
                 if (!isGeneratingMetadata) {
-                    if (hasOpenAiApiKey) {
+                    if (aiTextAvailable) {
                         onGenerateMetadataPreview(metadataPrompt, currentDraft()) { previewDraft ->
                             metadataPreview = previewDraft.toAutofillPreview()
                         }
@@ -562,6 +574,26 @@ fun EditMetadataScreen(
 
     if (showCoverGenerationDialog) {
         CoverGenerationDialog(
+            canGenerate = aiCapabilities.canGenerateCovers,
+            canFind = aiCapabilities.canFindCovers,
+            usesChatGptPlan = aiCapabilities.textProvider == AiProvider.CHATGPT,
+            foundOptions = foundCoverOptions,
+            selectedFoundOptionId = selectedFoundCoverId,
+            isFinding = isFindingCovers,
+            onFind = {
+                if (!isFindingCovers) {
+                    onFindCovers(currentDraft()) { found ->
+                        foundCoverOptions = found
+                        selectedFoundCoverId = found.firstOrNull()?.id
+                    }
+                }
+            },
+            onSelectFoundOption = { selectedFoundCoverId = it },
+            onUseFound = {
+                foundCoverOptions.firstOrNull { it.id == selectedFoundCoverId }?.imagePath?.let { path ->
+                    onUseFoundCover(path) { showCoverGenerationDialog = false }
+                }
+            },
             prompt = coverPrompt,
             onPromptChange = { coverPrompt = it },
             seriesPromptReference = seriesPromptReference,
@@ -571,7 +603,7 @@ fun EditMetadataScreen(
             progress = progress,
             onGenerate = {
                 if (!isGeneratingCovers) {
-                    if (!hasOpenAiApiKey) {
+                    if (!aiCapabilities.canGenerateCovers) {
                         onCoverGenerationUnavailable()
                     } else {
                         val styles = listOf(
@@ -670,7 +702,8 @@ private fun TabletEditBookScreen(
     onBack: () -> Unit,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
-    hasOpenAiApiKey: Boolean,
+    aiTextAvailable: Boolean,
+    aiCapabilities: AiCapabilities,
     onAutofillClick: () -> Unit,
 ) {
     val tuning = LocalVisualTuning.current
@@ -715,7 +748,7 @@ private fun TabletEditBookScreen(
                     )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
                     CoverActions(
-                        hasOpenAiApiKey = hasOpenAiApiKey,
+                        aiCapabilities = aiCapabilities,
                         onReplaceCover = onReplaceCover,
                         onGenerateCoverClick = onGenerateCoverClick,
                     )
@@ -764,7 +797,7 @@ private fun TabletEditBookScreen(
         ) {
             if (showTopChrome) {
                 TabletRightHeader(
-                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    aiTextAvailable = aiTextAvailable,
                     onAutofillClick = onAutofillClick,
                 )
                 EditorialDivider(modifier = Modifier.fillMaxWidth(), horizontalPadding = 0.dp)
@@ -931,7 +964,8 @@ private fun StackedEditBookScreen(
     topChromeInset: Dp,
     bottomChromeInset: Dp,
     showTopChrome: Boolean,
-    hasOpenAiApiKey: Boolean,
+    aiTextAvailable: Boolean,
+    aiCapabilities: AiCapabilities,
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
@@ -1010,7 +1044,7 @@ private fun StackedEditBookScreen(
                     )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
                     CoverActions(
-                        hasOpenAiApiKey = hasOpenAiApiKey,
+                        aiCapabilities = aiCapabilities,
                         onReplaceCover = onReplaceCover,
                         onGenerateCoverClick = onGenerateCoverClick,
                     )
@@ -1043,7 +1077,7 @@ private fun StackedEditBookScreen(
                 Spacer(modifier = Modifier.height(tuning.detailsMobileBottomPadding.dp))
 
                 TabletRightHeader(
-                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    aiTextAvailable = aiTextAvailable,
                     onAutofillClick = onAutofillClick,
                 )
                 EditorialDivider(modifier = Modifier.fillMaxWidth(), horizontalPadding = 0.dp)
@@ -1209,7 +1243,7 @@ private fun StackedEditBookScreen(
 fun EditMetadataTopChromeOverlay(
     hazeState: HazeState,
     tabletWorkspace: Boolean,
-    hasOpenAiApiKey: Boolean,
+    aiTextAvailable: Boolean,
     onBack: () -> Unit,
     onAutofillClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1218,7 +1252,7 @@ fun EditMetadataTopChromeOverlay(
     if (tabletWorkspace) {
         TabletEditTopChrome(
             hazeState = hazeState,
-            hasOpenAiApiKey = hasOpenAiApiKey,
+            aiTextAvailable = aiTextAvailable,
             onBack = onBack,
             onAutofillClick = onAutofillClick,
             modifier = modifier,
@@ -1237,7 +1271,7 @@ fun EditMetadataTopChromeOverlay(
 @Composable
 private fun TabletEditTopChrome(
     hazeState: HazeState,
-    hasOpenAiApiKey: Boolean,
+    aiTextAvailable: Boolean,
     onBack: () -> Unit,
     onAutofillClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1297,7 +1331,7 @@ private fun TabletEditTopChrome(
                     .fillMaxWidth(),
             ) {
                 TabletRightHeader(
-                    hasOpenAiApiKey = hasOpenAiApiKey,
+                    aiTextAvailable = aiTextAvailable,
                     onAutofillClick = onAutofillClick,
                     modifier = Modifier.padding(horizontal = tuning.detailsPaneHorizontalPadding.dp),
                 )
@@ -1422,7 +1456,7 @@ private fun TabletLeftTopBar(onBack: () -> Unit) {
 
 @Composable
 private fun TabletRightHeader(
-    hasOpenAiApiKey: Boolean,
+    aiTextAvailable: Boolean,
     onAutofillClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1458,7 +1492,7 @@ private fun TabletRightHeader(
                 tint = actionColor,
             )
             Text(
-                text = if (hasOpenAiApiKey) {
+                text = if (aiTextAvailable) {
                     stringResource(R.string.edit_metadata_autofill)
                 } else {
                     stringResource(R.string.metadata_lookup_button)
@@ -1528,7 +1562,7 @@ private fun EditBookCover(
 
 @Composable
 private fun CoverActions(
-    hasOpenAiApiKey: Boolean,
+    aiCapabilities: AiCapabilities,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
 ) {
@@ -1544,10 +1578,12 @@ private fun CoverActions(
             onClick = onReplaceCover,
             modifier = Modifier.weight(1f),
         )
-        if (hasOpenAiApiKey) {
+        if (aiCapabilities.hasCoverTools) {
             CoverActionButton(
                 icon = Icons.Outlined.AutoAwesome,
-                label = stringResource(R.string.details_action_generate_cover),
+                label = stringResource(
+                    if (aiCapabilities.canGenerateCovers) R.string.details_action_generate_cover else R.string.details_action_find_cover,
+                ),
                 borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
                 onClick = onGenerateCoverClick,
                 modifier = Modifier.weight(1f),
@@ -1853,7 +1889,8 @@ private fun MetadataAutofillDialog(
     prompt: String,
     onPromptChange: (String) -> Unit,
     preview: MetadataAutofillPreview?,
-    hasOpenAiApiKey: Boolean,
+    aiTextAvailable: Boolean,
+    usesChatGptPlan: Boolean,
     lookupCandidates: List<MetadataLookupCandidate>,
     selectedLookupCandidateId: String?,
     isLookingUpMetadata: Boolean,
@@ -1871,10 +1908,10 @@ private fun MetadataAutofillDialog(
     var selectedFields by rememberSaveable { mutableStateOf(MetadataField.defaultSelection) }
     LaunchedEffect(Unit) { onLookupMetadata() }
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
-    var selectedSourceName by rememberSaveable(hasOpenAiApiKey) {
+    var selectedSourceName by rememberSaveable(aiTextAvailable) {
         mutableStateOf(AutofillSource.OPEN_METADATA.name)
     }
-    val selectedSource = if (hasOpenAiApiKey) {
+    val selectedSource = if (aiTextAvailable) {
         runCatching { AutofillSource.valueOf(selectedSourceName) }
             .getOrDefault(AutofillSource.OPEN_METADATA)
     } else {
@@ -1910,7 +1947,7 @@ private fun MetadataAutofillDialog(
                         .padding(horizontal = 24.dp, vertical = 22.dp),
                 ) {
                     Text(
-                        text = if (hasOpenAiApiKey) {
+                        text = if (aiTextAvailable) {
                             stringResource(R.string.ai_metadata_dialog_title)
                         } else {
                             stringResource(R.string.metadata_lookup_button)
@@ -1922,7 +1959,7 @@ private fun MetadataAutofillDialog(
                     EditorialDivider(modifier = Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    if (hasOpenAiApiKey) {
+                    if (aiTextAvailable) {
                         AutofillSourceSelector(
                             selectedSource = selectedSource,
                             onSelectSource = { selectedSourceName = it.name },
@@ -2020,6 +2057,7 @@ private fun MetadataAutofillDialog(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                                if (usesChatGptPlan) ChatGptPlanIndicator()
                                 Spacer(Modifier.height(12.dp))
                                 PromptEditorToggle(
                                     expanded = showPromptEditor,
@@ -2413,8 +2451,19 @@ private fun PreviewValueRow(
     }
 }
 
+private enum class CoverDialogMode { FIND, GENERATE }
+
 @Composable
 private fun CoverGenerationDialog(
+    canGenerate: Boolean,
+    canFind: Boolean,
+    usesChatGptPlan: Boolean,
+    foundOptions: List<AiGeneratedCoverOption>,
+    selectedFoundOptionId: String?,
+    isFinding: Boolean,
+    onFind: () -> Unit,
+    onSelectFoundOption: (String) -> Unit,
+    onUseFound: () -> Unit,
     prompt: String,
     onPromptChange: (String) -> Unit,
     seriesPromptReference: AiCoverPromptRecord?,
@@ -2430,6 +2479,15 @@ private fun CoverGenerationDialog(
     var showReport by remember { mutableStateOf(false) }
     if (showReport) com.foliore.android.ui.library.ContentReportDialog { showReport = false }
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
+    var modeName by rememberSaveable {
+        mutableStateOf(if (canGenerate) CoverDialogMode.GENERATE.name else CoverDialogMode.FIND.name)
+    }
+    val mode = when {
+        !canFind -> CoverDialogMode.GENERATE
+        !canGenerate -> CoverDialogMode.FIND
+        else -> CoverDialogMode.valueOf(modeName)
+    }
+    val isBusy = isGenerating || isFinding
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -2453,7 +2511,9 @@ private fun CoverGenerationDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = stringResource(R.string.ai_cover_dialog_title),
+                        text = stringResource(
+                            if (mode == CoverDialogMode.FIND) R.string.ai_cover_find_dialog_title else R.string.ai_cover_dialog_title,
+                        ),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -2468,7 +2528,28 @@ private fun CoverGenerationDialog(
                 EditorialDivider(modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(18.dp))
 
-                if (isGenerating) {
+                if (canFind && canGenerate) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        AutofillSourceButton(
+                            label = stringResource(R.string.ai_cover_mode_find),
+                            selected = mode == CoverDialogMode.FIND,
+                            onClick = { if (!isBusy) modeName = CoverDialogMode.FIND.name },
+                            modifier = Modifier.weight(1f),
+                        )
+                        AutofillSourceButton(
+                            label = stringResource(R.string.ai_cover_mode_generate),
+                            selected = mode == CoverDialogMode.GENERATE,
+                            onClick = { if (!isBusy) modeName = CoverDialogMode.GENERATE.name },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
+
+                if (isBusy) {
                     AiDialogProgress(
                         progress = progress,
                         modifier = Modifier.fillMaxWidth(),
@@ -2478,133 +2559,254 @@ private fun CoverGenerationDialog(
 
                 Text(stringResource(R.string.ai_data_disclosure), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(12.dp))
-                androidx.compose.material3.TextButton(onClick = { showReport = true }) {
-                    Text(stringResource(R.string.report_ai_content))
-                }
-                PromptEditorToggle(
-                    expanded = showPromptEditor,
-                    onToggle = { showPromptEditor = !showPromptEditor },
-                )
-                if (showPromptEditor) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = prompt,
-                        onValueChange = onPromptChange,
-                        label = { Text(text = stringResource(R.string.ai_cover_prompt_label)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 5,
-                        singleLine = false,
-                        textStyle = MaterialTheme.typography.bodyMedium,
-                        shape = RoundedCornerShape(5.dp),
-                    )
-                }
-                if (seriesPromptReference != null) {
-                    Spacer(modifier = Modifier.height(10.dp))
+                if (mode == CoverDialogMode.FIND) {
+                    if (usesChatGptPlan) ChatGptPlanIndicator()
+                    Spacer(Modifier.height(10.dp))
                     Text(
-                        text = stringResource(
-                            R.string.ai_cover_series_reference,
-                            seriesPromptReference.title,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
+                        text = stringResource(R.string.ai_cover_find_description),
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                } else {
+                    Spacer(Modifier.height(12.dp))
+                    androidx.compose.material3.TextButton(onClick = { showReport = true }) {
+                        Text(stringResource(R.string.report_ai_content))
+                    }
+                    PromptEditorToggle(
+                        expanded = showPromptEditor,
+                        onToggle = { showPromptEditor = !showPromptEditor },
+                    )
+                    if (showPromptEditor) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = prompt,
+                            onValueChange = onPromptChange,
+                            label = { Text(text = stringResource(R.string.ai_cover_prompt_label)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 5,
+                            singleLine = false,
+                            textStyle = MaterialTheme.typography.bodyMedium,
+                            shape = RoundedCornerShape(5.dp),
+                        )
+                    }
+                    if (seriesPromptReference != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = stringResource(
+                                R.string.ai_cover_series_reference,
+                                seriesPromptReference.title,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val pendingStyle = if (isGenerating) {
-                        stringResource(R.string.ai_cover_option_generating)
-                    } else {
-                        stringResource(R.string.ai_cover_option_pending)
-                    }
-                    val displayedOptions = if (options.isEmpty()) {
-                        listOf(
-                            AiGeneratedCoverOption(
-                                id = "pending-a",
-                                label = stringResource(R.string.ai_cover_option_a),
-                                style = pendingStyle,
-                                prompt = prompt,
-                                imagePath = null,
-                            ),
-                            AiGeneratedCoverOption(
-                                id = "pending-b",
-                                label = stringResource(R.string.ai_cover_option_b),
-                                style = pendingStyle,
-                                prompt = prompt,
-                                imagePath = null,
-                            ),
-                        )
-                    } else {
-                        options
-                    }
-                    if (maxWidth >= 520.dp) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        ) {
-                            displayedOptions.forEach { option ->
-                                CoverOptionCard(
-                                    option = option,
-                                    selected = selectedOptionId == option.id,
-                                    enabled = options.isNotEmpty(),
-                                    onClick = { onSelectOption(option.id) },
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        }
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                            displayedOptions.forEach { option ->
-                                CoverOptionCard(
-                                    option = option,
-                                    selected = selectedOptionId == option.id,
-                                    enabled = options.isNotEmpty(),
-                                    onClick = { onSelectOption(option.id) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
-                        }
-                    }
+                if (mode == CoverDialogMode.FIND) {
+                    FoundCoverGrid(
+                        options = foundOptions,
+                        selectedOptionId = selectedFoundOptionId,
+                        isFinding = isFinding,
+                        onSelectOption = onSelectFoundOption,
+                    )
+                } else {
+                    GeneratedCoverRow(
+                        prompt = prompt,
+                        options = options,
+                        selectedOptionId = selectedOptionId,
+                        isGenerating = isGenerating,
+                        onSelectOption = onSelectOption,
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
-                Row(
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text(text = stringResource(R.string.edit_metadata_cancel))
                     }
-                    OutlinedButton(
-                        onClick = onGenerate,
-                        enabled = !isGenerating,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.AutoAwesome,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isGenerating) {
-                                stringResource(R.string.ai_cover_generating)
-                            } else if (options.isEmpty()) {
-                                stringResource(R.string.ai_cover_generate)
-                            } else {
-                                stringResource(R.string.ai_cover_regenerate)
-                            },
-                        )
-                    }
-                    Button(
-                        onClick = onUseSelected,
-                        enabled = selectedOptionId != null && !isGenerating,
-                    ) {
-                        Text(text = stringResource(R.string.ai_cover_use_selected))
+                    if (mode == CoverDialogMode.FIND) {
+                        OutlinedButton(onClick = onFind, enabled = !isBusy) {
+                            Icon(
+                                imageVector = Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = when {
+                                    isFinding -> stringResource(R.string.ai_cover_finding)
+                                    foundOptions.isEmpty() -> stringResource(R.string.ai_cover_find)
+                                    else -> stringResource(R.string.ai_cover_find_again)
+                                },
+                            )
+                        }
+                        Button(
+                            onClick = onUseFound,
+                            enabled = selectedFoundOptionId != null && foundOptions.isNotEmpty() && !isBusy,
+                        ) {
+                            Text(text = stringResource(R.string.ai_cover_use_selected))
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = onGenerate,
+                            enabled = !isBusy,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.AutoAwesome,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isGenerating) {
+                                    stringResource(R.string.ai_cover_generating)
+                                } else if (options.isEmpty()) {
+                                    stringResource(R.string.ai_cover_generate)
+                                } else {
+                                    stringResource(R.string.ai_cover_regenerate)
+                                },
+                            )
+                        }
+                        Button(
+                            onClick = onUseSelected,
+                            enabled = selectedOptionId != null && !isBusy,
+                        ) {
+                            Text(text = stringResource(R.string.ai_cover_use_selected))
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GeneratedCoverRow(
+    prompt: String,
+    options: List<AiGeneratedCoverOption>,
+    selectedOptionId: String?,
+    isGenerating: Boolean,
+    onSelectOption: (String) -> Unit,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val pendingStyle = if (isGenerating) {
+            stringResource(R.string.ai_cover_option_generating)
+        } else {
+            stringResource(R.string.ai_cover_option_pending)
+        }
+        val displayedOptions = if (options.isEmpty()) {
+            listOf(
+                AiGeneratedCoverOption(
+                    id = "pending-a",
+                    label = stringResource(R.string.ai_cover_option_a),
+                    style = pendingStyle,
+                    prompt = prompt,
+                    imagePath = null,
+                ),
+                AiGeneratedCoverOption(
+                    id = "pending-b",
+                    label = stringResource(R.string.ai_cover_option_b),
+                    style = pendingStyle,
+                    prompt = prompt,
+                    imagePath = null,
+                ),
+            )
+        } else {
+            options
+        }
+        if (maxWidth >= 520.dp) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                displayedOptions.forEach { option ->
+                    CoverOptionCard(
+                        option = option,
+                        selected = selectedOptionId == option.id,
+                        enabled = options.isNotEmpty(),
+                        onClick = { onSelectOption(option.id) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                displayedOptions.forEach { option ->
+                    CoverOptionCard(
+                        option = option,
+                        selected = selectedOptionId == option.id,
+                        enabled = options.isNotEmpty(),
+                        onClick = { onSelectOption(option.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FoundCoverGrid(
+    options: List<AiGeneratedCoverOption>,
+    selectedOptionId: String?,
+    isFinding: Boolean,
+    onSelectOption: (String) -> Unit,
+) {
+    if (options.isEmpty()) {
+        if (!isFinding) {
+            Text(
+                text = stringResource(R.string.ai_cover_find_empty),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        return
+    }
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val columns = if (maxWidth >= 520.dp) 3 else 2
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            options.chunked(columns).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    row.forEach { option ->
+                        CoverOptionCard(
+                            option = option,
+                            selected = selectedOptionId == option.id,
+                            enabled = true,
+                            onClick = { onSelectOption(option.id) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(columns - row.size) { Spacer(modifier = Modifier.weight(1f)) }
+                }
+            }
+        }
+    }
+}
+
+/** Shown wherever a request uses the person's ChatGPT plan, as the plan usage guidelines ask. */
+@Composable
+private fun ChatGptPlanIndicator() {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.chatgpt_using_plan),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        TextButton(onClick = { runCatching { uriHandler.openUri(com.foliore.android.ai.ChatGptOAuth.USAGE_SETTINGS_URL) } }) {
+            Text(stringResource(R.string.chatgpt_manage_usage), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -2691,13 +2893,15 @@ private fun CoverOptionCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Text(
-            text = option.style,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (!option.isFound) {
+            Text(
+                text = option.style,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

@@ -29,7 +29,6 @@ class AndroidEpubImporter(
     context: Context,
     private val libraryRepository: LibraryRepository,
     private val deviceIdProvider: DeviceIdProvider,
-    private val isUnlimited: () -> Boolean,
     private val parser: EpubParser = EpubParser(),
     private val coverImageWriter: CoverImageWriter = CoverImageWriter(),
 ) {
@@ -179,11 +178,6 @@ class AndroidEpubImporter(
         libraryRepository.findBookIdByHash(copied.sha256)?.let { existing ->
             copied.delete()
             return@synchronized EpubImportResult.Duplicate(existing)
-        }
-        val replacing = replacingBookId?.let { libraryRepository.getBook(it) != null } == true
-        if (!com.foliore.android.billing.LibraryLimit.canAdd(libraryRepository.bookCount(), isUnlimited(), replacing)) {
-            copied.delete()
-            return@synchronized EpubImportResult.LimitReached
         }
         val bookId = UUID.randomUUID().toString()
         val bookDir = File(appContext.filesDir, "books/$bookId").apply { mkdirs() }

@@ -43,9 +43,9 @@ fun SettingsRoute(
     onAppLanguageChange: (AppLanguage) -> Unit,
     shortcut: SettingsShortcut? = null,
     onShortcutConsumed: () -> Unit = {},
+    topChromeInset: Dp = 0.dp,
     bottomChromeInset: Dp = 0.dp,
 ) {
-    val billingState by viewModel.billingState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
@@ -130,17 +130,18 @@ fun SettingsRoute(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
     ) { paddingValues ->
         SettingsScreen(
-            billingState = billingState,
             bookCount = state.books.size,
-            onRefreshPurchases = viewModel::refreshPurchases,
-            onRestorePurchase = viewModel::restorePurchase,
-            onPurchaseUnlimited = { context.findActivity()?.let(viewModel::purchaseUnlimited) },
+            topChromeInset = topChromeInset,
             bottomChromeInset = bottomChromeInset,
             launcherIcon = launcherIcon,
             onLauncherIconChange = onLauncherIconChange,
             themeMode = themeMode,
             appLanguage = appLanguage,
-            hasOpenAiApiKey = state.hasOpenAiApiKey,
+            aiSettings = AiSettingsState(
+                hasOpenAiApiKey = state.hasOpenAiApiKey,
+                chatGptAccount = state.chatGptAccount,
+                isChatGptSigningIn = state.isChatGptSigningIn,
+            ),
             kindleEmailSettings = state.kindleEmailSettings,
             syncProvider = state.syncProvider,
             syncFolderLabel = state.syncFolderLabel,
@@ -156,6 +157,16 @@ fun SettingsRoute(
             onChooseAppLanguage = { showLanguagePicker = true },
             onOpenAiApiKeySave = viewModel::saveOpenAiApiKey,
             onOpenAiApiKeyClear = viewModel::clearOpenAiApiKey,
+            onChatGptSignIn = {
+                viewModel.startChatGptSignIn { uri ->
+                    runCatching {
+                        context.startActivity(com.foliore.android.ai.ChatGptAuthService.browserIntent(uri))
+                    }.isSuccess
+                }
+            },
+            onChatGptCancelSignIn = viewModel::cancelChatGptSignIn,
+            onChatGptSignOut = viewModel::signOutChatGpt,
+            onChatGptModelSelect = viewModel::selectChatGptModel,
             onKindleEmailSave = viewModel::saveKindleEmail,
             onKindleEmailClear = viewModel::clearKindleEmail,
             onKindleSmtpSave = viewModel::saveKindleSmtpSettings,
@@ -210,6 +221,37 @@ fun SettingsRoute(
                 )
             }
         }
+    }
+
+    if (state.showChatGptWelcome) {
+        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+        AlertDialog(
+            onDismissRequest = viewModel::dismissChatGptWelcome,
+            title = {
+                Text(
+                    text = state.chatGptAccount?.label?.let {
+                        stringResource(R.string.chatgpt_welcome_title_with_account, it)
+                    } ?: stringResource(R.string.chatgpt_welcome_title),
+                )
+            },
+            text = {
+                Text(text = stringResource(R.string.chatgpt_welcome_body))
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::dismissChatGptWelcome) {
+                    Text(text = stringResource(R.string.chatgpt_welcome_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        runCatching { uriHandler.openUri(com.foliore.android.ai.ChatGptOAuth.USAGE_SETTINGS_URL) }
+                    },
+                ) {
+                    Text(text = stringResource(R.string.chatgpt_manage_usage))
+                }
+            },
+        )
     }
 
     if (showSyncFolderGuidance) {

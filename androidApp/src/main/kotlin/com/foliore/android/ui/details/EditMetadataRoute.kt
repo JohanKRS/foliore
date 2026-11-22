@@ -82,7 +82,7 @@ fun EditMetadataRoute(
         EditMetadataScreen(
             book = book,
             readingStarted = (state.readingActivity[bookId]?.fraction ?: 0.0) > 0.0,
-            hasOpenAiApiKey = state.hasOpenAiApiKey,
+            aiCapabilities = state.aiCapabilities,
             aiCoverPromptRecords = state.aiCoverPromptRecords,
             onBack = onBack,
             onSave = { draft ->
@@ -141,6 +141,10 @@ fun EditMetadataRoute(
                     onUpdated = onUpdated,
                 )
             },
+            onFindCovers = { draft, onOptionsReady ->
+                viewModel.findCovers(bookId = bookId, draft = draft, onOptionsReady = onOptionsReady)
+            },
+            onUseFoundCover = { path, onUpdated -> viewModel.useMetadataLookupCover(bookId, path, onUpdated) },
             onReplaceCover = { coverPicker.launch("image/*") },
             onOriginalFiles = { showOriginalFiles = true },
             onDelete = { showDeleteDialog = true },

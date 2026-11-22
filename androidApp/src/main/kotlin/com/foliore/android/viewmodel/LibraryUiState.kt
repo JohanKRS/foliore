@@ -1,7 +1,9 @@
 package com.foliore.android.viewmodel
 
 import com.foliore.android.ai.AiCoverPromptRecord
-import com.foliore.android.ai.AiProviderMode
+import com.foliore.android.ai.AiCapabilities
+import com.foliore.android.ai.ChatGptSignInStatus
+import com.foliore.android.storage.ChatGptAccount
 import com.foliore.android.storage.GoogleDriveBackupStats
 import com.foliore.android.storage.GoogleDriveRemoteLibraryRecovery
 import com.foliore.android.storage.KindleEmailSettings
@@ -10,8 +12,6 @@ import com.foliore.shared.domain.LibraryBook
 
 data class LibraryUiState(
     val books: List<LibraryBook> = emptyList(),
-    val importLimitAvailable: Int? = null,
-    val importLimitSkipped: Int = 0,
     val isImporting: Boolean = false,
     val importProgress: SyncProgress? = null,
     val pendingImportConflicts: List<ImportDuplicateConflict> = emptyList(),
@@ -37,8 +37,10 @@ data class LibraryUiState(
     val isBatchMode: Boolean = false,
     val selectedBookIds: Set<String> = emptySet(),
     val readingActivity: Map<String, BookReadingActivity> = emptyMap(),
-    val aiProviderMode: AiProviderMode = AiProviderMode.DISABLED,
     val hasOpenAiApiKey: Boolean = false,
+    val chatGptAccount: ChatGptAccount? = null,
+    val chatGptSignIn: ChatGptSignInStatus = ChatGptSignInStatus.Idle,
+    val showChatGptWelcome: Boolean = false,
     val aiCoverPromptRecords: List<AiCoverPromptRecord> = emptyList(),
     val kindleBatchReport: com.foliore.android.storage.KindleBatchReport? = null,
     val isGmailConnecting: Boolean = false,
@@ -56,6 +58,12 @@ data class LibraryUiState(
 
     val hasActiveProgress: Boolean
         get() = isSyncing || isImporting || syncProgress != null || importProgress != null
+
+    val aiCapabilities: AiCapabilities
+        get() = AiCapabilities.from(chatGptSignedIn = chatGptAccount != null, hasApiKey = hasOpenAiApiKey)
+
+    val isChatGptSigningIn: Boolean
+        get() = chatGptSignIn == ChatGptSignInStatus.WaitingForBrowser || chatGptSignIn == ChatGptSignInStatus.Completing
 }
 
 /** [fraction] is null when this device has not opened the current file yet. */
@@ -147,6 +155,7 @@ enum class SyncProgressPhase {
     APPLYING_STATUS,
     GENERATING_METADATA,
     GENERATING_COVERS,
+    FINDING_COVERS,
     LOOKING_UP_METADATA,
     SENDING_TO_KINDLE,
 }
@@ -205,6 +214,18 @@ enum class LibraryNoticeType {
     AI_COVER_PROVIDER_REQUIRED,
     AI_COVER_OPTIONS_READY,
     AI_COVER_PROMPT_SAVED,
+    AI_COVERS_FOUND,
+    AI_COVERS_NOT_FOUND,
+    AI_RATE_LIMITED,
+    CHATGPT_SIGNED_IN,
+    CHATGPT_SIGNED_OUT,
+    CHATGPT_SIGN_IN_FAILED,
+    CHATGPT_SIGN_IN_DENIED,
+    CHATGPT_BROWSER_UNAVAILABLE,
+    CHATGPT_SIGN_IN_REQUIRED,
+    CHATGPT_NOT_ELIGIBLE,
+    CHATGPT_USAGE_LIMIT,
+    CHATGPT_UNAVAILABLE,
     KINDLE_EMAIL_SAVED,
     KINDLE_EMAIL_CLEARED,
     KINDLE_EMAIL_INVALID,

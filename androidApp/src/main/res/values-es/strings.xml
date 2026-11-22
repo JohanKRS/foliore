@@ -213,13 +213,9 @@
     <string name="settings_kindle_smtp_password_keep_label">Nueva contraseña o dejar en blanco</string>
     <string name="settings_kindle_smtp_save">Guardar remitente</string>
     <string name="settings_kindle_smtp_clear">Borrar remitente</string>
-    <string name="settings_experimental">Funciones experimentales</string>
-    <string name="settings_experimental_description">OpenAI</string>
-    <string name="settings_experimental_dialog_title">Funciones experimentales</string>
     <string name="settings_metadata_sources">Fuentes abiertas</string>
     <string name="settings_ai">IA</string>
     <string name="settings_ai_openai_api">API de OpenAI</string>
-    <string name="settings_ai_openai_api_description">Se usa para autocompletar con IA y generar portadas. La búsqueda abierta funciona incluso sin clave.</string>
     <string name="settings_sync">Sincronización</string>
     <string name="settings_sync_method">Sincronizar con</string>
     <string name="settings_sync_method_dialog_title">Elegir método de sincronización</string>
@@ -303,8 +299,6 @@
     <string name="ai_notice_settings_updated">Preferencia de IA actualizada.</string>
     <string name="ai_notice_api_key_saved">Clave API guardada en la aplicación.</string>
     <string name="ai_notice_api_key_cleared">Clave API eliminada.</string>
-    <string name="ai_notice_provider_required">Configura una clave API antes de usar la IA.</string>
-    <string name="ai_notice_provider_not_ready">Configura una clave API antes de usar la IA.</string>
     <string name="ai_notice_request_failed">No se pudo completar la solicitud a la IA.</string>
     <string name="ai_notice_metadata_preview_ready">Vista previa de metadatos generada.</string>
     <string name="metadata_lookup_notice_ready">Se encontraron resultados en fuentes abiertas.</string>

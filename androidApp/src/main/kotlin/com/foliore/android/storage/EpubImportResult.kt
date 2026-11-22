@@ -4,7 +4,6 @@ sealed interface EpubImportResult {
     data class Imported(val bookId: String) : EpubImportResult
     data class Duplicate(val existingBookId: String) : EpubImportResult
     data class NeedsReview(val pendingImport: PendingEpubImport) : EpubImportResult
-    data object LimitReached : EpubImportResult
     data class Failed(val reason: ImportFailureReason) : EpubImportResult
 }
 

@@ -47,7 +47,6 @@ class DebugImportReceiver : BroadcastReceiver() {
                                 importer.discard(result.pendingImport)
                                 duplicates += 1
                             }
-                            EpubImportResult.LimitReached,
                             is EpubImportResult.Failed -> failed += 1
                         }
                     }

@@ -116,7 +116,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
             FolioreTheme(themeMode = themeMode.value) {
                 val factory = remember {
                     LibraryViewModelFactory(
-                        billingRepository = appContainer.billingRepository,
+                        chatGptAuthService = appContainer.chatGptAuthService,
                                 libraryRepository = appContainer.libraryRepository,
                         epubImporter = appContainer.epubImporter,
                         bookEditor = appContainer.bookEditor,

@@ -105,34 +105,6 @@
     "license": "Apache License 2.0"
   },
   {
-    "id": "play-billing",
-    "name": "Google Play Billing",
-    "prefix": "com.android.billingclient:",
-    "url": "https://developer.android.com/google/play/billing",
-    "license": "Android SDK License / third-party notices"
-  },
-  {
-    "id": "datatransport",
-    "name": "Google Data Transport",
-    "prefix": "com.google.android.datatransport:",
-    "url": "https://github.com/firebase/firebase-android-sdk",
-    "license": "Apache License 2.0"
-  },
-  {
-    "id": "firebase",
-    "name": "Firebase encoders",
-    "prefix": "com.google.firebase:",
-    "url": "https://github.com/firebase/firebase-android-sdk",
-    "license": "Apache License 2.0"
-  },
-  {
-    "id": "javax-inject",
-    "name": "Java dependency injection (JSR-330)",
-    "prefix": "javax.inject:",
-    "url": "https://github.com/javax-inject/javax-inject",
-    "license": "Apache License 2.0"
-  },
-  {
     "id": "jsoup",
     "name": "jsoup",
     "prefix": "org.jsoup:",

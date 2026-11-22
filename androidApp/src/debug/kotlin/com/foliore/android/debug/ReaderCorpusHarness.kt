@@ -36,7 +36,7 @@ internal object ReaderCorpusHarness {
             val details = runCatching {
                 val repository = LibraryRepository(driver)
                 val device = DeviceIdProvider(isolated)
-                val importer = AndroidEpubImporter(isolated, repository, device, { true })
+                val importer = AndroidEpubImporter(isolated, repository, device)
                 val inputHash = input.sha256()
                 val imported = runBlocking { importer.importFile(input) }
                 check(imported is EpubImportResult.Imported) { "Import: $imported" }

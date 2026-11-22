@@ -22,7 +22,6 @@
     <string name="about_font_credit">Cormorant Garamond由Christian Thalmann（Catharsis Fonts）及贡献者创作，随应用分发。</string>
     <string name="about_icons_credit">通过Jetpack Compose软件库使用Google的Material Icons。其他文本使用系统字体。</string>
     <string name="about_drive">用于连接Google账号，并可选择同步到Foliore的隐藏文件夹。Google Play services SDK有独立条款，也包含开放组件。</string>
-    <string name="about_openai">使用您配置的密钥，可选择生成元数据和封面。适用OpenAI服务条款。</string>
     <string name="about_kindle">通过您配置的服务器以电子邮件发送EPUB。Kindle是Amazon的商标；应用未包含Kindle SDK。</string>
     <string name="about_independent">名称和商标归其各自权利人所有。Foliore独立于这些服务。</string>
     <string name="about_load_error">无法打开致谢信息。</string>

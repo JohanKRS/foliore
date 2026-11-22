@@ -1,8 +1,4 @@
 import java.util.Properties
-import java.util.Base64
-import java.security.KeyFactory
-import java.security.interfaces.RSAPublicKey
-import java.security.spec.X509EncodedKeySpec
 import groovy.json.JsonSlurper
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
@@ -15,17 +11,6 @@ plugins {
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 val hasReleaseSigningConfig = keystorePropertiesFile.exists()
-val billingProperties = Properties().apply {
-    rootProject.file("billing.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
-}
-val playBillingPublicKey = billingProperties.getProperty("playBillingPublicKey", "").filterNot(Char::isWhitespace)
-require(playBillingPublicKey.matches(Regex("[A-Za-z0-9+/=]*"))) { "Invalid Play Billing public key format" }
-val billingKeyConfigured = runCatching {
-    val key = KeyFactory.getInstance("RSA").generatePublic(
-        X509EncodedKeySpec(Base64.getDecoder().decode(playBillingPublicKey))
-    ) as RSAPublicKey
-    key.modulus.bitLength() >= 2048
-}.getOrDefault(false)
 
 if (hasReleaseSigningConfig) {
     keystorePropertiesFile.inputStream().use(keystoreProperties::load)
@@ -62,7 +47,6 @@ android {
         targetSdk = 36
         versionCode = 3
         versionName = "0.1.0"
-        buildConfigField("String", "PLAY_BILLING_PUBLIC_KEY", "\"$playBillingPublicKey\"")
     }
 
     compileOptions {
@@ -132,7 +116,6 @@ dependencies {
     implementation(libs.android.svg)
     implementation(libs.jsoup)
     implementation(libs.google.play.services.auth)
-    implementation(libs.google.play.billing)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.haze)
     implementation(libs.haze.blur)
@@ -163,19 +146,13 @@ val publicationProperties = Properties().apply {
 }
 val publicationReady = listOf("privacyPublished", "reportingEndpointVerified", "developerIdentityConfirmed", "supportMailboxVerified")
     .all { publicationProperties.getProperty(it) == "true" }
-// An internal test upload is required to create the first billing product. It is not publication.
+// Internal test uploads may happen before the public pages are verified. They are not publication.
 val internalPlayTest = providers.gradleProperty("internalPlayTest").map { it == "true" }.getOrElse(false)
 val validatePlayRelease by tasks.registering {
     inputs.property("internalPlayTest", internalPlayTest)
     inputs.property("publicationReady", publicationReady)
-    inputs.property("billingKeyConfigured", billingKeyConfigured)
-    inputs.property("billingProductVerified", publicationProperties.getProperty("billingProductVerified") == "true")
     doLast {
-        check(inputs.properties["billingKeyConfigured"] == true) {
-            "Configure billing.properties and verify foliore_unlimited in a Play test track. See docs/monetization.md."
-        }
         if (inputs.properties["internalPlayTest"] == true) return@doLast
-        check(inputs.properties["billingProductVerified"] == true) { "Verify the billing product in a Play test track before production." }
         check(inputs.properties["publicationReady"] == true) { "Finish publication.properties checks: public privacy policy, developer identity, support mailbox and working in-app reports." }
     }
 }

@@ -18,7 +18,7 @@ import com.foliore.android.storage.SyncWorkScheduler
 import com.foliore.shared.library.LibraryRepository
 
 class LibraryViewModelFactory(
-    private val billingRepository: com.foliore.android.billing.PlayBillingRepository,
+    private val chatGptAuthService: com.foliore.android.ai.ChatGptAuthService,
     private val libraryRepository: LibraryRepository,
     private val epubImporter: AndroidEpubImporter,
     private val bookEditor: AndroidBookEditor,
@@ -40,7 +40,7 @@ class LibraryViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LibraryViewModel::class.java)) {
             return LibraryViewModel(
-                billingRepository = billingRepository,
+                chatGptAuthService = chatGptAuthService,
                 libraryRepository = libraryRepository,
                 epubImporter = epubImporter,
                 bookEditor = bookEditor,
