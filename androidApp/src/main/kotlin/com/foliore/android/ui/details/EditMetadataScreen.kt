@@ -975,8 +975,8 @@ private fun TabletEditBookScreen(
                     }
                 }
 
-                TabletSyncSection(book = book)
                 TabletAboutSection(description = description, onEdit = onEditDescription)
+                TabletSyncSection(book = book)
                 BookFooterActions(
                     onOriginalFiles = onOriginalFiles,
                     onDelete = onDelete,
@@ -1105,7 +1105,9 @@ private fun StackedEditBookScreen(
                         syncStatus = book.book.syncStatus,
                     )
                 }
-                Spacer(modifier = Modifier.height(tuning.detailsMobileBottomPadding.dp))
+
+                // Cover and title, then about the book, the metadata, and sync last.
+                TabletAboutSection(description = description, onEdit = onEditDescription)
 
                 TabletRightHeader(
                     aiTextAvailable = aiTextAvailable,
@@ -1248,7 +1250,6 @@ private fun StackedEditBookScreen(
                 }
 
                 TabletSyncSection(book = book)
-                TabletAboutSection(description = description, onEdit = onEditDescription)
                 BookFooterActions(
                     onOriginalFiles = onOriginalFiles,
                     onDelete = onDelete,
