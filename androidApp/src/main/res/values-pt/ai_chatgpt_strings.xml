@@ -67,4 +67,5 @@
     <string name="chatgpt_notice_timed_out">O tempo para entrar com o ChatGPT expirou. Tente de novo nos Ajustes.</string>
     <string name="ai_data_disclosure_chatgpt">Ao gerar, seu prompt e os metadados do livro são enviados à OpenAI pela sua conta do ChatGPT. Revise os resultados antes de aplicar.</string>
     <string name="ai_metadata_generating_hint">A IA confere os dados na web, então isso pode levar até um minuto.</string>
+    <string name="ai_using_api_key">Usa sua chave de API da OpenAI</string>
 </resources>

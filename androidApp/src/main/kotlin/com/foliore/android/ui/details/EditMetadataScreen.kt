@@ -40,6 +40,10 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
@@ -1936,6 +1940,7 @@ private fun MetadataAutofillDialog(
     var showCandidateChoices by remember { mutableStateOf(false) }
     var selectedFields by rememberSaveable { mutableStateOf(MetadataField.defaultSelection) }
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
+    var showDataNotice by rememberSaveable { mutableStateOf(false) }
     // With ChatGPT or an API key set up, AI is the first tab and opens selected.
     var selectedSourceName by rememberSaveable(aiTextAvailable) {
         mutableStateOf(if (aiTextAvailable) AutofillSource.AI.name else AutofillSource.OPEN_METADATA.name)
@@ -1956,6 +1961,17 @@ private fun MetadataAutofillDialog(
     }
     val selectedLookupCandidate = lookupCandidates.firstOrNull { it.id == selectedLookupCandidateId }
         ?: lookupCandidates.firstOrNull()
+
+    if (showPromptEditor) {
+        MetadataPromptEditorDialog(
+            prompt = prompt,
+            onSave = { edited ->
+                onPromptChange(edited)
+                showPromptEditor = false
+            },
+            onDismiss = { showPromptEditor = false },
+        )
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -1984,16 +2000,32 @@ private fun MetadataAutofillDialog(
                     modifier = Modifier
                         .padding(horizontal = if (compact) 20.dp else 24.dp, vertical = 20.dp),
                 ) {
-                    Text(
-                        text = if (aiTextAvailable) {
-                            stringResource(R.string.ai_metadata_dialog_title)
-                        } else {
-                            stringResource(R.string.metadata_lookup_button)
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = if (aiTextAvailable) {
+                                stringResource(R.string.ai_metadata_dialog_title)
+                            } else {
+                                stringResource(R.string.metadata_lookup_button)
+                            },
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.offset(x = 12.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = stringResource(R.string.action_close),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     EditorialDivider(modifier = Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -2074,27 +2106,6 @@ private fun MetadataAutofillDialog(
                             }
 
                             AutofillSource.AI -> {
-                                AiDataNotice(usesChatGptPlan = usesChatGptPlan)
-                                PromptEditorToggle(
-                                    expanded = showPromptEditor,
-                                    onToggle = { showPromptEditor = !showPromptEditor },
-                                )
-                                if (showPromptEditor) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    OutlinedTextField(
-                                        value = prompt,
-                                        onValueChange = onPromptChange,
-                                        label = { Text(text = stringResource(R.string.ai_metadata_prompt_label)) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        minLines = 5,
-                                        singleLine = false,
-                                        enabled = !isGenerating,
-                                        textStyle = MaterialTheme.typography.bodyMedium,
-                                        shape = RoundedCornerShape(5.dp),
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(14.dp))
                                 DialogSectionLabel(stringResource(R.string.ai_metadata_preview_label))
                                 Spacer(modifier = Modifier.height(10.dp))
                                 when {
@@ -2124,128 +2135,109 @@ private fun MetadataAutofillDialog(
                         AutofillSource.OPEN_METADATA -> {
                             val canApply = selectedLookupCandidate != null && !isLookingUpMetadata && !isResolvingCandidate &&
                                 selectedFields.any { field -> if (field == MetadataField.COVER) selectedLookupCandidate.coverImagePath != null else field.available(selectedLookupCandidate.metadata) }
-                            AutofillDialogActions(
-                                onDismiss = onDismiss,
-                                primary = {
-                                    Button(
-                                        onClick = { selectedLookupCandidate?.let { onApplyLookupCandidate(it, selectedFields) } },
-                                        enabled = canApply,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) { Text(stringResource(R.string.metadata_lookup_apply_selected)) }
-                                },
-                                secondary = if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
-                                    { modifier ->
-                                        TextButton(onClick = onLookupMetadata, modifier = modifier) {
-                                            Text(
-                                                text = stringResource(R.string.metadata_lookup_button_again),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                        }
+                            Button(
+                                onClick = { selectedLookupCandidate?.let { onApplyLookupCandidate(it, selectedFields) } },
+                                enabled = canApply,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text(stringResource(R.string.metadata_lookup_apply_selected)) }
+                            if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.End,
+                                ) {
+                                    TextButton(onClick = onLookupMetadata) {
+                                        Text(stringResource(R.string.metadata_lookup_button_again))
                                     }
-                                } else {
-                                    null
-                                },
-                            )
+                                }
+                            }
                         }
 
                         AutofillSource.AI -> {
-                            val canApplyPreview = preview != null && !isGenerating
-                            AutofillDialogActions(
-                                onDismiss = onDismiss,
-                                primary = {
-                                    if (preview != null && canApplyPreview) {
-                                        Button(
-                                            onClick = { onApplyPreview(preview) },
-                                            modifier = Modifier.fillMaxWidth(),
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.Check,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp),
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(text = stringResource(R.string.ai_metadata_apply_preview))
-                                        }
+                            if (preview != null && !isGenerating) {
+                                Button(
+                                    onClick = { onApplyPreview(preview) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = stringResource(R.string.ai_metadata_apply_preview))
+                                }
+                            } else {
+                                Button(
+                                    onClick = onGeneratePreview,
+                                    enabled = !isGenerating,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    if (isGenerating) {
+                                        androidx.compose.material3.CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
+                                            color = androidx.compose.material3.LocalContentColor.current,
+                                        )
                                     } else {
-                                        Button(
-                                            onClick = onGeneratePreview,
-                                            enabled = !isGenerating,
-                                            modifier = Modifier.fillMaxWidth(),
-                                        ) {
-                                            if (isGenerating) {
-                                                androidx.compose.material3.CircularProgressIndicator(
-                                                    modifier = Modifier.size(16.dp),
-                                                    strokeWidth = 2.dp,
-                                                    color = androidx.compose.material3.LocalContentColor.current,
-                                                )
-                                            } else {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.AutoAwesome,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(18.dp),
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = if (isGenerating) {
-                                                    stringResource(R.string.ai_metadata_generating_preview)
-                                                } else {
-                                                    stringResource(R.string.ai_metadata_generate_preview)
-                                                },
-                                            )
-                                        }
+                                        Icon(
+                                            imageVector = Icons.Outlined.AutoAwesome,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                        )
                                     }
-                                },
-                                secondary = if (canApplyPreview) {
-                                    { modifier ->
-                                        TextButton(onClick = onGeneratePreview, modifier = modifier) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.AutoAwesome,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = stringResource(R.string.ai_metadata_regenerate_preview),
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                        }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (isGenerating) {
+                                            stringResource(R.string.ai_metadata_generating_preview)
+                                        } else {
+                                            stringResource(R.string.ai_metadata_generate_preview)
+                                        },
+                                    )
+                                }
+                            }
+                            // Less used actions sit under the main button, wrapping instead of being cut off.
+                            val linkPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                TextButton(
+                                    onClick = { showPromptEditor = true },
+                                    enabled = !isGenerating,
+                                    contentPadding = linkPadding,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Edit,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = stringResource(R.string.ai_edit_prompt), maxLines = 1)
+                                }
+                                if (preview != null && !isGenerating) {
+                                    TextButton(
+                                        onClick = onGeneratePreview,
+                                        contentPadding = linkPadding,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.AutoAwesome,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(text = stringResource(R.string.ai_metadata_regenerate_preview), maxLines = 1)
                                     }
-                                } else {
-                                    null
-                                },
+                                }
+                            }
+                            AiDataNoticeToggle(
+                                usesChatGptPlan = usesChatGptPlan,
+                                expanded = showDataNotice,
+                                onToggle = { showDataNotice = !showDataNotice },
                             )
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-/** A full-width primary action, with Cancel and an optional secondary action on one line below it. */
-@Composable
-private fun AutofillDialogActions(
-    onDismiss: () -> Unit,
-    primary: @Composable () -> Unit,
-    secondary: (@Composable (Modifier) -> Unit)?,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        primary()
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.edit_metadata_cancel))
-            }
-            secondary?.invoke(Modifier.weight(1f, fill = false))
         }
     }
 }
@@ -2259,25 +2251,116 @@ private fun DialogSectionLabel(text: String) {
     )
 }
 
-/** Says where an AI request goes: the ChatGPT plan or the API key, as each one is billed differently. */
+/**
+ * A small line saying which account pays for the request (the ChatGPT plan, as the plan usage
+ * guidelines ask, or the API key). Tapping it shows what is sent to OpenAI.
+ */
 @Composable
-private fun AiDataNotice(usesChatGptPlan: Boolean) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(7.dp),
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.36f)),
-    ) {
-        Column(modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = if (usesChatGptPlan) 2.dp else 12.dp)) {
+private fun AiDataNoticeToggle(
+    usesChatGptPlan: Boolean,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(5.dp))
+                    .clickable(role = Role.Button, onClick = onToggle)
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp),
+                    tint = muted,
+                )
+                Text(
+                    text = stringResource(
+                        if (usesChatGptPlan) R.string.chatgpt_using_plan else R.string.ai_using_api_key,
+                    ),
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = muted,
+                )
+            }
+            if (usesChatGptPlan) {
+                TextButton(
+                    onClick = { runCatching { uriHandler.openUri(com.foliore.android.ai.ChatGptOAuth.USAGE_SETTINGS_URL) } },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                ) {
+                    Text(stringResource(R.string.chatgpt_manage_usage), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        if (expanded) {
             Text(
                 text = stringResource(
                     if (usesChatGptPlan) R.string.ai_data_disclosure_chatgpt else R.string.ai_data_disclosure,
                 ),
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 6.dp),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = muted,
             )
-            if (usesChatGptPlan) ChatGptPlanIndicator()
+        }
+    }
+}
+
+@Composable
+private fun MetadataPromptEditorDialog(
+    prompt: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf(prompt) }
+    FolioreOptionsDialog(
+        title = stringResource(R.string.ai_edit_prompt),
+        onDismiss = onDismiss,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.ai_metadata_prompt_label)) },
+                minLines = 6,
+                maxLines = 14,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                shape = RoundedCornerShape(5.dp),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.edit_metadata_cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onSave(text) },
+                    enabled = text.isNotBlank(),
+                    shape = RoundedCornerShape(5.dp),
+                ) {
+                    Text(stringResource(R.string.edit_metadata_save))
+                }
+            }
         }
     }
 }

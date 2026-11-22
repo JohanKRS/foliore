@@ -67,4 +67,5 @@
     <string name="chatgpt_notice_timed_out">Se agotó el tiempo para iniciar sesión con ChatGPT. Vuelve a intentarlo en Ajustes.</string>
     <string name="ai_data_disclosure_chatgpt">Al generar, tu instrucción y los metadatos del libro se envían a OpenAI a través de tu cuenta de ChatGPT. Revisa los resultados antes de aplicarlos.</string>
     <string name="ai_metadata_generating_hint">La IA comprueba los datos en la web, así que puede tardar hasta un minuto.</string>
+    <string name="ai_using_api_key">Usa tu clave de API de OpenAI</string>
 </resources>
