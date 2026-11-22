@@ -2749,7 +2749,10 @@ private fun MetadataPreviewContent(preview: MetadataAutofillPreview?) {
         )
         PreviewValueRow(
             label = stringResource(R.string.edit_metadata_field_language),
-            value = preview.language.orEmpty(),
+            value = MetadataLanguages.display(
+                preview.language,
+                androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
+            ),
         )
         PreviewValueRow(
             label = stringResource(R.string.edit_metadata_field_publisher),

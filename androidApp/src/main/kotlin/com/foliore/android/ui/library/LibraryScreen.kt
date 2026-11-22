@@ -2024,7 +2024,9 @@ private fun BatchMetadataDialog(
                         BatchMetadataPatch(
                             authors = authors.splitValues().takeIf { it.isNotEmpty() },
                             sortAuthor = sortAuthor.cleanOptional(),
-                            language = language.cleanOptional(),
+                            language = language.cleanOptional()?.let {
+                                com.foliore.android.metadata.MetadataLanguages.code(it) ?: it
+                            },
                             publisher = publisher.cleanOptional(),
                             tags = tags.splitValues().takeIf { it.isNotEmpty() },
                             seriesName = seriesName.cleanOptional(),

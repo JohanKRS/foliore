@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -96,6 +97,7 @@ fun SettingsScreen(
     onChatGptCancelSignIn: () -> Unit,
     onChatGptSignOut: () -> Unit,
     onChatGptModelSelect: (String) -> Unit,
+    onAiTextLanguageChange: (com.foliore.android.ai.AiTextLanguage) -> Unit,
     onKindleEmailSave: (String) -> Unit,
     onKindleEmailClear: () -> Unit,
     onKindleSmtpSave: (String, String, String, String, String) -> Unit,
@@ -137,6 +139,11 @@ fun SettingsScreen(
     var showThemePicker by rememberSaveable { mutableStateOf(false) }
     var showKindleSettings by rememberSaveable { mutableStateOf(false) }
     var showAiSettings by rememberSaveable { mutableStateOf(false) }
+    var showAiTextLanguage by rememberSaveable { mutableStateOf(false) }
+    val appLanguageName = com.foliore.android.metadata.MetadataLanguages.display(
+        com.foliore.android.ai.AiTextLanguage.appLanguageTag(),
+        androidx.compose.ui.platform.LocalConfiguration.current.locales[0],
+    )
     var showSyncMethodPicker by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(shortcut) {
         when (shortcut) {
@@ -223,6 +230,16 @@ fun SettingsScreen(
                 stringResource(R.string.settings_ai_not_configured)
             },
             onClick = { showAiSettings = true },
+        )
+        CompactSettingsRow(
+            icon = Icons.Outlined.Translate,
+            title = stringResource(R.string.settings_ai_text_language),
+            description = when (aiSettings.textLanguage) {
+                com.foliore.android.ai.AiTextLanguage.BOOK -> stringResource(R.string.settings_ai_text_language_book)
+                com.foliore.android.ai.AiTextLanguage.APP ->
+                    stringResource(R.string.settings_ai_text_language_app, appLanguageName)
+            },
+            onClick = { showAiTextLanguage = true },
         )
         Spacer(modifier = Modifier.height(28.dp))
         EditorialDivider(modifier = Modifier.fillMaxWidth())
@@ -487,6 +504,14 @@ fun SettingsScreen(
             onDismiss = { showAiSettings = false },
         )
     }
+    if (showAiTextLanguage) {
+        AiTextLanguageDialog(
+            textLanguage = aiSettings.textLanguage,
+            appLanguageName = appLanguageName,
+            onTextLanguageChange = onAiTextLanguageChange,
+            onDismiss = { showAiTextLanguage = false },
+        )
+    }
     if (showSyncMethodPicker) {
         SyncMethodDialog(
             syncProvider = syncProvider,
@@ -731,6 +756,7 @@ data class AiSettingsState(
     val chatGptAccount: com.foliore.android.storage.ChatGptAccount?,
     val isChatGptSigningIn: Boolean,
     val hasRegistration: Boolean,
+    val textLanguage: com.foliore.android.ai.AiTextLanguage = com.foliore.android.ai.AiTextLanguage.DEFAULT,
 )
 
 /** The settings title drawn in the shared top chrome, matching the library header. */

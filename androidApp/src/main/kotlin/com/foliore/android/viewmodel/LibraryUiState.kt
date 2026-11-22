@@ -38,6 +38,7 @@ data class LibraryUiState(
     val selectedBookIds: Set<String> = emptySet(),
     val readingActivity: Map<String, BookReadingActivity> = emptyMap(),
     val hasOpenAiApiKey: Boolean = false,
+    val aiTextLanguage: com.foliore.android.ai.AiTextLanguage = com.foliore.android.ai.AiTextLanguage.DEFAULT,
     val chatGptAccount: ChatGptAccount? = null,
     val hasChatGptRegistration: Boolean = false,
     val chatGptSignIn: ChatGptSignInStatus = ChatGptSignInStatus.Idle,

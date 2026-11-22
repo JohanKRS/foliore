@@ -44,8 +44,13 @@ class OpenAiApiService(
         book: LibraryBook,
         draft: BookMetadataDraft,
         prompt: String,
+        textLanguageTag: String? = null,
+        libraryTags: List<String> = emptyList(),
     ): OpenAiResult<BookMetadataDraft> {
-        val response = createResponse(provider, metadataRequestBody(provider, draft, prompt))
+        val response = createResponse(
+            provider,
+            metadataRequestBody(provider, draft, prompt, textLanguageTag, libraryTags),
+        )
         val responseBody = when (response) {
             is OpenAiResult.Success -> response.value
             is OpenAiResult.Failure -> return response
@@ -53,7 +58,7 @@ class OpenAiApiService(
         val outputText = responseBody.outputText() ?: return OpenAiResult.Failure("Empty metadata response")
         return runCatching {
             val payload = json.decodeFromString(MetadataPayload.serializer(), outputText.cleanJsonPayload())
-            OpenAiResult.Success(payload.toDraft(draft))
+            OpenAiResult.Success(payload.toDraft(draft).standardized(libraryTags))
         }.getOrElse { OpenAiResult.Failure(it.message) }
     }
 
@@ -284,6 +289,8 @@ class OpenAiApiService(
         provider: AiProvider,
         draft: BookMetadataDraft,
         prompt: String,
+        textLanguageTag: String?,
+        libraryTags: List<String>,
     ): JsonObject {
         val instructions = """
             You help Foliore prepare clean EPUB metadata.
@@ -295,7 +302,7 @@ class OpenAiApiService(
             When the current EPUB metadata is incomplete, ambiguous, missing ISBN, or lacks enough context for the about field, use web search to verify public bibliographic facts from reliable sources before filling fields.
             Prefer publisher, author, library, ISBN registry, Open Library, WorldCat, or other reputable book pages. Do not copy copyrighted blurbs; synthesize a short original about text.
             publishedDate must be only a four-digit year when known.
-            Generate natural-language fields in the EPUB language, especially description/about and tags. If the language field is present, use that language. If it is missing, infer it and return an ISO 639 language code.
+            ${MetadataStandard.instructions(textLanguageTag, libraryTags)}
             Inspect isbn and every identifier. If any identifier is an ISBN-10 or ISBN-13, return it in isbn.
             Answer with a single JSON object with these keys: title, subtitle, authors, sortAuthor, language, publisher, publishedDate, description, tags, isbn, seriesName, seriesIndex.
         """.trimIndent()

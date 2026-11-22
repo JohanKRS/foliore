@@ -100,6 +100,7 @@ class LibraryViewModel(
             isAutoSyncEnabled = syncService.autoSyncEnabled(),
             isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
+            aiTextLanguage = aiPreferenceRepository.textLanguage.value,
             chatGptAccount = chatGptAuthService.account.value,
             hasChatGptRegistration = chatGptAuthService.repository.issuedClientId != null,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
@@ -432,6 +433,11 @@ class LibraryViewModel(
         }
     }
 
+    fun setAiTextLanguage(language: com.foliore.android.ai.AiTextLanguage) {
+        aiPreferenceRepository.setTextLanguage(language)
+        _state.update { it.copy(aiTextLanguage = language) }
+    }
+
     fun clearOpenAiApiKey() {
         aiPreferenceRepository.clearOpenAiApiKey()
         _state.update { it.copy(hasOpenAiApiKey = false) }
@@ -678,6 +684,11 @@ class LibraryViewModel(
             onFailure(LibraryNoticeType.AI_PROVIDER_REQUIRED, null)
             return
         }
+        val textLanguageTag = when (_state.value.aiTextLanguage) {
+            com.foliore.android.ai.AiTextLanguage.BOOK -> null
+            com.foliore.android.ai.AiTextLanguage.APP -> com.foliore.android.ai.AiTextLanguage.appLanguageTag()
+        }
+        val libraryTags = _state.value.books.libraryTags()
         // A new request replaces one still running, so a dialog that lost track of it can't get stuck.
         metadataPreviewJob?.cancel()
         metadataPreviewJob = viewModelScope.launch {
@@ -692,6 +703,8 @@ class LibraryViewModel(
                             book = book,
                             draft = draft,
                             prompt = prompt,
+                            textLanguageTag = textLanguageTag,
+                            libraryTags = libraryTags,
                         )
                     }
                 }
@@ -1902,3 +1915,14 @@ private data class SyncStateSnapshot(
     val googleDriveBackupStats: GoogleDriveBackupStats?,
     val googleDriveRemoteLibraryRecovery: GoogleDriveRemoteLibraryRecovery?,
 )
+
+/** The library's tags, most used first, so the AI can reuse them instead of inventing variants. */
+internal fun List<LibraryBook>.libraryTags(limit: Int = 200): List<String> =
+    flatMap { book -> book.metadata.tags.mapNotNull { it.trim().takeIf(String::isNotEmpty) } }
+        .groupingBy { it }
+        .eachCount()
+        .entries
+        .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key.lowercase() })
+        .map { it.key }
+        .distinctBy { it.lowercase() }
+        .take(limit)

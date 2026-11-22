@@ -342,7 +342,7 @@
     <string name="metadata_lookup_cover_resolution">表紙 %1$dx%2$d</string>
     <string name="metadata_lookup_apply_selected">選択した項目を適用</string>
     <string name="ai_metadata_prompt_label">メタデータ用プロンプト</string>
-    <string name="ai_metadata_default_prompt">このEPUBの書誌メタデータを補完・修正してください。検証可能な情報だけを使用してください。テキスト項目はEPUBに指定された言語で生成し、言語がない場合は推定して言語コードを入力してください。「この本について」は短く上品で、ネタバレを含めないでください。結末、どんでん返し、登場人物の死、隠された正体を明かしてはいけません。本の全体的な文体や雰囲気に合う質の高い文章にし、ありきたりな宣伝文句、過剰な表現、不自然な言い回しを避けてください。信頼できる情報が足りず良い紹介文を書けない場合は、カタログ文を捏造せず、既存の文章を残すか空欄にしてください。ISBN欄とEPUB識別子からISBN-10またはISBN-13を探してください。タイトル、サブタイトル、著者、シリーズ、シリーズ番号、言語、出版社、年、タグ、ISBN、紹介文を返してください。</string>
+    <string name="ai_metadata_default_prompt">このEPUBの書誌メタデータを補完・修正してください。検証可能な情報だけを使用してください。「この本について」は短く上品で、ネタバレを含めないでください。結末、どんでん返し、登場人物の死、隠された正体を明かしてはいけません。本の全体的な文体や雰囲気に合う質の高い文章にし、ありきたりな宣伝文句、過剰な表現、不自然な言い回しを避けてください。信頼できる情報が足りず良い紹介文を書けない場合は、カタログ文を捏造せず、既存の文章を残すか空欄にしてください。ISBN欄とEPUB識別子からISBN-10またはISBN-13を探してください。タイトル、サブタイトル、著者、シリーズ、シリーズ番号、言語、出版社、年、タグ、ISBN、紹介文を返してください。</string>
     <string name="ai_metadata_preview_label">プレビュー</string>
     <string name="ai_metadata_preview_empty">変更を適用する前にプレビューを生成してください。</string>
     <string name="ai_metadata_generate_preview">プレビューを生成</string>

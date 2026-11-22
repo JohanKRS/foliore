@@ -68,4 +68,8 @@
     <string name="ai_data_disclosure_chatgpt">La génération transmet votre demande et les métadonnées du livre à OpenAI via votre compte ChatGPT. Vérifiez les résultats avant de les appliquer.</string>
     <string name="ai_metadata_generating_hint">L’IA vérifie les informations sur le web : cela peut prendre jusqu’à une minute.</string>
     <string name="ai_using_api_key">Utilise votre clé API OpenAI</string>
+    <string name="settings_ai_text_language">Langue des étiquettes et de À propos</string>
+    <string name="settings_ai_text_language_book">Langue de chaque livre</string>
+    <string name="settings_ai_text_language_app">Langue de l’app : %1$s</string>
+    <string name="settings_ai_text_language_hint">S’applique aux étiquettes et au texte À propos rédigés par l’IA. Les étiquettes suivent les catégories Thema, la norme du secteur du livre.</string>
 </resources>

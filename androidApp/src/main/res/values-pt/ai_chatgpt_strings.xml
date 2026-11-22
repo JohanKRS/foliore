@@ -68,4 +68,8 @@
     <string name="ai_data_disclosure_chatgpt">Ao gerar, seu prompt e os metadados do livro são enviados à OpenAI pela sua conta do ChatGPT. Revise os resultados antes de aplicar.</string>
     <string name="ai_metadata_generating_hint">A IA confere os dados na web, então isso pode levar até um minuto.</string>
     <string name="ai_using_api_key">Usa sua chave de API da OpenAI</string>
+    <string name="settings_ai_text_language">Idioma das tags e do Sobre</string>
+    <string name="settings_ai_text_language_book">Idioma de cada livro</string>
+    <string name="settings_ai_text_language_app">Idioma do app: %1$s</string>
+    <string name="settings_ai_text_language_hint">Vale para as tags e o texto do Sobre que a IA escreve. As tags seguem as categorias do Thema, o padrão do mercado editorial.</string>
 </resources>
