@@ -616,55 +616,59 @@ private fun FolioreNavigationBar(
         )
 
         if (mobileChrome) {
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
                     .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
             ) {
-                AnimatedVisibility(
-                    visible = stackedEditMode,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
-                        expandVertically(
-                            expandFrom = Alignment.Bottom,
-                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                        ) +
-                        slideInVertically(
-                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                            initialOffsetY = { height -> height },
-                        ),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
-                        shrinkVertically(
-                            shrinkTowards = Alignment.Bottom,
-                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                        ) +
-                        slideOutVertically(
-                            animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
-                            targetOffsetY = { height -> height },
-                        ),
-                ) {
-                    EditActionsSlot(
-                        editActions = stripActions,
+                val phoneGrid = phoneBottomGrid(maxWidth)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    AnimatedVisibility(
+                        visible = stackedEditMode,
+                        enter = fadeIn(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
+                            expandVertically(
+                                expandFrom = Alignment.Bottom,
+                                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                            ) +
+                            slideInVertically(
+                                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                initialOffsetY = { height -> height },
+                            ),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)) +
+                            shrinkVertically(
+                                shrinkTowards = Alignment.Bottom,
+                                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                            ) +
+                            slideOutVertically(
+                                animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+                                targetOffsetY = { height -> height },
+                            ),
+                    ) {
+                        EditActionsSlot(
+                            editActions = stripActions,
+                            isLoading = isLoading,
+                            compact = true,
+                            delayMillis = 0,
+                            actionStripGrid = phoneGrid,
+                            animated = false,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(bottomEditActionStripHeight),
+                        )
+                    }
+                    StaticNavigationItemsSlot(
+                        grid = phoneGrid,
+                        selectedRoute = navigationSelectedRoute,
                         isLoading = isLoading,
-                        compact = true,
-                        delayMillis = 0,
-                        actionStrip = true,
-                        animated = false,
+                        onLibraryClick = onLibraryClick,
+                        onSyncClick = onSyncClick,
+                        onSettingsClick = onSettingsClick,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(bottomEditActionStripHeight),
+                            .height(bottomBarHeight),
                     )
                 }
-                StaticNavigationItemsSlot(
-                    selectedRoute = navigationSelectedRoute,
-                    isLoading = isLoading,
-                    onLibraryClick = onLibraryClick,
-                    onSyncClick = onSyncClick,
-                    onSettingsClick = onSettingsClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(bottomBarHeight),
-                )
             }
         } else {
             Column(
@@ -852,8 +856,33 @@ private fun AnimatedNavigationItemsSlot(
     }
 }
 
+/**
+ * On phones, the action strip and the navigation items share the book page's column: the same
+ * edges as the cover, split into three equal slots with the action-button gap between them.
+ * Every page uses it, so the navigation items stay put and each one sits centred under its
+ * action button.
+ */
+private class PhoneBottomGrid(val start: Dp, val slotWidth: Dp, val gap: Dp) {
+    fun slotStart(index: Int): Dp = start + (slotWidth + gap) * index.toFloat()
+}
+
+@Composable
+private fun phoneBottomGrid(maxWidth: Dp): PhoneBottomGrid {
+    val tuning = LocalVisualTuning.current
+    val gap = tuning.bottomActionButtonSpacing.dp
+    // The book page pads its column on both sides, then caps it at the cover's width.
+    val columnWidth = (maxWidth - tuning.detailsMobileHorizontalPadding.dp * 2f)
+        .coerceIn(0.dp, tuning.detailsTabletCoverMaxWidth.dp)
+    return PhoneBottomGrid(
+        start = (maxWidth - columnWidth) / 2f,
+        slotWidth = ((columnWidth - gap * 2f) / 3f).coerceAtLeast(0.dp),
+        gap = gap,
+    )
+}
+
 @Composable
 private fun StaticNavigationItemsSlot(
+    grid: PhoneBottomGrid,
     selectedRoute: String?,
     isLoading: Boolean,
     onLibraryClick: () -> Unit,
@@ -864,9 +893,6 @@ private fun StaticNavigationItemsSlot(
     val libraryDestination = TopLevelDestination.items.first()
     val settingsDestination = TopLevelDestination.items.last()
     val tuning = LocalVisualTuning.current
-    val bottomNavigationMaxWidth = tuning.bottomNavigationMaxWidth.dp
-    val bottomNavigationHorizontalPadding = tuning.bottomNavigationHorizontalPadding.dp
-    val bottomNavigationTopLevelSpacing = tuning.bottomNavigationTopLevelSpacing.dp
     val bottomBarItemHeight = tuning.bottomBarItemHeight.dp
     val iconSize = tuning.bottomNavigationIconSize.dp
     val labelSpacing = tuning.bottomNavigationLabelSpacing.dp
@@ -874,14 +900,7 @@ private fun StaticNavigationItemsSlot(
     BoxWithConstraints(modifier = modifier) {
         val bottomBarItemTopPadding = ((maxHeight - bottomBarItemHeight) / 2f).coerceAtLeast(0.dp) +
             tuning.bottomBarItemTopPadding.dp
-        val rowWidth = if (maxWidth < bottomNavigationMaxWidth) {
-            maxWidth
-        } else {
-            bottomNavigationMaxWidth
-        }
-        val rowStart = (maxWidth - rowWidth) / 2f
-        val contentWidth = rowWidth - (bottomNavigationHorizontalPadding * 2f)
-        val itemWidth = (contentWidth - (bottomNavigationTopLevelSpacing * 2f)) / 3f
+        val itemWidth = grid.slotWidth
 
         FolioreBottomNavigationItem(
             icon = libraryDestination.icon,
@@ -893,7 +912,7 @@ private fun StaticNavigationItemsSlot(
             labelSpacing = labelSpacing,
             onClick = onLibraryClick,
             modifier = Modifier
-                .offset(x = rowStart + bottomNavigationHorizontalPadding, y = bottomBarItemTopPadding)
+                .offset(x = grid.slotStart(0), y = bottomBarItemTopPadding)
                 .width(itemWidth),
         )
         FolioreBottomNavigationItem(
@@ -907,10 +926,7 @@ private fun StaticNavigationItemsSlot(
             labelSpacing = labelSpacing,
             onClick = onSyncClick,
             modifier = Modifier
-                .offset(
-                    x = rowStart + bottomNavigationHorizontalPadding + itemWidth + bottomNavigationTopLevelSpacing,
-                    y = bottomBarItemTopPadding,
-                )
+                .offset(x = grid.slotStart(1), y = bottomBarItemTopPadding)
                 .width(itemWidth),
         )
         FolioreBottomNavigationItem(
@@ -923,11 +939,7 @@ private fun StaticNavigationItemsSlot(
             labelSpacing = labelSpacing,
             onClick = onSettingsClick,
             modifier = Modifier
-                .offset(
-                    x = rowStart + bottomNavigationHorizontalPadding +
-                        ((itemWidth + bottomNavigationTopLevelSpacing) * 2f),
-                    y = bottomBarItemTopPadding,
-                )
+                .offset(x = grid.slotStart(2), y = bottomBarItemTopPadding)
                 .width(itemWidth),
         )
     }
@@ -1038,7 +1050,7 @@ private fun EditActionsSlot(
     isLoading: Boolean,
     compact: Boolean,
     delayMillis: Int,
-    actionStrip: Boolean = false,
+    actionStripGrid: PhoneBottomGrid? = null,
     animated: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -1063,7 +1075,7 @@ private fun EditActionsSlot(
                 actions = editActions,
                 isLoading = isLoading,
                 compact = compact,
-                actionStrip = actionStrip,
+                actionStripGrid = actionStripGrid,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -1072,7 +1084,7 @@ private fun EditActionsSlot(
                 actions = editActions,
                 isLoading = isLoading,
                 compact = compact,
-                actionStrip = actionStrip,
+                actionStripGrid = actionStripGrid,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -1084,9 +1096,10 @@ private fun FolioreEditActions(
     actions: EditBottomBarActions?,
     isLoading: Boolean,
     compact: Boolean,
-    actionStrip: Boolean,
+    actionStripGrid: PhoneBottomGrid?,
     modifier: Modifier = Modifier,
 ) {
+    val actionStrip = actionStripGrid != null
     val exportLabel = stringResource(R.string.edit_metadata_export_short)
     val actionsEnabled = actions != null && !isLoading
     val saveEnabled = actions?.saveEnabled == true && !isLoading
@@ -1096,15 +1109,15 @@ private fun FolioreEditActions(
     val disabledButtonContent = MaterialTheme.colorScheme.onSurfaceVariant
     val disabledButtonBorder = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
     val tuning = LocalVisualTuning.current
-    val horizontalPadding = if (actionStrip) {
-        tuning.bottomActionHorizontalPadding.dp
+    val horizontalPadding = if (actionStripGrid != null) {
+        actionStripGrid.start
     } else if (compact) {
         tuning.bottomTabletCompactActionHorizontalPadding.dp
     } else {
         tuning.bottomTabletActionHorizontalPadding.dp
     }
-    val buttonSpacing = if (actionStrip) {
-        tuning.bottomActionButtonSpacing.dp
+    val buttonSpacing = if (actionStripGrid != null) {
+        actionStripGrid.gap
     } else if (compact) {
         tuning.bottomTabletCompactActionButtonSpacing.dp
     } else {
