@@ -777,12 +777,6 @@ private fun TabletEditBookScreen(
                         enabled = originalFilesEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
-                    CoverActions(
-                        aiCapabilities = aiCapabilities,
-                        onReplaceCover = onReplaceCover,
-                        onGenerateCoverClick = onGenerateCoverClick,
-                    )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
@@ -850,6 +844,12 @@ private fun TabletEditBookScreen(
                         ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    CoverActions(
+                        aiCapabilities = aiCapabilities,
+                        onReplaceCover = onReplaceCover,
+                        onGenerateCoverClick = onGenerateCoverClick,
+                        modifier = Modifier.padding(bottom = CoverActionsBottomGap),
+                    )
                     TabletMetadataField(
                         icon = Icons.AutoMirrored.Outlined.MenuBook,
                         label = stringResource(R.string.edit_metadata_field_title),
@@ -1073,12 +1073,6 @@ private fun StackedEditBookScreen(
                         enabled = originalFilesEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
-                    CoverActions(
-                        aiCapabilities = aiCapabilities,
-                        onReplaceCover = onReplaceCover,
-                        onGenerateCoverClick = onGenerateCoverClick,
-                    )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
@@ -1106,7 +1100,7 @@ private fun StackedEditBookScreen(
                     )
                 }
 
-                // Cover and title, then about the book, the metadata, and sync last.
+                // Cover and title, then about the book, the metadata (cover actions first), and sync last.
                 TabletAboutSection(description = description, onEdit = onEditDescription)
 
                 TabletRightHeader(
@@ -1123,6 +1117,12 @@ private fun StackedEditBookScreen(
                         ),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    CoverActions(
+                        aiCapabilities = aiCapabilities,
+                        onReplaceCover = onReplaceCover,
+                        onGenerateCoverClick = onGenerateCoverClick,
+                        modifier = Modifier.padding(bottom = CoverActionsBottomGap),
+                    )
                     TabletMetadataField(
                         icon = Icons.AutoMirrored.Outlined.MenuBook,
                         label = stringResource(R.string.edit_metadata_field_title),
@@ -1592,15 +1592,19 @@ private fun EditBookCover(
     }
 }
 
+// Extra room between the cover buttons and the first metadata row.
+private val CoverActionsBottomGap = 6.dp
+
 @Composable
 private fun CoverActions(
     aiCapabilities: AiCapabilities,
     onReplaceCover: () -> Unit,
     onGenerateCoverClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val tuning = LocalVisualTuning.current
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(tuning.detailsTabletCoverButtonSpacing.dp),
     ) {
         CoverActionButton(
