@@ -65,4 +65,6 @@
     <string name="settings_ai_chatgpt_enable_plan">Autorizar uso do plano ChatGPT</string>
     <string name="settings_ai_chatgpt_no_plan">Sua conta está conectada. Autorize o uso do plano para usar o ChatGPT nos detalhes e capas dos livros ou configure uma chave de API.</string>
     <string name="chatgpt_notice_timed_out">O tempo para entrar com o ChatGPT expirou. Tente de novo nos Ajustes.</string>
+    <string name="ai_data_disclosure_chatgpt">Ao gerar, seu prompt e os metadados do livro são enviados à OpenAI pela sua conta do ChatGPT. Revise os resultados antes de aplicar.</string>
+    <string name="ai_metadata_generating_hint">A IA confere os dados na web, então isso pode levar até um minuto.</string>
 </resources>

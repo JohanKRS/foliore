@@ -40,6 +40,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ArrowDropDown
@@ -107,11 +108,13 @@ import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.TopChromeDividerHalfHeight
 import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.library.EditorialDivider
+import com.foliore.android.ui.library.noticeMessage
 import com.foliore.android.ui.library.FolioreOptionsDialog
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.theme.CormorantGaramondFamily
 import com.foliore.android.ui.tuning.LocalVisualTuning
+import com.foliore.android.viewmodel.LibraryNoticeType
 import com.foliore.android.viewmodel.SyncProgress
 import com.foliore.android.viewmodel.SyncProgressPhase
 import com.foliore.shared.domain.BookMetadataDraft
@@ -141,7 +144,12 @@ fun EditMetadataScreen(
     onLookupMetadataCandidates: (BookMetadataDraft, (List<MetadataLookupCandidate>) -> Unit) -> Unit,
     onResolveMetadataCandidate: (MetadataLookupCandidate, (MetadataLookupCandidate) -> Unit) -> Unit,
     onUseLookupCover: (String) -> Unit,
-    onGenerateMetadataPreview: (String, BookMetadataDraft, (BookMetadataDraft) -> Unit) -> Unit,
+    onGenerateMetadataPreview: (
+        String,
+        BookMetadataDraft,
+        (BookMetadataDraft) -> Unit,
+        (LibraryNoticeType, String?) -> Unit,
+    ) -> Unit,
     onGenerateCoverImages: (
         String,
         BookMetadataDraft,
@@ -207,6 +215,9 @@ fun EditMetadataScreen(
     var showCoverGenerationDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var showDescriptionEditor by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var metadataPreview by remember(book.book.id) { mutableStateOf<MetadataAutofillPreview?>(null) }
+    // The AI preview runs outside the shared progress slot, so the dialog tracks it here.
+    var metadataGenerationStartedAt by remember(book.book.id) { mutableStateOf<Long?>(null) }
+    var metadataGenerationError by remember(book.book.id) { mutableStateOf<AiPreviewFailure?>(null) }
     var lookupCandidates by remember(book.book.id) { mutableStateOf<List<MetadataLookupCandidate>>(emptyList()) }
     var lookupSession by remember(book.book.id) { mutableStateOf(0) }
     var resolvingCandidateId by remember(book.book.id) { mutableStateOf<String?>(null) }
@@ -225,7 +236,7 @@ fun EditMetadataScreen(
     }
     val titleError = titleTouched && title.isBlank()
     val isLookingUpMetadata = isLoading && progress?.phase == SyncProgressPhase.LOOKING_UP_METADATA
-    val isGeneratingMetadata = isLoading && progress?.phase == SyncProgressPhase.GENERATING_METADATA
+    val isGeneratingMetadata = metadataGenerationStartedAt != null
     val isGeneratingCovers = isLoading && progress?.phase == SyncProgressPhase.GENERATING_COVERS
     val isFindingCovers = isLoading && progress?.phase == SyncProgressPhase.FINDING_COVERS
     val currentDraft = {
@@ -531,6 +542,8 @@ fun EditMetadataScreen(
             isLookingUpMetadata = isLookingUpMetadata,
             isResolvingCandidate = resolvingCandidateId == selectedLookupCandidateId && resolvingCandidateId != null,
             isGenerating = isGeneratingMetadata,
+            generationStartedAt = metadataGenerationStartedAt,
+            generationError = metadataGenerationError,
             progress = progress,
             onLookupMetadata = {
                 if (!isLookingUpMetadata) {
@@ -548,12 +561,26 @@ fun EditMetadataScreen(
                 if (MetadataField.COVER in fields) candidate.coverImagePath?.let(onUseLookupCover)
             },
             onGeneratePreview = {
-                if (!isGeneratingMetadata) {
-                    if (aiTextAvailable) {
-                        onGenerateMetadataPreview(metadataPrompt, currentDraft()) { previewDraft ->
-                            metadataPreview = previewDraft.toAutofillPreview()
-                        }
-                    }
+                if (!isGeneratingMetadata && aiTextAvailable) {
+                    metadataGenerationError = null
+                    val startedAt = android.os.SystemClock.elapsedRealtime()
+                    metadataGenerationStartedAt = startedAt
+                    onGenerateMetadataPreview(
+                        metadataPrompt,
+                        currentDraft(),
+                        { previewDraft ->
+                            if (metadataGenerationStartedAt == startedAt) {
+                                metadataPreview = previewDraft.toAutofillPreview()
+                                metadataGenerationStartedAt = null
+                            }
+                        },
+                        { failure, detail ->
+                            if (metadataGenerationStartedAt == startedAt) {
+                                metadataGenerationError = AiPreviewFailure(failure, detail)
+                                metadataGenerationStartedAt = null
+                            }
+                        },
+                    )
                 }
             },
             onApplyPreview = applyMetadataPreview,
@@ -1896,6 +1923,8 @@ private fun MetadataAutofillDialog(
     isLookingUpMetadata: Boolean,
     isResolvingCandidate: Boolean,
     isGenerating: Boolean,
+    generationStartedAt: Long?,
+    generationError: AiPreviewFailure?,
     progress: SyncProgress?,
     onLookupMetadata: () -> Unit,
     onSelectLookupCandidate: (String) -> Unit,
@@ -1906,16 +1935,24 @@ private fun MetadataAutofillDialog(
 ) {
     var showCandidateChoices by remember { mutableStateOf(false) }
     var selectedFields by rememberSaveable { mutableStateOf(MetadataField.defaultSelection) }
-    LaunchedEffect(Unit) { onLookupMetadata() }
     var showPromptEditor by rememberSaveable { mutableStateOf(false) }
+    // With ChatGPT or an API key set up, AI is the first tab and opens selected.
     var selectedSourceName by rememberSaveable(aiTextAvailable) {
-        mutableStateOf(AutofillSource.OPEN_METADATA.name)
+        mutableStateOf(if (aiTextAvailable) AutofillSource.AI.name else AutofillSource.OPEN_METADATA.name)
     }
     val selectedSource = if (aiTextAvailable) {
         runCatching { AutofillSource.valueOf(selectedSourceName) }
-            .getOrDefault(AutofillSource.OPEN_METADATA)
+            .getOrDefault(AutofillSource.AI)
     } else {
         AutofillSource.OPEN_METADATA
+    }
+    // Search the open sources only once their tab is shown, so the AI tab never waits on it.
+    var lookupStarted by remember { mutableStateOf(false) }
+    LaunchedEffect(selectedSource) {
+        if (selectedSource == AutofillSource.OPEN_METADATA && !lookupStarted) {
+            lookupStarted = true
+            onLookupMetadata()
+        }
     }
     val selectedLookupCandidate = lookupCandidates.firstOrNull { it.id == selectedLookupCandidateId }
         ?: lookupCandidates.firstOrNull()
@@ -1928,13 +1965,14 @@ private fun MetadataAutofillDialog(
             modifier = Modifier.fillMaxSize().imePadding(),
             contentAlignment = Alignment.Center,
         ) {
-            val horizontalMargin = if (maxWidth < 480.dp) 10.dp else 24.dp
+            val compact = maxWidth < 480.dp
+            val horizontalMargin = if (compact) 12.dp else 24.dp
             val verticalMargin = if (maxHeight < 720.dp) 12.dp else 24.dp
             val dialogMaxHeight = (maxHeight - verticalMargin * 2).coerceAtMost(760.dp)
             Surface(
                 modifier = Modifier
                     .padding(horizontal = horizontalMargin, vertical = verticalMargin)
-                    .widthIn(max = 780.dp)
+                    .widthIn(max = 640.dp)
                     .fillMaxWidth()
                     .heightIn(max = dialogMaxHeight),
                 shape = RoundedCornerShape(8.dp),
@@ -1944,7 +1982,7 @@ private fun MetadataAutofillDialog(
             ) {
                 Column(
                     modifier = Modifier
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                        .padding(horizontal = if (compact) 20.dp else 24.dp, vertical = 20.dp),
                 ) {
                     Text(
                         text = if (aiTextAvailable) {
@@ -1957,14 +1995,14 @@ private fun MetadataAutofillDialog(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     EditorialDivider(modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     if (aiTextAvailable) {
                         AutofillSourceSelector(
                             selectedSource = selectedSource,
                             onSelectSource = { selectedSourceName = it.name },
                         )
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
 
                     Column(
@@ -1982,11 +2020,7 @@ private fun MetadataAutofillDialog(
                                     Spacer(modifier = Modifier.height(18.dp))
                                 }
 
-                                Text(
-                                    text = stringResource(R.string.metadata_lookup_section_title).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
+                                DialogSectionLabel(stringResource(R.string.metadata_lookup_section_title))
                                 Spacer(modifier = Modifier.height(6.dp))
                                 if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
                                     Text(
@@ -2025,11 +2059,7 @@ private fun MetadataAutofillDialog(
                                         MetadataLookupCandidateCard(candidate, selected = true, onClick = { showCandidateChoices = true })
                                     }
                                     Spacer(modifier = Modifier.height(18.dp))
-                                    Text(
-                                        text = stringResource(R.string.ai_metadata_preview_label).uppercase(),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
+                                    DialogSectionLabel(stringResource(R.string.ai_metadata_preview_label))
                                     Spacer(modifier = Modifier.height(10.dp))
                                     if (isResolvingCandidate) {
                                         androidx.compose.material3.LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
@@ -2044,27 +2074,13 @@ private fun MetadataAutofillDialog(
                             }
 
                             AutofillSource.AI -> {
-                                if (isGenerating) {
-                                    AiDialogProgress(
-                                        progress = progress,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                    Spacer(modifier = Modifier.height(18.dp))
-                                }
-
-                                Text(
-                                    stringResource(R.string.ai_data_disclosure),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                if (usesChatGptPlan) ChatGptPlanIndicator()
-                                Spacer(Modifier.height(12.dp))
+                                AiDataNotice(usesChatGptPlan = usesChatGptPlan)
                                 PromptEditorToggle(
                                     expanded = showPromptEditor,
                                     onToggle = { showPromptEditor = !showPromptEditor },
                                 )
                                 if (showPromptEditor) {
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     OutlinedTextField(
                                         value = prompt,
                                         onValueChange = onPromptChange,
@@ -2072,19 +2088,30 @@ private fun MetadataAutofillDialog(
                                         modifier = Modifier.fillMaxWidth(),
                                         minLines = 5,
                                         singleLine = false,
+                                        enabled = !isGenerating,
                                         textStyle = MaterialTheme.typography.bodyMedium,
                                         shape = RoundedCornerShape(5.dp),
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.height(20.dp))
-                                Text(
-                                    text = stringResource(R.string.ai_metadata_preview_label).uppercase(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
+                                Spacer(modifier = Modifier.height(14.dp))
+                                DialogSectionLabel(stringResource(R.string.ai_metadata_preview_label))
                                 Spacer(modifier = Modifier.height(10.dp))
-                                MetadataPreviewContent(preview = preview)
+                                when {
+                                    isGenerating -> AiGeneratingStatus(startedAt = generationStartedAt)
+                                    generationError != null -> {
+                                        AiErrorMessage(
+                                            message = noticeMessage(generationError.type),
+                                            detail = generationError.detail
+                                                ?.takeIf { generationError.type == LibraryNoticeType.AI_REQUEST_FAILED },
+                                        )
+                                        if (preview != null) {
+                                            Spacer(modifier = Modifier.height(14.dp))
+                                            MetadataPreviewContent(preview = preview)
+                                        }
+                                    }
+                                    else -> MetadataPreviewContent(preview = preview)
+                                }
                             }
                         }
                     }
@@ -2097,60 +2124,244 @@ private fun MetadataAutofillDialog(
                         AutofillSource.OPEN_METADATA -> {
                             val canApply = selectedLookupCandidate != null && !isLookingUpMetadata && !isResolvingCandidate &&
                                 selectedFields.any { field -> if (field == MetadataField.COVER) selectedLookupCandidate.coverImagePath != null else field.available(selectedLookupCandidate.metadata) }
-                            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                                Button(
-                                    onClick = { selectedLookupCandidate?.let { onApplyLookupCandidate(it, selectedFields) } },
-                                    enabled = canApply,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) { Text(stringResource(R.string.metadata_lookup_apply_selected)) }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
-                                        TextButton(onClick = onLookupMetadata) { Text(stringResource(R.string.metadata_lookup_button_again)) }
+                            AutofillDialogActions(
+                                onDismiss = onDismiss,
+                                primary = {
+                                    Button(
+                                        onClick = { selectedLookupCandidate?.let { onApplyLookupCandidate(it, selectedFields) } },
+                                        enabled = canApply,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    ) { Text(stringResource(R.string.metadata_lookup_apply_selected)) }
+                                },
+                                secondary = if (lookupCandidates.isEmpty() && !isLookingUpMetadata) {
+                                    { modifier ->
+                                        TextButton(onClick = onLookupMetadata, modifier = modifier) {
+                                            Text(
+                                                text = stringResource(R.string.metadata_lookup_button_again),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
                                     }
-                                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.edit_metadata_cancel)) }
-                                }
-                            }
+                                } else {
+                                    null
+                                },
+                            )
                         }
 
                         AutofillSource.AI -> {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                TextButton(onClick = onDismiss) {
-                                    Text(text = stringResource(R.string.edit_metadata_cancel))
-                                }
-                                OutlinedButton(
-                                    onClick = onGeneratePreview,
-                                    enabled = !isGenerating,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.AutoAwesome,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = if (isGenerating) {
-                                            stringResource(R.string.ai_metadata_generating_preview)
-                                        } else if (preview == null) {
-                                            stringResource(R.string.ai_metadata_generate_preview)
-                                        } else {
-                                            stringResource(R.string.ai_metadata_regenerate_preview)
-                                        },
-                                    )
-                                }
-                                Button(
-                                    onClick = { preview?.let(onApplyPreview) },
-                                    enabled = preview != null && !isGenerating,
-                                ) {
-                                    Text(text = stringResource(R.string.ai_metadata_apply_preview))
-                                }
-                            }
+                            val canApplyPreview = preview != null && !isGenerating
+                            AutofillDialogActions(
+                                onDismiss = onDismiss,
+                                primary = {
+                                    if (preview != null && canApplyPreview) {
+                                        Button(
+                                            onClick = { onApplyPreview(preview) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(text = stringResource(R.string.ai_metadata_apply_preview))
+                                        }
+                                    } else {
+                                        Button(
+                                            onClick = onGeneratePreview,
+                                            enabled = !isGenerating,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            if (isGenerating) {
+                                                androidx.compose.material3.CircularProgressIndicator(
+                                                    modifier = Modifier.size(16.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = androidx.compose.material3.LocalContentColor.current,
+                                                )
+                                            } else {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.AutoAwesome,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp),
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = if (isGenerating) {
+                                                    stringResource(R.string.ai_metadata_generating_preview)
+                                                } else {
+                                                    stringResource(R.string.ai_metadata_generate_preview)
+                                                },
+                                            )
+                                        }
+                                    }
+                                },
+                                secondary = if (canApplyPreview) {
+                                    { modifier ->
+                                        TextButton(onClick = onGeneratePreview, modifier = modifier) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.AutoAwesome,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = stringResource(R.string.ai_metadata_regenerate_preview),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    null
+                                },
+                            )
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** A full-width primary action, with Cancel and an optional secondary action on one line below it. */
+@Composable
+private fun AutofillDialogActions(
+    onDismiss: () -> Unit,
+    primary: @Composable () -> Unit,
+    secondary: (@Composable (Modifier) -> Unit)?,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        primary()
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.edit_metadata_cancel))
+            }
+            secondary?.invoke(Modifier.weight(1f, fill = false))
+        }
+    }
+}
+
+@Composable
+private fun DialogSectionLabel(text: String) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+/** Says where an AI request goes: the ChatGPT plan or the API key, as each one is billed differently. */
+@Composable
+private fun AiDataNotice(usesChatGptPlan: Boolean) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(7.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.36f)),
+    ) {
+        Column(modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = if (usesChatGptPlan) 2.dp else 12.dp)) {
+            Text(
+                text = stringResource(
+                    if (usesChatGptPlan) R.string.ai_data_disclosure_chatgpt else R.string.ai_data_disclosure,
+                ),
+                modifier = Modifier.padding(end = 8.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (usesChatGptPlan) ChatGptPlanIndicator()
+        }
+    }
+}
+
+/** Indeterminate progress with the time so far, since a web-checked preview can take a minute. */
+@Composable
+private fun AiGeneratingStatus(startedAt: Long?) {
+    var elapsedSeconds by remember(startedAt) { mutableStateOf(0L) }
+    LaunchedEffect(startedAt) {
+        if (startedAt == null) return@LaunchedEffect
+        while (true) {
+            elapsedSeconds = (android.os.SystemClock.elapsedRealtime() - startedAt).coerceAtLeast(0L) / 1000
+            kotlinx.coroutines.delay(1_000)
+        }
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.ai_progress_generating_metadata),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = "%d:%02d".format(elapsedSeconds / 60, elapsedSeconds % 60),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+        )
+        Text(
+            text = stringResource(R.string.ai_metadata_generating_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Why an AI preview failed, with the provider's own message when the reason is not a known one. */
+private data class AiPreviewFailure(val type: LibraryNoticeType, val detail: String?)
+
+@Composable
+private fun AiErrorMessage(message: String, detail: String?) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.ErrorOutline,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.error,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+            detail?.trim()?.takeIf { it.isNotEmpty() }?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
@@ -2166,15 +2377,15 @@ private fun AutofillSourceSelector(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         AutofillSourceButton(
-            label = stringResource(R.string.autofill_source_open_metadata),
-            selected = selectedSource == AutofillSource.OPEN_METADATA,
-            onClick = { onSelectSource(AutofillSource.OPEN_METADATA) },
-            modifier = Modifier.weight(1f),
-        )
-        AutofillSourceButton(
             label = stringResource(R.string.autofill_source_ai),
             selected = selectedSource == AutofillSource.AI,
             onClick = { onSelectSource(AutofillSource.AI) },
+            modifier = Modifier.weight(1f),
+        )
+        AutofillSourceButton(
+            label = stringResource(R.string.autofill_source_open_metadata),
+            selected = selectedSource == AutofillSource.OPEN_METADATA,
+            onClick = { onSelectSource(AutofillSource.OPEN_METADATA) },
             modifier = Modifier.weight(1f),
         )
     }
@@ -2187,11 +2398,14 @@ private fun AutofillSourceButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Narrow padding so labels such as "Open sources" fit on a phone without being cut off.
+    val contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp)
     if (selected) {
         Button(
             onClick = onClick,
             modifier = modifier.height(42.dp),
             shape = RoundedCornerShape(5.dp),
+            contentPadding = contentPadding,
         ) {
             Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -2200,6 +2414,7 @@ private fun AutofillSourceButton(
             onClick = onClick,
             modifier = modifier.height(42.dp),
             shape = RoundedCornerShape(5.dp),
+            contentPadding = contentPadding,
         ) {
             Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -2557,8 +2772,18 @@ private fun CoverGenerationDialog(
                     Spacer(modifier = Modifier.height(18.dp))
                 }
 
-                Text(stringResource(R.string.ai_data_disclosure), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // Finding covers uses the text provider (possibly the ChatGPT plan); generating always uses the API key.
+                Text(
+                    text = stringResource(
+                        if (mode == CoverDialogMode.FIND && usesChatGptPlan) {
+                            R.string.ai_data_disclosure_chatgpt
+                        } else {
+                            R.string.ai_data_disclosure
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 if (mode == CoverDialogMode.FIND) {
                     if (usesChatGptPlan) ChatGptPlanIndicator()
                     Spacer(Modifier.height(10.dp))

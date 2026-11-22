@@ -65,4 +65,6 @@
     <string name="settings_ai_chatgpt_enable_plan">Autoriser l’utilisation du forfait ChatGPT</string>
     <string name="settings_ai_chatgpt_no_plan">Votre compte est connecté. Autorisez l’utilisation de votre forfait pour les fiches et les couvertures, ou configurez une clé API.</string>
     <string name="chatgpt_notice_timed_out">Le délai de connexion à ChatGPT a expiré. Réessayez dans les paramètres.</string>
+    <string name="ai_data_disclosure_chatgpt">La génération transmet votre demande et les métadonnées du livre à OpenAI via votre compte ChatGPT. Vérifiez les résultats avant de les appliquer.</string>
+    <string name="ai_metadata_generating_hint">L’IA vérifie les informations sur le web : cela peut prendre jusqu’à une minute.</string>
 </resources>

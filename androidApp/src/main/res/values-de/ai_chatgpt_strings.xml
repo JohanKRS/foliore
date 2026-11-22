@@ -65,4 +65,6 @@
     <string name="settings_ai_chatgpt_enable_plan">ChatGPT-Tarif freigeben</string>
     <string name="settings_ai_chatgpt_no_plan">Dein Konto ist verbunden. Gib deinen Tarif für Buchdetails und Cover frei oder richte einen API-Schlüssel ein.</string>
     <string name="chatgpt_notice_timed_out">Die Zeit für die ChatGPT-Anmeldung ist abgelaufen. Starte sie in den Einstellungen erneut.</string>
+    <string name="ai_data_disclosure_chatgpt">Bei der Generierung werden deine Eingabe und die Buchmetadaten über dein ChatGPT-Konto an OpenAI gesendet. Prüfe die Ergebnisse vor der Übernahme.</string>
+    <string name="ai_metadata_generating_hint">Die KI prüft die Angaben im Web, das kann bis zu einer Minute dauern.</string>
 </resources>

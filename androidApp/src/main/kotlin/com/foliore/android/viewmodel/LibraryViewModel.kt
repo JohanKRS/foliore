@@ -592,6 +592,8 @@ class LibraryViewModel(
         _notice.value = LibraryNotice(LibraryNoticeType.KINDLE_SMTP_CLEARED)
     }
 
+    private var metadataPreviewJob: kotlinx.coroutines.Job? = null
+
     fun requestMetadataAutofill() {
         _notice.value = LibraryNotice(LibraryNoticeType.AI_PROVIDER_REQUIRED)
     }
@@ -658,49 +660,49 @@ class LibraryViewModel(
         }
     }
 
+    /**
+     * Generates an AI metadata preview for the auto-fill dialog. It does not use the shared
+     * progress slot: an open-sources search or a sync running at the same time must not swallow
+     * the request, and the dialog shows its own progress and errors, with the provider's message
+     * as detail. Exactly one of the callbacks is called, unless a newer request replaces this one.
+     */
     fun generateMetadataPreview(
         bookId: String,
         prompt: String,
         draft: BookMetadataDraft,
         onPreviewReady: (BookMetadataDraft) -> Unit,
+        onFailure: (LibraryNoticeType, String?) -> Unit,
     ) {
         val provider = _state.value.aiCapabilities.textProvider
         if (provider == null) {
-            requestMetadataAutofill()
+            onFailure(LibraryNoticeType.AI_PROVIDER_REQUIRED, null)
             return
         }
-        if (_state.value.hasActiveProgress) return
-
-        viewModelScope.launch {
-            _state.update {
-                it.copy(
-                    importProgress = SyncProgress(SyncProgressPhase.GENERATING_METADATA),
-                )
-            }
-            val book = withContext(Dispatchers.IO) {
-                libraryRepository.getBook(bookId)
-            }
-            val result = if (book == null) {
-                OpenAiResult.Failure("Book not found")
-            } else {
+        // A new request replaces one still running, so a dialog that lost track of it can't get stuck.
+        metadataPreviewJob?.cancel()
+        metadataPreviewJob = viewModelScope.launch {
+            val result = try {
                 withContext(Dispatchers.IO) {
-                    openAiApiService.generateMetadataPreview(
-                        provider = provider,
-                        book = book,
-                        draft = draft,
-                        prompt = prompt,
-                    )
+                    val book = libraryRepository.getBook(bookId)
+                    if (book == null) {
+                        OpenAiResult.Failure("Book not found")
+                    } else {
+                        openAiApiService.generateMetadataPreview(
+                            provider = provider,
+                            book = book,
+                            draft = draft,
+                            prompt = prompt,
+                        )
+                    }
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                OpenAiResult.Failure(error.message)
             }
-            _state.update { it.copy(importProgress = null) }
             when (result) {
-                is OpenAiResult.Success -> {
-                    onPreviewReady(result.value)
-                    _notice.value = LibraryNotice(LibraryNoticeType.AI_METADATA_PREVIEW_READY)
-                }
-                is OpenAiResult.Failure -> {
-                    _notice.value = LibraryNotice(result.toAiFailureNoticeType())
-                }
+                is OpenAiResult.Success -> onPreviewReady(result.value)
+                is OpenAiResult.Failure -> onFailure(result.toAiFailureNoticeType(), result.message)
             }
         }
     }

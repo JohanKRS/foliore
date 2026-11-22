@@ -65,4 +65,6 @@
     <string name="settings_ai_chatgpt_enable_plan">ChatGPTプランの利用を許可</string>
     <string name="settings_ai_chatgpt_no_plan">アカウントは接続されています。本の詳細や表紙にChatGPTを使うには、プランの利用を許可するか、APIキーを設定してください。</string>
     <string name="chatgpt_notice_timed_out">ChatGPTへのサインインがタイムアウトしました。設定からやり直してください。</string>
+    <string name="ai_data_disclosure_chatgpt">生成すると、プロンプトと本のメタデータがChatGPTアカウントを通じてOpenAIに送信されます。適用前に結果を確認してください。</string>
+    <string name="ai_metadata_generating_hint">AIがウェブで情報を確認するため、最大1分ほどかかることがあります。</string>
 </resources>
