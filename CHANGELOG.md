@@ -2,9 +2,9 @@
 
 All notable changes to Foliore are listed here, newest first. Each version matches a [GitHub Release](https://github.com/JohanKRS/Foliore/releases) with a signed APK. The release process is described in [docs/RELEASING.md](docs/RELEASING.md).
 
-From 0.1.0 on, each entry groups its changes under **Added**, **Changed**, **Fixed** and **Removed**, leaving out empty groups.
+After 1.0.0, each entry groups its changes under **Added**, **Changed**, **Fixed** and **Removed**, leaving out empty groups.
 
-## [0.1.0] - 2026-11-22
+## [1.0.0] - 2026-11-22
 
 First public release. It lists the features only, since there is no earlier public version to compare with.
 
@@ -18,4 +18,4 @@ First public release. It lists the features only, since there is no earlier publ
 - **Your style.** Light and dark themes, four app icons and eight languages.
 - **Free and open source** under the GPL-3.0. No ads, purchases or book limits, and no account required.
 
-[0.1.0]: https://github.com/JohanKRS/Foliore/releases/tag/v0.1.0
+[1.0.0]: https://github.com/JohanKRS/Foliore/releases/tag/v1.0.0

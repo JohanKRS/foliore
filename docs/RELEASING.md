@@ -39,4 +39,4 @@ gh release create vX.Y.Z foliore-X.Y.Z.apk --repo JohanKRS/foliore \
   --target <commit SHA> --title "Foliore X.Y.Z" --notes-file notes.md --latest
 ```
 
-The first public release, 0.1.0, lists features only. Every release after it lists the changes.
+The first public release, 1.0.0, lists features only. Every release after it lists the changes.
