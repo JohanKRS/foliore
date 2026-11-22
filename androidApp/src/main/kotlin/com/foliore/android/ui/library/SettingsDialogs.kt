@@ -38,7 +38,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.foliore.android.R
+import com.foliore.android.ai.ChatGptModel
 import com.foliore.android.ai.ChatGptOAuth
+import com.foliore.android.ai.ChatGptSignInMode
 import com.foliore.android.storage.ChatGptAccount
 import com.foliore.android.storage.KindleEmailSettings
 import com.foliore.android.storage.SyncProvider
@@ -392,7 +394,7 @@ internal fun AiSettingsDialog(
     aiSettings: AiSettingsState,
     onOpenAiApiKeySave: (String) -> Unit,
     onOpenAiApiKeyClear: () -> Unit,
-    onChatGptSignIn: () -> Unit,
+    onChatGptSignIn: (ChatGptSignInMode) -> Unit,
     onChatGptCancelSignIn: () -> Unit,
     onChatGptSignOut: () -> Unit,
     onChatGptModelSelect: (String) -> Unit,
@@ -413,6 +415,7 @@ internal fun AiSettingsDialog(
             FolioreDialogSectionCard(label = stringResource(R.string.settings_ai_chatgpt)) {
                 ChatGptSettingsSection(
                     account = aiSettings.chatGptAccount,
+                    hasRegistration = aiSettings.hasRegistration,
                     isSigningIn = aiSettings.isChatGptSigningIn,
                     onSignIn = onChatGptSignIn,
                     onCancelSignIn = onChatGptCancelSignIn,
@@ -452,8 +455,9 @@ internal fun AiSettingsDialog(
 @Composable
 private fun ChatGptSettingsSection(
     account: ChatGptAccount?,
+    hasRegistration: Boolean,
     isSigningIn: Boolean,
-    onSignIn: () -> Unit,
+    onSignIn: (ChatGptSignInMode) -> Unit,
     onCancelSignIn: () -> Unit,
     onSignOut: () -> Unit,
     onModelSelect: (String) -> Unit,
@@ -461,34 +465,6 @@ private fun ChatGptSettingsSection(
     val uriHandler = LocalUriHandler.current
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         when {
-            account != null -> {
-                Text(
-                    text = account.label?.let { stringResource(R.string.settings_ai_chatgpt_connected_as, it) }
-                        ?: stringResource(R.string.settings_ai_chatgpt_connected),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.settings_ai_chatgpt_usage_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (account.models.isNotEmpty()) {
-                    ChatGptModelPicker(
-                        models = account.models,
-                        selected = account.model,
-                        onSelect = onModelSelect,
-                    )
-                }
-                SettingsDialogButtonPair(
-                    primaryLabel = stringResource(R.string.chatgpt_manage_usage),
-                    primaryEnabled = true,
-                    onPrimaryClick = { runCatching { uriHandler.openUri(ChatGptOAuth.USAGE_SETTINGS_URL) } },
-                    secondaryLabel = stringResource(R.string.settings_ai_chatgpt_sign_out),
-                    secondaryEnabled = true,
-                    onSecondaryClick = onSignOut,
-                )
-            }
             isSigningIn -> {
                 Text(
                     text = stringResource(R.string.settings_ai_chatgpt_waiting),
@@ -504,6 +480,37 @@ private fun ChatGptSettingsSection(
                     onSecondaryClick = onCancelSignIn,
                 )
             }
+            account != null -> {
+                Text(
+                    text = account.label?.let { stringResource(R.string.settings_ai_chatgpt_connected_as, it) }
+                        ?: stringResource(R.string.settings_ai_chatgpt_connected),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(if (account.planUsageGranted) R.string.settings_ai_chatgpt_usage_note else R.string.settings_ai_chatgpt_no_plan),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (account.planUsageGranted && account.models.isNotEmpty()) {
+                    ChatGptModelPicker(
+                        models = account.models,
+                        selected = account.model,
+                        onSelect = onModelSelect,
+                    )
+                }
+                SettingsDialogButtonPair(
+                    primaryLabel = stringResource(if (account.planUsageGranted) R.string.chatgpt_manage_usage else R.string.settings_ai_chatgpt_enable_plan),
+                    primaryEnabled = true,
+                    onPrimaryClick = {
+                        if (account.planUsageGranted) runCatching { uriHandler.openUri(ChatGptOAuth.USAGE_SETTINGS_URL) }
+                        else onSignIn(ChatGptSignInMode.ENABLE_PLAN)
+                    },
+                    secondaryLabel = stringResource(R.string.settings_ai_chatgpt_sign_out),
+                    secondaryEnabled = true,
+                    onSecondaryClick = onSignOut,
+                )
+            }
             else -> {
                 Text(
                     text = stringResource(R.string.settings_ai_chatgpt_description),
@@ -515,8 +522,13 @@ private fun ChatGptSettingsSection(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
-                Button(onClick = onSignIn, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { onSignIn(ChatGptSignInMode.RETURNING) }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.settings_ai_chatgpt_sign_in))
+                }
+                if (hasRegistration) {
+                    TextButton(onClick = { onSignIn(ChatGptSignInMode.DIFFERENT_ACCOUNT) }) {
+                        Text(stringResource(R.string.settings_ai_chatgpt_other_account))
+                    }
                 }
             }
         }
@@ -525,7 +537,7 @@ private fun ChatGptSettingsSection(
 
 @Composable
 private fun ChatGptModelPicker(
-    models: List<String>,
+    models: List<ChatGptModel>,
     selected: String?,
     onSelect: (String) -> Unit,
 ) {
@@ -542,18 +554,18 @@ private fun ChatGptModelPicker(
         )
         Box {
             TextButton(onClick = { expanded = true }) {
-                Text(selected ?: models.first())
+                Text((models.firstOrNull { it.slug == selected } ?: models.first()).displayName)
                 Icon(imageVector = Icons.Outlined.ArrowDropDown, contentDescription = null)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 models.forEach { model ->
                     DropdownMenuItem(
-                        text = { Text(model) },
+                        text = { Text(model.displayName) },
                         onClick = {
                             expanded = false
-                            onSelect(model)
+                            onSelect(model.slug)
                         },
-                        trailingIcon = if (model == selected) {
+                        trailingIcon = if (model.slug == selected) {
                             { Icon(imageVector = Icons.Outlined.Check, contentDescription = null) }
                         } else {
                             null

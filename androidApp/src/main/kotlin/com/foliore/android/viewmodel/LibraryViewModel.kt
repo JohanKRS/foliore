@@ -11,6 +11,7 @@ import com.foliore.android.ai.AiGeneratedCoverOption
 import com.foliore.android.ai.AiErrorCodes
 import com.foliore.android.ai.AiProvider
 import com.foliore.android.ai.ChatGptAuthService
+import com.foliore.android.ai.ChatGptSignInMode
 import com.foliore.android.ai.ChatGptSignInFailure
 import com.foliore.android.ai.ChatGptSignInStatus
 import com.foliore.android.ai.OpenAiApiService
@@ -100,6 +101,7 @@ class LibraryViewModel(
             isAutoSyncWifiOnly = syncService.autoSyncWifiOnly(),
             hasOpenAiApiKey = aiPreferenceRepository.hasOpenAiApiKey.value,
             chatGptAccount = chatGptAuthService.account.value,
+            hasChatGptRegistration = chatGptAuthService.repository.issuedClientId != null,
             aiCoverPromptRecords = aiCoverPromptRepository.records(),
             kindleEmailSettings = kindleEmailPreferenceRepository.settings,
             gridColumns = libraryDisplayPreferenceRepository.gridColumns().toBookGridColumns(),
@@ -126,7 +128,11 @@ class LibraryViewModel(
         refreshSyncState()
         syncWorkScheduler.refreshPeriodicSync()
         viewModelScope.launch {
-            chatGptAuthService.account.collect { account -> _state.update { it.copy(chatGptAccount = account) } }
+            chatGptAuthService.account.collect { account ->
+                _state.update {
+                    it.copy(chatGptAccount = account, hasChatGptRegistration = chatGptAuthService.repository.issuedClientId != null)
+                }
+            }
         }
         viewModelScope.launch {
             chatGptAuthService.status.collect(::onChatGptStatus)
@@ -357,8 +363,8 @@ class LibraryViewModel(
     }
 
     /** Opens the browser for the optional ChatGPT sign-in; [openBrowser] returns false without a browser. */
-    fun startChatGptSignIn(openBrowser: (android.net.Uri) -> Boolean) {
-        chatGptAuthService.startSignIn(openBrowser)
+    fun startChatGptSignIn(mode: ChatGptSignInMode, openBrowser: (android.net.Uri) -> Boolean) {
+        chatGptAuthService.startSignIn(mode, openBrowser)
     }
 
     fun cancelChatGptSignIn() {
@@ -389,19 +395,20 @@ class LibraryViewModel(
         _state.update { it.copy(chatGptSignIn = status) }
         when (status) {
             ChatGptSignInStatus.SignedIn -> {
-                _state.update { it.copy(showChatGptWelcome = !chatGptAuthService.repository.welcomeShown) }
+                val granted = chatGptAuthService.account.value?.planUsageGranted == true
+                _state.update { it.copy(showChatGptWelcome = granted && !chatGptAuthService.repository.welcomeShown) }
                 _notice.value = LibraryNotice(LibraryNoticeType.CHATGPT_SIGNED_IN)
-                chatGptAuthService.clearStatus()
+                chatGptAuthService.clearStatus(status)
             }
             is ChatGptSignInStatus.Failed -> {
                 _notice.value = when (status.reason) {
                     ChatGptSignInFailure.CANCELLED -> null
                     ChatGptSignInFailure.DENIED -> LibraryNotice(LibraryNoticeType.CHATGPT_SIGN_IN_DENIED)
                     ChatGptSignInFailure.BROWSER_UNAVAILABLE -> LibraryNotice(LibraryNoticeType.CHATGPT_BROWSER_UNAVAILABLE)
-                    ChatGptSignInFailure.TIMED_OUT,
+                    ChatGptSignInFailure.TIMED_OUT -> LibraryNotice(LibraryNoticeType.CHATGPT_SIGN_IN_TIMED_OUT)
                     ChatGptSignInFailure.FAILED -> LibraryNotice(LibraryNoticeType.CHATGPT_SIGN_IN_FAILED)
                 } ?: _notice.value
-                chatGptAuthService.clearStatus()
+                chatGptAuthService.clearStatus(status)
             }
             else -> Unit
         }
@@ -1778,6 +1785,7 @@ class LibraryViewModel(
             AiErrorCodes.PROVIDER_DISABLED -> LibraryNoticeType.AI_PROVIDER_NOT_READY
             AiErrorCodes.CHATGPT_USAGE_LIMIT -> LibraryNoticeType.CHATGPT_USAGE_LIMIT
             AiErrorCodes.CHATGPT_NOT_ELIGIBLE -> LibraryNoticeType.CHATGPT_NOT_ELIGIBLE
+            AiErrorCodes.CHATGPT_PLAN_NOT_GRANTED -> LibraryNoticeType.CHATGPT_PLAN_NOT_GRANTED
             AiErrorCodes.CHATGPT_SIGN_IN_REQUIRED -> LibraryNoticeType.CHATGPT_SIGN_IN_REQUIRED
             AiErrorCodes.CHATGPT_UNAVAILABLE -> LibraryNoticeType.CHATGPT_UNAVAILABLE
             AiErrorCodes.RATE_LIMITED -> LibraryNoticeType.AI_RATE_LIMITED

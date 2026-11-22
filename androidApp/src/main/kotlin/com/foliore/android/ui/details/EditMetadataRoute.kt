@@ -81,7 +81,7 @@ fun EditMetadataRoute(
     ) { paddingValues ->
         EditMetadataScreen(
             book = book,
-            readingStarted = (state.readingActivity[bookId]?.fraction ?: 0.0) > 0.0,
+            readingStarted = state.readingActivity[bookId]?.fraction != null,
             aiCapabilities = state.aiCapabilities,
             aiCoverPromptRecords = state.aiCoverPromptRecords,
             onBack = onBack,

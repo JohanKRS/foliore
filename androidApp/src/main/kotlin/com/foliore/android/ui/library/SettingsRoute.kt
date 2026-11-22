@@ -140,6 +140,7 @@ fun SettingsRoute(
             aiSettings = AiSettingsState(
                 hasOpenAiApiKey = state.hasOpenAiApiKey,
                 chatGptAccount = state.chatGptAccount,
+                hasRegistration = state.hasChatGptRegistration,
                 isChatGptSigningIn = state.isChatGptSigningIn,
             ),
             kindleEmailSettings = state.kindleEmailSettings,
@@ -157,8 +158,8 @@ fun SettingsRoute(
             onChooseAppLanguage = { showLanguagePicker = true },
             onOpenAiApiKeySave = viewModel::saveOpenAiApiKey,
             onOpenAiApiKeyClear = viewModel::clearOpenAiApiKey,
-            onChatGptSignIn = {
-                viewModel.startChatGptSignIn { uri ->
+            onChatGptSignIn = { mode ->
+                viewModel.startChatGptSignIn(mode) { uri ->
                     runCatching {
                         context.startActivity(com.foliore.android.ai.ChatGptAuthService.browserIntent(uri))
                     }.isSuccess

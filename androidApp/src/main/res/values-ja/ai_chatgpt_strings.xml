@@ -61,4 +61,8 @@
     <string name="about_open_source">Folioreは GPL-3.0 ライセンスの自由なオープンソースソフトウェアです。</string>
     <string name="about_source_code">ソースコード</string>
     <string name="terms_body">無料・オープンソース\nFolioreは GNU General Public License バージョン3（GPL-3.0）で配布される自由ソフトウェアです。購入、サブスクリプション、書籍数の上限はありません。このライセンスに従って、使用、調査、改変、共有ができます。ソースコードとライセンス全文は %2$s で公開しています。\n\n無保証\nGPL-3.0 に定めるとおり、Folioreは適用法で認められる範囲で「現状のまま」無保証で提供されます。これは法律で定められた責任を免除したり、お客様の権利を制限したりするものではありません。\n\nファイルとバックアップ\n書籍や重要なデータの最新のコピーを Foliore の外にも保管してください。同期は変更や削除も他の端末に反映するため、独立したバックアップの代わりにはなりません。データの削除、端末の変更、アプリのアンインストールの前に、コピーを確認してください。復元できるかどうかは、残っているファイルやバージョンによって異なり、復元できない場合もあります。この説明は、法律で定められた責任を免除したり、お客様の権利を制限したりするものではありません。\n\n任意のサービス\nGoogle Drive、Gmail、Kindle、ChatGPT、OpenAI API はいずれも任意で、どれにもサインインせずにFolioreを使えます。いずれかを使う場合は、そのサービスの規約が適用されます。ChatGPTアカウントでのリクエストはご利用プランの使用量に含まれます。OpenAIのAPIキーでのリクエストは、そのキーのアカウントにOpenAIから請求されます。\n\nAIの提案\nAIが提案するあらすじ、詳細、表紙には誤りが含まれる場合があります。保存する前に確認してください。ウェブで見つかった表紙の権利は各権利者にあります。個人のライブラリ内でのみ使用してください。\n\n互換性と更新\n互換性は Google Play のアプリ掲載情報に示されます。Folioreは可能な範囲で保守されますが、新機能や、将来のすべての Android バージョンと端末での動作を約束するものではありません。\n\nサポート\nお困りの際は %1$s までご連絡いただくか、プロジェクトのリポジトリで Issue を作成してください。</string>
+    <string name="settings_ai_chatgpt_other_account">別のChatGPTアカウントを使う</string>
+    <string name="settings_ai_chatgpt_enable_plan">ChatGPTプランの利用を許可</string>
+    <string name="settings_ai_chatgpt_no_plan">アカウントは接続されています。本の詳細や表紙にChatGPTを使うには、プランの利用を許可するか、APIキーを設定してください。</string>
+    <string name="chatgpt_notice_timed_out">ChatGPTへのサインインがタイムアウトしました。設定からやり直してください。</string>
 </resources>

@@ -77,16 +77,18 @@ internal class ReaderViewModel(context: Context, private val bookId: String) : V
 
     fun position(locator: ReadingLocator, page: Int, pages: Int, user: Boolean) {
         val state = mutable.value
-        if (!locator.valid() || locator.href != state.navigation?.locator?.href) return
+        val navigation = state.navigation ?: return
+        if (!locator.valid() || locator.href != navigation.locator.href) return
         mutable.value = state.copy(locator = locator, page = page.coerceAtLeast(1), pages = pages.coerceAtLeast(1),
-            navigation = state.navigation?.let { it.copy(locator = if (user) locator else it.locator, fragment = null, user = false) })
+            navigation = navigation.copy(locator = if (user) locator else navigation.locator, fragment = null, user = false))
         if (user && state.book != null) {
             repository.savePosition(bookId, state.book.book.originalHashSha256, locator)
             lastPosition = repository.position(bookId, state.book.book.originalHashSha256)
-            val publication = state.publication
-            val section = state.navigation?.section
-            if (publication != null && section != null) saveProgress(state.book, publication, section, locator)
         }
+        // Initial pagination and reflow report a measured position without moving the synced bookmark.
+        val book = state.book ?: return
+        val publication = state.publication ?: return
+        saveProgress(book, publication, navigation.section, locator)
     }
 
     /** Same whole-book fraction the reader footer shows, kept for the library grid. */

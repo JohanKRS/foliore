@@ -22,9 +22,14 @@ import com.foliore.android.storage.AppLanguagePreferenceRepository
  * listener can answer the redirect. It only runs during a sign-in and shows no other work.
  */
 class ChatGptSignInForegroundService : Service() {
+    private var attemptId = 0L
+    private var serviceStartId = 0
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        attemptId = intent?.getLongExtra(EXTRA_ATTEMPT, 0L) ?: 0L
+        serviceStartId = startId
         val localized = AppLanguagePreferenceRepository.localizedContext(this)
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
@@ -52,28 +57,30 @@ class ChatGptSignInForegroundService : Service() {
             .build()
         val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE else 0
         runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type) }
-            .onFailure { stopSelf() }
+            .onFailure { end(startId, ChatGptSignInFailure.FAILED) }
         return START_NOT_STICKY
     }
 
     @Deprecated("Replaced by onTimeout(Int, Int) on API 35")
-    override fun onTimeout(startId: Int) {
-        stopSelf()
-    }
+    override fun onTimeout(startId: Int) = end(startId, ChatGptSignInFailure.TIMED_OUT)
 
-    override fun onTimeout(startId: Int, fgsType: Int) {
-        stopSelf()
+    override fun onTimeout(startId: Int, fgsType: Int) = end(startId, ChatGptSignInFailure.TIMED_OUT)
+
+    private fun end(startId: Int, reason: ChatGptSignInFailure) {
+        if (startId == serviceStartId) ChatGptAuthService.get(this).serviceEnded(attemptId, reason)
+        stopSelf(startId)
     }
 
     companion object {
         private const val CHANNEL_ID = "chatgpt_sign_in"
         private const val NOTIFICATION_ID = 4107
 
-        fun start(context: Context) {
-            runCatching {
-                ContextCompat.startForegroundService(context, Intent(context, ChatGptSignInForegroundService::class.java))
-            }
-        }
+        private const val EXTRA_ATTEMPT = "sign_in_attempt"
+
+        fun start(context: Context, attemptId: Long): Boolean = runCatching {
+            val intent = Intent(context, ChatGptSignInForegroundService::class.java).putExtra(EXTRA_ATTEMPT, attemptId)
+            ContextCompat.startForegroundService(context, intent) != null
+        }.getOrDefault(false)
 
         fun stop(context: Context) {
             runCatching { context.stopService(Intent(context, ChatGptSignInForegroundService::class.java)) }

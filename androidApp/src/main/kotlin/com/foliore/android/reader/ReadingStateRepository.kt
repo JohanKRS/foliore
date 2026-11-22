@@ -44,33 +44,59 @@ class ReadingStateRepository(context: Context) {
         merge(ReadingState(bookmarks = listOf(bookmark.copy(deleted = true, clock = current.nextClock(System.currentTimeMillis()), deviceId = deviceId))))
     }
 
-    fun progress(): Map<String, ReadingProgress> = runCatching {
-        preferences.getString("progress", null)?.let { json.decodeFromString<Map<String, ReadingProgress>>(it) }
-    }.getOrNull().orEmpty()
+    // Library reads and old-format migration run on IO. A page turn encodes only its own record.
+    fun progress(): Map<String, ReadingProgress> = synchronized(lock) {
+        migrateProgress()
+        buildMap {
+            for ((key, value) in preferences.all) {
+                if (key.startsWith(PROGRESS_PREFIX) && value is String) {
+                    val progress = runCatching { json.decodeFromString<ReadingProgress>(value) }.getOrNull()
+                    if (progress != null) put(key.removePrefix(PROGRESS_PREFIX), progress)
+                }
+            }
+        }
+    }
+
+    private fun migrateProgress() {
+        val raw = preferences.getString("progress", null) ?: return
+        val legacy = runCatching { json.decodeFromString<Map<String, ReadingProgress>>(raw) }.getOrNull() ?: return
+        val editor = preferences.edit()
+        for ((bookId, progress) in legacy) {
+            val key = PROGRESS_PREFIX + bookId
+            if (!preferences.contains(key)) editor.putString(key, json.encodeToString(progress))
+        }
+        editor.remove("progress").apply()
+    }
 
     fun saveProgress(bookId: String, contentHash: String, fraction: Double) = synchronized(lock) {
         if (!fraction.isFinite()) return@synchronized
-        val next = progress() + (bookId to ReadingProgress(contentHash, fraction.coerceIn(0.0, 1.0), System.currentTimeMillis()))
-        preferences.edit().putString("progress", json.encodeToString(next)).apply()
+        val progress = ReadingProgress(contentHash, fraction.coerceIn(0.0, 1.0), System.currentTimeMillis())
+        preferences.edit().putString(PROGRESS_PREFIX + bookId, json.encodeToString(progress)).apply()
     }
 
     fun removeBook(bookId: String) = synchronized(lock) {
+        migrateProgress()
         val next = state().let { it.copy(positions = it.positions.filterNot { p -> p.bookId == bookId }, bookmarks = it.bookmarks.filterNot { b -> b.bookId == bookId }) }
-        preferences.edit().putString("state", json.encodeToString(next)).putString("progress", json.encodeToString(progress() - bookId)).apply()
+        preferences.edit().putString("state", json.encodeToString(next)).remove(PROGRESS_PREFIX + bookId).apply()
     }
 
     fun copyBook(from: String, to: String) = synchronized(lock) {
+        migrateProgress()
         val current = state()
         merge(ReadingState(
             positions = current.positions.filter { it.bookId == from }.map { it.copy(bookId = to) },
             bookmarks = current.bookmarks.filter { it.bookId == from }.map { it.copy(bookId = to, id = UUID.nameUUIDFromBytes((to + it.id).toByteArray()).toString()) },
         ))
-        val progress = progress()
-        progress[from]?.let { preferences.edit().putString("progress", json.encodeToString(progress + (to to it))).apply() }
+        preferences.getString(PROGRESS_PREFIX + from, null)?.let {
+            preferences.edit().putString(PROGRESS_PREFIX + to, it).apply()
+        }
     }
 
     fun preferences(): ReaderPreferences = runCatching { preferences.getString("appearance", null)?.let { json.decodeFromString<ReaderPreferences>(it) } }.getOrNull()?.normalized() ?: ReaderPreferences()
     fun savePreferences(value: ReaderPreferences) { preferences.edit().putString("appearance", json.encodeToString(value.normalized())).apply() }
 
-    companion object { private val lock = Any() }
+    private companion object {
+        const val PROGRESS_PREFIX = "progress:"
+        val lock = Any()
+    }
 }

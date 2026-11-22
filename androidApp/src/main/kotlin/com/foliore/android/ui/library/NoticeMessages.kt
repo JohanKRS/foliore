@@ -77,6 +77,8 @@ fun noticeMessage(type: LibraryNoticeType): String {
         LibraryNoticeType.CHATGPT_SIGNED_IN -> stringResource(R.string.chatgpt_notice_signed_in)
         LibraryNoticeType.CHATGPT_SIGNED_OUT -> stringResource(R.string.chatgpt_notice_signed_out)
         LibraryNoticeType.CHATGPT_SIGN_IN_FAILED -> stringResource(R.string.chatgpt_notice_sign_in_failed)
+        LibraryNoticeType.CHATGPT_SIGN_IN_TIMED_OUT -> stringResource(R.string.chatgpt_notice_timed_out)
+        LibraryNoticeType.CHATGPT_PLAN_NOT_GRANTED -> stringResource(R.string.settings_ai_chatgpt_no_plan)
         LibraryNoticeType.CHATGPT_SIGN_IN_DENIED -> stringResource(R.string.chatgpt_notice_sign_in_denied)
         LibraryNoticeType.CHATGPT_BROWSER_UNAVAILABLE -> stringResource(R.string.chatgpt_notice_browser_unavailable)
         LibraryNoticeType.CHATGPT_SIGN_IN_REQUIRED -> stringResource(R.string.chatgpt_notice_sign_in_required)
