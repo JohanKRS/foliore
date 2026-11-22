@@ -18,3 +18,8 @@ tablet-*.png
 publication.properties
 billing.properties
 support/private-reports/
+
+# macOS and local environment files
+.DS_Store
+.env
+.env.*
