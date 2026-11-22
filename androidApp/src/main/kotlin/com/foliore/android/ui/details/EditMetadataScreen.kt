@@ -32,6 +32,8 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.automirrored.outlined.ShortText
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CloudDone
@@ -78,6 +80,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -101,6 +104,7 @@ import com.foliore.android.ui.TopChromeContent
 import com.foliore.android.ui.TopChromeDividerHalfHeight
 import com.foliore.android.ui.TopChromeHeaderHeight
 import com.foliore.android.ui.library.EditorialDivider
+import com.foliore.android.ui.library.FolioreOptionsDialog
 import com.foliore.android.ui.library.StatusPill
 import com.foliore.android.ui.library.SyncProgressStatusLine
 import com.foliore.android.ui.theme.CormorantGaramondFamily
@@ -122,6 +126,7 @@ import java.io.File
 @Composable
 fun EditMetadataScreen(
     book: LibraryBook?,
+    readingStarted: Boolean,
     hasOpenAiApiKey: Boolean,
     aiCoverPromptRecords: List<AiCoverPromptRecord>,
     onBack: () -> Unit,
@@ -144,6 +149,7 @@ fun EditMetadataScreen(
     onUseGeneratedCover: (AiGeneratedCoverOption, AiCoverPromptRecord, () -> Unit) -> Unit,
     onReplaceCover: () -> Unit,
     onOriginalFiles: () -> Unit,
+    onDelete: () -> Unit,
     onRead: (BookMetadataDraft?) -> Unit,
     isLoading: Boolean,
     progress: SyncProgress?,
@@ -193,6 +199,7 @@ fun EditMetadataScreen(
     var titleTouched by remember { mutableStateOf(false) }
     var showMetadataAutofillDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var showCoverGenerationDialog by rememberSaveable(book.book.id) { mutableStateOf(false) }
+    var showDescriptionEditor by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var metadataPreview by remember(book.book.id) { mutableStateOf<MetadataAutofillPreview?>(null) }
     var lookupCandidates by remember(book.book.id) { mutableStateOf<List<MetadataLookupCandidate>>(emptyList()) }
     var lookupSession by remember(book.book.id) { mutableStateOf(0) }
@@ -242,6 +249,8 @@ fun EditMetadataScreen(
     val latestSaveDraft by rememberUpdatedState(saveDraft)
     val latestShareExport by rememberUpdatedState({ onShareExport(currentDraft().takeIf { it != originalDraft }) })
     val latestSendToKindle by rememberUpdatedState({ onSendToKindle(currentDraft().takeIf { it != originalDraft }) })
+    val latestRead by rememberUpdatedState({ onRead(currentDraft().takeIf { it != originalDraft }) })
+    val hasUnsavedChanges = currentDraft() != originalDraft
     var showUnsavedChanges by rememberSaveable(book.book.id) { mutableStateOf(false) }
     var pendingExit by remember(book.book.id) { mutableStateOf<(() -> Unit)?>(null) }
     val requestExit: (() -> Unit) -> Unit = { destination ->
@@ -359,15 +368,18 @@ fun EditMetadataScreen(
             }
         }
 
-        DisposableEffect(tabletWorkspace, compactActions, saveEnabled) {
+        DisposableEffect(tabletWorkspace, compactActions, saveEnabled, hasUnsavedChanges, readingStarted) {
             onBottomBarActionsChange(
                 EditBottomBarActions(
                     onSave = { latestSaveDraft() },
+                    onRead = { latestRead() },
                     onRequestNavigate = { destination -> latestRequestExit(destination) },
                     onShareExport = { latestShareExport() },
                     onSendToKindle = { latestSendToKindle() },
                     saveEnabled = saveEnabled,
                     hasPendingSave = hasPendingSave,
+                    hasUnsavedChanges = hasUnsavedChanges,
+                    readingStarted = readingStarted,
                     compact = !tabletWorkspace || compactActions,
                 ),
             )
@@ -407,6 +419,8 @@ fun EditMetadataScreen(
                     titleTouched = true
                 },
                 titleError = titleError,
+                subtitle = subtitle,
+                onSubtitleChange = { subtitle = it },
                 authors = authors,
                 onAuthorsChange = { authors = it },
                 seriesName = seriesName,
@@ -415,6 +429,8 @@ fun EditMetadataScreen(
                 onSeriesIndexChange = { seriesIndex = it },
                 language = language,
                 onLanguageChange = { language = it },
+                publisher = publisher,
+                onPublisherChange = { publisher = it },
                 publishedDate = publishedDate,
                 onPublishedDateChange = { publishedDate = it },
                 tags = tags,
@@ -422,8 +438,10 @@ fun EditMetadataScreen(
                 isbn = isbn,
                 onIsbnChange = { isbn = it },
                 description = description,
+                onEditDescription = { showDescriptionEditor = true },
                 onRead = { onRead(currentDraft().takeIf { it != originalDraft }) },
                 onOriginalFiles = onOriginalFiles,
+                onDelete = onDelete,
                 originalFilesEnabled = !isLoading,
                 onBack = guardedBack,
                 onReplaceCover = onReplaceCover,
@@ -445,6 +463,8 @@ fun EditMetadataScreen(
                     titleTouched = true
                 },
                 titleError = titleError,
+                subtitle = subtitle,
+                onSubtitleChange = { subtitle = it },
                 authors = authors,
                 onAuthorsChange = { authors = it },
                 seriesName = seriesName,
@@ -453,11 +473,15 @@ fun EditMetadataScreen(
                 onSeriesIndexChange = { seriesIndex = it },
                 language = language,
                 onLanguageChange = { language = it },
+                publisher = publisher,
+                onPublisherChange = { publisher = it },
                 publishedDate = publishedDate,
                 onPublishedDateChange = { publishedDate = it },
                 description = description,
+                onEditDescription = { showDescriptionEditor = true },
                 onRead = { onRead(currentDraft().takeIf { it != originalDraft }) },
                 onOriginalFiles = onOriginalFiles,
+                onDelete = onDelete,
                 originalFilesEnabled = !isLoading,
                 tags = tags,
                 onTagsChange = { tags = it },
@@ -522,6 +546,17 @@ fun EditMetadataScreen(
             },
             onApplyPreview = applyMetadataPreview,
             onDismiss = { showMetadataAutofillDialog = false; lookupSession++; resolvingCandidateId = null },
+        )
+    }
+
+    if (showDescriptionEditor) {
+        DescriptionEditorDialog(
+            description = description,
+            onApply = { edited ->
+                description = edited
+                showDescriptionEditor = false
+            },
+            onDismiss = { showDescriptionEditor = false },
         )
     }
 
@@ -608,6 +643,8 @@ private fun TabletEditBookScreen(
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
+    subtitle: String,
+    onSubtitleChange: (String) -> Unit,
     authors: String,
     onAuthorsChange: (String) -> Unit,
     seriesName: String,
@@ -616,6 +653,8 @@ private fun TabletEditBookScreen(
     onSeriesIndexChange: (String) -> Unit,
     language: String,
     onLanguageChange: (String) -> Unit,
+    publisher: String,
+    onPublisherChange: (String) -> Unit,
     publishedDate: String,
     onPublishedDateChange: (String) -> Unit,
     tags: String,
@@ -623,7 +662,9 @@ private fun TabletEditBookScreen(
     isbn: String,
     onIsbnChange: (String) -> Unit,
     description: String,
+    onEditDescription: () -> Unit,
     onOriginalFiles: () -> Unit,
+    onDelete: () -> Unit,
     originalFilesEnabled: Boolean,
     onRead: () -> Unit,
     onBack: () -> Unit,
@@ -668,58 +709,16 @@ private fun TabletEditBookScreen(
                 ) {
                     EditBookCover(
                         book = book,
+                        onClick = onRead,
+                        enabled = originalFilesEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
-                    OutlinedButton(
-                        onClick = onReplaceCover,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(tuning.detailsTabletCoverButtonHeight.dp),
-                        shape = RoundedCornerShape(5.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Image,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.details_action_replace_cover),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    if (hasOpenAiApiKey) {
-                        Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonSpacing.dp))
-                        OutlinedButton(
-                            onClick = onGenerateCoverClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(tuning.detailsTabletCoverButtonHeight.dp),
-                            shape = RoundedCornerShape(5.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
-                            ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.details_action_generate_cover),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
+                    CoverActions(
+                        hasOpenAiApiKey = hasOpenAiApiKey,
+                        onReplaceCover = onReplaceCover,
+                        onGenerateCoverClick = onGenerateCoverClick,
+                    )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
@@ -801,6 +800,18 @@ private fun TabletEditBookScreen(
                         )
                     }
                     TabletMetadataField(
+                        icon = Icons.AutoMirrored.Outlined.ShortText,
+                        label = stringResource(R.string.edit_metadata_field_subtitle),
+                    ) {
+                        MetadataTextField(
+                            value = subtitle,
+                            onValueChange = onSubtitleChange,
+                            label = stringResource(R.string.edit_metadata_field_subtitle),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
                         icon = Icons.Outlined.PersonOutline,
                         label = stringResource(R.string.edit_metadata_field_authors),
                     ) {
@@ -850,6 +861,18 @@ private fun TabletEditBookScreen(
                         )
                     }
                     TabletMetadataField(
+                        icon = Icons.Outlined.Business,
+                        label = stringResource(R.string.edit_metadata_field_publisher),
+                    ) {
+                        MetadataTextField(
+                            value = publisher,
+                            onValueChange = onPublisherChange,
+                            label = stringResource(R.string.edit_metadata_field_publisher),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
                         icon = Icons.Outlined.CalendarToday,
                         label = stringResource(R.string.details_published_year),
                     ) {
@@ -888,14 +911,13 @@ private fun TabletEditBookScreen(
                     }
                 }
 
-                androidx.compose.material3.TextButton(onClick = onRead, enabled = originalFilesEnabled, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.reader_open))
-                }
                 TabletSyncSection(book = book)
-                TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
-                OriginalFilesFooter(onClick = onOriginalFiles, enabled = originalFilesEnabled)
+                TabletAboutSection(description = description, onEdit = onEditDescription)
+                BookFooterActions(
+                    onOriginalFiles = onOriginalFiles,
+                    onDelete = onDelete,
+                    enabled = originalFilesEnabled,
+                )
                 Spacer(modifier = Modifier.height(bottomChromeInset))
             }
         }
@@ -913,6 +935,8 @@ private fun StackedEditBookScreen(
     title: String,
     onTitleChange: (String) -> Unit,
     titleError: Boolean,
+    subtitle: String,
+    onSubtitleChange: (String) -> Unit,
     authors: String,
     onAuthorsChange: (String) -> Unit,
     seriesName: String,
@@ -921,10 +945,14 @@ private fun StackedEditBookScreen(
     onSeriesIndexChange: (String) -> Unit,
     language: String,
     onLanguageChange: (String) -> Unit,
+    publisher: String,
+    onPublisherChange: (String) -> Unit,
     publishedDate: String,
     onPublishedDateChange: (String) -> Unit,
     description: String,
+    onEditDescription: () -> Unit,
     onOriginalFiles: () -> Unit,
+    onDelete: () -> Unit,
     originalFilesEnabled: Boolean,
     onRead: () -> Unit,
     tags: String,
@@ -976,58 +1004,16 @@ private fun StackedEditBookScreen(
                 ) {
                     EditBookCover(
                         book = book,
+                        onClick = onRead,
+                        enabled = originalFilesEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonTopSpacing.dp))
-                    OutlinedButton(
-                        onClick = onReplaceCover,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(tuning.detailsTabletCoverButtonHeight.dp),
-                        shape = RoundedCornerShape(5.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
-                        ),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Image,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.details_action_replace_cover),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    if (hasOpenAiApiKey) {
-                        Spacer(modifier = Modifier.height(tuning.detailsTabletCoverButtonSpacing.dp))
-                        OutlinedButton(
-                            onClick = onGenerateCoverClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(tuning.detailsTabletCoverButtonHeight.dp),
-                            shape = RoundedCornerShape(5.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
-                            ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.details_action_generate_cover),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
+                    CoverActions(
+                        hasOpenAiApiKey = hasOpenAiApiKey,
+                        onReplaceCover = onReplaceCover,
+                        onGenerateCoverClick = onGenerateCoverClick,
+                    )
                     Spacer(modifier = Modifier.height(tuning.detailsTabletCoverTitleTopSpacing.dp))
                     Text(
                         text = title.ifBlank { book.metadata.title },
@@ -1085,6 +1071,18 @@ private fun StackedEditBookScreen(
                         )
                     }
                     TabletMetadataField(
+                        icon = Icons.AutoMirrored.Outlined.ShortText,
+                        label = stringResource(R.string.edit_metadata_field_subtitle),
+                    ) {
+                        MetadataTextField(
+                            value = subtitle,
+                            onValueChange = onSubtitleChange,
+                            label = stringResource(R.string.edit_metadata_field_subtitle),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
                         icon = Icons.Outlined.PersonOutline,
                         label = stringResource(R.string.edit_metadata_field_authors),
                     ) {
@@ -1134,6 +1132,18 @@ private fun StackedEditBookScreen(
                         )
                     }
                     TabletMetadataField(
+                        icon = Icons.Outlined.Business,
+                        label = stringResource(R.string.edit_metadata_field_publisher),
+                    ) {
+                        MetadataTextField(
+                            value = publisher,
+                            onValueChange = onPublisherChange,
+                            label = stringResource(R.string.edit_metadata_field_publisher),
+                            showLabel = false,
+                            singleLine = true,
+                        )
+                    }
+                    TabletMetadataField(
                         icon = Icons.Outlined.CalendarToday,
                         label = stringResource(R.string.details_published_year),
                     ) {
@@ -1172,14 +1182,13 @@ private fun StackedEditBookScreen(
                     }
                 }
 
-                androidx.compose.material3.TextButton(onClick = onRead, enabled = originalFilesEnabled, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.reader_open))
-                }
                 TabletSyncSection(book = book)
-                TabletAboutSection(description = description.ifBlank { book.metadata.description.orEmpty() })
-                OriginalFilesFooter(onClick = onOriginalFiles, enabled = originalFilesEnabled)
+                TabletAboutSection(description = description, onEdit = onEditDescription)
+                BookFooterActions(
+                    onOriginalFiles = onOriginalFiles,
+                    onDelete = onDelete,
+                    enabled = originalFilesEnabled,
+                )
             }
         }
 
@@ -1464,18 +1473,29 @@ private fun TabletRightHeader(
 @Composable
 private fun EditBookCover(
     book: LibraryBook,
+    onClick: () -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val coverPath = listOfNotNull(book.book.coverImagePath, book.book.coverThumbPath)
         .firstOrNull { it.isReadableCoverFile() }
     val coverAspectRatio = remember(coverPath) { coverPath.coverAspectRatio() }
+    // Tapping the cover opens the book, as on a shelf.
+    val openLabel = stringResource(R.string.reader_open)
+    val readClick = Modifier.clickable(
+        enabled = enabled,
+        onClickLabel = openLabel,
+        role = Role.Button,
+        onClick = onClick,
+    )
 
     if (coverPath != null) {
         Box(
             modifier = modifier
                 .aspectRatio(coverAspectRatio)
                 .shadow(6.dp, RoundedCornerShape(7.dp))
-                .clip(RoundedCornerShape(7.dp)),
+                .clip(RoundedCornerShape(7.dp))
+                .then(readClick),
             contentAlignment = Alignment.Center,
         ) {
             AsyncImage(
@@ -1493,13 +1513,108 @@ private fun EditBookCover(
             modifier = modifier
                 .aspectRatio(DefaultCoverAspectRatio)
                 .clip(RoundedCornerShape(7.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .then(readClick),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = stringResource(R.string.cover_placeholder),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CoverActions(
+    hasOpenAiApiKey: Boolean,
+    onReplaceCover: () -> Unit,
+    onGenerateCoverClick: () -> Unit,
+) {
+    val tuning = LocalVisualTuning.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(tuning.detailsTabletCoverButtonSpacing.dp),
+    ) {
+        CoverActionButton(
+            icon = Icons.Outlined.Image,
+            label = stringResource(R.string.details_action_replace_cover),
+            borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
+            onClick = onReplaceCover,
+            modifier = Modifier.weight(1f),
+        )
+        if (hasOpenAiApiKey) {
+            CoverActionButton(
+                icon = Icons.Outlined.AutoAwesome,
+                label = stringResource(R.string.details_action_generate_cover),
+                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.48f),
+                onClick = onGenerateCoverClick,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CoverActionButton(
+    icon: ImageVector,
+    label: String,
+    borderColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tuning = LocalVisualTuning.current
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.height(tuning.detailsTabletCoverButtonHeight.dp),
+        shape = RoundedCornerShape(5.dp),
+        border = BorderStroke(1.dp, borderColor),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun BookFooterActions(
+    onOriginalFiles: () -> Unit,
+    onDelete: () -> Unit,
+    enabled: Boolean,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onOriginalFiles, enabled = enabled) {
+            Text(
+                text = stringResource(R.string.original_files_title),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = "·",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline,
+        )
+        TextButton(onClick = onDelete, enabled = enabled) {
+            Text(
+                text = stringResource(R.string.details_action_delete_book),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
             )
         }
     }
@@ -1594,7 +1709,7 @@ private fun TabletSyncSection(book: LibraryBook) {
 }
 
 @Composable
-private fun TabletAboutSection(description: String?) {
+private fun TabletAboutSection(description: String?, onEdit: () -> Unit) {
     val descriptionText = remember(description) {
         description.toDisplayDescription()
     } ?: stringResource(R.string.book_no_description)
@@ -1612,23 +1727,87 @@ private fun TabletAboutSection(description: String?) {
             horizontalPadding = 0.dp,
         )
         Spacer(modifier = Modifier.height(18.dp))
-        Text(
-            text = stringResource(R.string.details_about_book),
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontFamily = CormorantGaramondFamily,
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.height(14.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.details_about_book),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontFamily = CormorantGaramondFamily,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.primary,
+            )
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = Icons.Outlined.Edit,
+                    contentDescription = stringResource(R.string.edit_metadata_description_edit),
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = descriptionText,
+            modifier = Modifier.clickable(
+                onClickLabel = stringResource(R.string.edit_metadata_description_edit),
+                onClick = onEdit,
+            ),
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontFamily = FontFamily.Serif,
                 lineHeight = 27.sp,
             ),
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.88f),
         )
+    }
+}
+
+@Composable
+private fun DescriptionEditorDialog(
+    description: String,
+    onApply: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    // Edit readable text; HTML from the EPUB is kept unless the text actually changes.
+    val initialText = remember { description.toDisplayDescription().orEmpty() }
+    var text by rememberSaveable { mutableStateOf(initialText) }
+    FolioreOptionsDialog(
+        title = stringResource(R.string.details_about_book),
+        onDismiss = onDismiss,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.edit_metadata_field_description)) },
+                minLines = 6,
+                maxLines = 14,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                shape = RoundedCornerShape(5.dp),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.edit_metadata_cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        if (text.trim() == initialText.trim()) onDismiss() else onApply(text.trim())
+                    },
+                    shape = RoundedCornerShape(5.dp),
+                ) {
+                    Text(stringResource(R.string.batch_dialog_apply))
+                }
+            }
+        }
     }
 }
 
@@ -2666,9 +2845,11 @@ private fun String?.toTabletTimestamp(): String? {
 
 private fun String?.toDisplayDescription(): String? {
     val raw = this?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-    val plain = HtmlCompat.fromHtml(raw, HtmlCompat.FROM_HTML_MODE_LEGACY)
-        .toString()
-        .replace('\u00A0', ' ')
+    val plain = if (HtmlMarkup.containsMatchIn(raw)) {
+        HtmlCompat.fromHtml(raw, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+    } else {
+        raw
+    }.replace('\u00A0', ' ')
     return plain.lines()
         .joinToString("\n") { it.trim() }
         .replace(Regex("\\n{3,}"), "\n\n")
@@ -2718,3 +2899,4 @@ private fun String.isReadableCoverFile(): Boolean {
 }
 
 private const val DefaultCoverAspectRatio = 2f / 3f
+private val HtmlMarkup = Regex("<[a-zA-Z/!][^>]*>|&[a-zA-Z#][a-zA-Z0-9]*;")

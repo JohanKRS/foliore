@@ -4,6 +4,7 @@ import android.content.Context
 import com.foliore.android.ai.OpenAiApiService
 import com.foliore.android.metadata.OpenMetadataLookupService
 import com.foliore.android.metadata.OpenLibraryMetadataService
+import com.foliore.android.reader.ReadingStateRepository
 import com.foliore.android.storage.AiCoverPromptRepository
 import com.foliore.android.storage.AiPreferenceRepository
 import com.foliore.android.storage.AndroidBookEditor
@@ -40,6 +41,7 @@ class AppContainer(context: Context) {
     val kindleEmailPreferenceRepository = KindleEmailPreferenceRepository(appContext)
     val gmailAuthService = com.foliore.android.storage.GmailAuthService(appContext)
     val libraryDisplayPreferenceRepository = LibraryDisplayPreferenceRepository(appContext)
+    val readingStateRepository = ReadingStateRepository(appContext)
     val syncSettingsRepository = SyncSettingsRepository(appContext)
     val googleDriveAuthService = GoogleDriveAuthService(
         context = appContext,

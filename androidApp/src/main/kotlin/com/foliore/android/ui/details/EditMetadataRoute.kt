@@ -5,7 +5,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -46,6 +50,7 @@ fun EditMetadataRoute(
     val gmailAuthorization = rememberGmailAuthorizationLauncher(viewModel)
     val book = state.books.firstOrNull { it.book.id == bookId }
     var showOriginalFiles by rememberSaveable(bookId) { mutableStateOf(false) }
+    var showDeleteDialog by rememberSaveable(bookId) { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val message = notice?.type?.let { noticeMessage(it) }
     val shareChooserTitle = stringResource(R.string.export_share_chooser)
@@ -76,6 +81,7 @@ fun EditMetadataRoute(
     ) { paddingValues ->
         EditMetadataScreen(
             book = book,
+            readingStarted = (state.readingActivity[bookId]?.fraction ?: 0.0) > 0.0,
             hasOpenAiApiKey = state.hasOpenAiApiKey,
             aiCoverPromptRecords = state.aiCoverPromptRecords,
             onBack = onBack,
@@ -137,6 +143,7 @@ fun EditMetadataRoute(
             },
             onReplaceCover = { coverPicker.launch("image/*") },
             onOriginalFiles = { showOriginalFiles = true },
+            onDelete = { showDeleteDialog = true },
             onRead = { draft ->
                 val open = { context.startActivity(com.foliore.android.reader.ReaderActivity.intent(context, bookId)) }
                 if (draft != null) viewModel.saveMetadataAndPrepare(bookId, draft, onSaved = open) else open()
@@ -154,5 +161,28 @@ fun EditMetadataRoute(
     }
     if (showOriginalFiles && book != null) {
         OriginalFilesDialog(bookId = bookId, viewModel = viewModel, onDismiss = { showOriginalFiles = false })
+    }
+    if (showDeleteDialog && book != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(text = stringResource(R.string.delete_book_dialog_title)) },
+            text = { Text(text = stringResource(R.string.delete_book_dialog_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        // Unsaved edits belong to the book being removed; leave without the save prompt.
+                        viewModel.deleteBook(bookId, onDeleted = onBack)
+                    },
+                ) {
+                    Text(text = stringResource(R.string.delete_book_confirm), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(text = stringResource(R.string.delete_book_cancel))
+                }
+            },
+        )
     }
 }

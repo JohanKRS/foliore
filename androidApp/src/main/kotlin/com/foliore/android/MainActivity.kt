@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
                                 libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
                                 openAiApiService = appContainer.openAiApiService,
                                 openMetadataLookupService = appContainer.openMetadataLookupService,
+                                readingStateRepository = appContainer.readingStateRepository,
                             )
                         }
                         val libraryViewModel: LibraryViewModel = viewModel(factory = factory)

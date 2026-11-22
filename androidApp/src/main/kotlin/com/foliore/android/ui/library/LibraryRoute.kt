@@ -17,7 +17,7 @@ import dev.chrisbanes.haze.HazeState
 fun LibraryRoute(
     viewModel: LibraryViewModel,
     onBookClick: (String) -> Unit,
-    onSettingsClick: () -> Unit,
+    onSettingsShortcut: (SettingsShortcut) -> Unit,
     gridScrollState: BookGridScrollState,
     chromeHazeState: HazeState? = null,
     topChromeInset: Dp = 0.dp,
@@ -65,7 +65,7 @@ fun LibraryRoute(
         onBatchUpdate = viewModel::applyBatchMetadata,
         onBatchDelete = viewModel::deleteSelectedBooks,
         onBatchSend = { viewModel.sendSelectedBooksToKindle(gmailAuthorization) },
-        onSettingsClick = onSettingsClick,
+        onSettingsShortcut = onSettingsShortcut,
         gridScrollState = gridScrollState,
         chromeHazeState = chromeHazeState,
         topChromeInset = topChromeInset,

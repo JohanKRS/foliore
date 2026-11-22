@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="settings_launcher_icon">App icon</string>
-    <string name="settings_launcher_icon_hint">Your launcher may take a moment to update. With themed icons enabled, Android sets the colors.</string>
-    <string name="settings_launcher_icon_error">Could not change the icon. Try again.</string>
-</resources>

@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="gmail_description">Conecte sua conta para enviar livros pelo Gmail.</string>
-    <string name="gmail_active">Usado para enviar livros.</string>
-    <string name="gmail_available">Conta conectada.</string>
-    <string name="gmail_connecting">Conectando…</string>
-    <string name="gmail_connect">Conectar Gmail</string>
-    <string name="gmail_change_account">Trocar conta</string>
-    <string name="gmail_use">Usar Gmail</string>
-    <string name="gmail_disconnect">Desconectar</string>
-    <string name="gmail_hide_smtp">Ocultar configuração SMTP</string>
-    <string name="gmail_show_smtp">Configurar outro e-mail (SMTP)</string>
-    <string name="gmail_save_smtp">Salvar e usar SMTP</string>
+    <string name="gmail_description">Connect your account to send books with Gmail.</string>
+    <string name="gmail_active">Used to send books.</string>
+    <string name="gmail_available">Account connected.</string>
+    <string name="gmail_connecting">Connecting…</string>
+    <string name="gmail_connect">Connect Gmail</string>
+    <string name="gmail_change_account">Switch account</string>
+    <string name="gmail_use">Use Gmail</string>
+    <string name="gmail_disconnect">Disconnect</string>
+    <string name="gmail_hide_smtp">Hide SMTP settings</string>
+    <string name="gmail_show_smtp">Set up another email (SMTP)</string>
+    <string name="gmail_save_smtp">Save and use SMTP</string>
     <string name="gmail_connected_account">Gmail: %1$s</string>
-    <string name="gmail_notice_connected">Gmail conectado.</string>
-    <string name="gmail_notice_disconnected">Gmail desconectado deste aparelho.</string>
-    <string name="gmail_notice_auth_required">Autorize o envio pelo Gmail novamente.</string>
-    <string name="gmail_notice_configuration_required">A conexão com o Gmail ainda não está disponível nesta versão.</string>
-    <string name="gmail_notice_unavailable">Não foi possível conectar ao Gmail. Tente novamente.</string>
-    <string name="gmail_notice_too_large">O Gmail aceita anexos de até 25 MB.</string>
-    <string name="gmail_notice_rate_limited">O Gmail atingiu um limite de envio. Tente mais tarde.</string>
-    <string name="gmail_notice_send_unknown">Não foi possível confirmar o envio. Confira os enviados no Gmail antes de tentar novamente.</string>
-    <string name="kindle_sender_approval_hint">Na Amazon, adicione seu e-mail de envio aos remetentes aprovados em Documentos pessoais.</string>
-    <string name="kindle_sender_approval_link">Configurar na Amazon</string>
+    <string name="gmail_notice_connected">Gmail connected.</string>
+    <string name="gmail_notice_disconnected">Gmail disconnected from this device.</string>
+    <string name="gmail_notice_auth_required">Authorize Gmail sending again.</string>
+    <string name="gmail_notice_configuration_required">Gmail connection is not yet available in this version.</string>
+    <string name="gmail_notice_unavailable">Could not connect to Gmail. Try again.</string>
+    <string name="gmail_notice_too_large">Gmail accepts attachments up to 25 MB.</string>
+    <string name="gmail_notice_rate_limited">Gmail reached a sending limit. Try again later.</string>
+    <string name="gmail_notice_send_unknown">Could not confirm sending. Check Sent in Gmail before trying again.</string>
+    <string name="kindle_sender_approval_hint">In Amazon’s Personal Document Settings, add your sending email to the approved senders.</string>
+    <string name="kindle_sender_approval_link">Set up on Amazon</string>
 </resources>

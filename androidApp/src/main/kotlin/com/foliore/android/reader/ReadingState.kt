@@ -36,6 +36,14 @@ data class ReadingBookmark(
     val deleted: Boolean = false,
 )
 
+/** How far into the whole book the last position is; kept per device, outside [ReadingState], so it never syncs. */
+@Serializable
+data class ReadingProgress(
+    val contentHash: String,
+    val fraction: Double,
+    val readAt: Long,
+)
+
 @Serializable
 data class ReadingState(
     val positions: List<ReadingPosition> = emptyList(),

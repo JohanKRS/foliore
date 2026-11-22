@@ -54,6 +54,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -63,6 +65,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.Tune
@@ -132,6 +135,7 @@ import com.foliore.android.ui.theme.CormorantGaramondFamily
 import com.foliore.android.ui.tuning.LocalVisualTuning
 import com.foliore.android.viewmodel.BookFilter
 import com.foliore.android.viewmodel.BookGridColumns
+import com.foliore.android.viewmodel.BookReadingActivity
 import com.foliore.android.viewmodel.BookSortOrder
 import com.foliore.android.viewmodel.LibraryDisplayOptions
 import com.foliore.android.viewmodel.LibraryUiState
@@ -175,7 +179,7 @@ fun LibraryScreen(
     onBatchUpdate: (BatchMetadataPatch, () -> Unit) -> Unit,
     onBatchDelete: () -> Unit,
     onBatchSend: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onSettingsShortcut: (SettingsShortcut) -> Unit,
     gridScrollState: BookGridScrollState,
     chromeHazeState: HazeState? = null,
     topChromeInset: Dp = 0.dp,
@@ -188,6 +192,7 @@ fun LibraryScreen(
         state.seriesFilter,
         state.sortOrder,
         state.query,
+        state.readingActivity,
     ) {
         state.visibleBooks()
     }
@@ -230,7 +235,7 @@ fun LibraryScreen(
                                 .padding(top = resolvedTopChromeInset, bottom = bottomChromeInset)
                                 .padding(horizontal = 28.dp),
                             onImportClick = onImportClick,
-                            onSettingsClick = onSettingsClick,
+                            onSettingsShortcut = onSettingsShortcut,
                         )
                     }
                     visibleBooks.isEmpty() -> {
@@ -251,6 +256,7 @@ fun LibraryScreen(
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState),
                             books = visibleBooks,
+                            readingActivity = state.readingActivity,
                             gridColumns = state.gridColumns,
                             displayOptions = state.displayOptions,
                             topContentPadding = resolvedTopChromeInset + tuning.libraryGridTopExtra.dp,
@@ -329,6 +335,7 @@ fun LibraryTopChromeOverlay(
         state.seriesFilter,
         state.sortOrder,
         state.query,
+        state.readingActivity,
     ) {
         state.visibleBooks()
     }
@@ -425,6 +432,10 @@ fun LibraryTopChromeOverlay(
             onShowBookTitleChange = onShowBookTitleChange,
             onShowBookAuthorChange = onShowBookAuthorChange,
             onShowBookSeriesChange = onShowBookSeriesChange,
+            onSelectBooks = {
+                showControlsDialog = false
+                onBatchModeChange(true)
+            },
             onDismiss = { showControlsDialog = false },
         )
     }
@@ -599,13 +610,16 @@ private fun LibraryControlsDialog(
     onShowBookTitleChange: (Boolean) -> Unit,
     onShowBookAuthorChange: (Boolean) -> Unit,
     onShowBookSeriesChange: (Boolean) -> Unit,
+    onSelectBooks: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     FolioreOptionsDialog(
         title = stringResource(R.string.organization_dialog_title),
         onDismiss = onDismiss,
     ) {
-        if (maxWidth >= 420.dp) {
+        val wideDialog = maxWidth >= 420.dp
+        Column {
+        if (wideDialog) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -662,6 +676,32 @@ private fun LibraryControlsDialog(
                     onShowBookSeriesChange = onShowBookSeriesChange,
                 )
             }
+        }
+        // Long-press selection is invisible; offer the same mode here.
+        OutlinedButton(
+            onClick = onSelectBooks,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            shape = RoundedCornerShape(5.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.CheckCircle,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(text = stringResource(R.string.library_select_books))
+        }
+        Text(
+            text = stringResource(R.string.library_select_books_hint),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
         }
     }
 }
@@ -855,6 +895,7 @@ private fun BatchActionBar(
 private fun BookGrid(
     modifier: Modifier = Modifier,
     books: List<LibraryBook>,
+    readingActivity: Map<String, BookReadingActivity>,
     gridColumns: BookGridColumns,
     displayOptions: LibraryDisplayOptions,
     topContentPadding: Dp = 8.dp,
@@ -892,6 +933,8 @@ private fun BookGrid(
         statusPrimaryColor = colorScheme.primary.toArgb(),
         statusSecondaryColor = colorScheme.secondary.toArgb(),
         statusErrorColor = colorScheme.error.toArgb(),
+        progressTrackColor = colorScheme.surface.copy(alpha = 0.72f).toArgb(),
+        progressFillColor = colorScheme.primary.toArgb(),
     )
 
     BoxWithConstraints(modifier = modifier.clipToBounds()) {
@@ -988,6 +1031,7 @@ private fun BookGrid(
                 }
                 internals.adapter.submit(
                     books = books,
+                    readingActivity = readingActivity,
                     selectedBookIds = selectedBookIds,
                     isBatchMode = isBatchMode,
                     exposeBookSemantics = true,
@@ -1093,6 +1137,8 @@ private data class BookGridNativeStyle(
     val statusPrimaryColor: Int,
     val statusSecondaryColor: Int,
     val statusErrorColor: Int,
+    val progressTrackColor: Int,
+    val progressFillColor: Int,
 ) {
     fun statusColor(status: BookStatus, syncStatus: SyncStatus): Int {
         return when {
@@ -1110,6 +1156,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
     var onBookLongClick: (String) -> Unit = {}
 
     private var books: List<LibraryBook> = emptyList()
+    private var readingActivity: Map<String, BookReadingActivity> = emptyMap()
     private var selectedBookIds: Set<String> = emptySet()
     private var isBatchMode: Boolean = false
     private var exposeBookSemantics: Boolean = false
@@ -1124,6 +1171,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
 
     fun submit(
         books: List<LibraryBook>,
+        readingActivity: Map<String, BookReadingActivity>,
         selectedBookIds: Set<String>,
         isBatchMode: Boolean,
         exposeBookSemantics: Boolean,
@@ -1132,6 +1180,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
         displayOptions: LibraryDisplayOptions,
     ) {
         this.books = books
+        this.readingActivity = readingActivity
         this.selectedBookIds = selectedBookIds
         this.isBatchMode = isBatchMode
         this.exposeBookSemantics = exposeBookSemantics
@@ -1154,6 +1203,7 @@ private class BookGridRecyclerAdapter : RecyclerView.Adapter<BookGridViewHolder>
         val book = books[position]
         holder.item.bind(
             item = book,
+            readingFraction = readingActivity[book.book.id]?.fraction,
             isSelected = book.book.id in selectedBookIds,
             isBatchMode = isBatchMode,
             exposeBookSemantics = true,
@@ -1204,6 +1254,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
     private val placeholder = TextView(context)
     private val selectionBadge = SelectionBadgeView(context)
     private val statusMarker = StatusMarkerView(context)
+    private val progressBar = ReadingProgressBarView(context)
     private val titleView = TextView(context)
     private val authorView = TextView(context)
     private val seriesView = TextView(context)
@@ -1256,6 +1307,14 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
                 marginEnd = context.dpToPx(8.dp)
             },
         )
+        coverFrame.addView(
+            progressBar,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                context.dpToPx(4.dp),
+                Gravity.BOTTOM,
+            ),
+        )
         coverSlot.addView(
             coverFrame,
             FrameLayout.LayoutParams(
@@ -1294,6 +1353,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
 
     fun bind(
         item: LibraryBook,
+        readingFraction: Double?,
         isSelected: Boolean,
         isBatchMode: Boolean,
         exposeBookSemantics: Boolean,
@@ -1315,6 +1375,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         val showAuthor = displayOptions.showAuthor
         val showSeries = displayOptions.showSeries && seriesLabel != null
         val showStatus = item.hasProminentGridStatus()
+        val readingPercent = readingFraction?.let { (it * 100).toInt().coerceIn(0, 100) }?.takeIf { it > 0 }
 
         setOnClickListener { onClick(item.book.id) }
         setOnLongClickListener {
@@ -1328,6 +1389,7 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
                 title,
                 displayedAuthor,
                 seriesLabel,
+                readingPercent?.let { viewContext.getString(R.string.library_book_progress, it) },
             ).filter { it.isNotBlank() }.joinToString(separator = ". ")
         } else {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
@@ -1396,6 +1458,12 @@ private class BookGridItemView(context: Context) : LinearLayout(context) {
         )
 
         statusMarker.visibility = if (!isBatchMode && showStatus) View.VISIBLE else View.GONE
+        progressBar.visibility = if (readingPercent != null) View.VISIBLE else View.GONE
+        progressBar.setProgress(
+            fraction = readingFraction?.toFloat() ?: 0f,
+            trackColor = style.progressTrackColor,
+            fillColor = style.progressFillColor,
+        )
         statusMarker.setColors(
             fillColor = style.statusColor(item.book.status, item.book.syncStatus),
             strokeColor = style.badgeSurfaceColor,
@@ -1521,6 +1589,34 @@ private class SelectionBadgeView(context: Context) : View(context) {
             paint.strokeCap = Paint.Cap.ROUND
             canvas.drawLine(width * 0.30f, height * 0.52f, width * 0.45f, height * 0.67f, paint)
             canvas.drawLine(width * 0.45f, height * 0.67f, width * 0.72f, height * 0.34f, paint)
+        }
+    }
+}
+
+private class ReadingProgressBarView(context: Context) : View(context) {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var fraction = 0f
+    private var trackColor = android.graphics.Color.TRANSPARENT
+    private var fillColor = android.graphics.Color.BLACK
+
+    fun setProgress(fraction: Float, trackColor: Int, fillColor: Int) {
+        this.fraction = fraction.coerceIn(0f, 1f)
+        this.trackColor = trackColor
+        this.fillColor = fillColor
+        invalidate()
+    }
+
+    override fun onDraw(canvas: AndroidCanvas) {
+        super.onDraw(canvas)
+        paint.style = Paint.Style.FILL
+        paint.color = trackColor
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        paint.color = fillColor
+        val filled = width * fraction
+        if (layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+            canvas.drawRect(width - filled, 0f, width.toFloat(), height.toFloat(), paint)
+        } else {
+            canvas.drawRect(0f, 0f, filled, height.toFloat(), paint)
         }
     }
 }
@@ -2170,7 +2266,7 @@ private fun CoverPlaceholder(modifier: Modifier = Modifier) {
 private fun EmptyLibrary(
     modifier: Modifier = Modifier,
     onImportClick: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onSettingsShortcut: (SettingsShortcut) -> Unit,
 ) {
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()),
@@ -2201,11 +2297,22 @@ private fun EmptyLibrary(
         )
         Spacer(modifier = Modifier.height(10.dp))
         AssistChip(
-            onClick = onSettingsClick,
+            onClick = { onSettingsShortcut(SettingsShortcut.SYNC_SETUP) },
             label = { Text(text = stringResource(R.string.empty_library_sync_setup)) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Outlined.Sync,
+                    contentDescription = null,
+                )
+            },
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        AssistChip(
+            onClick = { onSettingsShortcut(SettingsShortcut.KINDLE_SETUP) },
+            label = { Text(text = stringResource(R.string.empty_library_kindle_setup)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Outlined.Email,
                     contentDescription = null,
                 )
             },
@@ -2279,7 +2386,7 @@ private fun LibraryUiState.visibleBooks(): List<LibraryBook> {
                 item.metadata.authors.any { it.contains(trimmedQuery, ignoreCase = true) } ||
                 item.metadata.seriesName?.contains(trimmedQuery, ignoreCase = true) == true
         }
-        .sortedBy(sortOrder)
+        .sortedBy(sortOrder, readingActivity)
 }
 
 private fun LibraryBook.matchesStatusFilter(filter: BookFilter): Boolean {
@@ -2302,10 +2409,19 @@ private fun LibraryBook.matchesSeriesFilter(filter: SeriesFilter): Boolean {
     }
 }
 
-private fun List<LibraryBook>.sortedBy(sortOrder: BookSortOrder): List<LibraryBook> {
+private fun List<LibraryBook>.sortedBy(
+    sortOrder: BookSortOrder,
+    readingActivity: Map<String, BookReadingActivity>,
+): List<LibraryBook> {
     return when (sortOrder) {
         BookSortOrder.IMPORTED_NEWEST -> sortedWith(
             compareByDescending<LibraryBook> { it.book.importedAt }
+                .thenBy { it.titleSortKey() },
+        )
+        // Books never opened keep the newest-first order below the ones being read.
+        BookSortOrder.RECENTLY_READ -> sortedWith(
+            compareByDescending<LibraryBook> { readingActivity[it.book.id]?.lastReadAt ?: Long.MIN_VALUE }
+                .thenByDescending { it.book.importedAt }
                 .thenBy { it.titleSortKey() },
         )
         BookSortOrder.TITLE_ASC -> sortedBy { it.titleSortKey() }
@@ -2395,6 +2511,7 @@ private fun BookFilter.labelRes(): Int {
 private fun BookSortOrder.labelRes(): Int {
     return when (this) {
         BookSortOrder.IMPORTED_NEWEST -> R.string.sort_imported_newest
+        BookSortOrder.RECENTLY_READ -> R.string.sort_recently_read
         BookSortOrder.TITLE_ASC -> R.string.sort_title_asc
         BookSortOrder.TITLE_DESC -> R.string.sort_title_desc
         BookSortOrder.AUTHOR_ASC -> R.string.sort_author_asc

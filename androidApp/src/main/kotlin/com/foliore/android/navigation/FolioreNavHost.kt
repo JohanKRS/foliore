@@ -87,6 +87,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavBackStackEntry
@@ -97,7 +98,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.foliore.android.R
 import com.foliore.android.storage.AppLanguage
-import com.foliore.android.ui.details.BookDetailsRoute
 import com.foliore.android.ui.details.EditBottomBarActions
 import com.foliore.android.ui.details.EditMetadataRoute
 import com.foliore.android.ui.details.TabletEditLeftPaneWeight
@@ -108,6 +108,8 @@ import com.foliore.android.ui.library.LibraryTopChromeOverlay
 import com.foliore.android.ui.library.LibraryRoute
 import com.foliore.android.ui.library.GoogleDriveRemoteLibraryDialog
 import com.foliore.android.ui.library.SettingsRoute
+import com.foliore.android.ui.library.SettingsShortcut
+import com.foliore.android.storage.SyncProvider
 import com.foliore.android.ui.library.UnlimitedReminderHost
 import com.foliore.android.ui.library.findActivity
 import com.foliore.android.ui.library.SyncProgressDivider
@@ -153,6 +155,11 @@ fun FolioreNavHost(
 ) {
     val navController = rememberNavController()
     val libraryState by libraryViewModel.state.collectAsStateWithLifecycle()
+    // Coming back from the reader activity resumes this one; both the grid and the book page show progress.
+    LifecycleResumeEffect(libraryViewModel) {
+        libraryViewModel.refreshReadingActivity()
+        onPauseOrDispose {}
+    }
     val gmailBatchAuthorization = com.foliore.android.ui.library.rememberGmailAuthorizationLauncher(libraryViewModel)
     libraryState.kindleBatchReport?.let { report ->
         com.foliore.android.ui.library.KindleBatchResultDialog(report, libraryState.books, libraryViewModel::dismissKindleBatchReport)
@@ -178,6 +185,7 @@ fun FolioreNavHost(
         onPurchase = { context.findActivity()?.let(libraryViewModel::purchaseUnlimited) },
     )
     val currentBookId = backStackEntry?.arguments?.getString(Routes.ARG_BOOK_ID)
+    var settingsShortcut by rememberSaveable { mutableStateOf<SettingsShortcut?>(null) }
     var editBottomBarState by remember { mutableStateOf<EditBottomBarState?>(null) }
     var editTopChromeContent by remember { mutableStateOf<TopChromeContent?>(null) }
     var topChromeHeightPx by remember { mutableStateOf(0) }
@@ -268,7 +276,18 @@ fun FolioreNavHost(
                             val navigate = { navController.returnToLibrary() }
                             if (editActions != null) editActions.onRequestNavigate(navigate) else navigate()
                         },
-                        onSyncClick = libraryViewModel::syncNow,
+                        onSyncClick = {
+                            // Without a provider there is nothing to sync yet: take the tap to setup.
+                            if (libraryState.syncProvider == SyncProvider.NONE) {
+                                val navigate = {
+                                    settingsShortcut = SettingsShortcut.SYNC_SETUP
+                                    navController.navigateTopLevel(Routes.SETTINGS)
+                                }
+                                if (editActions != null) editActions.onRequestNavigate(navigate) else navigate()
+                            } else {
+                                libraryViewModel.syncNow()
+                            }
+                        },
                         onSettingsClick = {
                             val navigate = { navController.navigateTopLevel(Routes.SETTINGS) }
                             if (editActions != null) editActions.onRequestNavigate(navigate) else navigate()
@@ -299,7 +318,12 @@ fun FolioreNavHost(
                     onThemeModeChange = onThemeModeChange,
                     appLanguage = appLanguage,
                     onAppLanguageChange = onAppLanguageChange,
-                    onEditBook = { bookId -> navController.navigate(Routes.edit(bookId)) },
+                    settingsShortcut = settingsShortcut,
+                    onSettingsShortcut = { shortcut ->
+                        settingsShortcut = shortcut
+                        navController.navigateTopLevel(Routes.SETTINGS)
+                    },
+                    onSettingsShortcutConsumed = { settingsShortcut = null },
                     onBack = { navController.popBackStack() },
                     onEditBottomBarActionsChange = { bookId, actions ->
                         // A restored route can publish actions before currentBookId updates.
@@ -435,7 +459,9 @@ private fun NavContent(
     onThemeModeChange: (ThemeMode) -> Unit,
     appLanguage: AppLanguage,
     onAppLanguageChange: (AppLanguage) -> Unit,
-    onEditBook: (String) -> Unit,
+    settingsShortcut: SettingsShortcut?,
+    onSettingsShortcut: (SettingsShortcut) -> Unit,
+    onSettingsShortcutConsumed: () -> Unit,
     onBack: () -> Unit,
     onEditBottomBarActionsChange: (String, EditBottomBarActions?) -> Unit,
     onEditTopChromeContentChange: (TopChromeContent?) -> Unit,
@@ -458,7 +484,7 @@ private fun NavContent(
             LibraryRoute(
                 viewModel = libraryViewModel,
                 onBookClick = { bookId -> navController.navigate(Routes.edit(bookId)) },
-                onSettingsClick = { navController.navigateTopLevel(Routes.SETTINGS) },
+                onSettingsShortcut = onSettingsShortcut,
                 gridScrollState = libraryGridScrollState,
                 chromeHazeState = libraryChromeHazeState,
                 topChromeInset = topChromeInset,
@@ -475,17 +501,8 @@ private fun NavContent(
                 onThemeModeChange = onThemeModeChange,
                 appLanguage = appLanguage,
                 onAppLanguageChange = onAppLanguageChange,
-                bottomChromeInset = bottomChromeInset,
-            )
-        }
-        composable(Routes.DETAILS) { backStackEntry ->
-            val bookId = backStackEntry.arguments?.getString(Routes.ARG_BOOK_ID).orEmpty()
-            BookDetailsRoute(
-                viewModel = libraryViewModel,
-                bookId = bookId,
-                topChromeInset = topChromeInset,
-                onEditMetadata = { onEditBook(bookId) },
-                onBack = onBack,
+                shortcut = settingsShortcut,
+                onShortcutConsumed = onSettingsShortcutConsumed,
                 bottomChromeInset = bottomChromeInset,
             )
         }
@@ -1055,7 +1072,6 @@ private fun FolioreEditActions(
     val exportLabel = stringResource(R.string.edit_metadata_export_short)
     val actionsEnabled = actions != null && !isLoading
     val saveEnabled = actions?.saveEnabled == true && !isLoading
-    val saveHasPendingChanges = actions?.hasPendingSave == true && !isLoading
     val neutralButtonContainer = MaterialTheme.colorScheme.background
     val neutralButtonContent = bottomBarAccentColor()
     val neutralButtonBorder = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
@@ -1131,65 +1147,45 @@ private fun FolioreEditActions(
         horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (saveHasPendingChanges) {
-            Button(
-                onClick = { actions.onSave.invoke() },
-                enabled = saveEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(buttonHeight),
-                shape = RoundedCornerShape(5.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = neutralButtonContent,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    disabledContainerColor = neutralButtonContainer,
-                    disabledContentColor = disabledButtonContent,
+        // The primary slot reads the book until there is something to save.
+        val showSave = actions?.hasUnsavedChanges == true
+        val primaryEnabled = if (showSave) saveEnabled else actionsEnabled
+        Button(
+            onClick = {
+                if (showSave) actions?.onSave?.invoke() else actions?.onRead?.invoke()
+            },
+            enabled = primaryEnabled,
+            modifier = Modifier
+                .weight(1f)
+                .height(buttonHeight),
+            shape = RoundedCornerShape(5.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = neutralButtonContent,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = neutralButtonContainer,
+                disabledContentColor = disabledButtonContent,
+            ),
+            border = if (primaryEnabled) null else BorderStroke(1.dp, disabledButtonBorder),
+            contentPadding = buttonContentPadding,
+        ) {
+            Icon(
+                imageVector = if (showSave) Icons.Outlined.Save else Icons.AutoMirrored.Outlined.MenuBook,
+                contentDescription = null,
+                modifier = Modifier.size(iconSize),
+            )
+            Spacer(modifier = Modifier.width(iconSpacing))
+            Text(
+                text = stringResource(
+                    when {
+                        showSave -> R.string.edit_metadata_save
+                        actions?.readingStarted == true -> R.string.edit_metadata_continue_short
+                        else -> R.string.edit_metadata_read_short
+                    },
                 ),
-                contentPadding = buttonContentPadding,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Save,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSize),
-                )
-                Spacer(modifier = Modifier.width(iconSpacing))
-                Text(
-                    text = stringResource(R.string.edit_metadata_save),
-                    style = actionTextStyle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        } else {
-            OutlinedButton(
-                onClick = { actions?.onSave?.invoke() },
-                enabled = saveEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(buttonHeight),
-                shape = RoundedCornerShape(5.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = neutralButtonContainer,
-                    contentColor = neutralButtonContent,
-                    disabledContainerColor = neutralButtonContainer,
-                    disabledContentColor = disabledButtonContent,
-                ),
-                border = BorderStroke(1.dp, if (saveEnabled) neutralButtonBorder else disabledButtonBorder),
-                contentPadding = buttonContentPadding,
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Save,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSize),
-                )
-                Spacer(modifier = Modifier.width(iconSpacing))
-                Text(
-                    text = stringResource(R.string.edit_metadata_save),
-                    style = actionTextStyle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+                style = actionTextStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         OutlinedButton(
             onClick = { actions?.onShareExport?.invoke() },
@@ -1347,10 +1343,8 @@ private object Routes {
     const val LIBRARY = "library"
     const val SETTINGS = "settings"
     const val ARG_BOOK_ID = "bookId"
-    const val DETAILS = "details/{$ARG_BOOK_ID}"
     const val EDIT = "edit/{$ARG_BOOK_ID}"
 
-    fun details(bookId: String): String = "details/$bookId"
     fun edit(bookId: String): String = "edit/$bookId"
 }
 

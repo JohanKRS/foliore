@@ -43,7 +43,9 @@
     <string name="library_display_title">タイトル</string>
     <string name="library_display_author">著者</string>
     <string name="library_display_series">シリーズ</string>
-    <string name="sort_imported_newest">新しい順</string>
+    <string name="sort_imported_newest">最近追加した順</string>
+    <string name="sort_recently_read">最近読んだ順</string>
+    <string name="library_book_progress">%1$d%% 読了</string>
     <string name="sort_title_asc">タイトル A–Z</string>
     <string name="sort_title_desc">タイトル Z–A</string>
     <string name="sort_author_asc">著者 A–Z</string>
@@ -111,23 +113,15 @@
     <string name="export_notice_failed">EPUBを書き出せませんでした。</string>
     <string name="export_share_chooser">EPUBを共有</string>
 
-    <string name="details_series">シリーズ</string>
     <string name="details_published_year">発行日</string>
-    <string name="details_language">言語</string>
-    <string name="details_publisher">出版社</string>
-    <string name="details_file_format">形式</string>
-    <string name="details_file_format_epub">EPUB</string>
     <string name="details_imported_at">読み込み日</string>
     <string name="details_last_synced">最終同期</string>
     <string name="details_status">状態</string>
     <string name="details_not_available">-</string>
     <string name="details_book_not_found">本が見つかりません。</string>
     <string name="details_about_book">この本について</string>
-    <string name="details_action_edit_metadata">メタデータを編集</string>
     <string name="details_action_replace_cover">表紙を変更</string>
     <string name="details_action_generate_cover">表紙を生成</string>
-    <string name="details_action_share_export">共有 / 書き出し</string>
-    <string name="details_action_send_to_kindle">Kindleへ送信</string>
     <string name="details_action_delete_book">ライブラリから削除</string>
     <string name="delete_book_dialog_title">本を削除しますか？</string>
     <string name="delete_book_dialog_body">この操作により、本とFolioreが保存したローカルファイルが削除されます。</string>
@@ -294,7 +288,7 @@
     <string name="sync_notice_existing_library_configured">既存のライブラリが見つかりました。同期すると、この場所から本を読み込めます。</string>
     <string name="sync_notice_complete">同期が完了しました。</string>
     <string name="sync_notice_complete_with_conflicts">競合がありますが、同期は完了しました。</string>
-    <string name="sync_notice_not_configured">同期する前にフォルダを選んでください。</string>
+    <string name="sync_notice_not_configured">同期先としてGoogleドライブかフォルダを選んでください。</string>
     <string name="sync_notice_folder_unavailable">選択したフォルダを利用できません。</string>
     <string name="sync_notice_folder_looks_like_subfolder">ライブラリのサブフォルダのようです。Foliore Libraryまたはそれを含むフォルダを選んでください。</string>
     <string name="sync_notice_google_drive_connected">非公開Google Driveに接続しました。</string>
@@ -397,8 +391,9 @@
     <string name="report_content_description">質問、問題、AIが生成した不適切な内容についてご記入ください。メッセージのみ送信されます。</string>
     <string name="report_content_message">メッセージ</string>
     <string name="report_content_success">メッセージを受け付けました。ありがとうございます。</string>
-    <string name="report_content_failure">送信できませんでした。再試行できるようテキストは残っています。</string>
+    <string name="report_content_failure">送信できませんでした。テキストは残っているので、再試行するかメールで送信できます。</string>
     <string name="report_content_send">送信</string>
+    <string name="report_content_email">メールで送信</string>
     <string name="metadata_lookup_identifiers">識別子</string>
     <string name="metadata_lookup_cover">表紙</string>
     <string name="metadata_lookup_choose_result">結果を選択（%1$d件）</string>
@@ -478,4 +473,10 @@
     <string name="reader_sync_note">読書位置としおりはライブラリと一緒に同期されます。</string>
     <string name="reader_reset_settings">初期設定に戻す</string>
     <string name="reader_page_progress">章の進捗</string>
+    <string name="edit_metadata_read_short">読む</string>
+    <string name="edit_metadata_continue_short">続きを読む</string>
+    <string name="edit_metadata_description_edit">説明を編集</string>
+    <string name="empty_library_kindle_setup">Kindleを設定</string>
+    <string name="library_select_books">本を選択</string>
+    <string name="library_select_books_hint">表紙を長押ししても選択できます。</string>
 </resources>

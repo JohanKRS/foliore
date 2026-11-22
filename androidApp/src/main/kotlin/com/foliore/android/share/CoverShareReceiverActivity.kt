@@ -132,6 +132,7 @@ class CoverShareReceiverActivity : ComponentActivity() {
                         libraryDisplayPreferenceRepository = appContainer.libraryDisplayPreferenceRepository,
                         openAiApiService = appContainer.openAiApiService,
                         openMetadataLookupService = appContainer.openMetadataLookupService,
+                        readingStateRepository = appContainer.readingStateRepository,
                     )
                 }
                 val viewModel: LibraryViewModel = viewModel(factory = factory)
